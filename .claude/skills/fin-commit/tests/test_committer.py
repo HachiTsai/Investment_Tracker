@@ -128,14 +128,6 @@ def test_quick_message_is_valid():
     assert c.L1_UNSPECIFIED in msg
 
 
-def test_ensure_device_line_inserts_once():
-    msg = "docs(x): y\n\n## 驗證\n\n- 純文件\n"
-    stamped = c.ensure_device_line(msg, "Linux")
-    assert "- **執行裝置**: Linux" in stamped
-    assert c.ensure_device_line(stamped, "macOS") == stamped
-    assert c.ensure_device_line("docs(x): y\n", "Linux") == "docs(x): y\n"
-
-
 def test_ensure_coauthor_line():
     signed = c.ensure_coauthor_line("docs(x): y\n")
     assert signed.endswith(c.COAUTHOR_LINE + "\n")

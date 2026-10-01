@@ -9,17 +9,12 @@
 """
 
 import argparse
-import io
 import re
 import subprocess
 import sys
 from datetime import date
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-
-if sys.platform == "win32" and hasattr(sys.stdout, "buffer") and "pytest" not in sys.modules:
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 VOCAB_PATH = SKILL_DIR / "references" / "vocabulary.md"

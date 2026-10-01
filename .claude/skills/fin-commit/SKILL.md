@@ -19,7 +19,7 @@ python3 .claude/skills/fin-commit/scripts/committer.py --stage-list <paths...>
 
 # 2. 依指令中的 diff 與規格書 §4 模板，把訊息寫入 .git/COMMIT_MSG_TEMP
 
-# 3. 檢查並提交（補執行裝置、Co-Author；不合規即擋下；預設會 push）
+# 3. 檢查並提交（Markdown lint、補 Co-Author；不合規即擋下；預設會 push）
 python3 .claude/skills/fin-commit/scripts/committer.py --no-stage --message-file .git/COMMIT_MSG_TEMP
 ```
 
@@ -49,7 +49,6 @@ python3 .claude/skills/fin-commit/scripts/committer.py --no-stage --message-file
 
 - **Markdown lint**：提交前用 `markdown-linter` skill 檢查暫存區的 `.md`，沒通過就不提交。
 
-- **執行裝置**：寫進「## 驗證」區塊；可用環境變數 `AGENT_DEVICE` 覆蓋，否則標作業系統。
 - **Co-Authored-By: Claude**：已有 Claude 署名時不重複。
 
 ## 範例：交易紀錄

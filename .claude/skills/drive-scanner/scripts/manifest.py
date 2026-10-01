@@ -18,15 +18,10 @@ SCAN.json 格式：
 """
 
 import argparse
-import io
 import json
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional
-
-if sys.platform == "win32" and hasattr(sys.stdout, "buffer") and "pytest" not in sys.modules:
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 MANIFEST_PATH = SKILL_DIR / "state" / "drive-manifest.json"

@@ -8,21 +8,12 @@
 # ==========================================
 
 import argparse
-import io
 import os
 import re
 import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-
-## ==============================================================================
-## Encoding Guard: Force UTF-8 for stdout/stderr on Windows to prevent cp950 errors
-## ==============================================================================
-
-if sys.platform == "win32" and hasattr(sys.stdout, "buffer") and "pytest" not in sys.modules:
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 SPEC_PATH = SKILL_DIR / "references" / "spec-git-commit-protocol.md"
@@ -110,7 +101,7 @@ DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}")
 SKIP_RE = re.compile(r"^(Merge |Revert |fixup! |squash! )")
 
 ## ==============================================================================
-## 🤖 執行者與裝置
+## 🤖 執行者
 ## ==============================================================================
 
 AGENT_REGISTRY: Dict[str, str] = {
@@ -121,12 +112,6 @@ AGENT_REGISTRY: Dict[str, str] = {
 UNKNOWN_AGENT: str = "unknown"
 UNKNOWN_AGENT_LABEL: str = "未標示"
 ENV_FALSY_VALUES: Tuple[str, ...] = ("", "0", "false", "no", "off")
-
-DEVICE_FIELD: str = "執行裝置"
-DEVICE_ENV_VAR: str = "AGENT_DEVICE"
-PLATFORM_LABELS: Dict[str, str] = {"win32": "Windows", "darwin": "macOS", "linux": "Linux"}
-VERIFICATION_HEADING: str = "## 驗證"
-DEVICE_LINE_RE = re.compile(rf"^\s*[-*]\s*(\*\*)?{DEVICE_FIELD}(\*\*)?\s*[:：]")
 
 #: 署名固定不帶模型版本——換模型不必改模板（沿用 delivery-commit-workflow 裁定）
 COAUTHOR_LINE: str = "Co-Authored-By: Claude <noreply@anthropic.com>"
@@ -177,24 +162,10 @@ def get_agent_label(agent: Optional[str]) -> str:
     return UNKNOWN_AGENT_LABEL if key == UNKNOWN_AGENT else AGENT_REGISTRY[key]
 
 
-def detect_device(platform: Optional[str] = None) -> str:
-    """環境變數 AGENT_DEVICE 優先，否則標作業系統（不標 hostname，避免機器名外流）。"""
-    env_device = os.environ.get(DEVICE_ENV_VAR, "").strip()
-    if env_device:
-        return env_device
-    plat = sys.platform if platform is None else platform
-    return PLATFORM_LABELS.get(plat, plat)
-
-
-def _normalize_path(path: str) -> str:
-    return path.replace("\\", "/")
-
-
 def infer_category(staged_files: List[str]) -> str:
     """依 staged 路徑判定類別；混合時取優先序最高者。"""
     found = set()
-    for raw in staged_files:
-        path = _normalize_path(raw)
+    for path in staged_files:
         for prefix, category in CATEGORY_PATH_RULES:
             if path.startswith(prefix):
                 found.add(category)
@@ -211,7 +182,6 @@ TICKER_RE = re.compile(r"^(\d{4,6}[A-Z]?)_")  # 檔名慣例 <代號>_<主題>�
 
 
 def _scope_of(path: str) -> Optional[str]:
-    path = _normalize_path(path)
     parts = Path(path).parts
     name = Path(path).name
     if path == "CLAUDE.md":
@@ -246,7 +216,7 @@ def infer_scope(staged_files: List[str]) -> str:
 
 def infer_commit_type(staged_files: List[str]) -> str:
     """Auto-Quick 用的 type 推斷（純路徑，不判斷交易行為）。"""
-    paths = [_normalize_path(p) for p in staged_files]
+    paths = staged_files
     if paths and all(p.startswith("portfolio/snapshots/") for p in paths):
         return "snap"
     if paths and all(p.startswith("architecture/") for p in paths):
@@ -269,12 +239,11 @@ def check_auto_quick_guard(staged_files: List[str], category: str) -> List[str]:
     reasons: List[str] = []
     if category == CATEGORY_TRADE:
         reasons.append(f"類別為「{CATEGORY_TRADE}」——交易需要明細與數字核對，不可機械生成")
-    for raw in staged_files:
-        path = _normalize_path(raw)
+    for path in staged_files:
         if path in AUTO_QUICK_GUARDED_FILES:
-            reasons.append(f"{raw}（Agent 執行規範 SSOT）")
+            reasons.append(f"{path}（Agent 執行規範 SSOT）")
         elif any(path.startswith(p) for p in AUTO_QUICK_GUARDED_PREFIXES):
-            reasons.append(f"{raw}（commit 規範本體）")
+            reasons.append(f"{path}（commit 規範本體）")
     return reasons
 
 ## ==============================================================================
@@ -383,25 +352,6 @@ def report(errors: List[str], warnings: List[str]) -> bool:
 ## ==============================================================================
 
 
-def ensure_device_line(msg: str, device: str) -> str:
-    """於「驗證」區塊標題下補上執行裝置；已明寫或無該區塊者原樣返回。"""
-    newline = "\r\n" if "\r\n" in msg else "\n"
-    lines = msg.split(newline)
-    try:
-        start = next(i for i, line in enumerate(lines) if line.strip() == VERIFICATION_HEADING)
-    except StopIteration:
-        return msg
-    end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
-    if any(DEVICE_LINE_RE.match(line) for line in lines[start + 1:end]):
-        return msg
-    device_line = f"- **{DEVICE_FIELD}**: {device}"
-    if start + 1 < len(lines) and not lines[start + 1].strip():
-        lines.insert(start + 2, device_line)
-    else:
-        lines[start + 1:start + 1] = ["", device_line]
-    return newline.join(lines)
-
-
 def ensure_coauthor_line(msg: str) -> str:
     """訊息尾端補上 Co-Authored-By；已有者不重複（大小寫不敏感）。"""
     if COAUTHOR_RE.search(msg):
@@ -493,7 +443,7 @@ def lint_staged_markdown(staged_files: List[str]) -> int:
 
 def finalize_commit(message_file: Path, no_push: bool = False, dry_run: bool = False,
                     skip_mdlint: bool = False) -> int:
-    """Markdown lint、補上執行裝置與 Co-Author、檢查格式，通過後 commit（並 push）。"""
+    """Markdown lint、補上 Co-Author、檢查格式，通過後 commit（並 push）。"""
     if not skip_mdlint and lint_staged_markdown(get_staged_file_list()) != 0:
         print("❌ [Finalize] 暫存區的 Markdown 未通過 lint，未提交。可先執行 mdlint.py --fix。", file=sys.stderr)
         return 1
@@ -506,10 +456,6 @@ def finalize_commit(message_file: Path, no_push: bool = False, dry_run: bool = F
         return 1
 
     original = msg
-    device = detect_device()
-    msg = ensure_device_line(msg, device)
-    if msg != original:
-        print(f"   🖥️ [Device] 「驗證」區塊補上 {DEVICE_FIELD}：{device}")
     signed = ensure_coauthor_line(msg)
     if signed != msg:
         print("   ✍️ [Co-Author] 訊息尾端補上 Co-Authored-By")
@@ -591,7 +537,7 @@ def build_quick_commit_message(
 """
 
 
-def build_agent_directive(category: str, agent_label: str, device: str, stats: str, diff: str, spec: str) -> str:
+def build_agent_directive(category: str, agent_label: str, stats: str, diff: str, spec: str) -> str:
     """草擬指令：交給 Agent 依 diff 與規格書直接寫出訊息並提交。"""
     script = Path(__file__).resolve()
     try:
@@ -615,13 +561,12 @@ def build_agent_directive(category: str, agent_label: str, device: str, stats: s
 6. **[草擬]** 依規格書 §4 唯一模板寫出最終訊息（不提供多個選項），選用區塊依內容決定。
 7. **[提交]** 寫入 `{MESSAGE_FILE.as_posix()}`，執行：
    `python3 {script.as_posix()} --no-stage --message-file {MESSAGE_FILE.as_posix()}`
-   （會補執行裝置與 Co-Author、檢查格式；不通過即不提交）。
+   （會檢查 Markdown 與訊息格式、補 Co-Author；不通過即不提交）。
 
 ## Session-Sync 預填值
 
 - **執行者**: {agent_label}
 - **類別**: {category}
-- **執行裝置**: {device}（提交時自動補進「驗證」區塊）
 
 ---
 📂 [Git 變更統計 (Stats)]
@@ -731,7 +676,6 @@ def main(argv: Optional[List[str]] = None) -> int:
     print(build_agent_directive(
         category=category,
         agent_label=get_agent_label(agent_id),
-        device=detect_device(),
         stats=get_git_stats(),
         diff=get_git_diff(),
         spec=SPEC_PATH.read_text(encoding="utf-8"),

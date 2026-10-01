@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/skills/drive-scanner/scripts/manifest.py\" reminder || python \"$CLAUDE_PROJECT_DIR/.claude/skills/drive-scanner/scripts/manifest.py\" reminder"
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/skills/drive-scanner/scripts/manifest.py\" reminder"
           }
         ]
       }

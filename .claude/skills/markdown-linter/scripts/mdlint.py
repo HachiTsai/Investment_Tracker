@@ -11,16 +11,11 @@
 """
 
 import argparse
-import io
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 from typing import List, Optional
-
-if sys.platform == "win32" and hasattr(sys.stdout, "buffer") and "pytest" not in sys.modules:
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 #: 固定版本，避免規則隨上游更新而在本機與 CI 間漂移；升級時只改這裡
 LINTER_PACKAGE = "markdownlint-cli2@0.23.3"
