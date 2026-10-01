@@ -1,7 +1,0 @@
-{
-  "MLC01": { "unit_suffix": "S01", "global_scope": false },
-  "MLC02": { "unit_suffix": "S02", "global_scope": false },
-  "MLC03": { "unit_suffix": "S03", "global_scope": false },
-  "MLC04": { "unit_suffix": "S04", "global_scope": false },
-  "POC_GMS": { "unit_suffix": null, "global_scope": true }
-}

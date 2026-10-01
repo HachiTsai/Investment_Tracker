@@ -1,2 +1,2 @@
-# Code_Refine
-專門做為Gemini Advanced 網頁版確認程式碼的REPO
+# Investment_Tracker
+財商工程大本營 REPO

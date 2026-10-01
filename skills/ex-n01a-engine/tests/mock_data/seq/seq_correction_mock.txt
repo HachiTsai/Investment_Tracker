@@ -1,3 +1,0 @@
-<Correction>
-No	LOGIC_NO	LOGIC
-2	101	IN0001 IN0002
