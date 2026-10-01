@@ -70,6 +70,7 @@ scripts/                  計算或抓價工具（待建立）
 
 - 所有 commit 遵循 `.claude/skills/fin-commit/SKILL.md` 的財商 commit 規範（type 依投資行為分類）。
 - 一個 commit 只記錄一個投資事件或一個主題，方便日後用 `git log --grep` 回溯。
+- 用 `python3 .claude/skills/fin-commit/scripts/fin_commit.py commit ...` 產生並提交；新 clone 後先執行 `... fin_commit.py install-hook`，讓每次提交自動檢查格式。
 
 ## 注意事項
 

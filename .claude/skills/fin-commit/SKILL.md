@@ -129,31 +129,57 @@ snap(portfolio): 2026-10-01 持股快照，年股利缺口 20 萬
 
 ```
 rebal(00877,00882): 賣 00877 獲利約 80 萬，轉入 00882
+
+日期: 2025-12-19
+賣出: 00877，獲利約 800,000 TWD
+買入: 00882 262,000 股 @14.57，金額 3,817,340 TWD，手續費 6,642
+理由: 00877 獲利了結，轉入 00882
+
+來源: Core/Transactions Tx_ID 202601001
 ```
 
 ```
 docs(claude): 新增 CLAUDE.md，定義資料來源與計算口徑
 ```
 
+## 工具腳本
+
+`scripts/fin_commit.py`（Python 3 標準函式庫，無需安裝套件）：
+
+| 指令 | 用途 |
+| --- | --- |
+| `types` | 列出所有 type 與必填欄位 |
+| `commit --type ... --scope ... --summary ... [欄位]` | 產生 message、檢查後提交已 staged 的變更；加 `--dry-run` 只預覽 |
+| `check [FILE\|-]` | 檢查一則 message（預設讀 stdin） |
+| `log [N]` | 檢查最近 N 個 commit 是否符合規範 |
+| `install-hook` | 安裝 `commit-msg` hook，之後每次 `git commit` 自動檢查 |
+
+`commit` 的欄位選項：`--date --qty --price --amount --fee --pnl --sold --bought --dps --received --ytd --reason`，
+footer 用 `--impact`（目標影響）、`--source`（來源）、`--trailer`（可重複），其他 body 行用 `--note`（可重複）。
+
+檢查規則：
+
+- **錯誤**（擋下提交）：標題格式、未知 type、摘要超過 50 字或結尾有句號、標題後未空行、缺必填欄位、`數量 × 價格 ≠ 金額`（誤差 > 1）、日期不是 `YYYY-MM-DD`。
+- **警告**（不擋）：交易類缺「目標影響」。
+- `Merge` / `Revert` / `fixup!` / `squash!` 開頭的 message 不檢查。
+
 ## 執行步驟
 
 1. `git status` 與 `git diff --staged` 看清楚這次變更。
 2. 判斷投資行為 → 選 type；若混了多種行為，拆成多個 commit。
-3. 從變更內容或 Core 試算表取出數字填 body；缺少的數字詢問使用者，不要猜。
-4. 數字檢查：金額 = 數量 × 價格（容許四捨五入），單位為 TWD。
-5. 用 heredoc 提交，保留多行格式：
+3. 從變更內容或 Core 試算表取出數字；缺少的數字詢問使用者，不要猜。
+4. 用腳本提交（路徑相對於 REPO 根目錄）：
 
    ```bash
-   git commit -F - <<'EOF'
-   <type>(<scope>): <摘要>
-
-   <body>
-
-   <footer>
-   EOF
+   python3 .claude/skills/fin-commit/scripts/fin_commit.py commit \
+     --type reinvest --scope 00882 --summary "股息 158,344 再投入 10 張 @15.08" \
+     --date 2026-08-11 --qty "10,000 股（10 張）" --price 15.08 \
+     --amount "150,800 TWD" --fee 215 --reason "7 月除息股利全數再投入，維持複利" \
+     --impact "持股 290 張 → 300 張" --source "Core/Transactions Tx_ID ad364a04"
    ```
 
-6. 若環境要求附加 Co-Authored-By 等 trailer，放在 footer 最後。
+   分析類需要多行重點時，用 `--note "- ..."` 逐行加入；或自行撰寫 message 後先 `check` 再 `git commit -F`。
+5. 若環境要求附加 Co-Authored-By 等 trailer，用 `--trailer` 放在 footer 最後。
 
 ## 查詢範例
 
