@@ -1,0 +1,15 @@
+// Markdown lint 設定（SSOT）：本機 mdlint.py、CI、編輯器外掛共用此檔。
+// 規則說明：https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+{
+  "config": {
+    "default": true,
+    // 中文段落、表格與連結常超過 80 字元，行長限制不適用
+    "MD013": false,
+    // 變更紀錄等段落會重複出現同名小標題，只禁止同一層級的兄弟標題重複
+    "MD024": { "siblings_only": true },
+    // 全形字寬讓表格無法以等寬方式對齊，不檢查表格欄位對齊風格
+    "MD060": false
+  },
+  "gitignore": true,
+  "ignores": ["node_modules/**", "**/*-workspace/**"]
+}
