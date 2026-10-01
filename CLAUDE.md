@@ -116,6 +116,9 @@ scripts/                     共用計算或抓價工具
 
 ## Git 與 Commit
 
+- **只在雲端開工**（Claude Code on the web）：腳本與 hook 只需支援 Linux，不必處理 Windows／Mac 相容。
+- **直接提交到 `main`**：Hachi 授權不另開分支與 PR，commit 後直接 push 到 `main`；CI 會在 push 到 `main` 時執行，推送後確認 CI 通過，失敗就立刻修正。
+
 - 所有 commit 走 `fin-commit` skill：`python3 .claude/skills/fin-commit/scripts/committer.py`。規格書為 `.claude/skills/fin-commit/references/spec-git-commit-protocol.md`。
 - 所有 commit 共用同一份詳細模板，交易紀錄只是其中一種（多了必填的「交易明細」）。
 - 一個 commit 只記錄一個投資事件或一個主題，方便日後用 `git log --grep` 回溯。
