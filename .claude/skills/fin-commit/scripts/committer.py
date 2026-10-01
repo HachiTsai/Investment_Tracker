@@ -26,6 +26,7 @@ if sys.platform == "win32" and hasattr(sys.stdout, "buffer") and "pytest" not in
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 SPEC_PATH = SKILL_DIR / "references" / "spec-git-commit-protocol.md"
+MDLINT_DIR = SKILL_DIR.parent / "markdown-linter" / "scripts"
 
 ## ==============================================================================
 ## 🏷️ 類別名冊 (Categories Registry) — 規格書 §2
@@ -475,8 +476,27 @@ def install_hook() -> int:
 ## ==============================================================================
 
 
-def finalize_commit(message_file: Path, no_push: bool = False, dry_run: bool = False) -> int:
-    """補上執行裝置與 Co-Author、檢查格式，通過後 commit（並 push）。"""
+def lint_staged_markdown(staged_files: List[str]) -> int:
+    """暫存區內的 .md 必須通過 markdown-linter；回傳 0 表示通過或無 .md。"""
+    md_files = [f for f in staged_files if f.lower().endswith(".md")]
+    if not md_files:
+        return 0
+    sys.path.insert(0, str(MDLINT_DIR))
+    try:
+        import mdlint
+    except ImportError:
+        print("   ❌ [MDLint] 找不到 markdown-linter skill（.claude/skills/markdown-linter/）", file=sys.stderr)
+        return 1
+    print(f"   🔍 [MDLint] 檢查暫存區 {len(md_files)} 個 Markdown 檔案...")
+    return mdlint.lint(md_files)
+
+
+def finalize_commit(message_file: Path, no_push: bool = False, dry_run: bool = False,
+                    skip_mdlint: bool = False) -> int:
+    """Markdown lint、補上執行裝置與 Co-Author、檢查格式，通過後 commit（並 push）。"""
+    if not skip_mdlint and lint_staged_markdown(get_staged_file_list()) != 0:
+        print("❌ [Finalize] 暫存區的 Markdown 未通過 lint，未提交。可先執行 mdlint.py --fix。", file=sys.stderr)
+        return 1
     if not message_file.exists():
         print(f"❌ [Finalize] 找不到訊息檔：{message_file}", file=sys.stderr)
         return 1
@@ -635,6 +655,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     p.add_argument("--status", help="L1 的 Session-Sync 狀態")
     p.add_argument("--next", dest="next_step", help="L1 的 Session-Sync 下一步")
     p.add_argument("--blocker", help="L1 的 Session-Sync 阻塞")
+    p.add_argument("--skip-mdlint", action="store_true", help="略過暫存區 Markdown lint（僅限無 Node.js 時暫用，CI 仍會檢查）")
     p.add_argument("--check", type=Path, metavar="FILE", help="只檢查訊息檔格式（commit-msg hook 用）")
     p.add_argument("--install-hook", action="store_true", help="安裝 commit-msg hook")
     return p.parse_args(argv)
@@ -682,7 +703,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     print(f"   🏷️  [Category] 類別：{category}（{how}）")
 
     if args.message_file:
-        return finalize_commit(args.message_file, no_push=args.no_push, dry_run=args.dry_run)
+        return finalize_commit(args.message_file, no_push=args.no_push, dry_run=args.dry_run,
+                               skip_mdlint=args.skip_mdlint)
 
     if args.auto_quick:
         reasons = check_auto_quick_guard(staged_files, category)
@@ -700,7 +722,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         )
         MESSAGE_FILE.parent.mkdir(parents=True, exist_ok=True)
         MESSAGE_FILE.write_text(message, encoding="utf-8")
-        return finalize_commit(MESSAGE_FILE, no_push=args.no_push, dry_run=args.dry_run)
+        return finalize_commit(MESSAGE_FILE, no_push=args.no_push, dry_run=args.dry_run,
+                               skip_mdlint=args.skip_mdlint)
 
     if not SPEC_PATH.exists():
         print(f"   ❌ [Contract] 找不到規格書：{SPEC_PATH}", file=sys.stderr)

@@ -37,6 +37,7 @@ python3 .claude/skills/fin-commit/scripts/committer.py --no-stage --message-file
 | `--message-file F` | 檢查 F 後直接提交 |
 | `--dry-run` | 只顯示最終訊息，不提交 |
 | `--no-push` | 提交後不 push |
+| `--skip-mdlint` | 略過暫存區 Markdown lint（僅限沒有 Node.js 時暫用，CI 仍會檢查） |
 | `--category C` | 覆蓋自動判定的類別（交易紀錄／持股分析／財商架構／投資研究／趨勢覺察／IT） |
 | `--agent A` | 指定執行者（kimi／claude／antigravity），否則讀 `AGENT_ID` 或 `CLAUDECODE` |
 | `--auto-quick` | L1 機械式快速提交；交易紀錄、CLAUDE.md、本 skill 的變更會被擋下（`--allow-guarded` 可解除） |
@@ -44,7 +45,9 @@ python3 .claude/skills/fin-commit/scripts/committer.py --no-stage --message-file
 | `--check F` | 只檢查訊息檔（commit-msg hook 用） |
 | `--install-hook` | 安裝 commit-msg hook，讓直接 `git commit` 也經過檢查 |
 
-## 自動補強
+## 自動補強與檢查
+
+- **Markdown lint**：提交前用 `markdown-linter` skill 檢查暫存區的 `.md`，沒通過就不提交。
 
 - **執行裝置**：寫進「## 驗證」區塊；可用環境變數 `AGENT_DEVICE` 覆蓋，否則標作業系統。
 - **Co-Authored-By: Claude**：已有 Claude 署名時不重複。
