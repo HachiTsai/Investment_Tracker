@@ -1,6 +1,6 @@
 ---
 name: fin-commit
-description: 財商工程 REPO 的標準 commit 流程（committer.py）。自動暫存、依路徑判定類別／type／scope、輸出草擬指令，並在提交前檢查訊息是否符合規格書。交易紀錄、股利、快照、研究、工具、文件等所有 commit 都走這個流程。凡是在這個 REPO 執行 git commit，或使用者說「commit」「提交」「記錄這筆交易」時使用。
+description: 財商工程 REPO 的標準 commit 流程（committer.py）。自動暫存、依路徑判定類別／type／scope、輸出草擬指令，並在提交前檢查訊息是否符合規格書。財商架構、標的研究、趨勢覺察、交易紀錄、快照、skill 開發等所有 commit 都走這個流程。凡是在這個 REPO 執行 git commit，或使用者說「commit」「提交」「記錄這筆交易」時使用。
 ---
 
 # fin-commit：財商工程 Commit Workflow
@@ -37,7 +37,7 @@ python3 .claude/skills/fin-commit/scripts/committer.py --no-stage --message-file
 | `--message-file F` | 檢查 F 後直接提交 |
 | `--dry-run` | 只顯示最終訊息，不提交 |
 | `--no-push` | 提交後不 push |
-| `--category C` | 覆蓋自動判定的類別（交易紀錄／持股分析／投資研究／IT） |
+| `--category C` | 覆蓋自動判定的類別（交易紀錄／持股分析／財商架構／投資研究／趨勢覺察／IT） |
 | `--agent A` | 指定執行者（kimi／claude／antigravity），否則讀 `AGENT_ID` 或 `CLAUDECODE` |
 | `--auto-quick` | L1 機械式快速提交；交易紀錄、CLAUDE.md、本 skill 的變更會被擋下（`--allow-guarded` 可解除） |
 | `--status` `--next` `--blocker` | L1 的 Session-Sync 欄位 |

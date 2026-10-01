@@ -15,8 +15,12 @@
 | --- | --- | --- |
 | 交易紀錄 | `portfolio/transactions/` | 買進、賣出、再投入、換股、股利、資金進出 |
 | 持股分析 | `portfolio/`（其餘） | 快照、行情、目標追蹤 |
-| 投資研究 | `research/`、`journal/` | 標的研究、投資日誌 |
-| IT | 其餘（`scripts/`、`.claude/`、`CLAUDE.md`…） | 工具、規範、文件 |
+| 財商架構 | `architecture/` | 目標、配置、現金流模型、決策規則 |
+| 投資研究 | `research/`、`journal/` | 標的研究與論點、投資日誌 |
+| 趨勢覺察 | `trends/` | 產業、總經、市場趨勢的覺察 |
+| IT | 其餘（`scripts/`、`.claude/`、`CLAUDE.md`…） | 工具、投資管理 skill、規範、文件 |
+
+混合多類別時，依上表由上而下的順序取第一個。
 
 可用 `--category` 手動覆蓋。
 
@@ -35,11 +39,13 @@
 | 現金流 | `fee` | 手續費、稅、二代健保 | — |
 | 分析 | `snap` | 持股快照 | — |
 | 分析 | `price` | 股價、殖利率、匯率更新 | — |
-| 分析 | `goal` | 目標、配置、策略調整 | — |
-| 分析 | `research` | 標的研究、試算 | — |
-| 分析 | `journal` | 投資日誌、決策回顧 | — |
+| 分析 | `goal` | 目標數字調整（如年股利目標） | — |
+| 思考 | `arch` | 財商工程架構：配置、現金流、決策規則 | — |
+| 思考 | `research` | 標的研究、投資論點、試算 | — |
+| 思考 | `trend` | 趨勢覺察 | — |
+| 思考 | `journal` | 投資日誌、決策回顧 | — |
 | 維運 | `fix` | 資料或程式修正 | — |
-| 維運 | `tool` | `scripts/` 與 skill 腳本 | — |
+| 維運 | `tool` | `scripts/`、投資管理 skill 的新增與修改 | — |
 | 維運 | `docs` | CLAUDE.md、規範、說明文件 | — |
 | 維運 | `chore` | 雜項 | — |
 
@@ -48,7 +54,7 @@
 ### 3.2 Scope
 
 - 單一標的：代號，如 `00882`；多標的以 `,` 分隔，如 `00877,00882`。
-- 非單一標的：主題，如 `portfolio`、`goal`、`claude`、`fin-commit`。
+- 非單一標的：主題，如 `portfolio`、`architecture`、`trends`、`claude`，或 skill 名稱如 `fin-commit`。
 
 ### 3.3 標題
 

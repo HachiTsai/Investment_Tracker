@@ -92,6 +92,9 @@ def test_infer_category_priority():
     assert c.infer_category(["portfolio/snapshots/2026-10-01.md"]) == c.CATEGORY_PORTFOLIO
     assert c.infer_category(["research/00882_配息.md"]) == c.CATEGORY_RESEARCH
     assert c.infer_category(["CLAUDE.md"]) == c.CATEGORY_IT
+    assert c.infer_category(["architecture/資產配置.md"]) == c.CATEGORY_ARCH
+    assert c.infer_category(["trends/2026-10-01_AI電力.md"]) == c.CATEGORY_TREND
+    assert c.infer_category(["trends/a.md", "research/b.md"]) == c.CATEGORY_RESEARCH
 
 
 def test_infer_scope():
@@ -100,6 +103,15 @@ def test_infer_scope():
     assert c.infer_scope([".claude/skills/fin-commit/SKILL.md", ".claude/skills/fin-commit/x.py"]) == "fin-commit"
     assert c.infer_scope(["CLAUDE.md"]) == "claude"
     assert c.infer_scope(["README.md"]) == "project"
+    assert c.infer_scope(["trends/2026-10-01_AI電力.md"]) == "trends"
+    assert c.infer_scope(["architecture/資產配置.md"]) == "architecture"
+
+
+def test_infer_commit_type_for_thinking_docs():
+    assert c.infer_commit_type(["architecture/資產配置.md"]) == "arch"
+    assert c.infer_commit_type(["trends/2026-10-01_AI電力.md"]) == "trend"
+    assert c.infer_commit_type(["research/00882_配息.md"]) == "research"
+    assert c.infer_commit_type(["portfolio/snapshots/2026-10-01.md"]) == "snap"
 
 
 def test_auto_quick_guard():

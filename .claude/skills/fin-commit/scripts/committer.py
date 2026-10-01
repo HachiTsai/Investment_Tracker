@@ -33,21 +33,25 @@ SPEC_PATH = SKILL_DIR / "references" / "spec-git-commit-protocol.md"
 
 CATEGORY_TRADE = "交易紀錄"
 CATEGORY_PORTFOLIO = "持股分析"
+CATEGORY_ARCH = "財商架構"
 CATEGORY_RESEARCH = "投資研究"
+CATEGORY_TREND = "趨勢覺察"
 CATEGORY_IT = "IT"
 
-CATEGORIES_REGISTRY: List[str] = [CATEGORY_TRADE, CATEGORY_PORTFOLIO, CATEGORY_RESEARCH, CATEGORY_IT]
+## 同時是多類別混合時的優先序：交易 > 持股 > 架構 > 研究 > 趨勢 > IT
+CATEGORIES_REGISTRY: List[str] = [
+    CATEGORY_TRADE, CATEGORY_PORTFOLIO, CATEGORY_ARCH, CATEGORY_RESEARCH, CATEGORY_TREND, CATEGORY_IT,
+]
 
 ## 路徑前綴 → 類別；依序比對，第一個命中者勝出（較具體的前綴放前面）
 CATEGORY_PATH_RULES: List[Tuple[str, str]] = [
     ("portfolio/transactions/", CATEGORY_TRADE),
     ("portfolio/", CATEGORY_PORTFOLIO),
+    ("architecture/", CATEGORY_ARCH),
     ("research/", CATEGORY_RESEARCH),
     ("journal/", CATEGORY_RESEARCH),
+    ("trends/", CATEGORY_TREND),
 ]
-
-## 多類別混合時的優先序：交易 > 持股 > 研究 > IT（與 type 選擇優先序一致）
-CATEGORY_PRIORITY: List[str] = [CATEGORY_TRADE, CATEGORY_PORTFOLIO, CATEGORY_RESEARCH, CATEGORY_IT]
 
 DEFAULT_CATEGORY: str = CATEGORY_IT
 
@@ -66,7 +70,9 @@ TYPES: Dict[str, str] = {
     "snap": "持股快照",
     "price": "行情更新",
     "goal": "目標調整",
+    "arch": "財商架構",
     "research": "研究",
+    "trend": "趨勢覺察",
     "journal": "投資日誌",
     "fix": "修正",
     "tool": "工具",
@@ -194,7 +200,7 @@ def infer_category(staged_files: List[str]) -> str:
                 break
         else:
             found.add(CATEGORY_IT)
-    for category in CATEGORY_PRIORITY:
+    for category in CATEGORIES_REGISTRY:
         if category in found:
             return category
     return DEFAULT_CATEGORY
@@ -211,7 +217,7 @@ def _scope_of(path: str) -> Optional[str]:
         return "claude"
     if len(parts) >= 3 and parts[0] == ".claude" and parts[1] == "skills":
         return parts[2]
-    if parts and parts[0] in ("research", "journal", "portfolio"):
+    if parts and parts[0] in ("research", "journal", "portfolio", "trends", "architecture"):
         m = TICKER_RE.match(name)
         if m:
             return m.group(1)
@@ -242,8 +248,12 @@ def infer_commit_type(staged_files: List[str]) -> str:
     paths = [_normalize_path(p) for p in staged_files]
     if paths and all(p.startswith("portfolio/snapshots/") for p in paths):
         return "snap"
+    if paths and all(p.startswith("architecture/") for p in paths):
+        return "arch"
     if paths and all(p.startswith("research/") for p in paths):
         return "research"
+    if paths and all(p.startswith("trends/") for p in paths):
+        return "trend"
     if paths and all(p.startswith("journal/") for p in paths):
         return "journal"
     if paths and all(p.endswith(".md") for p in paths):
