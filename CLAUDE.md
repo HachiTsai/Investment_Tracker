@@ -60,21 +60,34 @@ Core 試算表分頁：
 
 ## 目錄結構
 
-```
+```text
 CLAUDE.md                    本檔
 architecture/                財商工程架構：目標、配置、現金流、決策規則（主題.md）
 research/                    標的研究與投資論點，檔名 <代號>_<主題>.md
-trends/                      趨勢覺察，檔名 YYYY-MM-DD_<主題>.md
-journal/                     投資日誌、決策回顧，檔名 YYYY-MM-DD.md
+trends/                      趨勢覺察，檔名 <主題>.md
+journal/                     投資日誌、決策回顧，檔名 <主題>.md
 portfolio/snapshots/         持股快照，檔名 YYYY-MM-DD.md
 portfolio/transactions/      交易紀錄
 scripts/                     共用計算或抓價工具
-.claude/skills/<skill>/      投資管理 skill（fin-commit 為第一個）
+.claude/skills/<skill>/      投資管理 skill
+.github/workflows/ci.yml     CI：markdown-lint 與 skill 測試
+.markdownlint-cli2.jsonc     Markdown lint 設定（SSOT）
 ```
 
-目錄在第一次需要時再建立，不預先建空目錄。
+- 目錄在第一次需要時再建立，不預先建空目錄。
+- **筆記檔名不使用日期**（架構、研究、趨勢、日誌皆同）；日期寫在 frontmatter 的 `created`／`updated`。持股快照屬時間序列資料，維持 `YYYY-MM-DD.md`。
+
+現有 skill：
+
+| Skill | 用途 |
+| --- | --- |
+| `fin-commit` | 所有 commit 的流程與格式檢查 |
+| `tool-note-writer` | 撰寫、修改、搜尋筆記（第一版：財商架構 `arch`） |
+| `markdown-linter` | Markdown 格式檢查，與 CI 共用設定 |
 
 ## 思考類文件的寫法
+
+筆記一律用 `tool-note-writer` skill 撰寫，格式與受控詞彙見該 skill 的 `references/`。
 
 架構、研究、趨勢這類文件是長期累積的思考資產，寫法要讓日後回頭看時能分辨「當時怎麼想、依據是什麼、後來對不對」。
 
@@ -83,6 +96,11 @@ scripts/                     共用計算或抓價工具
 - **趨勢覺察（`trends/`）** 至少包含：覺察到什麼、證據、可能影響、相關標的、後續追蹤訊號。
 - **架構（`architecture/`）** 寫規則與理由；規則變更時保留舊規則與變更原因，不直接覆蓋。
 - 想法改變時，在原文件追加「更新（YYYY-MM-DD）」段落，不刪除舊的判斷，保留思考軌跡。
+
+## Markdown 規範
+
+- 所有 `.md` 都必須通過 `markdown-linter`（`python3 .claude/skills/markdown-linter/scripts/mdlint.py`），CI 會在 push 到 main 與 PR 時檢查。
+- fin-commit 提交前會自動檢查暫存區的 `.md`；錯誤可先用 `mdlint.py --fix` 修正。
 
 ## 投資管理 Skill 開發規範
 
