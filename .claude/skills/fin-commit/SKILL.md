@@ -1,190 +1,90 @@
 ---
 name: fin-commit
-description: 財商工程 REPO 的標準 commit 流程。依投資行為（買進、賣出、股利、再投入、再平衡、快照、研究等）決定 commit type，並產生結構化的 commit message。凡是在這個 REPO 執行 git commit，或使用者說「commit」「提交」「記錄這筆交易」時使用。
+description: 財商工程 REPO 的標準 commit 流程（committer.py）。自動暫存、依路徑判定類別／type／scope、輸出草擬指令，並在提交前檢查訊息是否符合規格書。交易紀錄、股利、快照、研究、工具、文件等所有 commit 都走這個流程。凡是在這個 REPO 執行 git commit，或使用者說「commit」「提交」「記錄這筆交易」時使用。
 ---
 
-# fin-commit：財商 Commit 規範
+# fin-commit：財商工程 Commit Workflow
 
-讓 git 歷史本身就是一份可查詢的投資帳本：看 type 就知道發生了什麼投資行為，看 body 就知道數字與理由。
+- **規格書（SSOT）**：`references/spec-git-commit-protocol.md`，包含類別、type、唯一模板與檢查規則。
+- **執行器**：`scripts/committer.py`，參考 delivery-commit-workflow 的 committer.py 改寫。
+- **測試**：`tests/test_committer.py`，用 `python3 -m pytest -q .claude/skills/fin-commit/tests` 執行。
 
-## 格式
+所有 commit 共用同一份詳細模板。**交易紀錄只是其中一種 commit**，差別是多了必填的「交易明細」區塊；`div` 則多了「股利明細」。
 
-```
-<type>(<scope>): <摘要>
-
-<body：結構化欄位>
-
-<footer：關聯與影響>
-```
-
-- **type**：下表之一，小寫英文。
-- **scope**：標的代號（`00882`）、多標的用 `,` 分隔（`00877,00882`）；非單一標的時用主題，如 `portfolio`、`goal`、`skill`。
-- **摘要**：繁體中文，≤ 50 字，寫「做了什麼＋關鍵數字」，不加句號。
-- 破壞性或重大策略轉向，在 type 後加 `!`，例如 `goal!(portfolio): ...`。
-
-## Commit Type
-
-### 交易行為（對應 Core `Transactions.Type`）
-
-| type | 中文 | 何時用 |
-| --- | --- | --- |
-| `buy` | 買進 | 用新資金買進標的 |
-| `sell` | 賣出 | 賣出持股（部分或全部） |
-| `reinvest` | 股息再投入 | 用股利買回同一或其他標的（成本計 0） |
-| `rebal` | 換股 / 再平衡 | 一次操作同時有賣與買，目的是調整配置 |
-
-### 現金流與收益
-
-| type | 中文 | 何時用 |
-| --- | --- | --- |
-| `div` | 股利 | 除息公告、除息日、股利入帳 |
-| `cash` | 資金進出 | 入金、出金、預備金調整 |
-| `fee` | 費用 | 手續費、稅、二代健保等成本的記錄或修正 |
-
-### 狀態與分析
-
-| type | 中文 | 何時用 |
-| --- | --- | --- |
-| `snap` | 持股快照 | 新增或更新 `portfolio/snapshots/` |
-| `price` | 行情更新 | 更新股價、殖利率、匯率 |
-| `goal` | 目標調整 | 修改年度股利目標、資產配置目標、策略 |
-| `research` | 研究 | 標的研究、比較、試算（尚未交易） |
-| `journal` | 投資日誌 | 心得、決策回顧、市場觀察 |
-
-### 維運
-
-| type | 中文 | 何時用 |
-| --- | --- | --- |
-| `fix` | 資料修正 | 修正錯誤的數字、日期、成本 |
-| `tool` | 工具 | 新增或修改 `scripts/` 計算工具 |
-| `docs` | 文件 | CLAUDE.md、README、規範文件 |
-| `chore` | 雜項 | 目錄整理、skill 設定等不影響資料的變更 |
-
-選 type 的優先順序：**實際發生的投資行為 > 資料狀態 > 維運**。例如股息入帳後立刻再投入，拆成 `div` 與 `reinvest` 兩個 commit。
-
-## Body 欄位
-
-交易類（`buy` / `sell` / `reinvest` / `rebal`）必填：
-
-```
-日期: YYYY-MM-DD
-數量: 10,000 股（10 張）
-價格: 15.08
-金額: 150,800 TWD
-手續費: 215
-理由: 一句話說明為什麼
-```
-
-`sell` 另加 `損益: +xxx TWD（+x.xx%）`；`rebal` 分 `賣出:` / `買入:` 兩段。
-
-股利類（`div`）：
-
-```
-日期: YYYY-MM-DD（除息日 / 入帳日）
-每股配息: 0.55
-實收: 158,344 TWD
-年度累計: 276,244 TWD
-```
-
-分析類（`snap` / `research` / `goal`）：寫重點結論 2–5 行，數字附假設。
-
-## Footer
-
-- `目標影響: 年股利推估 300,000 → 315,000（缺口 200,000 → 185,000）` — 會改變股利推估的 commit 都要寫。
-- `來源: Core/Transactions Tx_ID ad364a04` — 對應試算表紀錄時寫。
-- `Refs: #<issue>` — 有相關 issue 時。
-
-## 範例
-
-```
-reinvest(00882): 股息 158,344 再投入 10 張 @15.08
-
-日期: 2026-08-11
-數量: 10,000 股（10 張）
-價格: 15.08
-金額: 150,800 TWD
-手續費: 215
-理由: 7 月除息股利全數再投入，維持複利
-
-目標影響: 持股 290 張 → 300 張
-來源: Core/Transactions Tx_ID ad364a04
-```
-
-```
-div(00882): 7 月除息 0.55 入帳 158,344
-
-日期: 2026-08-11（入帳日）
-每股配息: 0.55
-實收: 158,344 TWD
-年度累計: 276,244 TWD
-```
-
-```
-snap(portfolio): 2026-10-01 持股快照，年股利缺口 20 萬
-
-- 00882 300 張，市值 4,452,000，殖利率 6.74%
-- 未來一年股利推估 300,000（假設配息持平）
-- 達成 50 萬目標約需再投入 2,970,000
-```
-
-```
-rebal(00877,00882): 賣 00877 獲利約 80 萬，轉入 00882
-
-日期: 2025-12-19
-賣出: 00877，獲利約 800,000 TWD
-買入: 00882 262,000 股 @14.57，金額 3,817,340 TWD，手續費 6,642
-理由: 00877 獲利了結，轉入 00882
-
-來源: Core/Transactions Tx_ID 202601001
-```
-
-```
-docs(claude): 新增 CLAUDE.md，定義資料來源與計算口徑
-```
-
-## 工具腳本
-
-`scripts/fin_commit.py`（Python 3 標準函式庫，無需安裝套件）：
-
-| 指令 | 用途 |
-| --- | --- |
-| `types` | 列出所有 type 與必填欄位 |
-| `commit --type ... --scope ... --summary ... [欄位]` | 產生 message、檢查後提交已 staged 的變更；加 `--dry-run` 只預覽 |
-| `check [FILE\|-]` | 檢查一則 message（預設讀 stdin） |
-| `log [N]` | 檢查最近 N 個 commit 是否符合規範 |
-| `install-hook` | 安裝 `commit-msg` hook，之後每次 `git commit` 自動檢查 |
-
-`commit` 的欄位選項：`--date --qty --price --amount --fee --pnl --sold --bought --dps --received --ytd --reason`，
-footer 用 `--impact`（目標影響）、`--source`（來源）、`--trailer`（可重複），其他 body 行用 `--note`（可重複）。
-
-檢查規則：
-
-- **錯誤**（擋下提交）：標題格式、未知 type、摘要超過 50 字或結尾有句號、標題後未空行、缺必填欄位、`數量 × 價格 ≠ 金額`（誤差 > 1）、日期不是 `YYYY-MM-DD`。
-- **警告**（不擋）：交易類缺「目標影響」。
-- `Merge` / `Revert` / `fixup!` / `squash!` 開頭的 message 不檢查。
-
-## 執行步驟
-
-1. `git status` 與 `git diff --staged` 看清楚這次變更。
-2. 判斷投資行為 → 選 type；若混了多種行為，拆成多個 commit。
-3. 從變更內容或 Core 試算表取出數字；缺少的數字詢問使用者，不要猜。
-4. 用腳本提交（路徑相對於 REPO 根目錄）：
-
-   ```bash
-   python3 .claude/skills/fin-commit/scripts/fin_commit.py commit \
-     --type reinvest --scope 00882 --summary "股息 158,344 再投入 10 張 @15.08" \
-     --date 2026-08-11 --qty "10,000 股（10 張）" --price 15.08 \
-     --amount "150,800 TWD" --fee 215 --reason "7 月除息股利全數再投入，維持複利" \
-     --impact "持股 290 張 → 300 張" --source "Core/Transactions Tx_ID ad364a04"
-   ```
-
-   分析類需要多行重點時，用 `--note "- ..."` 逐行加入；或自行撰寫 message 後先 `check` 再 `git commit -F`。
-5. 若環境要求附加 Co-Authored-By 等 trailer，用 `--trailer` 放在 footer 最後。
-
-## 查詢範例
+## 標準流程
 
 ```bash
-git log --oneline --grep '^div'          # 所有股利紀錄
-git log --oneline --grep '(00882)'       # 00882 相關所有事件
-git log --oneline -E --grep '^(buy|sell|reinvest|rebal)'  # 所有交易
+# 1. 暫存並取得草擬指令（預設 git add .；可用 --stage-list / --exclude / --no-stage）
+python3 .claude/skills/fin-commit/scripts/committer.py --stage-list <paths...>
+
+# 2. 依指令中的 diff 與規格書 §4 模板，把訊息寫入 .git/COMMIT_MSG_TEMP
+
+# 3. 檢查並提交（補執行裝置、Co-Author；不合規即擋下；預設會 push）
+python3 .claude/skills/fin-commit/scripts/committer.py --no-stage --message-file .git/COMMIT_MSG_TEMP
+```
+
+- 類別、type、訊息內容由 Agent 自行判定，**不逐次詢問使用者**。
+- 只有缺少的**數字**（股數、價格、金額、手續費）必須詢問，不得推測。
+- 混了多種行為時，用 `--stage-list` 拆成多個 commit。
+
+## 參數
+
+| 參數 | 用途 |
+| --- | --- |
+| `--stage-list P...` | 清空暫存後只暫存指定路徑 |
+| `--exclude P...` | `git add .` 後排除指定路徑 |
+| `--no-stage` | 使用現有暫存區 |
+| `--message-file F` | 檢查 F 後直接提交 |
+| `--dry-run` | 只顯示最終訊息，不提交 |
+| `--no-push` | 提交後不 push |
+| `--category C` | 覆蓋自動判定的類別（交易紀錄／持股分析／投資研究／IT） |
+| `--agent A` | 指定執行者（kimi／claude／antigravity），否則讀 `AGENT_ID` 或 `CLAUDECODE` |
+| `--auto-quick` | L1 機械式快速提交；交易紀錄、CLAUDE.md、本 skill 的變更會被擋下（`--allow-guarded` 可解除） |
+| `--status` `--next` `--blocker` | L1 的 Session-Sync 欄位 |
+| `--check F` | 只檢查訊息檔（commit-msg hook 用） |
+| `--install-hook` | 安裝 commit-msg hook，讓直接 `git commit` 也經過檢查 |
+
+## 自動補強
+
+- **執行裝置**：寫進「## 驗證」區塊；可用環境變數 `AGENT_DEVICE` 覆蓋，否則標作業系統。
+- **Co-Authored-By: Claude**：已有 Claude 署名時不重複。
+
+## 範例：交易紀錄
+
+```markdown
+reinvest(00882): 股息 158,344 再投入 10 張 @15.08
+
+## 核心變更
+
+- 記錄 8/11 股息再投入 10 張
+
+## 變更理由
+
+- 7 月除息股利全數再投入，維持複利
+
+## 交易明細
+
+- **日期**: 2026-08-11
+- **數量**: 10,000 股（10 張）
+- **價格**: 15.08
+- **金額**: 150,800 TWD
+- **手續費**: 215
+- **理由**: 股利再投入
+- **來源**: Core/Transactions Tx_ID ad364a04
+
+## 驗證
+
+- 10,000 × 15.08 = 150,800，與 Core/Transactions 一致
+
+## 目標影響
+
+- 持股 290 張 → 300 張
+
+## Session-Sync
+
+- **執行者**: Claude
+- **類別**: 交易紀錄
+- **狀態**: 8/11 再投入已入帳
+- **下一步**: 更新持股快照
+- **阻塞**: 無
 ```
