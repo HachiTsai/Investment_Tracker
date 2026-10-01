@@ -1,6 +1,11 @@
 # CLAUDE.md — 財商工程大本營
 
-這個 REPO 是 Hachi 的個人財商工程基地：記錄持股、交易、股利、投資決策與研究，並追蹤「每年被動股利收入 50 萬 TWD」的目標。REPO 為 private。
+這個 REPO 是 Hachi 的個人財商工程基地（private）。交易紀錄只是其中一部分，更大的用途是：
+
+1. **財商工程架構**：記錄整套財務系統怎麼設計，包括目標、資產配置、現金流模型、決策規則。
+2. **投資思考**：記錄對投資標的的研究與論點，以及對產業、總經、市場趨勢的覺察。
+3. **交易與持股**：記錄交易、股利、持股快照，追蹤「每年被動股利收入 50 萬 TWD」的目標。
+4. **投資管理 skill**：逐步建立協助投資管理的 Claude skill。
 
 回覆與文件一律使用**繁體中文**；代號、欄位名、指令保留英文。
 
@@ -56,15 +61,35 @@ Core 試算表分頁：
 ## 目錄結構
 
 ```
-CLAUDE.md                 本檔
-portfolio/snapshots/      持股快照，檔名 YYYY-MM-DD.md
-journal/                  投資日誌、決策紀錄（待建立）
-research/                 標的研究，檔名 <代號>_<主題>.md（待建立）
-scripts/                  計算或抓價工具（待建立）
-.claude/skills/fin-commit/  財商 commit 規範 skill
+CLAUDE.md                    本檔
+architecture/                財商工程架構：目標、配置、現金流、決策規則（主題.md）
+research/                    標的研究與投資論點，檔名 <代號>_<主題>.md
+trends/                      趨勢覺察，檔名 YYYY-MM-DD_<主題>.md
+journal/                     投資日誌、決策回顧，檔名 YYYY-MM-DD.md
+portfolio/snapshots/         持股快照，檔名 YYYY-MM-DD.md
+portfolio/transactions/      交易紀錄
+scripts/                     共用計算或抓價工具
+.claude/skills/<skill>/      投資管理 skill（fin-commit 為第一個）
 ```
 
 目錄在第一次需要時再建立，不預先建空目錄。
+
+## 思考類文件的寫法
+
+架構、研究、趨勢這類文件是長期累積的思考資產，寫法要讓日後回頭看時能分辨「當時怎麼想、依據是什麼、後來對不對」。
+
+- **事實與觀點分開**：數據與事實附來源和日期；推論與看法明確標示為觀點。
+- **標的研究（`research/`）** 至少包含：論點、依據、風險與反方觀點、追蹤指標、狀態（觀察／持有／放棄）。
+- **趨勢覺察（`trends/`）** 至少包含：覺察到什麼、證據、可能影響、相關標的、後續追蹤訊號。
+- **架構（`architecture/`）** 寫規則與理由；規則變更時保留舊規則與變更原因，不直接覆蓋。
+- 想法改變時，在原文件追加「更新（YYYY-MM-DD）」段落，不刪除舊的判斷，保留思考軌跡。
+
+## 投資管理 Skill 開發規範
+
+- 放在 `.claude/skills/<kebab-case 名稱>/`，結構：`SKILL.md`、`scripts/`、`references/`、`tests/`。
+- `SKILL.md` 的 description 寫清楚何時觸發；規則類內容放 `references/` 作為 SSOT。
+- 腳本只用 Python 標準函式庫為原則；附 pytest 測試，用 `python3 -m pytest -q .claude/skills/<名稱>/tests` 執行。
+- 任何 skill 都只能**讀取** Investment_Tracker_Core，不得寫入（見上方禁令）。
 
 ## Git 與 Commit
 
