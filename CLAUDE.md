@@ -86,7 +86,7 @@ scripts/                     共用計算或抓價工具
 | Skill | 用途 |
 | --- | --- |
 | `fin-commit` | 所有 commit 的流程與格式檢查 |
-| `tool-note-writer` | 撰寫、修改、搜尋筆記（第一版：財商架構 `arch`） |
+| `tool-note-writer` | 撰寫、修改、搜尋筆記：財商架構 `arch`、標的研究 `research` |
 | `markdown-linter` | Markdown 格式檢查，與 CI 共用設定 |
 | `drive-scanner` | 開工掃描 Google Drive 資料夾與 Core，匯報新內容 |
 

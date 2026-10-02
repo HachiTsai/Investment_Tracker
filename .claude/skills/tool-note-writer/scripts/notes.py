@@ -3,6 +3,7 @@
 
 用法：
   notes.py new arch <title> --domain 目標 --tags 股利,複利 [--tickers 00882] [--status 草稿]
+  notes.py new research <代號>_<主題> --tickers 00882 --tags 高股息 [--status 觀察]
   notes.py check [PATH ...]           檢查指定筆記；省略時檢查全部
   notes.py find [條件...]              依欄位或全文搜尋筆記
   notes.py vocab                      列出受控詞彙
@@ -24,17 +25,37 @@ MDLINT_DIR = SKILL_DIR.parent / "markdown-linter" / "scripts"
 ## 筆記類型名冊：新增類型時在此註冊，並新增 references/format-<type>.md
 ## ==============================================================================
 
+COMMON_REQUIRED = ["type", "title", "status", "created", "updated", "tags"]
+COMMON_OPTIONAL = ["review", "related", "aliases", "sources"]
+
 NOTE_TYPES: Dict[str, Dict] = {
     "arch": {
         "label": "財商架構",
         "dir": "architecture",
+        "required": COMMON_REQUIRED + ["domain", "version"],
+        "optional": COMMON_OPTIONAL + ["tickers"],
+        "status_vocab": "status",
+        "default_status": "草稿",
         "sections": ["摘要", "規則", "理由", "適用範圍與例外", "變更紀錄"],
+        # 規則類筆記以版本管理：version 必須等於變更紀錄最新的 ### v<n>（日期）
         "versioned": True,
+    },
+    "research": {
+        "label": "標的研究",
+        "dir": "research",
+        "required": COMMON_REQUIRED + ["tickers"],
+        "optional": COMMON_OPTIONAL,
+        "status_vocab": "research_status",
+        "default_status": "觀察",
+        "sections": ["摘要", "論點", "依據", "風險與反方觀點", "追蹤指標", "更新紀錄"],
+        # 檔名 <代號>_<主題>，代號須為 tickers 第一個
+        "ticker_prefix": True,
+        # 想法隨時間累積：更新紀錄以 ### YYYY-MM-DD 逐筆追加，updated 等於最新一筆
+        "dated_log": True,
     },
 }
 
-REQUIRED_FIELDS = ["type", "title", "domain", "status", "version", "created", "updated", "tags"]
-OPTIONAL_FIELDS = ["review", "tickers", "related", "aliases", "sources"]
+REQUIRED_FIELDS = COMMON_REQUIRED + ["domain", "version"]   # 未知 type 時的檢查基準（與 arch 相同）
 LIST_FIELDS = {"tags", "tickers", "related", "aliases", "sources"}
 DATE_FIELDS = ["created", "updated", "review"]
 
@@ -46,6 +67,7 @@ TICKER_RE = re.compile(r"^\d{4,6}[A-Z]?$")
 WIKILINK_RE = re.compile(r"^\[\[[^\[\]]+\]\]$")
 SECTION_RE = re.compile(r"^##\s+(.+?)\s*$")
 CHANGELOG_RE = re.compile(r"^###\s+v(\d+)（(\d{4}-\d{2}-\d{2})）\s*$")
+DATED_LOG_RE = re.compile(r"^###\s+(\d{4}-\d{2}-\d{2})\s*$")
 
 ## ==============================================================================
 ## 基礎工具
@@ -149,26 +171,31 @@ def check_note(path: Path, vocab: Dict[str, List[str]], root: Optional[Path] = N
     if meta is None:
         return errors, warnings
 
-    for f in REQUIRED_FIELDS:
-        if f not in meta or meta[f] in ("", []):
-            errors.append(f"缺少必填欄位 {f}")
-    for f in meta:
-        if f not in REQUIRED_FIELDS and f not in OPTIONAL_FIELDS:
-            errors.append(f"未定義的欄位 {f}（可用：{', '.join(REQUIRED_FIELDS + OPTIONAL_FIELDS)}）")
-    for f in LIST_FIELDS & meta.keys():
-        if not isinstance(meta[f], list):
-            errors.append(f"{f} 必須是清單形式 [a, b]")
-
     ntype = meta.get("type")
     spec = NOTE_TYPES.get(ntype)
     if ntype and not spec:
         errors.append(f"未知的 type {ntype!r}，可用：{', '.join(NOTE_TYPES)}")
+    required = spec["required"] if spec else REQUIRED_FIELDS
+    allowed = required + (spec["optional"] if spec else COMMON_OPTIONAL + ["tickers"])
+
+    for f in required:
+        if f not in meta or meta[f] in ("", []):
+            errors.append(f"缺少必填欄位 {f}")
+    for f in meta:
+        if f not in allowed:
+            errors.append(f"未定義的欄位 {f}（{ntype or '此類型'} 可用：{', '.join(allowed)}）")
+    for f in LIST_FIELDS & meta.keys():
+        if not isinstance(meta[f], list):
+            errors.append(f"{f} 必須是清單形式 [a, b]")
 
     title = meta.get("title", "")
     if isinstance(title, str):
         errors += check_title(title)
         if title and path.stem != title:
             errors.append(f"檔名 {path.stem!r} 與 title {title!r} 不一致")
+        tickers = meta.get("tickers") if isinstance(meta.get("tickers"), list) else []
+        if spec and spec.get("ticker_prefix") and tickers and not title.startswith(f"{tickers[0]}_"):
+            errors.append(f"{ntype} 檔名應為 <代號>_<主題>，且代號為 tickers 第一個（{tickers[0]}）")
 
     if spec:
         rel_parent = path.resolve().parent
@@ -176,7 +203,8 @@ def check_note(path: Path, vocab: Dict[str, List[str]], root: Optional[Path] = N
         if rel_parent != expected:
             errors.append(f"{ntype} 筆記應放在 {spec['dir']}/")
 
-    for field, vocab_key in (("domain", "domain"), ("status", "status")):
+    status_vocab = spec["status_vocab"] if spec else "status"
+    for field, vocab_key in (("domain", "domain"), ("status", status_vocab)):
         value = meta.get(field)
         if value and value not in vocab.get(vocab_key, []):
             errors.append(f"{field} {value!r} 不在詞彙表（可用：{', '.join(vocab.get(vocab_key, []))}）")
@@ -220,12 +248,18 @@ def check_note(path: Path, vocab: Dict[str, List[str]], root: Optional[Path] = N
                 errors.append("變更紀錄缺少 ### v<版本>（YYYY-MM-DD） 小節")
             elif max(v for v, _ in versions) != int(version):
                 errors.append(f"version {version} 與變更紀錄最新版本 v{max(v for v, _ in versions)} 不一致")
+        if spec.get("dated_log"):
+            dates = [m.group(1) for line in body if (m := DATED_LOG_RE.match(line))]
+            if not dates:
+                errors.append("更新紀錄缺少 ### YYYY-MM-DD 小節")
+            elif isinstance(meta.get("updated"), str) and max(dates) != meta["updated"]:
+                errors.append(f"updated {meta['updated']} 與更新紀錄最新日期 {max(dates)} 不一致")
 
     if PLACEHOLDER in text:
         warnings.append(f"仍有 {text.count(PLACEHOLDER)} 處「{PLACEHOLDER}」尚未填寫")
     review = meta.get("review")
     if isinstance(review, str) and DATE_RE.match(review) and review <= date.today().isoformat():
-        warnings.append(f"已到回顧日 {review}，請重新檢視這條規則")
+        warnings.append(f"已到回顧日 {review}，請重新檢視這篇筆記")
     return errors, warnings
 
 
@@ -242,19 +276,24 @@ def iter_notes(root: Path) -> List[Path]:
 ## ==============================================================================
 
 
-def render_note(ntype: str, title: str, domain: str, tags: List[str], tickers: List[str],
+def render_note(ntype: str, title: str, domain: Optional[str], tags: List[str], tickers: List[str],
                 status: str, today: str) -> str:
     spec = NOTE_TYPES[ntype]
-    meta = {
-        "type": ntype, "title": title, "domain": domain, "status": status, "version": 1,
-        "created": today, "updated": today, "tags": tags,
-    }
+    meta: Dict = {"type": ntype, "title": title}
+    if "domain" in spec["required"]:
+        meta["domain"] = domain
+    meta["status"] = status
+    if spec.get("versioned"):
+        meta["version"] = 1
+    meta.update({"created": today, "updated": today, "tags": tags})
     if tickers:
         meta["tickers"] = tickers
     fm = "\n".join(f"{k}: {_format_value(v)}" for k, v in meta.items())
     body = []
     for s in spec["sections"]:
-        if s == "變更紀錄":
+        if s == "更新紀錄":
+            body.append(f"## {s}\n\n### {today}\n\n- 建立{spec['label']}筆記。")
+        elif s == "變更紀錄":
             body.append(f"## {s}\n\n### v1（{today}）\n\n- 變更：建立{spec['label']}筆記。\n- 原因：{PLACEHOLDER}")
         elif s == "規則":
             body.append(f"## {s}\n\n1. {PLACEHOLDER}")
@@ -270,12 +309,21 @@ def _split_csv(value: Optional[str]) -> List[str]:
 def cmd_new(args) -> int:
     root = Path(args.root) if args.root else repo_root()
     vocab = load_vocabulary()
+    spec = NOTE_TYPES[args.type]
     tags, tickers = _split_csv(args.tags), _split_csv(args.tickers)
+    status = args.status or spec["default_status"]
     errors = check_title(args.title)
-    if args.domain not in vocab["domain"]:
-        errors.append(f"domain {args.domain!r} 不在詞彙表：{', '.join(vocab['domain'])}")
-    if args.status not in vocab["status"]:
-        errors.append(f"status {args.status!r} 不在詞彙表：{', '.join(vocab['status'])}")
+    if "domain" in spec["required"]:
+        if args.domain not in vocab["domain"]:
+            errors.append(f"domain {args.domain!r} 不在詞彙表：{', '.join(vocab['domain'])}")
+    elif args.domain:
+        errors.append(f"{args.type} 筆記不使用 domain")
+    if status not in vocab[spec["status_vocab"]]:
+        errors.append(f"status {status!r} 不在詞彙表：{', '.join(vocab[spec['status_vocab']])}")
+    if "tickers" in spec["required"] and not tickers:
+        errors.append(f"{args.type} 筆記至少需要一個代號（--tickers）")
+    if spec.get("ticker_prefix") and tickers and not args.title.startswith(f"{tickers[0]}_"):
+        errors.append(f"{args.type} 筆記名稱應為 <代號>_<主題>，例如 {tickers[0]}_股利追蹤")
     if not tags:
         errors.append("至少需要一個 tag（--tags）")
     errors += [f"tag {t!r} 不在詞彙表" for t in tags if t not in vocab["tags"]]
@@ -288,7 +336,7 @@ def cmd_new(args) -> int:
             print(f"❌ {e}", file=sys.stderr)
         return 1
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(render_note(args.type, args.title, args.domain, tags, tickers, args.status,
+    path.write_text(render_note(args.type, args.title, args.domain, tags, tickers, status,
                                 args.date or date.today().isoformat()), encoding="utf-8")
     print(f"✅ 已建立 {path.relative_to(root).as_posix()}，請填寫「{PLACEHOLDER}」處")
     return 0
@@ -369,8 +417,15 @@ def cmd_find(args) -> int:
         print("（找不到符合條件的筆記）")
         return 0
     for p, meta, summary in hits:
-        print(f"- {p.relative_to(root).as_posix()}｜{meta.get('status')}｜{meta.get('domain')}"
-              f"｜v{meta.get('version')}｜updated {meta.get('updated')}｜tags {', '.join(meta.get('tags') or [])}")
+        parts = [p.relative_to(root).as_posix(), meta.get("status")]
+        if meta.get("domain"):
+            parts.append(meta["domain"])
+        if meta.get("version"):
+            parts.append(f"v{meta['version']}")
+        if meta.get("tickers"):
+            parts.append(", ".join(meta["tickers"]))
+        parts += [f"updated {meta.get('updated')}", f"tags {', '.join(meta.get('tags') or [])}"]
+        print("- " + "｜".join(str(x) for x in parts))
         if summary:
             print(f"  {summary}")
     print(f"共 {len(hits)} 篇")
@@ -391,10 +446,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     n = sub.add_parser("new", help="建立新筆記")
     n.add_argument("type", choices=NOTE_TYPES)
     n.add_argument("title", help="筆記名稱＝檔名，不含日期與空白")
-    n.add_argument("--domain", required=True)
+    n.add_argument("--domain", help="arch 必填；research 不使用")
     n.add_argument("--tags", required=True, help="逗號分隔")
     n.add_argument("--tickers", help="逗號分隔")
-    n.add_argument("--status", default="草稿")
+    n.add_argument("--status", help="預設：arch 為草稿、research 為觀察")
     n.add_argument("--date", help="建立日，預設今天（YYYY-MM-DD）")
     n.set_defaults(func=cmd_new)
 

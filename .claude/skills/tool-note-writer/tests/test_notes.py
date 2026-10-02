@@ -159,3 +159,92 @@ def test_check_fails_on_markdown_error(tmp_path):
     write(tmp_path, "股利目標模型", bad)
     assert n.check_note(tmp_path / "architecture" / "股利目標模型.md", n.load_vocabulary(), tmp_path)[0] == []
     assert n.main(["--root", str(tmp_path), "check"]) == 1
+
+
+## ---------------------------------------------------------------------------
+## research 類型
+## ---------------------------------------------------------------------------
+
+RESEARCH_DOC = n.SKILL_DIR / "references" / "format-research.md"
+
+
+def research_example() -> str:
+    doc = RESEARCH_DOC.read_text(encoding="utf-8")
+    return re.search(r"```markdown\n(.*?)```", doc, re.S).group(1)
+
+
+def write_research(root: Path, title: str, text: str) -> Path:
+    path = root / "research" / f"{title}.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def research_errors(root: Path, text: str, title: str = "00882_股利追蹤"):
+    return n.check_note(write_research(root, title, text), n.load_vocabulary(), root)[0]
+
+
+def test_research_vocabulary():
+    assert n.load_vocabulary()["research_status"] == ["觀察", "持有", "放棄"]
+
+
+def test_research_example_passes(tmp_path):
+    assert research_errors(tmp_path, research_example()) == []
+
+
+def test_research_new_defaults_and_check(tmp_path):
+    rc = n.main(["--root", str(tmp_path), "new", "research", "00878_成分股研究",
+                 "--tickers", "00878", "--tags", "高股息", "--date", "2026-10-02"])
+    assert rc == 0
+    path = tmp_path / "research" / "00878_成分股研究.md"
+    text = path.read_text(encoding="utf-8")
+    assert "status: 觀察" in text and "domain" not in text and "version" not in text
+    errors, warnings = n.check_note(path, n.load_vocabulary(), tmp_path)
+    assert errors == []
+    assert any(n.PLACEHOLDER in w for w in warnings)
+
+
+def test_research_new_rejects_bad_input(tmp_path, capsys):
+    base = ["--root", str(tmp_path), "new", "research"]
+    assert n.main(base + ["成分股研究", "--tickers", "00878", "--tags", "ETF"]) == 1
+    assert n.main(base + ["00878_研究", "--tags", "ETF"]) == 1
+    assert n.main(base + ["00878_研究", "--tickers", "00878", "--tags", "ETF", "--domain", "配置"]) == 1
+    assert n.main(base + ["00878_研究", "--tickers", "00878", "--tags", "ETF", "--status", "生效"]) == 1
+    err = capsys.readouterr().err
+    assert "<代號>_<主題>" in err and "--tickers" in err and "domain" in err and "生效" in err
+
+
+def test_research_field_rules(tmp_path):
+    text = research_example()
+    assert any("tickers" in e for e in research_errors(tmp_path, text.replace("tickers: [00882]\n", "")))
+    assert any("未定義的欄位 version" in e
+               for e in research_errors(tmp_path, text.replace("status: 持有", "status: 持有\nversion: 1")))
+    assert any("research_status" not in e and "生效" in e
+               for e in research_errors(tmp_path, text.replace("status: 持有", "status: 生效")))
+    assert any("<代號>_<主題>" in e
+               for e in research_errors(tmp_path, text.replace("title: 00882_股利追蹤", "title: 股利追蹤"), "股利追蹤"))
+
+
+def test_research_updated_must_match_latest_log(tmp_path):
+    text = research_example().replace("updated: 2026-10-02", "updated: 2026-10-05").replace(
+        "created: 2026-10-02", "created: 2026-10-01")
+    assert any("更新紀錄最新日期" in e for e in research_errors(tmp_path, text))
+    newer = text.replace("## 更新紀錄\n\n", "## 更新紀錄\n\n### 2026-10-05\n\n- 補充。\n\n")
+    assert research_errors(tmp_path, newer) == []
+
+
+def test_find_across_types(tmp_path, capsys):
+    write(tmp_path, "股利目標模型", example_note())
+    write_research(tmp_path, "00882_股利追蹤", research_example())
+    n.main(["--root", str(tmp_path), "find", "--ticker", "00882"])
+    out = capsys.readouterr().out
+    assert "共 2 篇" in out and "research/00882_股利追蹤.md｜持有｜00882" in out
+    n.main(["--root", str(tmp_path), "find", "--type", "research"])
+    assert "共 1 篇" in capsys.readouterr().out
+
+
+@needs_npx
+def test_research_example_passes_markdown_lint(tmp_path):
+    _with_lint_config(tmp_path)
+    write_research(tmp_path, "00882_股利追蹤", research_example())
+    assert n.main(["--root", str(tmp_path), "check"]) == 0
