@@ -89,6 +89,7 @@ scripts/                     共用計算或抓價工具
 | `tool-note-writer` | 撰寫、修改、搜尋筆記：財商架構 `arch`、標的研究 `research` |
 | `markdown-linter` | Markdown 格式檢查，與 CI 共用設定 |
 | `drive-scanner` | 開工掃描 Google Drive 資料夾與 Core，匯報新內容 |
+| `price-dividend-fetcher` | 抓台股最新股價（Google Finance）與歷史配息（FinLab），算近 12 個月殖利率；唯讀 |
 
 ## 思考類文件的寫法
 
