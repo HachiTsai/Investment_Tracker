@@ -1,0 +1,2 @@
+# 本 REPO 的腳本只用 Python 標準函式庫；僅測試需要 pytest（與 CI 一致）
+pytest
