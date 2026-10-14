@@ -1,7 +1,10 @@
 # 測試（CI 只裝這個）：REPO 現有腳本只用 Python 標準函式庫
 pytest
 
-# 資料分析與解析、網頁抓取（按需使用，目前腳本未引用；Chromium 已內建，playwright 不需再 install 瀏覽器）
+# 資料分析與解析、網頁抓取（按需使用，目前腳本未引用）
+# playwright：Chromium 已內建在 /opt/pw-browsers，不要執行 playwright install。
+# 內建版本（1194）和 pip 裝的 playwright 預設找的版本不同，直接 launch() 會報錯，要指定路徑：
+#   p.chromium.launch(executable_path="/opt/pw-browsers/chromium", args=["--no-sandbox"])
 numpy
 pandas
 openpyxl
