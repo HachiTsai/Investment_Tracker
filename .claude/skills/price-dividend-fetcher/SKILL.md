@@ -6,7 +6,7 @@ description: 抓台股、美股、日股、港股的最新股價，以及台股�
 # price-dividend-fetcher：抓股價與配息
 
 - **腳本**：`scripts/fetch.py`（只用 Python 標準函式庫與 `curl`），輸出 JSON。
-- **來源與解析規則（SSOT）**：`references/sources.md`。股價取自 Google Finance（台股失敗時備援證交所收盤價），台股配息取自 FinLab 並與證交所交叉驗證。
+- **來源與解析規則（SSOT）**：`references/sources.md`。股價取自 Google Finance（台股失敗時備援證交所收盤價），台股配息取自 FinLab 並與證交所交叉驗證；個股沒有 FinLab 配息頁時，改讀 FinLab 個股頁的近期除息紀錄（金額精度 0.1 元，另附 `stock_dividend` 股票股利）。
 - **唯讀**：只輸出到 stdout，不寫檔、不碰 Core。需要更新 Core 的 `Portfolio` 時，只能把建議的儲存格與新值以文字列給 Hachi。
 
 ## 用法

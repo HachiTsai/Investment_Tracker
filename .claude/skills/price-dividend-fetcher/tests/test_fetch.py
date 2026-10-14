@@ -140,3 +140,24 @@ def test_yield():
     d = {"ttm_total": 1.0}
     f.add_yield(d, {"price": 14.84, "price_type": "last"})
     assert d["yield_pct"] == 6.74
+
+
+def stock_row(ex, period, cash, stock):
+    return (f'<tr><th scope="row" class="rowh">{ex}</th><td class="fd-text">{period}</td>'
+            f'<td class="tnum strong">{cash}</td><!--[0--><td class="tnum">{stock}</td><!--]--></tr>')
+
+
+def test_parse_stock_dividends_handles_dash_and_stock_dividend():
+    html = "<tbody>" + stock_row("2022-08-30", "110年", "—", "0.5") + stock_row("2026-07-08", "114年第4季", "1.8", "0.2") + "</tbody>"
+    rows = f.parse_stock_dividends(html, "1229")
+    assert rows[0] == {"ex_date": "2026-07-08", "amount": 1.8, "stock_dividend": 0.2, "period": "114年第4季"}
+    assert rows[1]["amount"] == 0.0 and rows[1]["stock_dividend"] == 0.5
+    with pytest.raises(ValueError):
+        f.parse_stock_dividends("<tbody></tbody>", "1229")
+
+
+def test_parse_twse_dividends_mixed_row_has_no_amount():
+    data = {"stat": "OK", "data": [["115年07月08日", "1229", "聯華", "42.70", "40.09", "2.603622", "權息"]]}
+    assert f.parse_twse_dividends(data, "1229") == [{"ex_date": "2026-07-08", "amount": None}]
+    ok = f.crosscheck([{"ex_date": "2026-07-08", "amount": 1.8}], [{"ex_date": "2026-07-08", "amount": None}], [2026])
+    assert ok["consistent"] is True

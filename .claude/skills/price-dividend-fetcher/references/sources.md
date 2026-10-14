@@ -8,8 +8,9 @@
 | --- | --- | --- | --- |
 | 現價、前收、漲跌 | Google Finance `https://www.google.com/finance/quote/<代號>:<交易所>` | 台股、美股、日股、港股 | CLAUDE.md 指定的股價來源；盤中為即時（可能延遲），收盤後為收盤價 |
 | 收盤價（備援） | 證交所 `https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX` | 台股上市 | 當日全市場收盤表；Google Finance 失敗時自動改用，輸出標 `price_type: close` |
-| 配息歷史（主） | FinLab `https://finlab.finance/stocks/<代號>/dividend` | 台股 | 研究筆記 `00882_股利追蹤` 使用的來源 |
-| 配息歷史（驗證） | 證交所 `https://www.twse.com.tw/rwd/zh/exRight/TWT49U` | 台股上市 | 官方除權息結果表，只取「息」；與 FinLab 比對近兩個年度 |
+| 配息歷史（主） | FinLab `https://finlab.finance/stocks/<代號>/dividend` | 台股 ETF | 研究筆記 `00882_股利追蹤` 使用的來源 |
+| 配息歷史（個股備援） | FinLab 個股頁 `https://finlab.finance/stocks/<代號>` | 台股個股 | 個股沒有 `/dividend` 頁（404），改讀「近期除息紀錄」表；金額四捨五入到 0.1 元，只列近約 6 次 |
+| 配息歷史（驗證） | 證交所 `https://www.twse.com.tw/rwd/zh/exRight/TWT49U` | 台股上市 | 官方除權息結果表，取「息」與「權息」；「權息」的金額是權值＋息值，只比對除息日不比金額；與 FinLab 比對近兩個年度 |
 | 最近配息摘要 | Google Finance 頁面的 Dividend 欄位 | 全市場 | 頁面顯示的原文（殖利率、最近除息日、最近一次金額），非完整歷史 |
 | 配息日曆（人工比對） | 中信投信 `https://www.ctbcinvestments.com.tw/Product/DividendCalendar` | 00882 | 腳本不解析 |
 
@@ -41,6 +42,7 @@
 - **Google Finance 現價**：頁面內嵌多檔商品（側欄的指數、期貨等），所以用 `["代號","交易所"],"名稱",型別,"幣別",[現價,漲跌,漲跌幅,…],null,前收,…,[epoch]` 定位主報價，代號與交易所都要吻合。`epoch` 轉成 UTC 寫入 `as_of`。
 - **Google Finance 配息摘要**：頁面「標籤／數值」成對的欄位中，標籤含 `ividend` 者（`Dividend`、`Ex-dividend date`、`Quarterly dividend` 等）。標籤是 Google 的原文，不保證與實際配息頻率一致（例如半年配的股票也可能標 Quarterly），金額以公司公告為準。
 - **FinLab 配息**：明細表每列四欄，依序為除息交易日、每單位配發（元）、收益分配基準日、發放日。
+- **FinLab 個股頁**：「近期除息紀錄」每列為除息日（`th`）、股利所屬期間、現金股利、股票股利；「—」代表沒有，現金為「—」時 `amount` 記 0。
 - **證交所收盤**：`MI_INDEX` 中含「收盤價」欄位的表。漲跌方向取自 `漲跌(+/-)` 欄的 HTML，前收 = 收盤 − 漲跌。
 - **證交所除權息**：`TWT49U` 的民國日期轉西元；`權/息` 欄為「息」者才算現金股利，金額取「權值+息值」。
 - **交叉驗證**：以除息日為鍵，金額差 > 0.005 或一邊缺少，記入 `crosscheck.differences`。

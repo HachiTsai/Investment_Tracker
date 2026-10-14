@@ -24,6 +24,7 @@ from typing import Dict, List, Optional, Tuple
 EXCHANGES = {"TPE", "NASDAQ", "NYSE", "NYSEARCA", "NYSEAMERICAN", "TYO", "HKG"}
 GF_URL = "https://www.google.com/finance/quote/{code}:{exch}?hl=en"
 FINLAB_URL = "https://finlab.finance/stocks/{code}/dividend"
+FINLAB_STOCK_URL = "https://finlab.finance/stocks/{code}"   # 個股沒有 /dividend 頁，改讀個股頁的「近期除息紀錄」
 TWSE_EXRIGHT_URL = "https://www.twse.com.tw/rwd/zh/exRight/TWT49U?startDate={start}&endDate={end}&response=json"
 TWSE_CLOSE_URL = "https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?date=&type=ALLBUT0999&response=json"
 # 證交所的防護頁面會擋沒有瀏覽器標頭的請求
@@ -35,6 +36,10 @@ NUM = r"-?\d+\.?\d*(?:e-?\d+)?"
 FINLAB_ROW_RE = re.compile(
     r"<tr[^>]*>\s*<td[^>]*>(\d{4}-\d{2}-\d{2})</td>\s*<td[^>]*>([\d.]+)</td>\s*"
     r"<td[^>]*>([^<]*)</td>\s*<td[^>]*>([^<]*)</td>\s*</tr>"
+)
+FINLAB_STOCK_ROW_RE = re.compile(
+    r'<tr><th scope="row"[^>]*>(\d{4}-\d{2}-\d{2})</th><td[^>]*>([^<]*)</td>'
+    r'<td[^>]*>([^<]*)</td>(?:<!--[^>]*-->)?<td[^>]*>([^<]*)</td>'
 )
 GF_STAT_RE = re.compile(r'class="SwQK7">([^<]*)</div><div class="dO6ijd">([^<]*)')
 ROC_DATE_RE = re.compile(r"(\d+)年(\d+)月(\d+)日")
@@ -143,8 +148,9 @@ def parse_twse_dividends(data: Dict, code: str) -> List[Dict]:
     if data.get("stat") != "OK":
         raise ValueError(f"證交所除權息表回應異常：{data.get('stat')}")
     return [
-        {"ex_date": roc_to_iso(r[0]), "amount": float(r[5])}
-        for r in data["data"] if r[1] == code and r[6] == "息"
+        # 「權息」列的金額是權值＋息值，無法拆出現金股利，只用來比對除息日
+        {"ex_date": roc_to_iso(r[0]), "amount": float(r[5]) if r[6] == "息" else None}
+        for r in data["data"] if r[1] == code and "息" in r[6]
     ]
 
 
@@ -170,7 +176,7 @@ def crosscheck(finlab_rows: List[Dict], twse_rows: List[Dict], years: List[int])
             diffs.append({"ex_date": d, "finlab": fin[d], "twse": None})
         elif d not in fin:
             diffs.append({"ex_date": d, "finlab": None, "twse": tw[d]})
-        elif abs(fin[d] - tw[d]) > 0.005:
+        elif tw[d] is not None and abs(fin[d] - tw[d]) > 0.005:
             diffs.append({"ex_date": d, "finlab": fin[d], "twse": tw[d]})
     return {"source": "TWSE", "years": sorted(years), "consistent": not diffs, "differences": diffs}
 
@@ -184,6 +190,18 @@ def parse_dividends(html: str, code: str) -> List[Dict]:
     ]
     if not rows:
         raise ValueError(f"{code}：FinLab 頁面找不到配息明細（無配息紀錄，或頁面格式已變）")
+    return sorted(rows, key=lambda r: r["ex_date"], reverse=True)
+
+
+def parse_stock_dividends(html: str, code: str) -> List[Dict]:
+    """個股頁的除息紀錄：除息日、股利所屬期間、現金股利、股票股利（「—」代表沒有）。"""
+    num = lambda v: None if v.strip() in ("", "—", "-") else float(v)
+    rows = [
+        {"ex_date": ex, "amount": num(cash) or 0.0, "stock_dividend": num(stock), "period": period.strip() or None}
+        for ex, period, cash, stock in FINLAB_STOCK_ROW_RE.findall(html)
+    ]
+    if not rows:
+        raise ValueError(f"{code}：FinLab 個股頁找不到除息紀錄（無配息紀錄，或頁面格式已變）")
     return sorted(rows, key=lambda r: r["ex_date"], reverse=True)
 
 
@@ -239,8 +257,15 @@ def get_dividends(ticker: str, since: Optional[str] = None, check: bool = True) 
     if exch != "TPE":
         raise ValueError(f"{exch}:{code}：海外標的沒有可用的配息歷史來源（見 references/sources.md）；"
                          "price 指令會附 Google Finance 顯示的最近配息摘要")
-    rows = parse_dividends(http_get(FINLAB_URL.format(code=code)), code)
+    try:
+        rows = parse_dividends(http_get(FINLAB_URL.format(code=code)), code)
+        page = None
+    except (ValueError, RuntimeError):   # 個股（非 ETF）沒有 /dividend 頁
+        rows = parse_stock_dividends(http_get(FINLAB_STOCK_URL.format(code=code)), code)
+        page = "stock"
     out = build_dividends(rows, code, date.today(), since)
+    if page:
+        out["source"] = "FinLab 個股頁（金額四捨五入到 0.1 元，只列近幾次）"
     if check:
         years = [date.today().year - 1, date.today().year]
         try:
