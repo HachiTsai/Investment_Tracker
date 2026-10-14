@@ -124,7 +124,7 @@ scripts/                     共用計算或抓價工具
 - 所有 commit 走 `fin-commit` skill：`python3 .claude/skills/fin-commit/scripts/committer.py`。規格書為 `.claude/skills/fin-commit/references/spec-git-commit-protocol.md`。
 - 所有 commit 共用同一份詳細模板，交易紀錄只是其中一種（多了必填的「交易明細」）。
 - 一個 commit 只記錄一個投資事件或一個主題，方便日後用 `git log --grep` 回溯。
-- 新 clone 後先執行 `committer.py --install-hook`，讓直接 `git commit` 也會檢查格式。
+- `.claude/settings.json` 的 SessionStart hook 會在每個工作階段自動執行 `committer.py --install-hook`（可重複執行），讓直接 `git commit` 也會檢查格式；hook 會略過 `Merge`、`Revert`、`fixup!` 開頭的訊息。
 
 ## 注意事項
 
