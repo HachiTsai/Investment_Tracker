@@ -1,2 +1,11 @@
-# 本 REPO 的腳本只用 Python 標準函式庫；僅測試需要 pytest（與 CI 一致）
+# 測試（CI 只裝這個）：REPO 現有腳本只用 Python 標準函式庫
 pytest
+
+# 資料分析與解析（按需使用，目前腳本未引用）
+numpy
+pandas
+openpyxl
+requests
+lxml
+pdfplumber
+pymupdf
