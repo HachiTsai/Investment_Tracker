@@ -90,6 +90,7 @@ scripts/                     共用計算或抓價工具
 | `markdown-linter` | Markdown 格式檢查，與 CI 共用設定 |
 | `drive-scanner` | 開工掃描 Google Drive 資料夾與 Core，匯報新內容 |
 | `price-dividend-fetcher` | 抓台、美、日、港股最新股價（Google Finance、證交所備援）與台股歷史配息（FinLab、證交所驗證），算近 12 個月殖利率；唯讀 |
+| `hk-market-data` | 查港交所公告與 PDF 原文、港股通南向資金、港股報價、00882 產業漲跌；唯讀 |
 
 ## 思考類文件的寫法
 
