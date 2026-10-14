@@ -85,6 +85,35 @@ def test_parse_twse_close():
         f.parse_twse_close(TWSE_CLOSE, "1234")
 
 
+TPEX_FIELDS = ["代號", "名稱", "收盤 ", "漲跌", "開盤 "]
+TPEX = {"stat": "ok", "date": "20261014", "tables": [{"fields": TPEX_FIELDS, "data": [
+    ["6488", "環球晶", "1,020.00", "+5.00", "1,020.00"],
+    ["8069", "元太", "151.50", "-4.00", "147.50"],
+    ["6180", "橘子", "35.00", "除息", "35.00"],
+    ["3105", "穩懋", "----", "---", "----"]]}]}
+
+
+def test_parse_tpex_close():
+    p = f.parse_tpex_close(TPEX, "6488")
+    assert (p["price"], p["change"], p["prev_close"], p["price_type"], p["source"]) == (1020.0, 5.0, 1015.0, "close", "TPEx")
+    assert p["as_of"] == "2026-10-14" and p["ticker"] == "TPE:6488"
+    assert f.parse_tpex_close(TPEX, "8069")["prev_close"] == 155.5
+
+
+def test_parse_tpex_close_special_day_has_no_prev():
+    p = f.parse_tpex_close(TPEX, "6180")   # 除息日漲跌欄是文字
+    assert p["price"] == 35.0 and p["change"] is None and p["prev_close"] is None and p["change_pct"] is None
+
+
+def test_parse_tpex_close_errors():
+    with pytest.raises(ValueError, match="未成交"):
+        f.parse_tpex_close(TPEX, "3105")
+    with pytest.raises(ValueError, match="找不到"):
+        f.parse_tpex_close(TPEX, "0000")
+    with pytest.raises(ValueError, match="回應異常"):
+        f.parse_tpex_close({"stat": "error"}, "6488")
+
+
 def test_parse_twse_dividends_cash_only_for_code():
     rows = f.parse_twse_dividends(TWSE_EX, "00882")
     assert rows == [{"ex_date": "2026-07-16", "amount": 0.55}]
@@ -126,6 +155,32 @@ def test_yahoo_symbol():
     assert f.yahoo_symbol("HKG", "00700") == "0700.HK"
     assert f.yahoo_symbol("HKG", "5") == "0005.HK"
     assert f.yahoo_symbol("NYSE", "BRK.B") == "BRK-B"
+
+
+def test_get_yahoo_tries_otc_suffix_after_404(monkeypatch):
+    calls = []
+
+    def fake(url, referer=None, attempts=1, ua=f.UA):
+        calls.append(url)
+        if ".TW?" in url:
+            raise RuntimeError("HTTP 404")
+        return '{"chart": {"result": [], "error": null}}'
+
+    monkeypatch.setattr(f, "http_get", fake)
+    f.get_yahoo("TPE", "6488", "5d")
+    assert ["6488.TW" in calls[0], "6488.TWO" in calls[1]] == [True, True]
+    calls.clear()
+    f.get_yahoo("HKG", "0005", "5d")
+    assert len(calls) == 1 and "0005.HK" in calls[0]   # 非台股不重試
+
+
+def test_get_yahoo_raises_last_error_when_both_suffixes_fail(monkeypatch):
+    def fake(url, referer=None, attempts=1, ua=f.UA):
+        raise RuntimeError("HTTP 404")
+
+    monkeypatch.setattr(f, "http_get", fake)
+    with pytest.raises(RuntimeError, match="404"):
+        f.get_yahoo("TPE", "0000", "5d")
 
 
 def test_yahoo_price_prev_close_is_previous_session_not_chart_previous_close():

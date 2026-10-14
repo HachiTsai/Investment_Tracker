@@ -8,7 +8,7 @@
 
 代號格式為「交易所:代號」，與 Core 的 TPE:00882 一致；只寫代號時視為台股（TPE）。
 支援交易所：TPE、NASDAQ、NYSE、NYSEARCA、NYSEAMERICAN、TYO、HKG。
-價格順序：Google Finance → Yahoo Finance →（台股）證交所收盤價；--source 可指定單一來源。
+價格順序：Google Finance → Yahoo Finance →（台股）證交所收盤價 → 櫃買中心收盤價（上櫃）；--source 可指定單一來源。
 輸出為 JSON（stdout）。有任何錯誤時回傳碼 1，錯誤寫在該筆結果的 error 欄位；不用猜測值補資料。
 來源與解析規則見 references/sources.md。
 """
@@ -26,6 +26,7 @@ EXCHANGES = {"TPE", "NASDAQ", "NYSE", "NYSEARCA", "NYSEAMERICAN", "TYO", "HKG"}
 GF_URL = "https://www.google.com/finance/quote/{code}:{exch}?hl=en"
 FINLAB_URL = "https://finlab.finance/stocks/{code}/dividend"
 FINLAB_STOCK_URL = "https://finlab.finance/stocks/{code}"   # 個股沒有 /dividend 頁，改讀個股頁的「近期除息紀錄」
+TPEX_CLOSE_URL = "https://www.tpex.org.tw/www/zh-tw/afterTrading/otc?type=EW&response=json"   # 不帶日期＝最近交易日
 YAHOO_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{sym}?range={rng}&interval=1d&events=div"
 YAHOO_UA = "Mozilla/5.0"   # 長的瀏覽器 UA 會被 Yahoo 回 429，短 UA 才正常
 TWSE_EXRIGHT_URL = "https://www.twse.com.tw/rwd/zh/exRight/TWT49U?startDate={start}&endDate={end}&response=json"
@@ -111,7 +112,7 @@ def parse_price(html: str, exch: str, code: str) -> Dict:
 
 def yahoo_symbol(exch: str, code: str) -> str:
     if exch == "TPE":
-        return f"{code}.TW"   # 上櫃（.TWO）標的 Yahoo 查不到時會報錯，見 references/sources.md
+        return f"{code}.TW"   # 上櫃是 .TWO，由 get_yahoo 在 .TW 查不到時改試
     if exch == "TYO":
         return f"{code}.T"
     if exch == "HKG":
@@ -120,7 +121,15 @@ def yahoo_symbol(exch: str, code: str) -> str:
 
 
 def get_yahoo(exch: str, code: str, rng: str) -> Dict:
-    return json.loads(http_get(YAHOO_URL.format(sym=yahoo_symbol(exch, code), rng=rng), ua=YAHOO_UA))
+    # 台股上市用 .TW、上櫃用 .TWO，代號本身看不出差別，所以 .TW 查不到（404）再試 .TWO
+    syms = [f"{code}.TW", f"{code}.TWO"] if exch == "TPE" else [yahoo_symbol(exch, code)]
+    err: Optional[RuntimeError] = None
+    for sym in syms:
+        try:
+            return json.loads(http_get(YAHOO_URL.format(sym=sym, rng=rng), ua=YAHOO_UA))
+        except RuntimeError as e:
+            err = e
+    raise err   # type: ignore[misc]
 
 
 def yahoo_result(data: Dict, exch: str, code: str) -> Dict:
@@ -203,6 +212,30 @@ def parse_twse_close(data: Dict, code: str) -> Dict:
                 "as_of": f"{d[:4]}-{d[4:6]}-{d[6:]}", "price_type": "close", "source": "TWSE",
             }
     raise ValueError(f"{code}：證交所收盤表找不到此代號（非上市標的，或當日無資料）")
+
+
+def parse_tpex_close(data: Dict, code: str) -> Dict:
+    """櫃買中心上櫃股票每日收盤行情。漲跌欄為「+5.00」「-3.00」「0.00」，除息日等特殊日為文字，此時不給前收與漲跌。"""
+    t = (data.get("tables") or [{}])[0]
+    fields = [f.strip() for f in t.get("fields", [])]
+    if data.get("stat") != "ok" or "收盤" not in fields:
+        raise ValueError(f"櫃買中心回應異常：{data.get('stat')}")
+    for row in t["data"]:
+        if row[0] != code:
+            continue
+        rec = dict(zip(fields, row))
+        close = to_float(rec["收盤"])
+        if close is None:
+            raise ValueError(f"{code}：櫃買中心當日無收盤價（未成交）")
+        change = to_float(rec["漲跌"].replace("+", ""))
+        d = data["date"]
+        return {
+            "ticker": f"TPE:{code}", "name": rec["名稱"], "price": close,
+            "change": change, "change_pct": round(change / (close - change) * 100, 4) if change is not None and close != change else None,
+            "prev_close": round(close - change, 4) if change is not None else None, "currency": "TWD",
+            "as_of": f"{d[:4]}-{d[4:6]}-{d[6:]}", "price_type": "close", "source": "TPEx",
+        }
+    raise ValueError(f"{code}：櫃買中心收盤表找不到此代號（非上櫃標的，或當日無資料）")
 
 
 def parse_twse_dividends(data: Dict, code: str) -> List[Dict]:
@@ -307,14 +340,19 @@ def _twse(exch: str, code: str) -> Dict:
     return parse_twse_close(json.loads(twse_get(TWSE_CLOSE_URL)), code)
 
 
-PRICE_SOURCES = {"google": ("Google Finance", _google), "yahoo": ("Yahoo Finance", _yahoo), "twse": ("證交所收盤價", _twse)}
+def _tpex(exch: str, code: str) -> Dict:
+    return parse_tpex_close(json.loads(http_get(TPEX_CLOSE_URL)), code)
+
+
+PRICE_SOURCES = {"google": ("Google Finance", _google), "yahoo": ("Yahoo Finance", _yahoo),
+                 "twse": ("證交所收盤價", _twse), "tpex": ("櫃買中心收盤價", _tpex)}
 
 
 def get_price(ticker: str, source: str = "auto") -> Dict:
     exch, code = parse_ticker(ticker)
-    if source == "twse" and exch != "TPE":
-        raise ValueError("--source twse 只支援台股")
-    order = ["google", "yahoo"] + (["twse"] if exch == "TPE" else []) if source == "auto" else [source]
+    if source in ("twse", "tpex") and exch != "TPE":
+        raise ValueError(f"--source {source} 只支援台股")
+    order = ["google", "yahoo"] + (["twse", "tpex"] if exch == "TPE" else []) if source == "auto" else [source]
     failures: List[str] = []
     for name in order:
         label, fn = PRICE_SOURCES[name]
@@ -379,8 +417,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     sub = p.add_subparsers(dest="cmd", required=True)
     sp = sub.add_parser("price")
     sp.add_argument("tickers", nargs="+")
-    sp.add_argument("--source", choices=["auto", "google", "yahoo", "twse"], default="auto",
-                    help="auto：Google Finance → Yahoo Finance →（台股）證交所收盤價")
+    sp.add_argument("--source", choices=["auto", "google", "yahoo", "twse", "tpex"], default="auto",
+                    help="auto：Google Finance → Yahoo Finance →（台股）證交所收盤價 → 櫃買中心收盤價")
     for name in ("dividends", "both"):
         s = sub.add_parser(name)
         s.add_argument("ticker")
