@@ -1,5 +1,5 @@
 import sys
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -103,9 +103,78 @@ def test_crosscheck():
     assert {"ex_date": "2026-01-19", "finlab": 0.45, "twse": None} in bad["differences"]
 
 
-def test_overseas_dividends_unsupported():
+def _ts(y, m, d, h=0):
+    return int(datetime(y, m, d, h, tzinfo=timezone.utc).timestamp())
+
+
+def yahoo_payload(closes, now, off=-14400, divs=None, cur="USD", error=None):
+    """closes：[(日期 UTC 時戳, 收盤)]；now：regularMarketTime。"""
+    if error:
+        return {"chart": {"result": None, "error": {"code": "Not Found", "description": error}}}
+    res = {"meta": {"currency": cur, "regularMarketPrice": closes[-1][1], "regularMarketTime": now,
+                    "gmtoffset": off, "chartPreviousClose": 143.76, "longName": "Apple Inc."},
+           "timestamp": [t for t, _ in closes], "indicators": {"quote": [{"close": [c for _, c in closes]}]}}
+    if divs:
+        res["events"] = {"dividends": {str(t): {"amount": a, "date": t} for t, a in divs}}
+    return {"chart": {"result": [res], "error": None}}
+
+
+def test_yahoo_symbol():
+    assert f.yahoo_symbol("TPE", "00882") == "00882.TW"
+    assert f.yahoo_symbol("TYO", "7203") == "7203.T"
+    assert f.yahoo_symbol("HKG", "0005") == "0005.HK"
+    assert f.yahoo_symbol("HKG", "00700") == "0700.HK"
+    assert f.yahoo_symbol("HKG", "5") == "0005.HK"
+    assert f.yahoo_symbol("NYSE", "BRK.B") == "BRK-B"
+
+
+def test_yahoo_price_prev_close_is_previous_session_not_chart_previous_close():
+    # 週一 10:00 美東盤中（今日那根日線已含現價）：前收應是週五收盤 100，不是 meta.chartPreviousClose 143.76
+    closes = [(_ts(2026, 10, 9, 13), 100.0), (_ts(2026, 10, 12, 13), 103.0)]
+    now = _ts(2026, 10, 12, 14)
+    p = f.parse_yahoo_price(yahoo_payload(closes, now), "NASDAQ", "AAPL")
+    assert (p["price"], p["prev_close"], p["change"], p["change_pct"]) == (103.0, 100.0, 3.0, 3.0)
+    assert p["source"] == "Yahoo Finance" and p["currency"] == "USD" and p["ticker"] == "NASDAQ:AAPL"
+
+
+def test_yahoo_price_when_today_bar_missing():
+    # 還沒有今日日線：前收就是最後一根
+    closes = [(_ts(2026, 10, 9, 13), 100.0)]
+    p = f.parse_yahoo_price(yahoo_payload(closes, _ts(2026, 10, 12, 14), cur="JPY"), "TYO", "7203")
+    assert p["prev_close"] == 100.0
+
+
+def test_yahoo_price_uses_exchange_local_date():
+    # 東京 10-13 09:00 開盤 = UTC 00:00（UTC+9 的當地日期為 10-13）：今日那根日線不能當前收
+    closes = [(_ts(2026, 10, 9, 0), 2900.0), (_ts(2026, 10, 13, 0), 2984.0)]
+    p = f.parse_yahoo_price(yahoo_payload(closes, _ts(2026, 10, 13, 5), off=32400, cur="JPY"), "TYO", "7203")
+    assert p["prev_close"] == 2900.0
+
+
+def test_yahoo_errors():
+    with pytest.raises(ValueError, match="No data found"):
+        f.parse_yahoo_price(yahoo_payload([], 0, error="No data found"), "NASDAQ", "ZZZZ")
     with pytest.raises(ValueError):
-        f.get_dividends("NASDAQ:AAPL")
+        f.parse_yahoo_price(yahoo_payload([(_ts(2026, 10, 13, 13), 5.0)], _ts(2026, 10, 13, 14)), "NASDAQ", "X")  # 無前收
+
+
+def test_yahoo_dividends_sorted_and_currency():
+    d = yahoo_payload([(_ts(2026, 10, 9, 13), 1.0)], _ts(2026, 10, 12, 14), cur="HKD",
+                      divs=[(_ts(2026, 5, 14), 0.783188), (_ts(2026, 8, 13), 0.784088)])
+    rows, cur = f.parse_yahoo_dividends(d, "HKG", "0005")
+    assert cur == "HKD"
+    assert rows == [{"ex_date": "2026-08-13", "amount": 0.784088}, {"ex_date": "2026-05-14", "amount": 0.783188}]
+
+
+def test_yahoo_dividends_none_is_empty_not_error():
+    # 不配息的公司（例如 TSLA）是合法情況，不是錯誤
+    rows, _ = f.parse_yahoo_dividends(yahoo_payload([(1, 1.0)], 1), "NASDAQ", "TSLA")
+    assert rows == []
+
+
+def test_build_dividends_label():
+    d = f.build_dividends([{"ex_date": "2026-08-10", "amount": 0.27}], "AAPL", date(2026, 10, 14), label="NASDAQ:AAPL")
+    assert d["ticker"] == "NASDAQ:AAPL" and d["ttm_total"] == 0.27
 
 
 def test_parse_dividends_sorted_desc():

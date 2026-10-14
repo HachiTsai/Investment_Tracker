@@ -3,11 +3,12 @@
 
 用法：
   fetch.py price 00882 NASDAQ:AAPL TYO:7203 HKG:0005   現價、漲跌、前收（可混合多市場）
-  fetch.py dividends 00882 [--since 2024-01-01]        台股逐次配息、年度合計、近 12 個月合計（附證交所交叉驗證）
+  fetch.py dividends 00882 [--since 2024-01-01]        逐次配息、年度合計、近 12 個月合計（台股附證交所交叉驗證；海外取自 Yahoo）
   fetch.py both 00882                                  價格＋配息＋殖利率（現價基準）
 
 代號格式為「交易所:代號」，與 Core 的 TPE:00882 一致；只寫代號時視為台股（TPE）。
 支援交易所：TPE、NASDAQ、NYSE、NYSEARCA、NYSEAMERICAN、TYO、HKG。
+價格順序：Google Finance → Yahoo Finance →（台股）證交所收盤價；--source 可指定單一來源。
 輸出為 JSON（stdout）。有任何錯誤時回傳碼 1，錯誤寫在該筆結果的 error 欄位；不用猜測值補資料。
 來源與解析規則見 references/sources.md。
 """
@@ -25,6 +26,8 @@ EXCHANGES = {"TPE", "NASDAQ", "NYSE", "NYSEARCA", "NYSEAMERICAN", "TYO", "HKG"}
 GF_URL = "https://www.google.com/finance/quote/{code}:{exch}?hl=en"
 FINLAB_URL = "https://finlab.finance/stocks/{code}/dividend"
 FINLAB_STOCK_URL = "https://finlab.finance/stocks/{code}"   # 個股沒有 /dividend 頁，改讀個股頁的「近期除息紀錄」
+YAHOO_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{sym}?range={rng}&interval=1d&events=div"
+YAHOO_UA = "Mozilla/5.0"   # 長的瀏覽器 UA 會被 Yahoo 回 429，短 UA 才正常
 TWSE_EXRIGHT_URL = "https://www.twse.com.tw/rwd/zh/exRight/TWT49U?startDate={start}&endDate={end}&response=json"
 TWSE_CLOSE_URL = "https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?date=&type=ALLBUT0999&response=json"
 # 證交所的防護頁面會擋沒有瀏覽器標頭的請求
@@ -55,9 +58,9 @@ def parse_ticker(ticker: str) -> Tuple[str, str]:
     return exch, code
 
 
-def http_get(url: str, referer: Optional[str] = None, attempts: int = 1) -> str:
+def http_get(url: str, referer: Optional[str] = None, attempts: int = 1, ua: str = UA) -> str:
     # 用 curl：沿用環境的 proxy 與 CA 設定，不自行處理 TLS
-    cmd = ["curl", "-sS", "-L", "-m", "40", "-A", UA, "-H", "Accept-Language: zh-TW,en;q=0.8"]
+    cmd = ["curl", "-sS", "-L", "-m", "40", "-A", ua, "-H", "Accept-Language: zh-TW,en;q=0.8"]
     if referer:
         cmd += ["-H", f"Referer: {referer}"]
     err = ""
@@ -102,6 +105,64 @@ def parse_price(html: str, exch: str, code: str) -> Dict:
     if div:
         out["dividend_summary"] = div   # 頁面顯示的原文（殖利率、最近除息日、最近一次金額）
     return out
+
+
+# ---------- Yahoo Finance（全市場報價、配息歷史）----------
+
+def yahoo_symbol(exch: str, code: str) -> str:
+    if exch == "TPE":
+        return f"{code}.TW"   # 上櫃（.TWO）標的 Yahoo 查不到時會報錯，見 references/sources.md
+    if exch == "TYO":
+        return f"{code}.T"
+    if exch == "HKG":
+        return f"{code.lstrip('0').zfill(4)}.HK"
+    return code.replace(".", "-")   # 美股：BRK.B → BRK-B
+
+
+def get_yahoo(exch: str, code: str, rng: str) -> Dict:
+    return json.loads(http_get(YAHOO_URL.format(sym=yahoo_symbol(exch, code), rng=rng), ua=YAHOO_UA))
+
+
+def yahoo_result(data: Dict, exch: str, code: str) -> Dict:
+    chart = data.get("chart") or {}
+    if chart.get("error") or not chart.get("result"):
+        desc = (chart.get("error") or {}).get("description", "沒有資料")
+        raise ValueError(f"{exch}:{code}：Yahoo Finance {desc}")
+    return chart["result"][0]
+
+
+def parse_yahoo_price(data: Dict, exch: str, code: str) -> Dict:
+    r = yahoo_result(data, exch, code)
+    meta = r["meta"]
+    off = meta.get("gmtoffset", 0)
+    local = lambda ts: datetime.fromtimestamp(ts + off, timezone.utc).date()
+    price, now = meta.get("regularMarketPrice"), meta.get("regularMarketTime")
+    if price is None or now is None:
+        raise ValueError(f"{exch}:{code}：Yahoo Finance 回應缺少現價")
+    # 前收 = 最近一個「早於今日交易日」的收盤；meta.chartPreviousClose 是區間起點前的收盤，不能用
+    bars = zip(r.get("timestamp") or [], r["indicators"]["quote"][0].get("close") or [])
+    prevs = [c for ts, c in bars if c is not None and local(ts) < local(now)]
+    if not prevs:
+        raise ValueError(f"{exch}:{code}：Yahoo Finance 找不到前一日收盤")
+    prev = prevs[-1]
+    change = price - prev
+    return {
+        "ticker": f"{exch}:{code}", "name": meta.get("longName") or meta.get("shortName"), "price": round(price, 4),
+        "change": round(change, 4), "change_pct": round(change / prev * 100, 4) if prev else None,
+        "prev_close": round(prev, 4), "currency": meta.get("currency"),
+        "as_of": datetime.fromtimestamp(now, timezone.utc).isoformat(timespec="seconds"),
+        "price_type": "last", "source": "Yahoo Finance",
+    }
+
+
+def parse_yahoo_dividends(data: Dict, exch: str, code: str) -> Tuple[List[Dict], Optional[str]]:
+    r = yahoo_result(data, exch, code)
+    events = (r.get("events") or {}).get("dividends") or {}
+    rows = [
+        {"ex_date": datetime.fromtimestamp(e["date"], timezone.utc).date().isoformat(), "amount": round(e["amount"], 6)}
+        for e in events.values()
+    ]
+    return sorted(rows, key=lambda x: x["ex_date"], reverse=True), r["meta"].get("currency")
 
 
 # ---------- 證交所（台股官方收盤價、除權息）----------
@@ -218,10 +279,11 @@ def ttm_total(rows: List[Dict], today: date) -> float:
     return round(sum(r["amount"] for r in rows if start < r["ex_date"] <= today.isoformat()), 4)
 
 
-def build_dividends(rows: List[Dict], code: str, today: date, since: Optional[str] = None) -> Dict:
+def build_dividends(rows: List[Dict], code: str, today: date, since: Optional[str] = None,
+                    label: Optional[str] = None) -> Dict:
     shown = [r for r in rows if not since or r["ex_date"] >= since]
     return {
-        "ticker": f"TPE:{code}", "source": "FinLab", "count": len(shown), "events": shown,
+        "ticker": label or f"TPE:{code}", "source": "FinLab", "count": len(shown), "events": shown,
         "yearly_totals": yearly_totals(rows), "ttm_total": ttm_total(rows, today), "as_of": today.isoformat(),
     }
 
@@ -233,38 +295,68 @@ def add_yield(result: Dict, price: Dict) -> None:
 
 # ---------- 組合 ----------
 
+def _google(exch: str, code: str) -> Dict:
+    return parse_price(http_get(GF_URL.format(code=code, exch=exch)), exch, code)
+
+
+def _yahoo(exch: str, code: str) -> Dict:
+    return parse_yahoo_price(get_yahoo(exch, code, "5d"), exch, code)
+
+
+def _twse(exch: str, code: str) -> Dict:
+    return parse_twse_close(json.loads(twse_get(TWSE_CLOSE_URL)), code)
+
+
+PRICE_SOURCES = {"google": ("Google Finance", _google), "yahoo": ("Yahoo Finance", _yahoo), "twse": ("證交所收盤價", _twse)}
+
+
 def get_price(ticker: str, source: str = "auto") -> Dict:
     exch, code = parse_ticker(ticker)
     if source == "twse" and exch != "TPE":
         raise ValueError("--source twse 只支援台股")
-    if source != "twse":
+    order = ["google", "yahoo"] + (["twse"] if exch == "TPE" else []) if source == "auto" else [source]
+    failures: List[str] = []
+    for name in order:
+        label, fn = PRICE_SOURCES[name]
         try:
-            return parse_price(http_get(GF_URL.format(code=code, exch=exch)), exch, code)
-        except (ValueError, RuntimeError) as e:
-            if source == "google" or exch != "TPE":
-                raise
-            reason = str(e)
-    else:
-        reason = None
-    out = parse_twse_close(json.loads(twse_get(TWSE_CLOSE_URL)), code)
-    if reason:
-        out["fallback_reason"] = f"Google Finance 失敗，改用證交所收盤價：{reason}"
+            out = fn(exch, code)
+        except (ValueError, RuntimeError, json.JSONDecodeError) as e:
+            failures.append(f"{label}失敗：{e}")
+            continue
+        if failures:
+            out["fallback_reason"] = "；".join(failures)
+        return out
+    raise RuntimeError("；".join(failures))
+
+
+def finlab_rows(code: str) -> Tuple[List[Dict], bool]:
+    """回傳 (配息列, 是否來自個股頁)。ETF 有 /dividend 頁；個股沒有，改讀個股頁。"""
+    try:
+        return parse_dividends(http_get(FINLAB_URL.format(code=code)), code), False
+    except (ValueError, RuntimeError):
+        return parse_stock_dividends(http_get(FINLAB_STOCK_URL.format(code=code)), code), True
+
+
+def yahoo_dividends(exch: str, code: str, since: Optional[str]) -> Dict:
+    rows, cur = parse_yahoo_dividends(get_yahoo(exch, code, "10y"), exch, code)
+    out = build_dividends(rows, code, date.today(), since, label=f"{exch}:{code}")
+    out["source"] = "Yahoo Finance（已還原股票分割，金額為交易幣別）"
+    out["currency"] = cur
     return out
 
 
 def get_dividends(ticker: str, since: Optional[str] = None, check: bool = True) -> Dict:
     exch, code = parse_ticker(ticker)
     if exch != "TPE":
-        raise ValueError(f"{exch}:{code}：海外標的沒有可用的配息歷史來源（見 references/sources.md）；"
-                         "price 指令會附 Google Finance 顯示的最近配息摘要")
+        return yahoo_dividends(exch, code, since)
     try:
-        rows = parse_dividends(http_get(FINLAB_URL.format(code=code)), code)
-        page = None
-    except (ValueError, RuntimeError):   # 個股（非 ETF）沒有 /dividend 頁
-        rows = parse_stock_dividends(http_get(FINLAB_STOCK_URL.format(code=code)), code)
-        page = "stock"
+        rows, stock_page = finlab_rows(code)
+    except (ValueError, RuntimeError) as e:   # FinLab 兩個頁面都讀不到：改用 Yahoo，不做證交所驗證
+        out = yahoo_dividends(exch, code, since)
+        out["fallback_reason"] = f"FinLab 失敗：{e}"
+        return out
     out = build_dividends(rows, code, date.today(), since)
-    if page:
+    if stock_page:
         out["source"] = "FinLab 個股頁（金額四捨五入到 0.1 元，只列近幾次）"
     if check:
         years = [date.today().year - 1, date.today().year]
@@ -287,8 +379,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     sub = p.add_subparsers(dest="cmd", required=True)
     sp = sub.add_parser("price")
     sp.add_argument("tickers", nargs="+")
-    sp.add_argument("--source", choices=["auto", "google", "twse"], default="auto",
-                    help="auto：Google Finance，台股失敗時改用證交所收盤價")
+    sp.add_argument("--source", choices=["auto", "google", "yahoo", "twse"], default="auto",
+                    help="auto：Google Finance → Yahoo Finance →（台股）證交所收盤價")
     for name in ("dividends", "both"):
         s = sub.add_parser(name)
         s.add_argument("ticker")
