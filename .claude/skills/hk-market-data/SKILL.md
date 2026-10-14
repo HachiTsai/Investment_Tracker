@@ -1,6 +1,6 @@
 ---
 name: hk-market-data
-description: 查港股資料（唯讀）：港交所披露易的業績、股息、盈利警告公告與 PDF 原文數字，港股通南向資金每日淨買入（東方財富，港交所交叉驗證），Yahoo Finance 港股報價，以及 00882 成分股各產業加權漲跌。使用者說「查港交所公告」「對照財報原文」「南向資金」「港股通流向」「港股報價」「00882 產業漲跌」「舊經濟風向」，或要核對港股財報、股息數字、更新 00882 風向週報時使用。
+description: 查港股資料（唯讀）：港交所披露易的業績、股息、盈利警告公告與 PDF 原文數字，CCASS 持股與個股南向持股比例變化，港股通南向資金每日淨買入（東方財富，港交所交叉驗證），Yahoo Finance 港股報價，以及 00882 成分股各產業加權漲跌。使用者說「查港交所公告」「對照財報原文」「南向資金」「港股通流向」「CCASS」「誰在買」「南向持股」「港股報價」「00882 產業漲跌」「舊經濟風向」，或要核對港股財報、股息數字、更新 00882 風向週報時使用。
 ---
 
 # hk-market-data：港股資料查詢
@@ -17,6 +17,7 @@ description: 查港股資料（唯讀）：港交所披露易的業績、股息�
 S=.claude/skills/hk-market-data/scripts/hkdata.py
 python3 $S announce 0939 1919 --days 30      # 業績、股息、盈利警告公告；--all 列全部公告
 python3 $S pdf <披露易PDF網址> --grep "per share|net profit"
+python3 $S ccass 0939 --compare-days 7       # CCASS 前十大持股與南向（港股通）持股比例變化
 python3 $S southbound --days 10 --crosscheck  # 南向每日淨買入，百萬港元
 python3 $S quote 0939 1919 --range 1mo        # 現價、前收、區間漲跌、52 週高低
 python3 $S sectors --announce-days 8          # 00882 各產業近一週、今年以來加權漲跌＋成分股公告

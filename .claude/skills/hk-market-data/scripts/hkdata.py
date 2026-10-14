@@ -5,6 +5,7 @@
   hkdata.py announce 0939 1919 [--days 30] [--all]
   hkdata.py pdf <港交所PDF網址> [--grep 正規式]
   hkdata.py southbound [--days 10] [--crosscheck]
+  hkdata.py ccass 0939 [--date 2026-10-13] [--compare-days 7]
   hkdata.py quote 0939 1919 [--range 1mo]
   hkdata.py sectors [--announce-days 8]
 """
@@ -83,6 +84,56 @@ def pdf_text(url):
     with tempfile.NamedTemporaryFile(suffix=".pdf") as f:
         f.write(http(url)); f.flush()
         return subprocess.run(["pdftotext", "-layout", f.name, "-"], capture_output=True, text=True, check=True).stdout
+
+
+# ---------- CCASS 持股（港交所 www3.hkexnews.hk） ----------
+CCASS_URL = "https://www3.hkexnews.hk/sdw/search/searchsdw.aspx"
+SOUTHBOUND_IDS = {"A00003": "港股通（滬）", "A00004": "港股通（深）"}
+
+
+def parse_ccass(page):
+    """CCASS 查詢結果頁 → (已發行股份總數 or None, [參與者 dict])"""
+    cells = [html.unescape(c).strip() for c in re.findall(r'class="mobile-list-body">([^<]*)', page)]
+    rows = []
+    for i in range(0, len(cells) - 4, 5):
+        pid, name, _addr, qty, pct = cells[i:i + 5]
+        if not re.fullmatch(r"[A-Z]\d{5}", pid):
+            continue
+        rows.append(dict(id=pid, name=name, shares=int(qty.replace(",", "")), pct=float(pct.rstrip("%"))))
+    return rows
+
+
+def southbound_share(rows):
+    sb = [r for r in rows if r["id"] in SOUTHBOUND_IDS]
+    return dict(shares=sum(r["shares"] for r in sb), pct=round(sum(r["pct"] for r in sb), 2))
+
+
+def ccass_rows(code, day):
+    import http.cookiejar
+    op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(http.cookiejar.CookieJar()))
+    op.addheaders = list(UA.items())
+    t = op.open(CCASS_URL, timeout=40).read().decode()
+    f = {k: html.unescape(v) for k, v in re.findall(r'name="(__[A-Z]+)" id="__[A-Z]+" value="([^"]*)"', t)}
+    f.update(__EVENTTARGET="btnSearch", txtShareholdingDate=day.strftime("%Y/%m/%d"), txtStockCode=norm(code).zfill(5),
+             txtStockName="", txtParticipantID="", txtParticipantName="", txtSelPartID="",
+             sortBy="shareholding", sortDirection="desc", today=date.today().strftime("%Y%m%d"))
+    rows = parse_ccass(op.open(CCASS_URL, urllib.parse.urlencode(f).encode(), timeout=60).read().decode())
+    if not rows:
+        raise RuntimeError(f"CCASS 查不到 {code} 在 {day} 的持股（可能非交易日或超過一年）")
+    return rows
+
+
+def ccass(code, day=None, compare_days=7, top=10):
+    day = day or date.today() - timedelta(days=1)
+    now = ccass_rows(code, day)
+    res = dict(date=day.isoformat(), source="港交所 CCASS 持股紀錄", top=now[:top], southbound=southbound_share(now))
+    if compare_days:
+        d0 = day - timedelta(days=compare_days)
+        prev = ccass_rows(code, d0)
+        p, n = southbound_share(prev), res["southbound"]
+        res["compare"] = dict(date=d0.isoformat(), southbound=p, pct_change=round(n["pct"] - p["pct"], 2),
+                              shares_change=n["shares"] - p["shares"])
+    return res
 
 
 # ---------- 港股通（南向）資金 ----------
@@ -212,10 +263,21 @@ def main(argv=None):
     a = sp.add_parser("announce"); a.add_argument("codes", nargs="+"); a.add_argument("--days", type=int, default=30); a.add_argument("--all", action="store_true")
     b = sp.add_parser("pdf"); b.add_argument("url"); b.add_argument("--grep")
     c = sp.add_parser("southbound"); c.add_argument("--days", type=int, default=10); c.add_argument("--crosscheck", action="store_true")
+    f = sp.add_parser("ccass"); f.add_argument("codes", nargs="+"); f.add_argument("--date"); f.add_argument("--compare-days", type=int, default=7); f.add_argument("--top", type=int, default=10)
     d = sp.add_parser("quote"); d.add_argument("codes", nargs="+"); d.add_argument("--range", default="1mo")
     e = sp.add_parser("sectors"); e.add_argument("--announce-days", type=int, default=0)
     o = p.parse_args(argv)
     rc = 0
+    if o.cmd == "ccass":
+        res = {}
+        day = date.fromisoformat(o.date) if o.date else None
+        for code in o.codes:
+            try:
+                res[norm(code)] = ccass(code, day, o.compare_days, o.top)
+            except Exception as ex:
+                res[norm(code)] = dict(error=str(ex)); rc = 1
+        print(json.dumps(dict(fetched_at=now_utc(), results=res), ensure_ascii=False, indent=1))
+        return rc
     if o.cmd in ("announce", "quote"):
         res = {}
         for code in o.codes:

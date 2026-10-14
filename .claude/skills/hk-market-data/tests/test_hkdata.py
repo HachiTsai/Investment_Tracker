@@ -81,3 +81,16 @@ def test_pdf_rejects_other_hosts():
     import pytest
     with pytest.raises(ValueError):
         h.pdf_text("https://example.com/x.pdf")
+
+
+def test_parse_ccass_and_southbound_share():
+    def cell(v):
+        return f'<div class="mobile-list-body">{v}</div>'
+    page = "".join(cell(v) for v in [
+        "C00019", "THE HONGKONG AND SHANGHAI BANKING", "addr", "33,551,231,626", "13.95%",
+        "A00003", "CHINA SECURITIES DEPOSITORY AND CLEARING", "addr", "31,221,801,869", "12.98%",
+        "A00004", "CHINA SECURITIES DEPOSITORY AND CLEARING", "addr", "5,088,055,068", "2.11%"])
+    rows = h.parse_ccass(page)
+    assert [r["id"] for r in rows] == ["C00019", "A00003", "A00004"]
+    assert rows[0]["shares"] == 33551231626
+    assert h.southbound_share(rows) == dict(shares=36309856937, pct=15.09)
