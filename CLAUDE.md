@@ -86,7 +86,7 @@ scripts/                     共用計算或抓價工具
 | Skill | 用途 |
 | --- | --- |
 | `fin-commit` | 所有 commit 的流程與格式檢查 |
-| `tool-note-writer` | 撰寫、修改、搜尋筆記：財商架構 `arch`、標的研究 `research` |
+| `tool-note-writer` | 撰寫、修改、搜尋筆記：財商架構 `arch`、標的研究 `research`；並把硬數據歸納到情報資料庫 Sheet |
 | `markdown-linter` | Markdown 格式檢查，與 CI 共用設定 |
 | `drive-scanner` | 開工掃描 Google Drive 資料夾與 Core，匯報新內容 |
 | `price-dividend-fetcher` | 抓台、美、日、港股最新股價（Google Finance，Yahoo、證交所、櫃買備援）與歷史配息（台股 FinLab＋證交所驗證，海外 Yahoo），算近 12 個月殖利率；唯讀 |

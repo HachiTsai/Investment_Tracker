@@ -15,6 +15,7 @@ description: 撰寫、修改與搜尋財商工程 REPO 的筆記，所有筆記�
   | `research` | 標的研究：論點、依據、配息、風險 | `research/<代號>_<主題>.md` | `references/format-research.md` |
 
 - **受控詞彙**：`references/vocabulary.md`。`domain`、`tags`、arch 的 `status`、research 的 `status`（`research_status`）只能用表內的詞。
+- **情報資料庫**：筆記的硬數據歸納成 Sheet 列，規格 `references/intel-sheet.md`，流程見「歸納到情報資料庫」。
 - **工具**：`scripts/notes.py`，提供 `new`、`check`、`find`、`vocab` 四個指令。
 - **相依**：`check` 會呼叫 `markdown-linter` skill，需要安裝 Node.js。
 
@@ -83,6 +84,17 @@ notes.py check                               # 檢查全部筆記格式
 ```
 
 回答使用者時，列出筆記的路徑、狀態和摘要；如果有需要，再讀全文。
+
+## 歸納到情報資料庫
+
+研究或趨勢筆記（尤其 00882）寫完或更新後，把其中的硬數據歸納成「情報資料庫」Sheet 的訊號列，供 Stock_AIStudio APP 的客觀趨勢情報中心讀取。欄位、歸納規則與位置見 `references/intel-sheet.md`。
+
+1. 讀 `references/intel-sheet.md`，再讀整張 Sheet 的現有列。
+2. 從筆記挑出有數字、日期、來源的事實，一筆訊號一列；論點與追蹤指標不入庫。
+3. 新增或更新列，`sourceNote` 寫明出處筆記；推論與事實分開，沒核對的在 `verification` 說清楚。
+4. 寫完讀回確認，並告訴 Hachi 新增或更新了哪些 id。
+
+該資料夾是公開連結，放進去的內容視同公開；含持股與成本的數字，入庫前先問 Hachi。
 
 ## Obsidian 相容性
 
