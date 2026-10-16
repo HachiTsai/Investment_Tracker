@@ -9,10 +9,6 @@
 
 回覆與文件一律使用**繁體中文**；代號、欄位名、指令保留英文。
 
-## 開工儀式
-
-每個工作階段開始時，先執行 `drive-scanner` skill：掃描 Google Drive 的 `Project_財商工程` 資料夾與 `Investment_Tracker_Core`（唯讀），和 `.claude/skills/drive-scanner/state/drive-manifest.json` 比對後匯報新內容。轉存進 REPO 前先問 Hachi。`.claude/settings.json` 的 SessionStart hook 會提醒這件事。
-
 ## 投資目標與原則
 
 - **核心目標**：每年股利收入 ≥ 500,000 TWD。
@@ -88,7 +84,6 @@ scripts/                     共用計算或抓價工具
 | `fin-commit` | 所有 commit 的流程與格式檢查 |
 | `tool-note-writer` | 撰寫、修改、搜尋筆記：財商架構 `arch`、標的研究 `research`；並把硬數據歸納到情報資料庫 Sheet |
 | `markdown-linter` | Markdown 格式檢查，與 CI 共用設定 |
-| `drive-scanner` | 開工掃描 Google Drive 資料夾與 Core，匯報新內容 |
 | `price-dividend-fetcher` | 抓台、美、日、港股最新股價（Google Finance，Yahoo、證交所、櫃買備援）與歷史配息（台股 FinLab＋證交所驗證，海外 Yahoo），算近 12 個月殖利率；唯讀 |
 | `hk-market-data` | 查港交所公告與 PDF 原文、港股通南向資金、港股報價、00882 產業漲跌；唯讀 |
 

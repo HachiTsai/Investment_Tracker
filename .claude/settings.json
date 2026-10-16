@@ -6,10 +6,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/skills/drive-scanner/scripts/manifest.py\" reminder"
-          },
-          {
-            "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/skills/fin-commit/scripts/committer.py\" --install-hook"
           }
         ]
