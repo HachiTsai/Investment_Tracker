@@ -4,7 +4,7 @@
 
 ## 位置
 
-- 試算表「情報資料庫」：Drive ID `1BF2xvF0cmyODdN0nXR8QHbOTC3ikqswvSwBboY1cGQo`，在 `Project_財商工程/情報與趨勢`（`1OkXyIl0huNSeYEOU1lDM0sfYNxG1gFpq`）。
+- 試算表「情報資料庫」：Drive ID `1BF2xvF0cmyODdN0nXR8QHbOTC3ikqswvSwBboY1cGQo`，在 `Project_財商工程/Portfolio_00882/情報與趨勢`（`1OkXyIl0huNSeYEOU1lDM0sfYNxG1gFpq`）。
 - 該資料夾是公開連結，APP 免登入以 gviz CSV 讀取。**Sheet 與資料夾內任何檔案都視同公開**，不得放券商帳號等敏感資料；持股與成本數字放進來前先問 Hachi。
 - 不屬於 Investment_Tracker_Core，可以寫入。Core 仍嚴禁修改。
 
