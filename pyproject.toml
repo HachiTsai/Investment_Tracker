@@ -1,0 +1,31 @@
+[project]
+name = "investment-tracker"
+version = "0.1.0"
+description = "Hachi 的個人財商工程基地：架構、投資思考、趨勢覺察、交易紀錄與投資管理 skill"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    # 測試與品質（CI 與本機環境）
+    "pytest>=8.0.0",
+    # 資料分析與解析、網頁抓取（按需使用）
+    "numpy>=2.0.0",
+    "pandas>=2.2.0",
+    "openpyxl>=3.1.0",
+    "requests>=2.31.0",
+    "lxml>=5.0.0",
+    "pdfplumber>=0.11.0",
+    "pymupdf>=1.24.0",
+    "beautifulsoup4>=4.12.0",
+    "playwright>=1.40.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = [".claude/skills"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = ["E501", "E741"]
