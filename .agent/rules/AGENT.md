@@ -31,3 +31,4 @@
 - **港股資料查詢 Skill**：@[.claude/skills/hk-market-data/SKILL.md](../../.claude/skills/hk-market-data/SKILL.md)
 - **股價與配息抓取 Skill**：@[.claude/skills/price-dividend-fetcher/SKILL.md](../../.claude/skills/price-dividend-fetcher/SKILL.md)
 - **Markdown 檢查 Skill**：@[.claude/skills/markdown-linter/SKILL.md](../../.claude/skills/markdown-linter/SKILL.md)
+- **00882 成分股股利調查工作流**：@[.claude/workflows/component-dividend-investigation.md](../../.claude/workflows/component-dividend-investigation.md)
