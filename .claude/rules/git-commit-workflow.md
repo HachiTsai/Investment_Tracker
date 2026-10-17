@@ -29,4 +29,5 @@ python3 .claude/skills/fin-commit/scripts/committer.py --no-stage --message-file
 
 - 規格書 SSOT：`.claude/skills/fin-commit/references/spec-git-commit-protocol.md`。
 - 一個 commit 只記錄一個投資事件或一個主題。
-- 嚴禁提交券商帳號、密碼、身分證字號等敏感個資。
+- 嚴禁提交券商帳號、密碼、身分證字號等敏感個資（腳本會自動以 `find_sensitive` 攔截）。
+- 嚴禁未經記錄即引用第三方套件（腳本會自動以 AST 掃描 staged `.py` 檔案與 `pyproject.toml`，未同步時自動攔截中止，可加 `--allow-missing-deps` 略過）。

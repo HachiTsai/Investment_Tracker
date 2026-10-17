@@ -153,3 +153,37 @@ def test_spec_template_examples_are_consistent():
         assert f"`{t}`" in spec, f"規格書缺少 type {t}"
     for category in c.CATEGORIES_REGISTRY:
         assert category in spec, f"規格書缺少類別 {category}"
+
+
+def test_find_sensitive():
+    assert c.find_sensitive(["main.py", "README.md"]) == []
+    hits = c.find_sensitive([".env", "server.key", "credentials.json", "safe.py"])
+    assert len(hits) == 3
+
+
+def test_find_dependency_and_rule_sync_issues(tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    pyproj = repo / "pyproject.toml"
+    pyproj.write_text('[project]\nname = "test"\ndependencies = ["pytest>=8.0.0"]\n')
+
+    rules_dir = repo / ".claude" / "rules"
+    rules_dir.mkdir(parents=True)
+    rule_env = rules_dir / "python-environment.md"
+    rule_env.write_text('# Python Env\n```toml\n[project]\nname = "test"\ndependencies = ["pytest>=8.0.0"]\n```\n')
+
+    app_py = repo / "app.py"
+    app_py.write_text("import os\nimport pytest\n")
+
+    # All in sync
+    assert c.find_dependency_issues(["app.py"], repo_root=repo) == []
+
+    # Unrecorded package imported
+    app_py.write_text("import os\nimport unrecorded_pkg_xyz\n")
+    issues = c.find_dependency_issues(["app.py"], repo_root=repo)
+    assert any("unrecorded_pkg_xyz" in issue for issue in issues)
+
+    # Missing from rule_env
+    pyproj.write_text('[project]\nname = "test"\ndependencies = ["pytest>=8.0.0", "requests>=2.0.0"]\n')
+    issues = c.find_dependency_issues([], repo_root=repo)
+    assert any("requests" in issue and "未同步至 .claude/rules/python-environment.md" in issue for issue in issues)
