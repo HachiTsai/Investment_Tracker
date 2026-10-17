@@ -22,6 +22,10 @@
 - **禁止只安裝不記錄**：新增任何第三方套件時，**嚴禁**只執行 `pip install <pkg>` 或手動安裝而不更新設定檔。一律優先使用 **`uv add <pkg>`** 進行安裝，或手動在 `pyproject.toml` 登記。
 - **腳本以標準函式庫為原則**：`.claude/skills/` 內的所有自動化工具與抓取腳本，以只使用 Python 標準函式庫為原則，避免環境相依問題。
 - **規則檔與設定檔必須完全一致**：下方第 3 節收錄了標準 `pyproject.toml` 完整內容。當透過 `uv add <pkg>` 或手動更新 `pyproject.toml` 時，**必須同步更新本檔案下方區塊**，確保兩者 100% 一致。`committer.py` 提交時會自動進行 AST 掃描與雙向比對攔截。
+- **依賴分層原則（頂層直接依賴 vs 下游間接依賴）**：
+  - **僅鎖定直接依賴**：專案的 `pyproject.toml` 僅記錄並鎖定專案核心程式碼直接 `import` 或直接呼叫的「頂層直接依賴（Direct Dependencies）」。
+  - **下游相依項由解析器管理**：由核心套件自動引入之「下游間接依賴（Transitive / Sub-dependencies，例如 `scikit-learn`、`cvxpy`、`seaborn`、`curl_cffi`、`aiohttp` 等）」由套件管理工具（如 `uv` / `pip`）自動解析與相依性求解，**不需亦不應手動攤平登記至 `pyproject.toml`**，避免依賴過度耦合與版本釘死衝突。
+  - **手動安裝檢核原則**：本機 Conda 環境（`ai-it-go`）若偵測到新安裝套件，須確認其性質：若為使用者手動安裝且預期供專案直接引用的新套件，必須同步補登至 `pyproject.toml` 與本規則檔；若僅為已知核心套件之子相依項，則維持環境現狀，無須額外在 `pyproject.toml` 擴充。
 - **測試覆蓋與提交前驗證**：提交前必須先在本機 Conda 環境跑過全數測試（`pytest`）並通過 `markdown-linter` 檢查。
 
 ## 3. 標準 `pyproject.toml` 內容（須與專案根目錄保持一致）
