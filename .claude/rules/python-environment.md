@@ -46,7 +46,16 @@ dependencies = [
     "pymupdf>=1.24.0",
     "beautifulsoup4>=4.12.0",
     "playwright>=1.40.0",
+    # 金融數據、技術指標、投資組合分析與視覺化
+    "yfinance>=1.7.0",
+    "finmind>=2.0.0",
+    "ta>=0.11.0",
+    "quantstats>=0.0.86",
+    "pyportfolioopt>=1.6.0",
+    "plotly>=7.1.0",
+    "mplfinance>=0.12.10b0",
 ]
+
 
 [tool.pytest.ini_options]
 testpaths = [".claude/skills"]
