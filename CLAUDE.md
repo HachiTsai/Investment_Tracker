@@ -20,6 +20,7 @@
 - **投資組合控制系統架構規範**：@[.claude/rules/portfolio-control-system.md](.claude/rules/portfolio-control-system.md)
 - **00882 成分股股利調查工作流**：@[.claude/workflows/component-dividend-investigation.md](.claude/workflows/component-dividend-investigation.md)
 - **投資組合全標的自動巡檢工作流**：@[.claude/workflows/portfolio-patrol.md](.claude/workflows/portfolio-patrol.md)
+- **情資管線與 APP 整合架構**：@[architecture/情資管線與APP整合架構.md](architecture/情資管線與APP整合架構.md)
 
 ## 投資目標與原則
 
