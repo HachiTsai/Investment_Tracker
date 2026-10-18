@@ -27,6 +27,9 @@ python3 $S --json
 
 # 4. 同步原地更新至 Drive 總裁戰報 Google Doc
 python3 $S --sync-doc <GOOGLE_DOC_ID>
+
+# 5. 原地更新 reports/portfolio_briefing.md，自動 commit & push 觸發 Slack 總裁戰報
+python3 $S --commit
 ```
 
 ## 核心規則
