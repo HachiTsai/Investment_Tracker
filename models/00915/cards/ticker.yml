@@ -1,0 +1,12 @@
+id: card:ticker:00915
+type: ticker
+schema_version: 1.0.0
+ticker: "00915"
+title: "凱基優選高股息30"
+full_name: "凱基台灣優選高股息30ETF證券投資信託基金"
+currency: TWD
+exchange: TWSE
+category: ETF
+manager: "丁紹曾"
+benchmark: "臺灣指數公司特選臺灣上市上櫃多因子優選高股息30指數"
+last_model_update: "2026-10-18"

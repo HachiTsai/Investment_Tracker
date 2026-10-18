@@ -1,0 +1,12 @@
+id: card:ticker:00918
+type: ticker
+schema_version: 1.0.0
+ticker: "00918"
+title: "大華優利高填息30 ETF"
+full_name: "大華銀台灣優選股利高填息30ETF證券投資信託基金"
+currency: TWD
+exchange: TWSE
+category: ETF
+manager: "張文傑"
+benchmark: "特選台灣優利高填息30指數"
+last_model_update: "2026-10-18"

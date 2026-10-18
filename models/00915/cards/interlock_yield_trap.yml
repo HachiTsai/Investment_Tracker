@@ -1,0 +1,5 @@
+id: card:interlock:yield_trap
+type: interlock
+target_ticker: "00915"
+condition: "yield_pct > 8.0 and net_score < 50"
+action: "觸發陷阱防護警戒，暫停追高加碼"

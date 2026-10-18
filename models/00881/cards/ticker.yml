@@ -1,0 +1,12 @@
+id: card:ticker:00881
+type: ticker
+schema_version: 1.0.0
+ticker: "00881"
+title: "國泰台灣科技龍頭"
+full_name: "國泰台灣科技龍頭ETF證券投資信託基金"
+currency: TWD
+exchange: TWSE
+category: ETF
+manager: "李偉正"
+benchmark: "臺灣指數公司特選臺灣上市上櫃FactSet科技龍頭通訊指數"
+last_model_update: "2026-10-18"

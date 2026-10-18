@@ -1,0 +1,12 @@
+id: card:ticker:00692
+type: ticker
+schema_version: 1.0.0
+ticker: "00692"
+title: "富邦公司治理"
+full_name: "富邦臺灣公司治理100證券投資信託基金"
+currency: TWD
+exchange: TWSE
+category: ETF
+manager: "黃昭棠"
+benchmark: "臺灣證券交易所公司治理100指數"
+last_model_update: "2026-10-18"

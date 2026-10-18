@@ -1,0 +1,6 @@
+id: card:loop:dividend_500k
+type: loop
+target_ticker: "00881"
+setpoint_sp: 500000
+currency: TWD
+action: "定期定額或股息再投入"
