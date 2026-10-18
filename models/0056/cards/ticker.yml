@@ -1,0 +1,12 @@
+id: card:ticker:0056
+type: ticker
+schema_version: 1.0.0
+ticker: "0056"
+title: "元大高股息"
+full_name: "元大台灣高股息證券投資信託基金"
+currency: TWD
+exchange: TWSE
+category: ETF
+manager: "劉宗聖"
+benchmark: "臺灣高股息指數"
+last_model_update: "2026-10-18"

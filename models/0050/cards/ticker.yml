@@ -1,0 +1,12 @@
+id: card:ticker:0050
+type: ticker
+schema_version: 1.0.0
+ticker: "0050"
+title: "元大台灣50"
+full_name: "元大台灣卓越50證券投資信託基金"
+currency: TWD
+exchange: TWSE
+category: ETF
+manager: "劉宗聖"
+benchmark: "臺灣50指數"
+last_model_update: "2026-10-18"

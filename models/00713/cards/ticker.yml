@@ -1,0 +1,12 @@
+id: card:ticker:00713
+type: ticker
+schema_version: 1.0.0
+ticker: "00713"
+title: "元大台灣高息低波"
+full_name: "元大台灣高股息低波動ETF證券投資信託基金"
+currency: TWD
+exchange: TWSE
+category: ETF
+manager: "劉宗聖"
+benchmark: "臺灣指數公司特選高股息低波動指數"
+last_model_update: "2026-10-18"

@@ -15,7 +15,7 @@ def format_ascii_dashboard(report: Dict[str, Any]) -> str:
     lines.append("=" * 86)
     lines.append(f"  📊  投資組合全標的每日巡檢簡報  ｜  {report['date_str']}")
     lines.append("=" * 86)
-    lines.append(f"【總體姿態】: {report['overall_posture']}")
+    lines.append(f"【總體狀態】: {report['overall_posture']}")
     lines.append(f"【決策指引】: {report['decision_item']}")
     lines.append(f"【宏觀前饋】: {report['macro_feed']}")
     lines.append("-" * 86)
