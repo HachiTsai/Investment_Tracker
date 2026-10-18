@@ -18,9 +18,8 @@
 flowchart TD
     A["1. hk-market-data 檢索公告"] --> B["2. 提煉事實數據與 PDF 原文"]
     B --> C["3. tool-note-writer 產出 research 筆記"]
-    C --> D["4. gsheets 在 Google Drive 建立/更新原生試算表"]
-    D --> E["5. 分頁配置（明細表 + 摘要與觀點）"]
-    E --> F["6. 格式驗證（notes.py check + mdlint.py）"]
+    C --> D["4. gsheets 回填成分股母表與情報訊號入庫"]
+    D --> E["5. 雙向參照與合規檢查（notes.py check + mdlint.py）"]
 ```
 
 ### 步驟 1：檢索港交所披露易官方公告
@@ -50,39 +49,21 @@ python3 .claude/skills/hk-market-data/scripts/hkdata.py pdf <披露易PDF網址>
 - **遵循六大必填段落**：摘要、論點、依據、風險與反方觀點、追蹤指標、更新紀錄。
 - **事實與觀點分開**：依據段落記錄客觀除息表格與 PDF 原文連結；論點段落記錄對現金流與分紅常態化的解讀。
 
-### 步驟 4：建立與同步 Google Drive 原生 Google Sheet
+### 步驟 4：回填成分股母表與提煉情報訊號
 
-在雲端硬碟 `Portfolio_00882/成分股股利資料庫/` 目錄建立原生 Google Sheet：
+1. **回填母表「00882_成分股股利資料庫」**（ID `1Jq599WzoQUDsooZDhJhyK8uaEMgDiLLCoZthWk2WXtw`，在 `Portfolio_00882/成分股股利資料庫`）：
+   - 讀取分頁「成分股」現有內容。
+   - 將查得的最新分紅數據更新至對應成分股代號列的 `interim2026` 欄位（例如「派息每股0.43元」）。
+   - 維護現有母表單一真實來源，**嚴禁隨意另建孤立試算表**，確保 Stock_AIStudio APP 讀取之資料庫始終保持同步。
 
-1. **尋找目錄 ID**：
-
-   ```bash
-   gdrive readonly search --name-exact "成分股股利資料庫" --type folder
-   ```
-
-2. **建立 Google Sheet 並移動至目標目錄**：
-
-   ```bash
-   gsheets mutate create --title "00882_核心成分股2026中期配息調查"
-   gdrive mutate mv <SHEET_ID> <FOLDER_ID>
-   ```
-
-3. **分頁 1 配置（數據明細表）**：
-   - 記錄代號、公司名稱、權重、每股配息 (RMB)、除息日、現金發放日、披露易公告。
-   - 套用樣式：凍結首列、標題列加粗與深藍底色（`#1b365d`）、自動欄寬（`autosize`）。
-4. **分頁 2 配置（摘要與觀點）**：
-   - 新增分頁 `摘要與觀點`：
-
-     ```bash
-     gsheets mutate add-sheet <SHEET_ID> --title "摘要與觀點"
-     ```
-
-   - 寫入調查摘要、核心論點、風險觀點、關鍵追蹤指標與資料來源。
-   - 套用樣式：設定欄寬（項目 260px / 內容 750px）並開啟文字自動換行（`--wrap`）。
+2. **提煉硬數據至「情報資料庫」**（ID `1BF2xvF0cmyODdN0nXR8QHbOTC3ikqswvSwBboY1cGQo`，在 `Portfolio_00882/情報與趨勢`）：
+   - 依據 `references/intel-sheet.md` 規格，將具代表性之重大分紅數據提煉為標準訊號列（`id` 為 `sig-YYYY-MM-DD-流水號`）。
+   - 事實放 `hardFacts`/`extractedMetrics`，推論放 `objectiveReasoning`（標「此為推論」），出處標記港交所公告原文。
+   - 使用 `gsheets` 寫入 `Untitled` 分頁，並依規則刷新 `評分歷史` 分頁。
 
 ### 步驟 5：雙向參照與合規檢查
 
-1. **筆記連結**：在 research 筆記的 `sources` 欄位加入新建立的 Google Sheet 連結。
+1. **筆記連結**：在 research 筆記的 `sources` 欄位確保指引至母表與公告出處。
 2. **合規驗證**：
 
    ```bash

@@ -28,7 +28,7 @@
 
 ## 目前狀態
 
-目前持股與股利缺口見 `architecture/股利目標模型.md` 和 `portfolio/snapshots/` 最新快照；本檔不重複列數字，避免每次重算都要改。
+目前持股與股利缺口見 `architecture/00882_股利目標模型.md` 和 `portfolio/snapshots/` 最新快照；本檔不重複列數字，避免每次重算都要改。
 
 ## ⛔ 嚴禁修改 Investment_Tracker_Core
 
