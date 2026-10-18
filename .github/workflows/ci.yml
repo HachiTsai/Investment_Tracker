@@ -28,6 +28,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: python -m pip install pytest
+      - run: python -m pip install pytest beautifulsoup4 requests pyyaml yfinance
       - name: pytest（.claude/skills/*/tests）
         run: python -m pytest -q .claude/skills
