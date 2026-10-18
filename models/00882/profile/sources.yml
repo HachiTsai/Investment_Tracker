@@ -1,0 +1,28 @@
+# 00882 控制單元外部資料來源設定（Profile Sources）
+version: 1
+ticker: "00882"
+name: "中信中國高股息"
+
+sources:
+  drive_constituent_sheet:
+    id: "1Jq599WzoQUDsooZDhJhyK8uaEMgDiLLCoZthWk2WXtw"
+    name: "00882_成分股股利資料庫"
+    tabs:
+      constituents: "成分股"
+      summary: "摘要"
+    schedule_maintainer: "claude_cloud_weekly_friday"
+
+  drive_intel_sheet:
+    id: "1BF2xvF0cmyODdN0nXR8QHbOTC3ikqswvSwBboY1cGQo"
+    name: "情報資料庫"
+    tabs:
+      signals: "Untitled"
+      score_history: "評分歷史"
+    schedule_maintainer: "claude_cloud_daily_weekdays"
+
+  market_feeds:
+    price_ticker: "TPE:00882"
+    yahoo_price: "00882.TW"
+    yahoo_fx_hkdtwd: "HKDTWD=X"
+    yahoo_fx_usdcnh: "USDCNH=X"
+    hang_seng_index: "^HSI"

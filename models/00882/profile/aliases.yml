@@ -1,0 +1,11 @@
+# 00882 控制單元別名對照表（Aliases）
+canonical: "00882"
+aliases:
+  - "中信中國高股息"
+  - "TPE:00882"
+  - "00882.TW"
+  - "中信中國高股息ETF"
+index:
+  canonical: "HSHDYI"
+  name: "恒生中國高股息率指數"
+  hang_seng_code: "HSHDYI"
