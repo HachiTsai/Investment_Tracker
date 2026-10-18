@@ -2,12 +2,16 @@
 """投資組合全標的自動巡檢與每日簡報引擎（Portfolio Patrol Engine）。
 
 用法：
+  # 全艦隊例行巡檢（零隱私公開簡報）
   python3 .claude/skills/portfolio-patrol/scripts/patrol.py
   python3 .claude/skills/portfolio-patrol/scripts/patrol.py --tickers 00882
   python3 .claude/skills/portfolio-patrol/scripts/patrol.py --json
   python3 .claude/skills/portfolio-patrol/scripts/patrol.py --markdown
   python3 .claude/skills/portfolio-patrol/scripts/patrol.py --sync-doc <DOC_ID>
   python3 .claude/skills/portfolio-patrol/scripts/patrol.py --commit [--dry-run] [--no-push]
+
+  # 單標的個人深潛試算與複利滾雪球時間線模擬
+  python3 .claude/skills/portfolio-patrol/scripts/patrol.py --inspect [00882] [--shares 300000] [--dca 0] [--price 15.20]
 """
 
 import argparse
@@ -41,6 +45,11 @@ from patrol_evaluator import (
     fetch_macro_telemetry,
     fetch_ticker_live_data,
     run_portfolio_patrol as _run_patrol,
+)
+from patrol_inspector import (
+    format_inspect_ascii,
+    inspect_ticker,
+    simulate_snowball,
 )
 from patrol_reporter import (
     format_ascii_dashboard,
@@ -76,8 +85,38 @@ def main(argv=None) -> int:
     parser.add_argument("--dry-run", action="store_true", help="模擬 commit 訊息生成，不實際執行 git commit")
     parser.add_argument("--no-push", action="store_true", help="提交後不執行 git push")
 
+    # 單標的深潛與個人持股試算參數
+    parser.add_argument(
+        "--inspect",
+        nargs="?",
+        const="00882",
+        metavar="TICKER",
+        help="單標的個人深潛運算與滾雪球時間線模擬（預設 00882）",
+    )
+    parser.add_argument("--shares", type=float, help="個人持股股數（預設由卡片讀取，例如 300000 股 / 300 張）")
+    parser.add_argument("--price", type=float, help="手動指定/覆蓋標的市價（TWD）")
+    parser.add_argument("--dca", type=float, default=0.0, help="每年預計額外定期定額投入本金（TWD）")
+
     args = parser.parse_args(argv)
 
+    # 1. 單標的深度試算模式
+    if args.inspect:
+        custom_models_dir = Path(args.models_dir) if args.models_dir else None
+        inspect_data = inspect_ticker(
+            ticker=args.inspect,
+            repo_root=REPO_ROOT,
+            shares=args.shares,
+            price_override=args.price,
+            dca=args.dca,
+            custom_models_dir=custom_models_dir,
+        )
+        if args.json:
+            print(json.dumps(inspect_data, ensure_ascii=False, indent=2))
+        else:
+            print(format_inspect_ascii(inspect_data))
+        return 0
+
+    # 2. 全艦隊巡檢模式
     filter_tickers = [t.strip() for t in args.tickers.split(",")] if args.tickers else None
     custom_models_dir = Path(args.models_dir) if args.models_dir else None
 

@@ -217,3 +217,35 @@ def test_build_patrol_commit_message(repo_root):
     import committer as c  # type: ignore
     errors, _ = c.validate_message(msg)
     assert errors == []
+
+
+def test_simulate_snowball():
+    # 測試複利滾雪球時間線
+    years, timeline = patrol.simulate_snowball(
+        shares=300000,
+        annual_div=0.86,
+        tax_retention=0.9923,
+        price=15.20,
+        target_income=500000.0,
+    )
+    assert 10 <= years <= 16
+    assert len(timeline) >= 10
+    assert timeline[-1]["is_goal_met"] is True
+
+
+def test_inspect_ticker(repo_root):
+    data = patrol.inspect_ticker(
+        ticker="00882",
+        repo_root=repo_root,
+        shares=300000,
+        price_override=15.20,
+    )
+    assert data["ticker"] == "00882"
+    assert data["loop_state"]["process_value_pv"] == pytest.approx(256013, abs=5)
+    assert data["loop_state"]["achievement_rate_pct"] == pytest.approx(51.2, 0.1)
+
+    ascii_out = patrol.format_inspect_ascii(data)
+    assert "00882 中信中國高股息" in ascii_out
+    assert "目標控制迴路與個人深度試算" in ascii_out
+    assert "500,000 TWD/年" in ascii_out
+
