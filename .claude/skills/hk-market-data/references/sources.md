@@ -11,6 +11,10 @@
 | CCASS 持股 | 港交所 `www3.hkexnews.hk/sdw/search/searchsdw.aspx`（ASP.NET 表單，先取 `__VIEWSTATE` 再 POST） | 參與者持股與占已發行股份比例；南向持股 = `A00003`（滬）＋`A00004`（深）；約可查一年內；港交所條款限個人非商業用途 |
 | 港股報價 | Yahoo Finance `query1.finance.yahoo.com/v8/finance/chart/<4位代號>.HK` | 延遲報價；`prev_close` 取日線倒數第二筆 |
 | 00882 持股與價格 | 中信投信 `etf/ETFHoldingWeight` | 以本週、7 天前、去年 12/31 三個日期的價格算產業加權漲跌 |
+| 基準利率 (LPR) | 東方財富 `datacenter-web.eastmoney.com` 報表 `RPTA_WEB_RATE` | 1 年期與 5 年期以上貸款市場報價利率（%） |
+| 國債收益率 | 中國債券信息網 `yield.chinabond.com.cn` | 中債國債 10 年期與 30 年期收益率曲線（%） |
+| 雙重匯率摩擦 | Yahoo Finance `USDCNH=X`、`HKDTWD=X` | 離岸人民幣匯率與港幣兌新台幣即時匯率 |
+| 航運與煤炭運價 | 上海航運交易所 `www.sse.net.cn` (`scfi`, `cbofi`) | 上海出口集裝箱運價指數 (SCFI)、中國沿海煤炭運價指數 (CBOFI) |
 
 ## 網路限制（2026-10-14 實測）
 

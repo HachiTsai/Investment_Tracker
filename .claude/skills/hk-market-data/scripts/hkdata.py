@@ -8,6 +8,7 @@
   hkdata.py ccass 0939 [--date 2026-10-13] [--compare-days 7]
   hkdata.py quote 0939 1919 [--range 1mo]
   hkdata.py sectors [--announce-days 8]
+  hkdata.py macro
 """
 import argparse, html, json, re, subprocess, sys, tempfile, urllib.parse, urllib.request
 from datetime import date, datetime, timedelta, timezone
@@ -257,6 +258,87 @@ def sectors(announce_days=0):
     return res
 
 
+# ---------- 宏觀經濟與前饋指標 ----------
+def parse_lpr(payload):
+    r = json.loads(payload)
+    if not r.get("success") or not r.get("result"):
+        raise RuntimeError(f"東方財富 LPR：{r.get('message')}")
+    d = r["result"]["data"][0]
+    return dict(date=d["TRADE_DATE"][:10], lpr_1y=float(d["LPR1Y"]), lpr_5y=float(d["LPR5Y"]))
+
+
+def parse_chinabond(html_text):
+    tables = re.findall(r"<tr[^>]*>(.*?)</tr>", html_text, re.S)
+    for t in tables:
+        cells = [re.sub(r"<[^>]+>", "", c).strip() for c in re.findall(r"<td[^>]*>(.*?)</td>", t, re.S)]
+        if len(cells) >= 10 and cells[0] == "中债国债收益率曲线":
+            return dict(date=cells[1], yield_10y=float(cells[8]), yield_30y=float(cells[9]))
+    return None
+
+
+def parse_sse_index(html_text, pattern_name):
+    """從上航所 HTML 萃取指數數值與漲跌"""
+    m = re.search(pattern_name + r".*?<td[^>]*>([0-9.]+)</td>\s*<td[^>]*>([0-9.]+)</td>\s*<td[^>]*>([+-]?[0-9.]+)</td>", html_text, re.S)
+    if m:
+        return dict(prev=float(m.group(1)), current=float(m.group(2)), change=float(m.group(3)))
+    m2 = re.search(pattern_name + r".*?<td[^>]*>([0-9.]+)</td>\s*<td[^>]*>([+-]?[0-9.]+)</td>", html_text, re.S)
+    if m2:
+        return dict(current=float(m2.group(1)), change=float(m2.group(2)))
+    return None
+
+
+def macro():
+    res = dict(fetched_at=now_utc(), indicators={})
+
+    # 1. 貨幣與基準利率 (LPR)
+    try:
+        url_lpr = "https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPTA_WEB_RATE&columns=ALL&sortColumns=TRADE_DATE&sortTypes=-1&token=894050c76af8597a853f5b408b759f5d&pageNumber=1&pageSize=1"
+        res["indicators"]["lpr"] = parse_lpr(http(url_lpr).decode())
+    except Exception as e:
+        res["indicators"]["lpr"] = dict(error=str(e))
+
+    # 2. 中國國債殖利率 (中債10年/30年)
+    try:
+        end_d = date.today().isoformat()
+        start_d = (date.today() - timedelta(days=14)).isoformat()
+        url_cb = f"https://yield.chinabond.com.cn/cbweb-pbc-web/pbc/historyQuery?startDate={start_d}&endDate={end_d}&gjqx=0&qxId=ycqx&locale=cn_ZH"
+        cb = parse_chinabond(http(url_cb).decode("utf-8", errors="ignore"))
+        res["indicators"]["china_treasury_yield"] = cb or dict(error="查無國債收益率資料")
+    except Exception as e:
+        res["indicators"]["china_treasury_yield"] = dict(error=str(e))
+
+    # 3. 外匯摩擦 (USD/CNH 離岸人民幣, HKD/TWD 港幣兌台幣)
+    try:
+        fx = {}
+        for sym, name in [("USDCNH=X", "USD_CNH"), ("HKDTWD=X", "HKD_TWD")]:
+            url = f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}?range=1d&interval=1d"
+            y = json.loads(http(url).decode())["chart"]["result"][0]["meta"]
+            fx[name] = dict(rate=y["regularMarketPrice"], symbol=sym)
+        res["indicators"]["fx"] = fx
+    except Exception as e:
+        res["indicators"]["fx"] = dict(error=str(e))
+
+    # 4. 航運與沿海煤炭運價指數 (SCFI, CBOFI)
+    try:
+        shipping = {}
+        url_scfi = "https://www.sse.net.cn/index/singleIndex?indexType=scfi"
+        scfi_html = http(url_scfi).decode("utf-8", errors="ignore")
+        scfi_data = parse_sse_index(scfi_html, "综合指数 Comprehensive Index")
+        if scfi_data:
+            shipping["scfi"] = scfi_data
+
+        url_coal = "https://www.sse.net.cn/index/singleIndex?indexType=cbofi"
+        coal_html = http(url_coal).decode("utf-8", errors="ignore")
+        coal_data = parse_sse_index(coal_html, "综合指数")
+        if coal_data:
+            shipping["coastal_coal_freight"] = coal_data
+        res["indicators"]["shipping_freight"] = shipping
+    except Exception as e:
+        res["indicators"]["shipping_freight"] = dict(error=str(e))
+
+    return res
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sp = p.add_subparsers(dest="cmd", required=True)
@@ -266,6 +348,7 @@ def main(argv=None):
     f = sp.add_parser("ccass"); f.add_argument("codes", nargs="+"); f.add_argument("--date"); f.add_argument("--compare-days", type=int, default=7); f.add_argument("--top", type=int, default=10)
     d = sp.add_parser("quote"); d.add_argument("codes", nargs="+"); d.add_argument("--range", default="1mo")
     e = sp.add_parser("sectors"); e.add_argument("--announce-days", type=int, default=0)
+    sp.add_parser("macro")
     o = p.parse_args(argv)
     rc = 0
     if o.cmd == "ccass":
@@ -294,6 +377,8 @@ def main(argv=None):
         print(t); return 0
     elif o.cmd == "southbound":
         res = southbound(o.days, o.crosscheck)
+    elif o.cmd == "macro":
+        res = macro()
     else:
         res = sectors(o.announce_days)
     print(json.dumps(res, ensure_ascii=False, indent=1))
@@ -302,3 +387,4 @@ def main(argv=None):
 
 if __name__ == "__main__":
     sys.exit(main())
+

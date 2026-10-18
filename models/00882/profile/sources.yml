@@ -26,3 +26,8 @@ sources:
     yahoo_fx_hkdtwd: "HKDTWD=X"
     yahoo_fx_usdcnh: "USDCNH=X"
     hang_seng_index: "^HSI"
+
+  patrol_briefing_doc:
+    id: "1_PORTFOLIO_PATROL_BRIEFING_DOC_ID"
+    name: "投資組合每日總裁戰報"
+    schedule_maintainer: "claude_cloud_daily_weekdays_1630_and_antigravity"
