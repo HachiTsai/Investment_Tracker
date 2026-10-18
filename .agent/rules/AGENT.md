@@ -26,6 +26,7 @@
 - **Python 執行環境與依賴規範**：@[.claude/rules/python-environment.md](../../.claude/rules/python-environment.md)
 - **Git 結構化提交流程規範**：@[.claude/rules/git-commit-workflow.md](../../.claude/rules/git-commit-workflow.md)
 - **外部網路連線與資料源清單**：@[.claude/rules/network-connectivity.md](../../.claude/rules/network-connectivity.md)
+- **投資組合控制系統架構規範**：@[.claude/rules/portfolio-control-system.md](../../.claude/rules/portfolio-control-system.md)
 - **Git 提交流程 Skill**：@[.claude/skills/fin-commit/SKILL.md](../../.claude/skills/fin-commit/SKILL.md)
 - **財商筆記撰寫 Skill**：@[.claude/skills/tool-note-writer/SKILL.md](../../.claude/skills/tool-note-writer/SKILL.md)
 - **港股資料查詢 Skill**：@[.claude/skills/hk-market-data/SKILL.md](../../.claude/skills/hk-market-data/SKILL.md)

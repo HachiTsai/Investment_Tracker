@@ -17,6 +17,7 @@
 - **Python 執行環境與依賴管理規範**：@[.claude/rules/python-environment.md](.claude/rules/python-environment.md)
 - **Git 結構化提交流程規範**：@[.claude/rules/git-commit-workflow.md](.claude/rules/git-commit-workflow.md)
 - **外部網路連線與資料來源清單**：@[.claude/rules/network-connectivity.md](.claude/rules/network-connectivity.md)
+- **投資組合控制系統架構規範**：@[.claude/rules/portfolio-control-system.md](.claude/rules/portfolio-control-system.md)
 - **00882 成分股股利調查工作流**：@[.claude/workflows/component-dividend-investigation.md](.claude/workflows/component-dividend-investigation.md)
 
 ## 投資目標與原則
