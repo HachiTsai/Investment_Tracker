@@ -1,620 +1,104 @@
-# ==========================================
-## 💰 Fin-Commit Workflow
-## 職責：自動化 Git 暫存、變更驗證與提交指令生成，確保 Commit Message 符合規格書 SSOT
-## 參考 delivery-commit-workflow/committer.py 改寫為財商版：
-##   單一詳細模板；類別／type／scope 依 staged 路徑自動判定，不逐次詢問使用者；
-##   交易紀錄是其中一種 commit，只多了必填的「交易明細」區塊。
-## --auto-quick 為獨立的純機械式精簡提交（交易紀錄禁用）。
-# ==========================================
+"""Fin-Commit Workflow 主入口。
+
+職責：自動化 Git 暫存、變更驗證與提交指令生成，確保 Commit Message 符合規格書 SSOT。
+本模組為 facade 入口，底層模組拆分為：
+- registry.py: 類別、Type 名冊與路徑推斷
+- validator.py: 格式檢查、算術核對與 Co-Author 補強
+- dep_guard.py: 敏感檔案檢查與 Python AST 依賴比對
+- git_ops.py: 底層 Git 命令、暫存與 Markdown Lint 檢查
+"""
 
 import argparse
-import ast
-import fnmatch
-import importlib.metadata
-import os
-import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from typing import List, Optional
 
-SKILL_DIR = Path(__file__).resolve().parent.parent
+from dep_guard import (
+    REPO_ROOT,
+    SENSITIVE_PATTERNS,
+    find_dependency_issues,
+    find_rule_sync_issues,
+    find_sensitive,
+    normalize_pkg_name,
+    parse_pyproject_deps,
+    parse_rule_toml_deps,
+    path_matches,
+)
+from git_ops import (
+    MDLINT_DIR,
+    SKILL_DIR,
+    get_git_diff,
+    get_git_stats,
+    get_staged_file_list,
+    git,
+    install_hook,
+    lint_staged_markdown,
+    run_git_add,
+)
+from registry import (
+    AGENT_REGISTRY,
+    AMOUNT_TOLERANCE,
+    AUTO_QUICK_FILE_SOFT_LIMIT,
+    AUTO_QUICK_GUARDED_FILES,
+    AUTO_QUICK_GUARDED_PREFIXES,
+    CATEGORIES_REGISTRY,
+    CATEGORY_ARCH,
+    CATEGORY_IT,
+    CATEGORY_PATH_RULES,
+    CATEGORY_PORTFOLIO,
+    CATEGORY_RESEARCH,
+    CATEGORY_TRADE,
+    CATEGORY_TREND,
+    COAUTHOR_LINE,
+    COAUTHOR_RE,
+    DATE_RE,
+    DEFAULT_CATEGORY,
+    DIFF_PREVIEW_CHARS,
+    DIVIDEND_SECTION,
+    ENV_FALSY_VALUES,
+    FIELD_RE,
+    HEADER_RE,
+    IMPACT_SECTION,
+    L1_UNSPECIFIED,
+    MAX_SUMMARY,
+    MESSAGE_FILE,
+    NUMBER_RE,
+    RECOMMENDED_SECTIONS,
+    REQUIRED_SECTION_FIELDS,
+    SECTION_RE,
+    SKIP_RE,
+    TICKER_RE,
+    TRADE_SECTION,
+    TRADE_TYPES,
+    TYPES,
+    UNKNOWN_AGENT,
+    UNKNOWN_AGENT_LABEL,
+    check_auto_quick_guard,
+    detect_agent,
+    get_agent_label,
+    infer_category,
+    infer_commit_type,
+    infer_scope,
+    normalize_agent,
+)
+from validator import (
+    ensure_coauthor_line,
+    first_number,
+    parse_sections,
+    report,
+    validate_message,
+)
+
 SPEC_PATH = SKILL_DIR / "references" / "spec-git-commit-protocol.md"
-MDLINT_DIR = SKILL_DIR.parent / "markdown-linter" / "scripts"
-try:
-    REPO_ROOT = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True).stdout.strip())
-except Exception:
-    REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 
-## ==============================================================================
-## 🏷️ 類別名冊 (Categories Registry) — 規格書 §2
-## ==============================================================================
 
-CATEGORY_TRADE = "交易紀錄"
-CATEGORY_PORTFOLIO = "持股分析"
-CATEGORY_ARCH = "財商架構"
-CATEGORY_RESEARCH = "投資研究"
-CATEGORY_TREND = "趨勢覺察"
-CATEGORY_IT = "IT"
-
-## 同時是多類別混合時的優先序：交易 > 持股 > 架構 > 研究 > 趨勢 > IT
-CATEGORIES_REGISTRY: List[str] = [
-    CATEGORY_TRADE, CATEGORY_PORTFOLIO, CATEGORY_ARCH, CATEGORY_RESEARCH, CATEGORY_TREND, CATEGORY_IT,
-]
-
-## 路徑前綴 → 類別；依序比對，第一個命中者勝出（較具體的前綴放前面）
-CATEGORY_PATH_RULES: List[Tuple[str, str]] = [
-    ("portfolio/transactions/", CATEGORY_TRADE),
-    ("portfolio/", CATEGORY_PORTFOLIO),
-    ("architecture/", CATEGORY_ARCH),
-    ("research/", CATEGORY_RESEARCH),
-    ("journal/", CATEGORY_RESEARCH),
-    ("trends/", CATEGORY_TREND),
-]
-
-DEFAULT_CATEGORY: str = CATEGORY_IT
-
-## ==============================================================================
-## 🧾 Type 名冊 — 規格書 §3.1
-## ==============================================================================
-
-TYPES: Dict[str, str] = {
-    "buy": "買進",
-    "sell": "賣出",
-    "reinvest": "股息再投入",
-    "rebal": "換股／再平衡",
-    "div": "股利",
-    "cash": "資金進出",
-    "fee": "費用",
-    "snap": "持股快照",
-    "price": "行情更新",
-    "goal": "目標調整",
-    "arch": "財商架構",
-    "research": "研究",
-    "trend": "趨勢覺察",
-    "journal": "投資日誌",
-    "fix": "修正",
-    "tool": "工具",
-    "docs": "文件",
-    "chore": "雜項",
-}
-
-TRADE_TYPES: Tuple[str, ...] = ("buy", "sell", "reinvest", "rebal")
-
-TRADE_SECTION = "交易明細"
-DIVIDEND_SECTION = "股利明細"
-
-## type → (必填區塊, 區塊內必填欄位)
-REQUIRED_SECTION_FIELDS: Dict[str, Tuple[str, List[str]]] = {
-    "buy": (TRADE_SECTION, ["日期", "數量", "價格", "金額", "手續費", "理由"]),
-    "sell": (TRADE_SECTION, ["日期", "數量", "價格", "金額", "手續費", "損益", "理由"]),
-    "reinvest": (TRADE_SECTION, ["日期", "數量", "價格", "金額", "手續費", "理由"]),
-    "rebal": (TRADE_SECTION, ["日期", "賣出", "買入", "理由"]),
-    "div": (DIVIDEND_SECTION, ["日期", "每股配息", "實收"]),
-}
-
-## 所有 commit 都應具備的區塊（缺少時僅警告）
-RECOMMENDED_SECTIONS: Tuple[str, ...] = ("核心變更", "變更理由", "驗證", "Session-Sync")
-IMPACT_SECTION = "目標影響"
-
-MAX_SUMMARY = 50
-AMOUNT_TOLERANCE = 1.0
-
-HEADER_RE = re.compile(r"^(?P<type>[a-z]+)(?P<bang>!)?\((?P<scope>[^()\s]+)\): (?P<summary>.+)$")
-SECTION_RE = re.compile(r"^##\s+(?P<title>.+?)\s*$")
-FIELD_RE = re.compile(r"^\s*[-*]\s*(\*\*)?(?P<key>[^:*：]+?)(\*\*)?\s*[:：]\s*(?P<value>.*)$")
-NUMBER_RE = re.compile(r"[-+]?\d[\d,]*(?:\.\d+)?")
-DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}")
-SKIP_RE = re.compile(r"^(Merge |Revert |fixup! |squash! )")
-
-## ==============================================================================
-## 🤖 執行者
-## ==============================================================================
-
-AGENT_REGISTRY: Dict[str, str] = {
-    "kimi": "Kimi",
-    "claude": "Claude",
-    "antigravity": "Antigravity",
-}
-UNKNOWN_AGENT: str = "unknown"
-UNKNOWN_AGENT_LABEL: str = "未標示"
-ENV_FALSY_VALUES: Tuple[str, ...] = ("", "0", "false", "no", "off")
-
-#: 署名固定不帶模型版本——換模型不必改模板（沿用 delivery-commit-workflow 裁定）
-COAUTHOR_LINE: str = "Co-Authored-By: Claude <noreply@anthropic.com>"
-COAUTHOR_RE = re.compile(r"^Co-Authored-By:\s*Claude\b", re.M | re.I)
-
-## L1 快速提交未帶入 狀態／下一步／阻塞 時的佔位語（可 grep，提示往前追溯）
-L1_UNSPECIFIED: str = "—（L1 快速提交未帶入，請往前追溯最近一筆完整提交）"
-
-## ==============================================================================
-## 🛡️ Auto-Quick 防呆閘門 — 規格書 §6
-## ==============================================================================
-
-AUTO_QUICK_GUARDED_PREFIXES: Tuple[str, ...] = (".claude/skills/fin-commit/",)
-AUTO_QUICK_GUARDED_FILES: Tuple[str, ...] = ("CLAUDE.md",)
-AUTO_QUICK_FILE_SOFT_LIMIT = 10
-
-MESSAGE_FILE = Path(".git/COMMIT_MSG_TEMP")
-DIFF_PREVIEW_CHARS = 3000
-
-## ==============================================================================
-## 🛠️ 偵測工具
-## ==============================================================================
-
-
-def _env_flag_is_true(name: str) -> bool:
-    return os.environ.get(name, "").strip().lower() not in ENV_FALSY_VALUES
-
-
-def normalize_agent(agent: Optional[str]) -> str:
-    key = (agent or "").strip().lower()
-    return key if key in AGENT_REGISTRY else UNKNOWN_AGENT
-
-
-def detect_agent(cli_agent: Optional[str] = None) -> str:
-    """執行者偵測：CLI --agent → 環境變數 AGENT_ID → CLAUDECODE → 未標示（不猜）。"""
-    if cli_agent:
-        return normalize_agent(cli_agent)
-    env_agent = os.environ.get("AGENT_ID", "").strip()
-    if env_agent:
-        return normalize_agent(env_agent)
-    if _env_flag_is_true("CLAUDECODE"):
-        return "claude"
-    return UNKNOWN_AGENT
-
-
-def get_agent_label(agent: Optional[str]) -> str:
-    key = normalize_agent(agent)
-    return UNKNOWN_AGENT_LABEL if key == UNKNOWN_AGENT else AGENT_REGISTRY[key]
-
-
-def infer_category(staged_files: List[str]) -> str:
-    """依 staged 路徑判定類別；混合時取優先序最高者。"""
-    found = set()
-    for path in staged_files:
-        for prefix, category in CATEGORY_PATH_RULES:
-            if path.startswith(prefix):
-                found.add(category)
-                break
-        else:
-            found.add(CATEGORY_IT)
-    for category in CATEGORIES_REGISTRY:
-        if category in found:
-            return category
-    return DEFAULT_CATEGORY
-
-
-TICKER_RE = re.compile(r"^(\d{4,6}[A-Z]?)_")  # 檔名慣例 <代號>_<主題>；日期檔用 - 不會誤判
-
-
-def _scope_of(path: str) -> Optional[str]:
-    parts = Path(path).parts
-    name = Path(path).name
-    if path == "CLAUDE.md":
-        return "claude"
-    if len(parts) >= 3 and parts[0] == ".claude" and parts[1] == "skills":
-        return parts[2]
-    if parts and parts[0] in ("research", "journal", "portfolio", "trends", "architecture"):
-        m = TICKER_RE.match(name)
-        if m:
-            return m.group(1)
-        return "portfolio" if parts[0] == "portfolio" else parts[0]
-    if parts and parts[0] == "scripts":
-        return "scripts"
-    return None
-
-
-def infer_scope(staged_files: List[str]) -> str:
-    """推斷 scope：唯一且過半的候選勝出，否則 project。"""
-    counts: Dict[str, int] = {}
-    for raw in staged_files:
-        scope = _scope_of(raw)
-        if scope:
-            counts[scope] = counts.get(scope, 0) + 1
-    if not counts:
-        return "project"
-    max_count = max(counts.values())
-    dominant = [s for s, c in counts.items() if c == max_count]
-    if len(dominant) == 1 and max_count >= sum(counts.values()) * 0.5:
-        return dominant[0]
-    return "project"
-
-
-def infer_commit_type(staged_files: List[str]) -> str:
-    """Auto-Quick 用的 type 推斷（純路徑，不判斷交易行為）。"""
-    paths = staged_files
-    if paths and all(p.startswith("portfolio/snapshots/") for p in paths):
-        return "snap"
-    if paths and all(p.startswith("architecture/") for p in paths):
-        return "arch"
-    if paths and all(p.startswith("research/") for p in paths):
-        return "research"
-    if paths and all(p.startswith("trends/") for p in paths):
-        return "trend"
-    if paths and all(p.startswith("journal/") for p in paths):
-        return "journal"
-    if paths and all(p.endswith(".md") for p in paths):
-        return "docs"
-    if any(p.startswith("scripts/") or p.endswith(".py") for p in paths):
-        return "tool"
-    return "chore"
-
-
-def check_auto_quick_guard(staged_files: List[str], category: str) -> List[str]:
-    """回傳 --auto-quick 的阻擋原因；空清單代表允許。"""
-    reasons: List[str] = []
-    if category == CATEGORY_TRADE:
-        reasons.append(f"類別為「{CATEGORY_TRADE}」——交易需要明細與數字核對，不可機械生成")
-    for path in staged_files:
-        if path in AUTO_QUICK_GUARDED_FILES:
-            reasons.append(f"{path}（Agent 執行規範 SSOT）")
-        elif any(path.startswith(p) for p in AUTO_QUICK_GUARDED_PREFIXES):
-            reasons.append(f"{path}（commit 規範本體）")
-    return reasons
-
-## ==============================================================================
-## 🔍 訊息檢查 — 規格書 §5
-## ==============================================================================
-
-
-def first_number(text: str) -> Optional[float]:
-    m = NUMBER_RE.search(text or "")
-    return float(m.group().replace(",", "")) if m else None
-
-
-def parse_sections(lines: List[str]) -> Dict[str, Dict[str, str]]:
-    """把 body 依 `## 標題` 切段，回傳 {標題首詞: {欄位: 值}}。
-
-    標題取第一個詞（去掉「（選用…）」等括號說明），讓模板註解不影響比對。
-    """
-    sections: Dict[str, Dict[str, str]] = {}
-    current: Optional[str] = None
-    for line in lines:
-        m = SECTION_RE.match(line)
-        if m:
-            current = re.split(r"[\s（(]", m.group("title"), maxsplit=1)[0]
-            sections.setdefault(current, {})
-            continue
-        if current is None:
-            continue
-        fm = FIELD_RE.match(line)
-        if fm:
-            key = fm.group("key").strip()
-            sections[current].setdefault(key, fm.group("value").strip())
-    return sections
-
-
-def validate_message(text: str) -> Tuple[List[str], List[str]]:
-    """回傳 (errors, warnings)。errors 非空即擋下提交。"""
-    lines = [l.rstrip("\r") for l in text.splitlines()]
-    while lines and not lines[0].strip():
-        lines.pop(0)
-    if not lines:
-        return ["commit message 是空的"], []
-
-    header = lines[0]
-    if SKIP_RE.match(header):
-        return [], []
-
-    m = HEADER_RE.match(header)
-    if not m:
-        return [f"標題格式應為 <type>(<scope>): <摘要>，實際：{header!r}"], []
-
-    errors: List[str] = []
-    warnings: List[str] = []
-    ctype, summary = m.group("type"), m.group("summary")
-
-    if ctype not in TYPES:
-        errors.append(f"未知的 type {ctype!r}，可用：{', '.join(TYPES)}")
-    if len(summary) > MAX_SUMMARY:
-        errors.append(f"摘要 {len(summary)} 字，超過 {MAX_SUMMARY} 字")
-    if summary.endswith(("。", ".")):
-        errors.append("摘要結尾不要加句號")
-    if len(lines) > 1 and lines[1].strip():
-        errors.append("標題與 body 之間要空一行")
-
-    sections = parse_sections(lines[1:])
-
-    if ctype in REQUIRED_SECTION_FIELDS:
-        section, fields = REQUIRED_SECTION_FIELDS[ctype]
-        if section not in sections:
-            errors.append(f"{ctype} 缺少「## {section}」區塊")
-        else:
-            missing = [f for f in fields if not sections[section].get(f)]
-            if missing:
-                errors.append(f"「{section}」缺少欄位：{', '.join(missing)}")
-
-    for name, fields in sections.items():
-        if all(fields.get(k) for k in ("數量", "價格", "金額")):
-            qty, price, amount = (first_number(fields[k]) for k in ("數量", "價格", "金額"))
-            if None in (qty, price, amount):
-                errors.append(f"「{name}」數量／價格／金額 無法解析為數字")
-            elif abs(qty * price - amount) > AMOUNT_TOLERANCE:
-                errors.append(
-                    f"「{name}」金額不符：{qty:,.0f} × {price} = {qty * price:,.0f}，寫的是 {amount:,.0f}"
-                )
-        date_value = fields.get("日期")
-        if date_value and not DATE_RE.match(date_value):
-            errors.append(f"「{name}」日期格式應為 YYYY-MM-DD，實際：{date_value!r}")
-
-    missing_sections = [s for s in RECOMMENDED_SECTIONS if s not in sections]
-    if missing_sections:
-        warnings.append(f"缺少建議區塊：{', '.join(missing_sections)}")
-    if ctype in TRADE_TYPES and IMPACT_SECTION not in sections:
-        warnings.append(f"{ctype} 會改變股利推估，建議加「## {IMPACT_SECTION}」")
-
-    return errors, warnings
-
-
-def report(errors: List[str], warnings: List[str]) -> bool:
-    for w in warnings:
-        print(f"   ⚠️  [Check] {w}", file=sys.stderr)
-    for e in errors:
-        print(f"   ❌ [Check] {e}", file=sys.stderr)
-    return not errors
-
-## ==============================================================================
-## ✍️ 訊息補強
-## ==============================================================================
-
-
-def ensure_coauthor_line(msg: str) -> str:
-    """訊息尾端補上 Co-Authored-By；已有者不重複（大小寫不敏感）。"""
-    if COAUTHOR_RE.search(msg):
-        return msg
-    newline = "\r\n" if "\r\n" in msg else "\n"
-    return msg.rstrip(newline) + newline * 2 + COAUTHOR_LINE + newline
-
-## ==============================================================================
-## 🛡️ 安全性與 Python 依賴／規則同步檢查
-## ==============================================================================
-
-SENSITIVE_PATTERNS = [
-    ".env*",
-    "*.pem",
-    "*.key",
-    "*.p12",
-    "*.pfx",
-    "credentials.json",
-    "client_secret*.json",
-    "service_account*.json",
-    "id_rsa*",
-    "id_ed25519*",
-]
-
-TOML_BLOCK_RE = re.compile(r"```toml\s*\n(.*?)\n```", re.DOTALL)
-REQ_PKG_RE = re.compile(r"^\s*([A-Za-z0-9_.\-]+)")
-
-
-def path_matches(path_str: str, pattern: str) -> bool:
-    p = Path(path_str)
-    if fnmatch.fnmatch(p.name, pattern):
-        return True
-    return any(fnmatch.fnmatch(part, pattern) for part in p.parts)
-
-
-def find_sensitive(files: Sequence[str]) -> List[str]:
-    hits = []
-    for f in files:
-        for pat in SENSITIVE_PATTERNS:
-            if path_matches(f, pat) or "/credentials/" in f.replace("\\", "/"):
-                hits.append(f"{f}（符合敏感檔規則 `{pat}`）")
-                break
-    return hits
-
-
-def normalize_pkg_name(name: str) -> str:
-    return re.sub(r"[-_.]+", "-", name).lower()
-
-
-DEPS_BLOCK_RE = re.compile(r"dependencies\s*=\s*\[(.*?)\]", re.DOTALL)
-ITEM_PKG_RE = re.compile(r'["\']([A-Za-z0-9_.\-]+)')
-
-
-def _extract_deps_from_toml(text: str) -> Set[str]:
-    m = DEPS_BLOCK_RE.search(text)
-    if not m:
-        return set()
-    block = m.group(1)
-    # Filter out comments if any
-    lines = [l.split("#")[0] for l in block.splitlines()]
-    clean_block = "\n".join(lines)
-    return {normalize_pkg_name(pkg) for pkg in ITEM_PKG_RE.findall(clean_block)}
-
-
-def parse_pyproject_deps(path: Path) -> Set[str]:
-    if not path.is_file():
-        return set()
-    return _extract_deps_from_toml(path.read_text(encoding="utf-8", errors="replace"))
-
-
-def parse_rule_toml_deps(path: Path) -> Set[str]:
-    if not path.is_file():
-        return set()
-    m = TOML_BLOCK_RE.search(path.read_text(encoding="utf-8", errors="replace"))
-    return _extract_deps_from_toml(m.group(1)) if m else set()
-
-
-def _local_module_names(repo_root: Path) -> Set[str]:
-    names: Set[str] = set()
-    skip_dirs = {".git", ".venv", "venv", "__pycache__", ".pytest_cache", "node_modules"}
-    for p in repo_root.rglob("*.py"):
-        if any(part in skip_dirs for part in p.parts):
-            continue
-        names.add(p.stem)
-        if p.parent != repo_root:
-            names.add(p.parent.name)
-    return names
-
-
-def find_rule_sync_issues(repo_root: Path = REPO_ROOT) -> List[str]:
-    """Verify that .claude/rules/*.md are indexed in both CLAUDE.md and .agent/rules/AGENT.md."""
-    issues: List[str] = []
-    claude_rules = repo_root / ".claude" / "rules"
-    agent_rules = repo_root / ".agent" / "rules"
-    agent_md = agent_rules / "AGENT.md"
-    claude_md = repo_root / "CLAUDE.md"
-
-    if agent_rules.is_dir():
-        extra_agent_files = [p.name for p in sorted(agent_rules.glob("*.md")) if p.name != "AGENT.md"]
-        if extra_agent_files:
-            issues.append(f".agent/rules/ 僅應保留 AGENT.md 單一入口，請將規則移至 .claude/rules/：{', '.join(extra_agent_files)}")
-
-    if claude_rules.is_dir():
-        rule_files = sorted(claude_rules.glob("*.md"))
-        if claude_md.is_file():
-            claude_text = claude_md.read_text(encoding="utf-8", errors="replace")
-            for rf in rule_files:
-                if rf.name not in claude_text:
-                    issues.append(f".claude/rules/{rf.name} 尚未加入 CLAUDE.md 索引中")
-        if agent_md.is_file():
-            agent_text = agent_md.read_text(encoding="utf-8", errors="replace")
-            for rf in rule_files:
-                if rf.name not in agent_text:
-                    issues.append(f".claude/rules/{rf.name} 尚未加入 .agent/rules/AGENT.md 索引中")
-    return issues
-
-
-def find_dependency_issues(files: Sequence[str], repo_root: Path = REPO_ROOT) -> List[str]:
-    """Check staged .py imports against pyproject.toml, and sync with .claude/rules/python-environment.md."""
-    issues: List[str] = find_rule_sync_issues(repo_root)
-    pyproj_path = repo_root / "pyproject.toml"
-    rule_path = repo_root / ".claude" / "rules" / "python-environment.md"
-    has_pyproj, has_rule = pyproj_path.is_file(), rule_path.is_file()
-    if not has_pyproj and not has_rule:
-        return issues
-
-    pyproj_pkgs = parse_pyproject_deps(pyproj_path)
-    rule_pkgs = parse_rule_toml_deps(rule_path)
-    declared = pyproj_pkgs | rule_pkgs
-
-    if has_pyproj and has_rule:
-        for pkg in sorted(pyproj_pkgs - rule_pkgs):
-            issues.append(f"{pkg}（僅在 pyproject.toml，未同步至 .claude/rules/python-environment.md）")
-        for pkg in sorted(rule_pkgs - pyproj_pkgs):
-            issues.append(f"{pkg}（僅在 .claude/rules/python-environment.md，未同步至 pyproject.toml）")
-
-    py_files = [f for f in files if Path(f).suffix.lower() == ".py" and (repo_root / f).is_file()]
-    if not py_files:
-        return issues
-
-    local_mods = _local_module_names(repo_root)
-    stdlib_mods = getattr(sys, "stdlib_module_names", set()) | {"__future__"}
-    pkg_dists = importlib.metadata.packages_distributions()
-
-    for f in py_files:
-        try:
-            tree = ast.parse((repo_root / f).read_text(encoding="utf-8", errors="replace"), filename=f)
-        except SyntaxError:
-            continue
-        imported: Set[str] = set()
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    imported.add(alias.name.split(".")[0])
-            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
-                imported.add(node.module.split(".")[0])
-
-        for mod in sorted(imported):
-            if mod in stdlib_mods or mod in local_mods:
-                continue
-            dists = pkg_dists.get(mod) or [mod]
-            if any(normalize_pkg_name(d) in declared for d in dists):
-                continue
-            dist = dists[0]
-            try:
-                spec = f"{dist}=={importlib.metadata.version(dist)}"
-            except importlib.metadata.PackageNotFoundError:
-                spec = dist
-            issues.append(f"{spec}（於 {f} 匯入 `{mod}`，未記錄於 pyproject.toml）")
-    return issues
-
-
-## ==============================================================================
-## 📦 Git 操作
-## ==============================================================================
-
-
-def git(*args: str, check: bool = True) -> subprocess.CompletedProcess:
-    return subprocess.run(["git", "-c", "core.quotePath=false", *args], capture_output=True, check=check)
-
-
-def get_staged_file_list() -> List[str]:
-    """已暫存檔案清單；強制 core.quotePath=false，避免中文路徑被跳脫。"""
-    try:
-        out = git("diff", "--staged", "--name-only").stdout.decode("utf-8", errors="replace")
-        return [line.strip() for line in out.splitlines() if line.strip()]
-    except subprocess.CalledProcessError:
-        return []
-
-
-def get_git_diff() -> str:
-    try:
-        return git("diff", "--staged").stdout.decode("utf-8", errors="replace")
-    except subprocess.CalledProcessError:
-        return ""
-
-
-def get_git_stats() -> str:
-    try:
-        return git("diff", "--staged", "--stat").stdout.decode("utf-8", errors="replace")
-    except subprocess.CalledProcessError:
-        return "N/A"
-
-
-def run_git_add(paths: Optional[List[str]] = None, exclude: Optional[List[str]] = None) -> bool:
-    """paths：清空暫存後只 add 指定路徑；exclude：git add . 後排除；皆無：git add .。"""
-    try:
-        if paths:
-            print("   🧹 [Git] 清空暫存區後只暫存指定路徑...")
-            subprocess.run(["git", "reset", "-q", "HEAD"], check=False)
-            print(f"   📦 [Git] git add -- {' '.join(paths)}")
-            subprocess.run(["git", "add", "--", *paths], check=True)
-            return True
-        print("   📦 [Git] git add .")
-        subprocess.run(["git", "add", "."], check=True)
-        if exclude:
-            print(f"   🚫 [Git] 排除：{' '.join(exclude)}")
-            subprocess.run(["git", "reset", "-q", "HEAD", "--", *exclude], check=False)
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"   ❌ [Git] 暫存失敗：{e}", file=sys.stderr)
-        return False
-
-
-def install_hook() -> int:
-    """安裝 commit-msg hook：任何 git commit 都經過 validate_message。"""
-    hooks_dir = Path(git("rev-parse", "--git-path", "hooks").stdout.decode().strip())
-    hooks_dir.mkdir(parents=True, exist_ok=True)
-    hook = hooks_dir / "commit-msg"
-    hook.write_text(f'#!/bin/sh\nexec python3 "{Path(__file__).resolve()}" --check "$1"\n', encoding="utf-8")
-    hook.chmod(0o755)
-    print(f"   ✅ [Hook] 已安裝 commit-msg hook：{hook}")
-    return 0
-
-## ==============================================================================
-## 🚀 提交
-## ==============================================================================
-
-
-def lint_staged_markdown(staged_files: List[str]) -> int:
-    """暫存區內的 .md 必須通過 markdown-linter；回傳 0 表示通過或無 .md。"""
-    md_files = [f for f in staged_files if f.lower().endswith(".md")]
-    if not md_files:
-        return 0
-    sys.path.insert(0, str(MDLINT_DIR))
-    try:
-        import mdlint
-    except ImportError:
-        print("   ❌ [MDLint] 找不到 markdown-linter skill（.claude/skills/markdown-linter/）", file=sys.stderr)
-        return 1
-    print(f"   🔍 [MDLint] 檢查暫存區 {len(md_files)} 個 Markdown 檔案...")
-    return mdlint.lint(md_files)
-
-
-def finalize_commit(message_file: Path, no_push: bool = False, dry_run: bool = False,
-                    skip_mdlint: bool = False) -> int:
+def finalize_commit(
+    message_file: Path,
+    no_push: bool = False,
+    dry_run: bool = False,
+    skip_mdlint: bool = False,
+) -> int:
     """Markdown lint、補上 Co-Author、檢查格式，通過後 commit（並 push）。"""
     if not skip_mdlint and lint_staged_markdown(get_staged_file_list()) != 0:
         print("❌ [Finalize] 暫存區的 Markdown 未通過 lint，未提交。可先執行 mdlint.py --fix。", file=sys.stderr)
@@ -752,10 +236,6 @@ def build_agent_directive(category: str, agent_label: str, stats: str, diff: str
 ==============================================================================
 """
 
-## ==============================================================================
-## 🚀 Main
-## ==============================================================================
-
 
 def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Fin-Commit Workflow（財商工程 commit 流程）")
@@ -835,8 +315,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     print(f"   🏷️  [Category] 類別：{category}（{how}）")
 
     if args.message_file:
-        return finalize_commit(args.message_file, no_push=args.no_push, dry_run=args.dry_run,
-                               skip_mdlint=args.skip_mdlint)
+        return finalize_commit(
+            args.message_file,
+            no_push=args.no_push,
+            dry_run=args.dry_run,
+            skip_mdlint=args.skip_mdlint,
+        )
 
     if args.auto_quick:
         reasons = check_auto_quick_guard(staged_files, category)
@@ -849,13 +333,21 @@ def main(argv: Optional[List[str]] = None) -> int:
         if len(staged_files) > AUTO_QUICK_FILE_SOFT_LIMIT:
             print(f"   ⚠️ [Auto-Quick] 暫存 {len(staged_files)} 檔，超過建議上限 {AUTO_QUICK_FILE_SOFT_LIMIT}。")
         message = build_quick_commit_message(
-            staged_files, category, agent=agent_id,
-            status=args.status, next_step=args.next_step, blocker=args.blocker,
+            staged_files,
+            category,
+            agent=agent_id,
+            status=args.status,
+            next_step=args.next_step,
+            blocker=args.blocker,
         )
         MESSAGE_FILE.parent.mkdir(parents=True, exist_ok=True)
         MESSAGE_FILE.write_text(message, encoding="utf-8")
-        return finalize_commit(MESSAGE_FILE, no_push=args.no_push, dry_run=args.dry_run,
-                               skip_mdlint=args.skip_mdlint)
+        return finalize_commit(
+            MESSAGE_FILE,
+            no_push=args.no_push,
+            dry_run=args.dry_run,
+            skip_mdlint=args.skip_mdlint,
+        )
 
     if not SPEC_PATH.exists():
         print(f"   ❌ [Contract] 找不到規格書：{SPEC_PATH}", file=sys.stderr)
