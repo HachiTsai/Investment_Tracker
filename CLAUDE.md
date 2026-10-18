@@ -114,10 +114,12 @@ scripts/                     共用計算或抓價工具
 
 ## 投資管理 Skill 開發規範
 
-- 放在 `.claude/skills/<kebab-case 名稱>/`，結構：`SKILL.md`、`scripts/`、`references/`、`tests/`。
-- `SKILL.md` 的 description 寫清楚何時觸發；規則類內容放 `references/` 作為 SSOT。
-- 腳本只用 Python 標準函式庫為原則；附 pytest 測試，用 `python3 -m pytest -q .claude/skills/<名稱>/tests` 執行。
-- 任何 skill 都只能**讀取** Investment_Tracker_Core，不得寫入（見上方禁令）。
+- **先盤點、擴充優先（Reuse & Extend First）**：建立任何新腳本或技能前，**必須強制盤點現有 6 大核心技能**。若既有領域（抓價殖利率、港股前饋指標、全標的巡檢評估、筆記與情資歸納）已涵蓋，一律**優先擴充現有技能**（以子模組拆分或新增 CLI 參數），嚴禁隨意在頂層 `scripts/` 建立未受技能管轄與測試覆蓋的孤立腳本（Orphan Scripts）。
+- **新建技能嚴格門檻**：唯有面對「全新領域且現有技能完全無法涵蓋、具備獨特觸發情境與獨立生命週期」之需求時，才獲准於 `.claude/skills/<kebab-case 名稱>/` 建立新技能。
+- **標準目錄結構**：每個技能必須具備 `SKILL.md`、`scripts/`、`references/`、`tests/`。
+- **觸發與規則職責**：`SKILL.md` 的 description 寫清楚何時觸發；規則類內容放 `references/` 作為 SSOT。
+- **腳本原則與測試要求**：腳本只用 Python 標準函式庫為原則；附 pytest 測試，用 `python3 -m pytest -q .claude/skills/<名稱>/tests` 執行。
+- **唯讀保護鐵律**：任何 skill 都只能**讀取** Investment_Tracker_Core，不得寫入（見上方禁令）。
 
 ## Git 與 Commit
 
