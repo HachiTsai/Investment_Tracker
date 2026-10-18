@@ -2,7 +2,7 @@
 """投資組合全標的自動巡檢與每日簡報引擎（Portfolio Patrol Engine）。
 
 用法：
-  # 全艦隊例行巡檢（零隱私公開簡報）
+  # 投資組合全標的例行巡檢（零隱私公開簡報）
   python3 .claude/skills/portfolio-patrol/scripts/patrol.py
   python3 .claude/skills/portfolio-patrol/scripts/patrol.py --tickers 00882
   python3 .claude/skills/portfolio-patrol/scripts/patrol.py --json
@@ -65,7 +65,7 @@ def run_portfolio_patrol(
     custom_models_dir: Optional[Path] = None,
     mock_macro: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    """執行全艦隊巡檢核心主程序（Facade 包裝器，預設帶入 REPO_ROOT）。"""
+    """執行投資組合全標的巡檢核心主程序（Facade 包裝器，預設帶入 REPO_ROOT）。"""
     return _run_patrol(
         repo_root=repo_root,
         filter_tickers=filter_tickers,
@@ -116,7 +116,7 @@ def main(argv=None) -> int:
             print(format_inspect_ascii(inspect_data))
         return 0
 
-    # 2. 全艦隊巡檢模式
+    # 2. 投資組合全標的巡檢模式
     filter_tickers = [t.strip() for t in args.tickers.split(",")] if args.tickers else None
     custom_models_dir = Path(args.models_dir) if args.models_dir else None
 

@@ -190,12 +190,12 @@ def test_find_dependency_and_rule_sync_issues(tmp_path):
 
 
 def test_patrol_commit_message_and_inference():
-    patrol_msg = """patrol(fleet): 🔵 全艦隊穩健複利 ｜ 50萬達成率 51.2% ｜ LPR 3.0% ｜ SCFI 3679
+    patrol_msg = """patrol(fleet): 🔵 全投資組合穩健複利 ｜ 50萬達成率 51.2% ｜ LPR 3.0% ｜ SCFI 3679
 
 ## 核心變更
 
-- 投資組合艦隊每日例行巡檢完成
-- 總體姿態：穩健複利
+- 投資組合每日例行巡檢完成
+- 總體狀態：穩健複利
 
 ## 變更理由
 

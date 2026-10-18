@@ -1,6 +1,6 @@
-"""投資組合評估與姿態互鎖計算模組 (Patrol Evaluator)。
+"""投資組合評估與狀態互鎖計算模組 (Patrol Evaluator)。
 
-負責宏觀數據整合、即時行情求值、BLS 姿態互鎖邏輯判斷與全艦隊巡檢執行。
+負責宏觀數據整合、即時行情求值、BLS 狀態互鎖邏輯判斷與全標的巡檢執行。
 """
 
 import datetime
@@ -223,7 +223,7 @@ def run_portfolio_patrol(
     custom_models_dir: Optional[Path] = None,
     mock_macro: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    """執行全艦隊巡檢核心主程序。"""
+    """執行投資組合全標的巡檢核心主程序。"""
     models_root = custom_models_dir if custom_models_dir else repo_root / "models"
     tickers = discover_tickers(models_root, filter_tickers)
 
@@ -263,7 +263,7 @@ def run_portfolio_patrol(
             alerts.append({
                 "ticker": ticker,
                 "type": evaluation["posture_key"],
-                "message": f"{ticker} 姿態調整：{evaluation['posture_label']} ({evaluation['posture_name']})",
+                "message": f"{ticker} 狀態調整：{evaluation['posture_label']} ({evaluation['posture_name']})",
                 "action": evaluation["valve_action"],
             })
 
@@ -278,11 +278,11 @@ def run_portfolio_patrol(
         overall_posture = "🚨 發現異常跳脫 / 閥門警報觸發"
         decision_item = "；".join(f"【{a['ticker']}】{a['action']}" for a in alerts if a["type"] in ("TRAP_ALERT", "VELOCITY_PAUSE"))
     elif alerts:
-        overall_posture = "🟡 艦隊戰術姿態微調"
+        overall_posture = "🟡 投資組合配置微調"
         decision_item = "；".join(f"【{a['ticker']}】{a['action']}" for a in alerts)
     else:
-        overall_posture = "🔵 全艦隊處於【穩健複利】姿態，例行性累積雪球"
-        decision_item = "全艦隊無異常跳脫，維持例行性再投入與資產配置。"
+        overall_posture = "🔵 全投資組合處於【穩健複利】狀態，例行性累積雪球"
+        decision_item = "全投資組合無異常跳脫，維持例行性再投入與資產配置。"
 
     macro_feed_str = _format_macro_feed(macro_data)
     agent = os.environ.get("AGENT_ID") or ("Claude" if os.environ.get("CLAUDECODE") else "Antigravity")

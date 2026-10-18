@@ -20,8 +20,8 @@ def format_ascii_dashboard(report: Dict[str, Any]) -> str:
     lines.append(f"【宏觀前饋】: {report['macro_feed']}")
     lines.append("-" * 86)
 
-    # 艦隊表格
-    lines.append(f"{'標的代號':<8} {'標的名稱':<18} {'現價':<10} {'殖利率':<9} {'當前戰術姿態':<16} {'目標達成率':<10} {'數據時效'}")
+    # 標的表格
+    lines.append(f"{'標的代號':<8} {'標的名稱':<18} {'現價':<10} {'殖利率':<9} {'當前狀態':<16} {'目標達成率':<10} {'數據時效'}")
     lines.append("-" * 86)
 
     for item in report.get("fleet", []):
@@ -58,17 +58,17 @@ def format_markdown_briefing(report: Dict[str, Any]) -> str:
     agent_name = report.get("agent", "Antigravity")
     lines.append(f"> ⏱️ 巡檢時間：{report['timestamp']} CST ｜ 巡檢代理：{agent_name}")
     lines.append("")
-    lines.append("## 🚨 今日焦點與戰術指引（例外管理 MBE）")
+    lines.append("## 🚨 今日焦點與指引（例外管理 MBE）")
     lines.append("")
-    lines.append(f"- 【總體姿態】：{report['overall_posture']}")
+    lines.append(f"- 【總體狀態】：{report['overall_posture']}")
     lines.append(f"- 【需決策事項】：{report['decision_item']}")
     lines.append(f"- 【宏觀前饋】：{report['macro_feed']}")
     lines.append("")
     lines.append("---")
     lines.append("")
-    lines.append("## 📊 資產艦隊目標控制迴路與戰術矩陣")
+    lines.append("## 📊 投資組合目標控制迴路與配置矩陣")
     lines.append("")
-    lines.append("| 標的代號 | 標的名稱 | 即時現價 | 模型殖利率 | 當前戰術姿態 | 50萬目標達成率 | 數據時效性 |")
+    lines.append("| 標的代號 | 標的名稱 | 即時現價 | 模型殖利率 | 當前狀態 | 50萬目標達成率 | 數據時效性 |")
     lines.append("| :--- | :--- | :---: | :---: | :---: | :---: | :---: |")
 
     for item in report.get("fleet", []):

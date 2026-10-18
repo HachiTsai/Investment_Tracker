@@ -48,14 +48,14 @@ def build_patrol_commit_message(report: Dict[str, Any], agent: str = "Antigravit
     lines.append("")
     lines.append("## 核心變更")
     lines.append("")
-    lines.append("- 投資組合艦隊每日例行巡檢完成（更新 reports/portfolio_briefing.md）")
-    lines.append(f"- 【總體姿態】：{report['overall_posture']}")
+    lines.append("- 投資組合每日例行巡檢完成（更新 reports/portfolio_briefing.md）")
+    lines.append(f"- 【總體狀態】：{report['overall_posture']}")
     lines.append(f"- 【決策指引】：{report['decision_item']}")
     lines.append(f"- 【宏觀前饋】：{report['macro_feed']}")
     lines.append("")
-    lines.append("### 📊 艦隊目標控制與戰術矩陣")
+    lines.append("### 📊 投資組合目標控制與配置矩陣")
     lines.append("")
-    lines.append("| 標的 | 現價 | 殖利率 | 當前戰術姿態 | 50萬目標達成率 | 數據時效性 |")
+    lines.append("| 標的 | 現價 | 殖利率 | 當前狀態 | 50萬目標達成率 | 數據時效性 |")
     lines.append("| :--- | :---: | :---: | :---: | :---: | :---: |")
     for item in fleet:
         t = item["ticker"]
@@ -77,11 +77,11 @@ def build_patrol_commit_message(report: Dict[str, Any], agent: str = "Antigravit
         lines.append(f"- 記錄 {len(alerts)} 項互鎖/心跳事件，處置指引自動派發")
     else:
         lines.append("- 各標的安全閥門全部正常閉合，無跳脫警報")
-    lines.append("- 戰報內容嚴格遵守零個人隱私外洩（無個人持股張數與成本金額）")
+    lines.append("- 簡報內容嚴格遵守零個人隱私外洩（無個人持股張數與成本金額）")
     lines.append("")
     lines.append("## Session-Sync")
     lines.append("")
-    status_str = "例行巡檢完成，艦隊穩健運轉中" if report.get("is_steady") else "🚨 警報發布中，等待複核"
+    status_str = "例行巡檢完成，投資組合穩健運轉中" if report.get("is_steady") else "🚨 警報發布中，等待複核"
     blocker_str = "無" if report.get("is_steady") else "；".join(f"{a['ticker']} 閥門閉鎖中" for a in alerts if a["type"] in ("TRAP_ALERT", "VELOCITY_PAUSE"))
     if not blocker_str:
         blocker_str = "無"

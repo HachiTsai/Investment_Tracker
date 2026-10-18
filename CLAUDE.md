@@ -94,6 +94,7 @@ scripts/                     共用計算或抓價工具
 | `price-dividend-fetcher` | 抓台、美、日、港股最新股價（Google Finance，Yahoo、證交所、櫃買備援）與歷史配息（台股 FinLab＋證交所驗證，海外 Yahoo），算近 12 個月殖利率；唯讀 |
 | `hk-market-data` | 查港交所公告與 PDF 原文、港股通南向資金、港股報價、00882 產業漲跌、宏觀前饋指標；唯讀 |
 | `portfolio-patrol` | 投資組合全標的自動巡檢與每日簡報，動態遍歷 models/*/cards/ 求值，例外管理（MBE）分診 |
+| `tw-etf-fetcher` | 抓取全市場台股 ETF 股號清單、穿透完整成分股與權重、計算投資組合實質曝險（Look-through），並支援一鍵生成 DCS 建模卡片；唯讀 |
 
 ## 思考類文件的寫法
 
