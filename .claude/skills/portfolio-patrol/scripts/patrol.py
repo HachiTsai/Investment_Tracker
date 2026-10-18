@@ -429,10 +429,12 @@ def run_portfolio_patrol(
 
     # 宏觀前饋摘要字串
     macro_feed_str = _format_macro_feed(macro_data)
+    agent = os.environ.get("AGENT_ID") or ("Claude" if os.environ.get("CLAUDECODE") else "Antigravity")
 
     return {
         "timestamp": now_str,
         "date_str": f"{today_date}（{weekday_cn}）",
+        "agent": agent,
         "overall_posture": overall_posture,
         "decision_item": decision_item,
         "macro_feed": macro_feed_str,
@@ -518,6 +520,9 @@ def format_markdown_briefing(report: Dict[str, Any]) -> str:
     """依照 references/briefing-template.md 規範產出標準 Google Doc Markdown 區塊。"""
     lines = []
     lines.append(f"# 投資組合每日總裁戰報 ｜ {report['date_str']}")
+    lines.append("")
+    agent_name = report.get("agent", "Antigravity")
+    lines.append(f"> ⏱️ 巡檢時間：{report['timestamp']} CST ｜ 巡檢代理：{agent_name}")
     lines.append("")
     lines.append("## 🚨 今日焦點與戰術指引（例外管理 MBE）")
     lines.append("")
