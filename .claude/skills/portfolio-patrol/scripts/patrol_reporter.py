@@ -1,4 +1,4 @@
-"""戰報與儀表板格式化模組 (Patrol Reporter)。
+"""巡檢簡報與儀表板格式化模組 (Patrol Reporter)。
 
 負責將巡檢結果格式化為 ASCII 儀表板、Markdown 簡報、更新本機歷史紀錄及同步 Google Doc。
 """

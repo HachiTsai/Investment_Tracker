@@ -83,11 +83,24 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
             pass
 
     scores = {
-        "netScore": 78,
-        "divScore": 70,
-        "valScore": 85,
-        "fricScore": 80,
+        "netScore": 75.0,
+        "divScore": 70.0,
+        "valScore": 75.0,
+        "fricScore": 80.0,
     }
+
+    # 動態穿透計算基本面評分
+    fund_script_dir = repo_root / ".claude" / "skills" / "fundamental-analyzer" / "scripts"
+    if fund_script_dir.exists():
+        if str(fund_script_dir) not in sys.path:
+            sys.path.insert(0, str(fund_script_dir))
+        try:
+            from lookthrough_fundamentals import aggregate_etf_fundamentals
+            agg = aggregate_etf_fundamentals(ticker, top_n=10, repo_root=repo_root)
+            if agg and "scores" in agg:
+                scores = agg["scores"]
+        except Exception:
+            pass
 
     return {
         "price": price,
@@ -184,6 +197,7 @@ def evaluate_ticker_posture(
         "valve_action": valve_action,
         "goal_progress_pct": progress_pct,
         "goal_title": sp_title,
+        "scores": scores,
     }
 
 
@@ -296,6 +310,7 @@ def run_portfolio_patrol(
         "macro_feed": macro_feed_str,
         "macro_data": macro_data,
         "fleet": patrol_results,
+        "targets": patrol_results,
         "alerts": alerts,
         "is_steady": not has_abnormal_posture and not has_watchdog_warning,
     }
