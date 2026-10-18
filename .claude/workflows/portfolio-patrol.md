@@ -1,13 +1,13 @@
-# 投資組合全標的自動巡檢與總裁戰報工作流
+# 投資組合全標的自動巡檢與每日簡報工作流
 
-本工作流為投資組合全標的自動巡檢之標準作業程序（SOP），落實防孤兒架構（Git SSOT），由 Claude 雲端定時排程與 Antigravity 本機日常召喚共用同一套檢測邏輯與戰報規範。
+本工作流為投資組合全標的自動巡檢之標準作業程序（SOP），落實防孤兒架構（Git SSOT），由 Claude 雲端定時排程與 Antigravity 本機日常召喚共用同一套檢測邏輯與簡報規範。
 
 ---
 
 ## 1. 觸發時機
 
 - **平日盤後例行巡檢**：每個港股/台股交易日 16:30 盤後自動觸發（Claude 雲端平日定時任務，或 Antigravity 本機代班）。
-- **隨需總裁召喚**：使用者於對話框輸入「巡檢全艦隊」、「總裁戰報」、「檢查投資組合」、「艦隊姿態」、「各標的狀況」時立即執行。
+- **隨需巡檢召喚**：使用者於對話框輸入「巡檢全標的」、「每日簡報」、「檢查投資組合」、「資產姿態」、「各標的狀況」時立即執行。
 - **重大行情巨震時**：南向資金單日大幅轉向、大盤大幅回檔或核心成分股重大利好/利空發布時。
 
 ---
@@ -18,12 +18,17 @@
 flowchart TD
     A["1. 宏觀與前饋數據抓取 (hkdata.py macro)"] --> B["2. 動態掃描 models/*/cards/"]
     B --> C["3. 數據心跳檢查 (Watchdog)"]
-    C --> D["4. 閉環目標與風控互鎖求值 (DCS & BLS)"]
-    D --> E["5. 例外管理分診 (MBE)"]
-    E --> F["6. 產出終端 ASCII 儀表板 / Google Doc 戰報"]
+    D["4. 閉環目標與風控互鎖求值 (DCS & BLS)"]
+    E["5. 例外管理分診 (MBE)"]
+    F["6. 產出終端 ASCII 儀表板 / Google Doc 簡報"]
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
 ```
 
-### 步驟 1：執行全艦隊巡檢核心指令
+### 步驟 1：執行全標的巡檢核心指令
 
 在 REPO 根目錄執行專屬巡檢腳本：
 
@@ -34,7 +39,7 @@ python3 .claude/skills/portfolio-patrol/scripts/patrol.py
 # 輸出 Google Doc 標準排版 Markdown 區塊
 python3 .claude/skills/portfolio-patrol/scripts/patrol.py --markdown
 
-# 同步寫入總裁戰報 Google Doc（原地更新）
+# 同步寫入每日簡報 Google Doc（原地更新）
 python3 .claude/skills/portfolio-patrol/scripts/patrol.py --sync-doc <GOOGLE_DOC_ID>
 ```
 
@@ -62,12 +67,12 @@ python3 .claude/skills/portfolio-patrol/scripts/patrol.py --sync-doc <GOOGLE_DOC
 
 比對 `constituents.jsonl` 與情報庫之時間戳記：
 
-- 若超過 `max_stale_days`（預設 5 個交易日，如週五母表未更），自動於戰報標記警告並通知維護。
+- 若超過 `max_stale_days`（預設 5 個交易日，如週五母表未更），自動於簡報標記警告並通知維護。
 
-### 步驟 4：戰報發布與原地同步
+### 步驟 4：簡報發布與原地同步
 
-1. **對話框戰報呈現**：輸出排版清晰之 ASCII 表格與決策導引。
-2. **Google Doc 總裁戰報同步**：維持固定單一真實文件，保留最近 5 個交易日歷史滾動，移除過期舊紀錄，**嚴禁隨意建立散落的孤立文件**。
+1. **對話框簡報呈現**：輸出排版清晰之 ASCII 表格與決策導引。
+2. **Google Doc 每日簡報同步**：維持固定單一真實文件，保留最近 5 個交易日歷史滾動，移除過期舊紀錄，**嚴禁隨意建立散落的孤立文件**。
 
 ---
 
@@ -75,4 +80,4 @@ python3 .claude/skills/portfolio-patrol/scripts/patrol.py --sync-doc <GOOGLE_DOC
 
 - **雙執行者同構保證**：Claude 雲端定時排程與 Antigravity 本機日常召喚執行同一支 `scripts/patrol.py`，卡片規則修改立即對雙方生效。
 - **嚴格唯讀核心庫**：絕不寫入或變動 `Investment_Tracker_Core`。
-- **零隱私洩露**：公開戰報嚴禁記載個人持股張數、總成本、現金餘額或缺口金額，一律採用現價、殖利率（%）、達成率（%）與宏觀指數。
+- **零隱私洩露**：公開簡報嚴禁記載個人持股張數、總成本、現金餘額或缺口金額，一律採用現價、殖利率（%）、達成率（%）與宏觀指數。

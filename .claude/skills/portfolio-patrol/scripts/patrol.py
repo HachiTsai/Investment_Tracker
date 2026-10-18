@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""投資組合全標的自動巡檢與總裁戰報引擎（Portfolio Executive Patrol Engine）。
+"""投資組合全標的自動巡檢與每日簡報引擎（Portfolio Patrol Engine）。
 
 用法：
   python3 .claude/skills/portfolio-patrol/scripts/patrol.py
@@ -411,7 +411,7 @@ def run_portfolio_patrol(
 
         patrol_results.append(evaluation)
 
-    # 例外管理（MBE）總裁摘要總結
+    # 例外管理（MBE）摘要總結
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     today_date = datetime.date.today().isoformat()
     weekday_cn = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"][datetime.date.today().weekday()]
@@ -476,10 +476,10 @@ def _format_macro_feed(macro: Dict[str, Any]) -> str:
 
 
 def format_ascii_dashboard(report: Dict[str, Any]) -> str:
-    """輸出終端彩色 ASCII 戰情儀表板。"""
+    """輸出終端彩色 ASCII 巡檢儀表板。"""
     lines = []
     lines.append("=" * 86)
-    lines.append(f"  🚢  投資組合艦隊全標的每日總裁戰報  ｜  {report['date_str']}")
+    lines.append(f"  📊  投資組合全標的每日巡檢簡報  ｜  {report['date_str']}")
     lines.append("=" * 86)
     lines.append(f"【總體姿態】: {report['overall_posture']}")
     lines.append(f"【決策指引】: {report['decision_item']}")
@@ -519,7 +519,7 @@ def format_ascii_dashboard(report: Dict[str, Any]) -> str:
 def format_markdown_briefing(report: Dict[str, Any]) -> str:
     """依照 references/briefing-template.md 規範產出標準 Google Doc Markdown 區塊。"""
     lines = []
-    lines.append(f"# 投資組合每日總裁戰報 ｜ {report['date_str']}")
+    lines.append(f"# 投資組合每日巡檢簡報 ｜ {report['date_str']}")
     lines.append("")
     agent_name = report.get("agent", "Antigravity")
     lines.append(f"> ⏱️ 巡檢時間：{report['timestamp']} CST ｜ 巡檢代理：{agent_name}")
@@ -582,7 +582,7 @@ def update_briefing_file(markdown_block: str, repo_root: Path = REPO_ROOT) -> Pa
     today_header = markdown_block.splitlines()[0].strip() if markdown_block else ""
     existing_text = report_file.read_text(encoding="utf-8") if report_file.exists() else ""
 
-    blocks = re.split(r"(?=# 投資組合每日總裁戰報)", existing_text)
+    blocks = re.split(r"(?=# 投資組合每日(?:總裁戰報|巡檢簡報))", existing_text)
     clean_blocks = []
     for b in blocks:
         b = b.strip()

@@ -173,11 +173,11 @@ def test_patrol_report_and_mbe_output(repo_root):
 
     # 測試 ASCII 與 Markdown 格式化
     ascii_out = patrol.format_ascii_dashboard(report)
-    assert "投資組合艦隊全標的每日總裁戰報" in ascii_out
+    assert "投資組合全標的每日巡檢簡報" in ascii_out
     assert "00882" in ascii_out
 
     md_out = patrol.format_markdown_briefing(report)
-    assert "# 投資組合每日總裁戰報" in md_out
+    assert "# 投資組合每日巡檢簡報" in md_out
     assert "## 🚨 今日焦點與戰術指引（例外管理 MBE）" in md_out
     assert "## 📊 資產艦隊目標控制迴路與戰術矩陣" in md_out
 

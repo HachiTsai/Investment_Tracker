@@ -62,7 +62,7 @@ TYPES: Dict[str, str] = {
     "snap": "持股快照",
     "price": "行情更新",
     "goal": "目標調整",
-    "patrol": "巡檢戰報",
+    "patrol": "巡檢報告",
     "arch": "財商架構",
     "research": "研究",
     "trend": "趨勢覺察",

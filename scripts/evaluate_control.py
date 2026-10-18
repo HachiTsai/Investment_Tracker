@@ -340,7 +340,7 @@ def main():
 
     # 終端人眼儀表板
     print("=" * 66)
-    print(f"【{report['name']} 投資控制系統即時戰情】")
+    print(f"【{report['name']} 投資控制系統即時狀態】")
     print(f"數據時間: {report['timestamp']} ｜ 報價來源: {price_source}")
     print("-" * 66)
     print("🎯 [目標控制迴路: 50萬被動股利目標]")
