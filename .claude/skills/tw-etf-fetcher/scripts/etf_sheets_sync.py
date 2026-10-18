@@ -150,9 +150,21 @@ def generate_flattened_constituents(models: List[Dict[str, Any]]) -> List[Dict[s
 
 
 def generate_summary_rows(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """產生全市場 ETF 摘要清單。"""
+    """產生全市場 ETF 摘要清單（含基本面穿透評分）。"""
+    fund_dir = REPO_ROOT / ".claude" / "skills" / "fundamental-analyzer" / "scripts"
+    if fund_dir.exists() and str(fund_dir) not in sys.path:
+        sys.path.insert(0, str(fund_dir))
+
+    aggregate_func = None
+    try:
+        from lookthrough_fundamentals import aggregate_etf_fundamentals
+        aggregate_func = aggregate_etf_fundamentals
+    except ImportError:
+        pass
+
     rows: List[Dict[str, Any]] = []
     for m in models:
+        ticker = m["ticker"]
         constituents = m["constituents"]
         top1 = constituents[0] if len(constituents) > 0 else {}
         top2 = constituents[1] if len(constituents) > 1 else {}
@@ -163,8 +175,27 @@ def generate_summary_rows(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                 return "-"
             return f"{c.get('name', '')} ({c.get('weight_pct', 0.0)}%)"
 
+        w_roe = "-"
+        net_s = 70.0
+        div_s = 70.0
+        val_s = 70.0
+        fric_s = 80.0
+
+        if aggregate_func:
+            try:
+                res = aggregate_func(ticker, top_n=10, repo_root=REPO_ROOT)
+                sc = res.get("scores", {})
+                if res.get("weighted_roe") is not None:
+                    w_roe = f"{res.get('weighted_roe')}%"
+                net_s = sc.get("netScore", net_s)
+                div_s = sc.get("divScore", div_s)
+                val_s = sc.get("valScore", val_s)
+                fric_s = sc.get("fricScore", fric_s)
+            except Exception:
+                pass
+
         rows.append({
-            "etf_id": m["ticker"],
+            "etf_id": ticker,
             "etf_name": m["title"],
             "exchange": m["exchange"],
             "category": m["category"],
@@ -173,6 +204,11 @@ def generate_summary_rows(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             "top1_holding": format_top(top1),
             "top2_holding": format_top(top2),
             "top3_holding": format_top(top3),
+            "weighted_roe": w_roe,
+            "net_score": f"{net_s:.1f}",
+            "div_score": f"{div_s:.1f}",
+            "val_score": f"{val_s:.1f}",
+            "fric_score": f"{fric_s:.1f}",
             "last_model_update": m["last_model_update"],
         })
 
@@ -254,8 +290,14 @@ def run_sync_pipeline(
         "top1_holding",
         "top2_holding",
         "top3_holding",
+        "weighted_roe",
+        "net_score",
+        "div_score",
+        "val_score",
+        "fric_score",
         "last_model_update",
     ]
+
     constituents_fields = [
         "etf_id",
         "etf_name",
