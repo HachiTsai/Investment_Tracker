@@ -165,16 +165,16 @@ def format_inspect_ascii(report: Dict[str, Any]) -> str:
     lines.append(f"  • 情報庫評分  : netScore {scores.get('netScore', '-')} ｜ divScore {scores.get('divScore', '-')} ｜ valScore {scores.get('valScore', '-')}")
     lines.append("-" * 72)
 
-    lines.append("🛡️ [風控互鎖狀態與戰術姿態]")
-    lines.append(f"  • 當前戰術姿態: {interlock['posture_label']} ({interlock['posture_name']})")
+    lines.append("🛡️ [風控互鎖狀態與策略狀態]")
+    lines.append(f"  • 當前策略狀態: {interlock['posture_label']} ({interlock['posture_name']})")
     lines.append(f"  • 執行動作指引: {interlock['valve_action']}")
     lines.append("-" * 72)
 
     lines.append("⏳ [複利滾雪球時間線 (C 引擎)]")
     if snowball["annual_dca_twd"] > 0:
-        lines.append(f"  • 在當前姿態 + 每年額外加碼 {snowball['annual_dca_twd']:,.0f} TWD 下：")
+        lines.append(f"  • 在當前策略 + 每年額外加碼 {snowball['annual_dca_twd']:,.0f} TWD 下：")
     else:
-        lines.append("  • 在當前姿態 + 純股利再投入 (零額外本金) 下：")
+        lines.append("  • 在當前策略 + 純股利再投入 (零額外本金) 下：")
     lines.append(f"  • 預估達成「年被動股利 {loop['setpoint_sp']:,.0f} 萬」所需時間: 約 【{snowball['years_to_goal']}】 年")
     lines.append("=" * 72)
 

@@ -66,7 +66,7 @@ def format_markdown_briefing(report: Dict[str, Any]) -> str:
     lines.append("")
     lines.append("---")
     lines.append("")
-    lines.append("## 📊 投資組合目標控制迴路與配置矩陣")
+    lines.append("## 📊 投資組合目標達成進度與配置矩陣")
     lines.append("")
     lines.append("| 標的代號 | 標的名稱 | 即時現價 | 模型殖利率 | 當前狀態 | 50萬目標達成率 | 數據時效性 |")
     lines.append("| :--- | :--- | :---: | :---: | :---: | :---: | :---: |")

@@ -179,7 +179,7 @@ def test_patrol_report_and_mbe_output(repo_root):
     md_out = patrol.format_markdown_briefing(report)
     assert "# 投資組合每日巡檢簡報" in md_out
     assert "## 🚨 今日焦點與指引（例外管理 MBE）" in md_out
-    assert "## 📊 投資組合目標控制迴路與配置矩陣" in md_out
+    assert "## 📊 投資組合目標達成進度與配置矩陣" in md_out
 
     # 鐵律驗證：簡報絕對不能洩露個人持股張數 (300,000 / 300 張) 或 成本/本金金額
     assert "300,000" not in md_out
