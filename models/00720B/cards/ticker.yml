@@ -2,11 +2,11 @@ id: card:ticker:00720B
 type: ticker
 schema_version: 1.0.0
 ticker: "00720B"
-title: "00720B"
-full_name: "00720B"
+title: "元大投資級公司債"
+full_name: "元大彭博10年期以上AAA至A級美元公司債券ETF基金"
 currency: TWD
 exchange: TWSE
 category: ETF
-manager: "投信發行"
-benchmark: "對應指數"
+manager: "元大投信"
+benchmark: "彭博10年以上AAA-A級美元公司債券指數"
 last_model_update: "2026-10-18"

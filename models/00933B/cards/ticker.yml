@@ -2,11 +2,11 @@ id: card:ticker:00933B
 type: ticker
 schema_version: 1.0.0
 ticker: "00933B"
-title: "00933B"
-full_name: "00933B"
+title: "國泰10Y+金融債"
+full_name: "國泰彭博10年期以上金融債券ETF基金"
 currency: TWD
 exchange: TWSE
 category: ETF
-manager: "投信發行"
-benchmark: "對應指數"
+manager: "國泰投信"
+benchmark: "彭博10年期以上金融債券指數"
 last_model_update: "2026-10-18"

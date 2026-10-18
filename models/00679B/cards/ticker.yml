@@ -2,11 +2,11 @@ id: card:ticker:00679B
 type: ticker
 schema_version: 1.0.0
 ticker: "00679B"
-title: "00679B"
-full_name: "00679B"
+title: "元大美債20年"
+full_name: "元大美國政府20年期(以上)債券基金"
 currency: TWD
 exchange: TWSE
 category: ETF
-manager: "投信發行"
-benchmark: "對應指數"
+manager: "元大投信"
+benchmark: "ICE美國政府20+年期債券指數"
 last_model_update: "2026-10-18"

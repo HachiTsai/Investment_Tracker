@@ -93,7 +93,7 @@ def load_all_etf_models(models_dir: Path) -> List[Dict[str, Any]]:
 
         ticker_info = load_yaml_simple(ticker_file)
         ticker_code = model_path.name
-        ticker_name = str(ticker_info.get("title", ticker_code))
+        ticker_name = str(ticker_info.get("title", ticker_code)).replace("&amp;", "&")
 
         constituents: List[Dict[str, Any]] = []
         if constituents_file.exists():

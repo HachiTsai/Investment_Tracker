@@ -2,11 +2,11 @@ id: card:ticker:00687B
 type: ticker
 schema_version: 1.0.0
 ticker: "00687B"
-title: "00687B"
-full_name: "00687B"
+title: "國泰20年美債"
+full_name: "國泰彭博20年期(以上)美國公債指數基金"
 currency: TWD
 exchange: TWSE
 category: ETF
-manager: "投信發行"
-benchmark: "對應指數"
+manager: "國泰投信"
+benchmark: "彭博20年期(以上)美國公債指數"
 last_model_update: "2026-10-18"

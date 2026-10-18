@@ -2,11 +2,11 @@ id: card:ticker:00937B
 type: ticker
 schema_version: 1.0.0
 ticker: "00937B"
-title: "00937B"
-full_name: "00937B"
+title: "群益ESG投等債20+"
+full_name: "群益ESG 20年期以上BBB投資級公司債ETF基金"
 currency: TWD
 exchange: TWSE
 category: ETF
-manager: "投信發行"
-benchmark: "對應指數"
+manager: "群益投信"
+benchmark: "ICE 20年期以上BBB級成熟市場大型美元公司債券指數"
 last_model_update: "2026-10-18"

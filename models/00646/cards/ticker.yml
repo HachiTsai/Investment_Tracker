@@ -2,7 +2,7 @@ id: card:ticker:00646
 type: ticker
 schema_version: 1.0.0
 ticker: "00646"
-title: "元大S&amp;P500"
+title: "元大 S&P500"
 full_name: "元大標普500傘型證券投資信託基金之標普500證券投資信託基金"
 currency: TWD
 exchange: TWSE
