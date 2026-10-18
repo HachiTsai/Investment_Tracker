@@ -1,0 +1,12 @@
+id: card:ticker:00956
+type: ticker
+schema_version: 1.0.0
+ticker: "00956"
+title: "中信日經高股息"
+full_name: "中國信託日本ETF傘型證券投資信託基金之中國信託日經高股息50ETF證券投資信託基金"
+currency: TWD
+exchange: TWSE
+category: ETF
+manager: "陳金榮"
+benchmark: "日經高股息50指數"
+last_model_update: "2026-10-18"

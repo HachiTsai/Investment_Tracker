@@ -1,0 +1,12 @@
+id: card:ticker:00657
+type: ticker
+schema_version: 1.0.0
+ticker: "00657"
+title: "國泰日經225"
+full_name: "國泰日本ETF傘型證券投資信託基金之日經225證券投資信託基金"
+currency: TWD
+exchange: TWSE
+category: ETF
+manager: "李偉正"
+benchmark: "日經平均股價指數"
+last_model_update: "2026-10-18"

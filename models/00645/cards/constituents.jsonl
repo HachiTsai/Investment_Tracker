@@ -1,0 +1,1039 @@
+{"ticker": "2026/12東證指數期貨(FITJN*1.TF)", "name": "2026/12東證指數期貨(FITJN*1.TF)", "weight_pct": 9.88, "shares": 31}
+{"ticker": "8306.JP", "name": "MUFG", "weight_pct": 3.54, "shares": 130600}
+{"ticker": "7203.JP", "name": "TOYOTA MOTOR", "weight_pct": 2.49, "shares": 103200}
+{"ticker": "6501.JP", "name": "Hitachi", "weight_pct": 2.41, "shares": 53500}
+{"ticker": "8316.JP", "name": "SMFG", "weight_pct": 2.29, "shares": 89600}
+{"ticker": "6758.JP", "name": "SONY GROUP", "weight_pct": 2.17, "shares": 70300}
+{"ticker": "6098.JP", "name": "Recruit Holdings", "weight_pct": 2.16, "shares": 15000}
+{"ticker": "8035.JP", "name": "Tokyo Electron", "weight_pct": 1.83, "shares": 22100}
+{"ticker": "8411.JP", "name": "Mizuho Financial", "weight_pct": 1.81, "shares": 28850}
+{"ticker": "6857.JP", "name": "Advantest", "weight_pct": 1.7, "shares": 6300}
+{"ticker": "9984.JP", "name": "SoftBank Group", "weight_pct": 1.56, "shares": 40400}
+{"ticker": "8058.JP", "name": "Mitsubishi", "weight_pct": 1.51, "shares": 40800}
+{"ticker": "8766.JP", "name": "Tokio Marine Holdings", "weight_pct": 1.39, "shares": 319200}
+{"ticker": "8001.JP", "name": "Itochu", "weight_pct": 1.33, "shares": 74700}
+{"ticker": "6861.JP", "name": "Keyence", "weight_pct": 1.32, "shares": 2100}
+{"ticker": "8031.JP", "name": "MITSUI", "weight_pct": 1.23, "shares": 31500}
+{"ticker": "7011.JP", "name": "Mitsubishi Heavy", "weight_pct": 1.18, "shares": 39800}
+{"ticker": "6981.JP", "name": "Murata Mfg.", "weight_pct": 1.08, "shares": 20100}
+{"ticker": "4502.JP", "name": "Takeda Pharmaceutical", "weight_pct": 0.91, "shares": 18800}
+{"ticker": "6503.JP", "name": "Mitsubishi Electric", "weight_pct": 0.91, "shares": 23300}
+{"ticker": "9983.JP", "name": "Fast Retailing", "weight_pct": 0.88, "shares": 1500}
+{"ticker": "7974.JP", "name": "Nintendo", "weight_pct": 0.87, "shares": 13200}
+{"ticker": "4063.JP", "name": "Shin-Etsu Chemical", "weight_pct": 0.87, "shares": 18700}
+{"ticker": "9432.JP", "name": "NTT", "weight_pct": 0.79, "shares": 578800}
+{"ticker": "7741.JP", "name": "HOYA", "weight_pct": 0.78, "shares": 3900}
+{"ticker": "6752.JP", "name": "Panasonic Holdings", "weight_pct": 0.78, "shares": 25100}
+{"ticker": "2914.JP", "name": "Japan Tobacco", "weight_pct": 0.74, "shares": 12600}
+{"ticker": "8053.JP", "name": "Sumitomo", "weight_pct": 0.72, "shares": 52600}
+{"ticker": "6702.JP", "name": "Fujitsu", "weight_pct": 0.67, "shares": 19500}
+{"ticker": "9434.JP", "name": "SoftBank", "weight_pct": 0.65, "shares": 339900}
+{"ticker": "8002.JP", "name": "Marubeni", "weight_pct": 0.65, "shares": 17000}
+{"ticker": "9433.JP", "name": "KDDI", "weight_pct": 0.64, "shares": 28300}
+{"ticker": "5803.JP", "name": "Fujikura", "weight_pct": 0.59, "shares": 16700}
+{"ticker": "6701.JP", "name": "NEC", "weight_pct": 0.58, "shares": 13900}
+{"ticker": "6301.JP", "name": "Komatsu", "weight_pct": 0.57, "shares": 10200}
+{"ticker": "8750.JP", "name": "Daiichi Life Group", "weight_pct": 0.57, "shares": 39900}
+{"ticker": "8591.JP", "name": "ORIX", "weight_pct": 0.57, "shares": 12400}
+{"ticker": "8630.JP", "name": "Sompo Holdings", "weight_pct": 0.55, "shares": 10300}
+{"ticker": "7267.JP", "name": "HONDA MOTOR", "weight_pct": 0.55, "shares": 39200}
+{"ticker": "7182.JP", "name": "JAPAN POST BANK", "weight_pct": 0.54, "shares": 22500}
+{"ticker": "8725.JP", "name": "MS&AD Insurance Group Holdings", "weight_pct": 0.52, "shares": 12900}
+{"ticker": "5802.JP", "name": "Sumitomo Electric", "weight_pct": 0.5, "shares": 30000}
+{"ticker": "4578.JP", "name": "Otsuka Holdings", "weight_pct": 0.49, "shares": 5100}
+{"ticker": "6723.JP", "name": "Renesas Electronics", "weight_pct": 0.49, "shares": 20600}
+{"ticker": "6954.JP", "name": "FANUC", "weight_pct": 0.47, "shares": 10000}
+{"ticker": "6367.JP", "name": "Daikin Industries", "weight_pct": 0.47, "shares": 2800}
+{"ticker": "8308.JP", "name": "Resona", "weight_pct": 0.46, "shares": 25400}
+{"ticker": "6146.JP", "name": "DISCO", "weight_pct": 0.42, "shares": 1000}
+{"ticker": "6762.JP", "name": "TDK", "weight_pct": 0.42, "shares": 18300}
+{"ticker": "2802.JP", "name": "Ajinomoto", "weight_pct": 0.41, "shares": 10000}
+{"ticker": "4062.JP", "name": "IBIDEN", "weight_pct": 0.41, "shares": 5400}
+{"ticker": "285A.JP", "name": "Kioxia Holdings", "weight_pct": 0.41, "shares": 3900}
+{"ticker": "4568.JP", "name": "Daiichi Sankyo", "weight_pct": 0.41, "shares": 19000}
+{"ticker": "8604.JP", "name": "Nomura Holdings", "weight_pct": 0.39, "shares": 34000}
+{"ticker": "8309.JP", "name": "Sumitomo Mitsui Trust Group", "weight_pct": 0.37, "shares": 28600}
+{"ticker": "5108.JP", "name": "Bridgestone", "weight_pct": 0.36, "shares": 11500}
+{"ticker": "8802.JP", "name": "Mitsubishi Estate", "weight_pct": 0.36, "shares": 12400}
+{"ticker": "7751.JP", "name": "Canon", "weight_pct": 0.35, "shares": 9400}
+{"ticker": "3382.JP", "name": "Seven & I Holdings", "weight_pct": 0.35, "shares": 21900}
+{"ticker": "4503.JP", "name": "Astellas Pharma", "weight_pct": 0.35, "shares": 18500}
+{"ticker": "6971.JP", "name": "Kyocera", "weight_pct": 0.35, "shares": 12300}
+{"ticker": "8801.JP", "name": "Mitsui Fudosan", "weight_pct": 0.35, "shares": 29600}
+{"ticker": "8015.JP", "name": "Toyota Tsusho", "weight_pct": 0.34, "shares": 5900}
+{"ticker": "4901.JP", "name": "FUJIFILM", "weight_pct": 0.34, "shares": 12600}
+{"ticker": "6178.JP", "name": "JAPAN POST HOLDINGS", "weight_pct": 0.34, "shares": 17800}
+{"ticker": "4519.JP", "name": "CHUGAI PHARMACEUTICAL", "weight_pct": 0.33, "shares": 6600}
+{"ticker": "5020.JP", "name": "ENEOS Holdings", "weight_pct": 0.32, "shares": 29800}
+{"ticker": "7936.JP", "name": "Asics", "weight_pct": 0.32, "shares": 8700}
+{"ticker": "6273.JP", "name": "SMC", "weight_pct": 0.32, "shares": 600}
+{"ticker": "9020.JP", "name": "East Japan Railway", "weight_pct": 0.31, "shares": 11600}
+{"ticker": "4661.JP", "name": "OLC", "weight_pct": 0.31, "shares": 12700}
+{"ticker": "6902.JP", "name": "Denso", "weight_pct": 0.3, "shares": 20600}
+{"ticker": "5401.JP", "name": "NIPPON STEEL", "weight_pct": 0.3, "shares": 59100}
+{"ticker": "4452.JP", "name": "KAO", "weight_pct": 0.29, "shares": 10000}
+{"ticker": "6920.JP", "name": "Lasertec Corporation", "weight_pct": 0.29, "shares": 900}
+{"ticker": "1605.JP", "name": "INPEX CORPORATION", "weight_pct": 0.28, "shares": 9900}
+{"ticker": "7832.JP", "name": "Bandai Namco Holdings", "weight_pct": 0.28, "shares": 5600}
+{"ticker": "4543.JP", "name": "Terumo", "weight_pct": 0.26, "shares": 14000}
+{"ticker": "7269.JP", "name": "SUZUKI MOTOR", "weight_pct": 0.25, "shares": 15400}
+{"ticker": "9022.JP", "name": "Jr-Central", "weight_pct": 0.25, "shares": 8600}
+{"ticker": "9503.JP", "name": "KEPCO", "weight_pct": 0.24, "shares": 11400}
+{"ticker": "4004.JP", "name": "Resonac", "weight_pct": 0.23, "shares": 2000}
+{"ticker": "9101.JP", "name": "NYK", "weight_pct": 0.23, "shares": 4100}
+{"ticker": "9104.JP", "name": "MOL", "weight_pct": 0.23, "shares": 4000}
+{"ticker": "8267.JP", "name": "Aeon", "weight_pct": 0.23, "shares": 26220}
+{"ticker": "6326.JP", "name": "Kubota", "weight_pct": 0.22, "shares": 10700}
+{"ticker": "7013.JP", "name": "IHI", "weight_pct": 0.22, "shares": 11100}
+{"ticker": "9735.JP", "name": "Secom", "weight_pct": 0.21, "shares": 4000}
+{"ticker": "5713.JP", "name": "Sumitomo Metal Mining", "weight_pct": 0.21, "shares": 3000}
+{"ticker": "2503.JP", "name": "Kirin Holdings", "weight_pct": 0.2, "shares": 9000}
+{"ticker": "8601.JP", "name": "Daiwa Securities Group", "weight_pct": 0.2, "shares": 14800}
+{"ticker": "5016.JP", "name": "JX Advanced Metals", "weight_pct": 0.2, "shares": 8270}
+{"ticker": "2502.JP", "name": "Asahi Group Holdings", "weight_pct": 0.2, "shares": 15500}
+{"ticker": "1925.JP", "name": "DAIWA HOUSE", "weight_pct": 0.2, "shares": 11400}
+{"ticker": "8697.JP", "name": "Japan Exchange Group", "weight_pct": 0.2, "shares": 11400}
+{"ticker": "5801.JP", "name": "Furukawa Electric", "weight_pct": 0.19, "shares": 7200}
+{"ticker": "4307.JP", "name": "Nomura Research Institute", "weight_pct": 0.18, "shares": 3920}
+{"ticker": "6988.JP", "name": "NITTO DENKO", "weight_pct": 0.18, "shares": 6400}
+{"ticker": "7453.JP", "name": "Ryohin Keikaku", "weight_pct": 0.18, "shares": 4900}
+{"ticker": "4507.JP", "name": "Shionogi", "weight_pct": 0.18, "shares": 7700}
+{"ticker": "3407.JP", "name": "Asahi Kasei", "weight_pct": 0.18, "shares": 14000}
+{"ticker": "8473.JP", "name": "SBI Holdings", "weight_pct": 0.17, "shares": 7300}
+{"ticker": "9766.JP", "name": "KONAMI GROUP", "weight_pct": 0.17, "shares": 900}
+{"ticker": "4684.JP", "name": "Obic", "weight_pct": 0.17, "shares": 3900}
+{"ticker": "8795.JP", "name": "T&D Holdings", "weight_pct": 0.17, "shares": 4600}
+{"ticker": "6504.JP", "name": "Fuji Electric", "weight_pct": 0.17, "shares": 1500}
+{"ticker": "6361.JP", "name": "Ebara", "weight_pct": 0.16, "shares": 5000}
+{"ticker": "7735.JP", "name": "SCREEN Holdings", "weight_pct": 0.16, "shares": 1500}
+{"ticker": "1928.JP", "name": "Sekisui House", "weight_pct": 0.16, "shares": 6100}
+{"ticker": "9531.JP", "name": "Tokyo Gas", "weight_pct": 0.16, "shares": 3400}
+{"ticker": "9532.JP", "name": "Osaka Gas", "weight_pct": 0.16, "shares": 3600}
+{"ticker": "1812.JP", "name": "KAJIMA", "weight_pct": 0.15, "shares": 4200}
+{"ticker": "6383.JP", "name": "Daifuku", "weight_pct": 0.15, "shares": 3600}
+{"ticker": "9502.JP", "name": "Chuden", "weight_pct": 0.15, "shares": 7700}
+{"ticker": "7272.JP", "name": "Yamaha Motor", "weight_pct": 0.15, "shares": 10400}
+{"ticker": "7733.JP", "name": "Olympus", "weight_pct": 0.15, "shares": 11400}
+{"ticker": "9697.JP", "name": "CAPCOM", "weight_pct": 0.15, "shares": 4200}
+{"ticker": "8830.JP", "name": "Sumitomo Realty & Development", "weight_pct": 0.15, "shares": 5900}
+{"ticker": "7186.JP", "name": "Yokohama Financial", "weight_pct": 0.15, "shares": 10800}
+{"ticker": "6525.JP", "name": "KOKUSAI ELECTRIC", "weight_pct": 0.15, "shares": 2400}
+{"ticker": "7012.JP", "name": "Kawasaki Heavy", "weight_pct": 0.15, "shares": 8300}
+{"ticker": "1802.JP", "name": "OBAYASHI", "weight_pct": 0.15, "shares": 6500}
+{"ticker": "3402.JP", "name": "Toray", "weight_pct": 0.14, "shares": 14200}
+{"ticker": "4689.JP", "name": "LY", "weight_pct": 0.14, "shares": 32500}
+{"ticker": "4188.JP", "name": "Mitsubishi Chemical Group", "weight_pct": 0.13, "shares": 14700}
+{"ticker": "6963.JP", "name": "ROHM", "weight_pct": 0.13, "shares": 4100}
+{"ticker": "1801.JP", "name": "TAISEI", "weight_pct": 0.13, "shares": 1500}
+{"ticker": "7532.JP", "name": "Pan Pacific International Holdings", "weight_pct": 0.13, "shares": 22500}
+{"ticker": "7309.JP", "name": "Shimano", "weight_pct": 0.13, "shares": 900}
+{"ticker": "4911.JP", "name": "Shiseido", "weight_pct": 0.13, "shares": 4700}
+{"ticker": "7270.JP", "name": "SUBARU", "weight_pct": 0.13, "shares": 6200}
+{"ticker": "9202.JP", "name": "ANA Holdings", "weight_pct": 0.13, "shares": 5700}
+{"ticker": "8331.JP", "name": "Chiba Bank", "weight_pct": 0.12, "shares": 6100}
+{"ticker": "7167.JP", "name": "Mebuki Financial Group", "weight_pct": 0.12, "shares": 9700}
+{"ticker": "6532.JP", "name": "BayCurrent", "weight_pct": 0.12, "shares": 1500}
+{"ticker": "9107.JP", "name": "K-Line", "weight_pct": 0.12, "shares": 4500}
+{"ticker": "3563.JP", "name": "FOOD & LIFE", "weight_pct": 0.12, "shares": 2600}
+{"ticker": "9021.JP", "name": "West Japan Railway", "weight_pct": 0.12, "shares": 5000}
+{"ticker": "5831.JP", "name": "Shizuoka Financial Group", "weight_pct": 0.11, "shares": 4600}
+{"ticker": "4612.JP", "name": "NIPPON PAINT", "weight_pct": 0.11, "shares": 11200}
+{"ticker": "8136.JP", "name": "Sanrio", "weight_pct": 0.11, "shares": 11000}
+{"ticker": "9201.JP", "name": "Japan Airlines", "weight_pct": 0.11, "shares": 4800}
+{"ticker": "4523.JP", "name": "Eisai", "weight_pct": 0.11, "shares": 2800}
+{"ticker": "9147.JP", "name": "NIPPON EXPRESS HOLDINGS", "weight_pct": 0.11, "shares": 2300}
+{"ticker": "8593.JP", "name": "Mitsubishi HC Capital", "weight_pct": 0.11, "shares": 10400}
+{"ticker": "6586.JP", "name": "Makita", "weight_pct": 0.11, "shares": 2600}
+{"ticker": "5019.JP", "name": "IDEMITSU KOSAN CO., LTD.", "weight_pct": 0.1, "shares": 8700}
+{"ticker": "8113.JP", "name": "UNICHARM", "weight_pct": 0.1, "shares": 13200}
+{"ticker": "7550.JP", "name": "Zensho Holdings", "weight_pct": 0.1, "shares": 1100}
+{"ticker": "4091.JP", "name": "NIPPON SANSO", "weight_pct": 0.1, "shares": 2400}
+{"ticker": "5706.JP", "name": "Mitsui Kinzoku", "weight_pct": 0.1, "shares": 5400}
+{"ticker": "7912.JP", "name": "DNP", "weight_pct": 0.1, "shares": 4500}
+{"ticker": "9042.JP", "name": "Hankyu Hanshin Holdings", "weight_pct": 0.1, "shares": 2800}
+{"ticker": "5334.JP", "name": "Niterra", "weight_pct": 0.1, "shares": 3400}
+{"ticker": "2801.JP", "name": "KIKKOMAN", "weight_pct": 0.1, "shares": 6900}
+{"ticker": "2269.JP", "name": "Meiji Holdings", "weight_pct": 0.1, "shares": 2900}
+{"ticker": "6448.JP", "name": "BROTHER INDUSTRIES", "weight_pct": 0.1, "shares": 2600}
+{"ticker": "8354.JP", "name": "FUKUOKA FINANCIAL GROUP, INC.", "weight_pct": 0.1, "shares": 1700}
+{"ticker": "3099.JP", "name": "Isetan Mitsukoshi", "weight_pct": 0.1, "shares": 6900}
+{"ticker": "7701.JP", "name": "Shimadzu", "weight_pct": 0.1, "shares": 2800}
+{"ticker": "6479.JP", "name": "MINEBEA MITSUMI", "weight_pct": 0.1, "shares": 3700}
+{"ticker": "5201.JP", "name": "AGC", "weight_pct": 0.1, "shares": 2200}
+{"ticker": "9962.JP", "name": "Misumi Group", "weight_pct": 0.1, "shares": 3100}
+{"ticker": "6976.JP", "name": "TAIYO YUDEN", "weight_pct": 0.09, "shares": 1200}
+{"ticker": "3659.JP", "name": "NEXON Co.,Ltd.", "weight_pct": 0.09, "shares": 4300}
+{"ticker": "5411.JP", "name": "JFE Holdings", "weight_pct": 0.09, "shares": 7000}
+{"ticker": "5844.JP", "name": "Kyoto Financial Group", "weight_pct": 0.09, "shares": 2800}
+{"ticker": "9843.JP", "name": "Nitori Holdings", "weight_pct": 0.09, "shares": 3600}
+{"ticker": "7181.JP", "name": "JAPAN POST INSURANCE", "weight_pct": 0.09, "shares": 6800}
+{"ticker": "7202.JP", "name": "Isuzu", "weight_pct": 0.09, "shares": 5400}
+{"ticker": "7911.JP", "name": "TOPPAN", "weight_pct": 0.09, "shares": 5100}
+{"ticker": "5333.JP", "name": "NGK", "weight_pct": 0.09, "shares": 2200}
+{"ticker": "2768.JP", "name": "Sojitz Corporation", "weight_pct": 0.09, "shares": 2100}
+{"ticker": "4528.JP", "name": "Ono Pharmaceutical", "weight_pct": 0.09, "shares": 4700}
+{"ticker": "1803.JP", "name": "SHIMZ", "weight_pct": 0.09, "shares": 5600}
+{"ticker": "7259.JP", "name": "AISIN", "weight_pct": 0.09, "shares": 5100}
+{"ticker": "1878.JP", "name": "DAITO TRUST CONSTRUCTION", "weight_pct": 0.09, "shares": 3500}
+{"ticker": "3436.JP", "name": "SUMCO", "weight_pct": 0.09, "shares": 4100}
+{"ticker": "4755.JP", "name": "Rakuten Group", "weight_pct": 0.09, "shares": 17200}
+{"ticker": "8359.JP", "name": "Hachijuni Nagano Bank", "weight_pct": 0.09, "shares": 4300}
+{"ticker": "9684.JP", "name": "SQUARE ENIX", "weight_pct": 0.08, "shares": 3500}
+{"ticker": "4204.JP", "name": "Sekisui Chemical", "weight_pct": 0.08, "shares": 4100}
+{"ticker": "6645.JP", "name": "Omron", "weight_pct": 0.08, "shares": 1800}
+{"ticker": "2875.JP", "name": "TOYO SUISAN", "weight_pct": 0.08, "shares": 1000}
+{"ticker": "8729.JP", "name": "Sony Financial Group", "weight_pct": 0.08, "shares": 68700}
+{"ticker": "8334.JP", "name": "Gunma Bank", "weight_pct": 0.08, "shares": 3700}
+{"ticker": "3197.JP", "name": "SKYLARK HOLDINGS", "weight_pct": 0.08, "shares": 3000}
+{"ticker": "3003.JP", "name": "Hulic", "weight_pct": 0.08, "shares": 6000}
+{"ticker": "4005.JP", "name": "SUMITOMO CHEMICAL", "weight_pct": 0.08, "shares": 16900}
+{"ticker": "4768.JP", "name": "Otsuka", "weight_pct": 0.08, "shares": 2400}
+{"ticker": "6506.JP", "name": "Yaskawa Electric", "weight_pct": 0.08, "shares": 2300}
+{"ticker": "6869.JP", "name": "Sysmex", "weight_pct": 0.08, "shares": 5400}
+{"ticker": "6841.JP", "name": "Yokogawa Electric", "weight_pct": 0.08, "shares": 2200}
+{"ticker": "3088.JP", "name": "MatsukiyoCocokara", "weight_pct": 0.08, "shares": 3800}
+{"ticker": "6856.JP", "name": "Horiba", "weight_pct": 0.08, "shares": 400}
+{"ticker": "6370.JP", "name": "Kurita Water", "weight_pct": 0.08, "shares": 1300}
+{"ticker": "4324.JP", "name": "DENTSU GROUP", "weight_pct": 0.07, "shares": 2500}
+{"ticker": "8377.JP", "name": "Hokuhoku FG", "weight_pct": 0.07, "shares": 12400}
+{"ticker": "5830.JP", "name": "Iyogin Holdings", "weight_pct": 0.07, "shares": 2700}
+{"ticker": "9501.JP", "name": "Tokyo Electric Power Company Holdings", "weight_pct": 0.07, "shares": 18900}
+{"ticker": "4021.JP", "name": "Nissan Chemical", "weight_pct": 0.07, "shares": 1100}
+{"ticker": "7201.JP", "name": "Nissan", "weight_pct": 0.07, "shares": 32100}
+{"ticker": "7752.JP", "name": "Ricoh", "weight_pct": 0.07, "shares": 4900}
+{"ticker": "5406.JP", "name": "Kobe Steel", "weight_pct": 0.07, "shares": 4400}
+{"ticker": "3626.JP", "name": "TISI", "weight_pct": 0.07, "shares": 2000}
+{"ticker": "7747.JP", "name": "Asahi Intecc", "weight_pct": 0.07, "shares": 2500}
+{"ticker": "6724.JP", "name": "Seiko Epson", "weight_pct": 0.07, "shares": 2600}
+{"ticker": "9005.JP", "name": "TOKYU", "weight_pct": 0.07, "shares": 5400}
+{"ticker": "4186.JP", "name": "TOK", "weight_pct": 0.07, "shares": 1000}
+{"ticker": "2413.JP", "name": "M3", "weight_pct": 0.06, "shares": 4300}
+{"ticker": "2587.JP", "name": "Suntory Beverage & Food", "weight_pct": 0.06, "shares": 1700}
+{"ticker": "4042.JP", "name": "Tosoh", "weight_pct": 0.06, "shares": 3100}
+{"ticker": "9602.JP", "name": "TOHO", "weight_pct": 0.06, "shares": 5300}
+{"ticker": "4704.JP", "name": "Trend Micro", "weight_pct": 0.06, "shares": 1100}
+{"ticker": "9024.JP", "name": "SEIBU HOLDINGS INC.", "weight_pct": 0.06, "shares": 2200}
+{"ticker": "7261.JP", "name": "Mazda Motor", "weight_pct": 0.06, "shares": 7000}
+{"ticker": "1944.JP", "name": "Kinden", "weight_pct": 0.06, "shares": 1200}
+{"ticker": "3391.JP", "name": "Tsuruha", "weight_pct": 0.06, "shares": 3500}
+{"ticker": "8341.JP", "name": "The 77 Bank", "weight_pct": 0.06, "shares": 2000}
+{"ticker": "6845.JP", "name": "Azbil", "weight_pct": 0.06, "shares": 5100}
+{"ticker": "4183.JP", "name": "Mitsui Chemicals", "weight_pct": 0.06, "shares": 3600}
+{"ticker": "5929.JP", "name": "Sanwa Holdings", "weight_pct": 0.06, "shares": 2100}
+{"ticker": "3105.JP", "name": "Nisshinbo Holdings", "weight_pct": 0.06, "shares": 3000}
+{"ticker": "9435.JP", "name": "Hikari Tsushin", "weight_pct": 0.06, "shares": 200}
+{"ticker": "9041.JP", "name": "Kintetsu Group Holdings", "weight_pct": 0.06, "shares": 2200}
+{"ticker": "7459.JP", "name": "MediPal Holdings", "weight_pct": 0.06, "shares": 2400}
+{"ticker": "5332.JP", "name": "TOTO", "weight_pct": 0.06, "shares": 1300}
+{"ticker": "4732.JP", "name": "USS", "weight_pct": 0.06, "shares": 4100}
+{"ticker": "6113.JP", "name": "AMADA", "weight_pct": 0.06, "shares": 3000}
+{"ticker": "3064.JP", "name": "MonotaRO", "weight_pct": 0.06, "shares": 3100}
+{"ticker": "2267.JP", "name": "YAKULT", "weight_pct": 0.06, "shares": 2600}
+{"ticker": "6806.JP", "name": "HRS", "weight_pct": 0.06, "shares": 300}
+{"ticker": "6965.JP", "name": "Hamamatsu Photonics", "weight_pct": 0.06, "shares": 3300}
+{"ticker": "7729.JP", "name": "Tokyo Seimitsu", "weight_pct": 0.06, "shares": 400}
+{"ticker": "5101.JP", "name": "Yokohama Rubber", "weight_pct": 0.06, "shares": 1000}
+{"ticker": "6465.JP", "name": "HOSHIZAKI", "weight_pct": 0.06, "shares": 1300}
+{"ticker": "4676.JP", "name": "FUJI MEDIA HOLDINGS", "weight_pct": 0.05, "shares": 1700}
+{"ticker": "3086.JP", "name": "J.FRONT RETAILING", "weight_pct": 0.05, "shares": 2600}
+{"ticker": "9506.JP", "name": "Tohoku-Epco", "weight_pct": 0.05, "shares": 5500}
+{"ticker": "9831.JP", "name": "YAMADA HOLDINGS", "weight_pct": 0.05, "shares": 9500}
+{"ticker": "3289.JP", "name": "Tokyu Fudosan Holdings Corporation", "weight_pct": 0.05, "shares": 5700}
+{"ticker": "2897.JP", "name": "NISSIN FOODS", "weight_pct": 0.05, "shares": 2300}
+{"ticker": "6302.JP", "name": "Sumitomo Heavy", "weight_pct": 0.05, "shares": 1200}
+{"ticker": "4403.JP", "name": "NOF", "weight_pct": 0.05, "shares": 2400}
+{"ticker": "5901.JP", "name": "Toyo Seikan Group Holdings", "weight_pct": 0.05, "shares": 1500}
+{"ticker": "8358.JP", "name": "Suruga Bank", "weight_pct": 0.05, "shares": 2400}
+{"ticker": "3132.JP", "name": "MACNICA HOLDINGS", "weight_pct": 0.05, "shares": 1500}
+{"ticker": "2501.JP", "name": "SAPPORO BREWERIES", "weight_pct": 0.05, "shares": 3400}
+{"ticker": "8233.JP", "name": "Takashimaya", "weight_pct": 0.05, "shares": 3100}
+{"ticker": "8418.JP", "name": "YAMAGUCHI FINANCIAL GROUP, INC.", "weight_pct": 0.05, "shares": 2000}
+{"ticker": "5838.JP", "name": "Rakuten Bank", "weight_pct": 0.05, "shares": 1100}
+{"ticker": "7337.JP", "name": "Hirogin Holdings", "weight_pct": 0.05, "shares": 2900}
+{"ticker": "6136.JP", "name": "OSG", "weight_pct": 0.05, "shares": 1700}
+{"ticker": "5711.JP", "name": "Mitsubishi Materials", "weight_pct": 0.05, "shares": 1400}
+{"ticker": "4613.JP", "name": "Kansai Paint", "weight_pct": 0.05, "shares": 2200}
+{"ticker": "4527.JP", "name": "Rohto", "weight_pct": 0.05, "shares": 2200}
+{"ticker": "7180.JP", "name": "Kyushu Financial", "weight_pct": 0.05, "shares": 4000}
+{"ticker": "9507.JP", "name": "Yonden", "weight_pct": 0.05, "shares": 3000}
+{"ticker": "1911.JP", "name": "Sumitomo Forestry", "weight_pct": 0.05, "shares": 5300}
+{"ticker": "8050.JP", "name": "SEIKO GROUP", "weight_pct": 0.05, "shares": 600}
+{"ticker": "5105.JP", "name": "Toyo Tire", "weight_pct": 0.05, "shares": 1500}
+{"ticker": "4751.JP", "name": "CyberAgent", "weight_pct": 0.05, "shares": 4800}
+{"ticker": "5301.JP", "name": "Tokai Carbon", "weight_pct": 0.05, "shares": 3100}
+{"ticker": "7762.JP", "name": "Citizen Watch", "weight_pct": 0.05, "shares": 2700}
+{"ticker": "8439.JP", "name": "Tokyo Century", "weight_pct": 0.05, "shares": 2400}
+{"ticker": "9001.JP", "name": "Tobu Railway", "weight_pct": 0.05, "shares": 2200}
+{"ticker": "6481.JP", "name": "THK", "weight_pct": 0.05, "shares": 1000}
+{"ticker": "5393.JP", "name": "Nichias", "weight_pct": 0.05, "shares": 1700}
+{"ticker": "4536.JP", "name": "Santen", "weight_pct": 0.05, "shares": 3500}
+{"ticker": "7276.JP", "name": "KOITO MANUFACTURING", "weight_pct": 0.05, "shares": 2200}
+{"ticker": "4203.JP", "name": "Sumitomo Bakelite", "weight_pct": 0.05, "shares": 700}
+{"ticker": "3861.JP", "name": "Oji Holdings", "weight_pct": 0.05, "shares": 7200}
+{"ticker": "7189.JP", "name": "Nishi-Nippon Financial Holdings", "weight_pct": 0.05, "shares": 1300}
+{"ticker": "8524.JP", "name": "North Pacific Bank,Ltd.", "weight_pct": 0.05, "shares": 5000}
+{"ticker": "6473.JP", "name": "JTEKT", "weight_pct": 0.05, "shares": 2800}
+{"ticker": "5832.JP", "name": "Chugin Financial Group", "weight_pct": 0.05, "shares": 1700}
+{"ticker": "4980.JP", "name": "Dexerials", "weight_pct": 0.05, "shares": 1800}
+{"ticker": "2531.JP", "name": "TAKARA HOLDINGS", "weight_pct": 0.05, "shares": 1900}
+{"ticker": "9401.JP", "name": "TBS HOLDINGS", "weight_pct": 0.05, "shares": 1000}
+{"ticker": "9513.JP", "name": "Jpower", "weight_pct": 0.05, "shares": 1500}
+{"ticker": "8253.JP", "name": "Credit Saison", "weight_pct": 0.05, "shares": 1400}
+{"ticker": "4151.JP", "name": "Kyowa Kirin", "weight_pct": 0.05, "shares": 2500}
+{"ticker": "2784.JP", "name": "Alfresa", "weight_pct": 0.05, "shares": 2500}
+{"ticker": "5471.JP", "name": "Daido Steel", "weight_pct": 0.05, "shares": 2500}
+{"ticker": "2181.JP", "name": "PERSOL HOLDINGS", "weight_pct": 0.05, "shares": 19700}
+{"ticker": "8804.JP", "name": "Tokyo Tatemono", "weight_pct": 0.05, "shares": 1800}
+{"ticker": "8304.JP", "name": "AOZORA BANK, LTD.", "weight_pct": 0.04, "shares": 1800}
+{"ticker": "8020.JP", "name": "Kanematsu", "weight_pct": 0.04, "shares": 2400}
+{"ticker": "5938.JP", "name": "LIXIL", "weight_pct": 0.04, "shares": 3400}
+{"ticker": "6460.JP", "name": "Sega Sammy", "weight_pct": 0.04, "shares": 1700}
+{"ticker": "4385.JP", "name": "Mercari", "weight_pct": 0.04, "shares": 1500}
+{"ticker": "1942.JP", "name": "Kandenko", "weight_pct": 0.04, "shares": 1100}
+{"ticker": "2212.JP", "name": "YAMAZAKI BAKING", "weight_pct": 0.04, "shares": 1500}
+{"ticker": "3092.JP", "name": "ZOZO", "weight_pct": 0.04, "shares": 4700}
+{"ticker": "3038.JP", "name": "Kobe Bussan", "weight_pct": 0.04, "shares": 1900}
+{"ticker": "8078.JP", "name": "Hanwa", "weight_pct": 0.04, "shares": 3000}
+{"ticker": "2282.JP", "name": "NH Foods", "weight_pct": 0.04, "shares": 2700}
+{"ticker": "6134.JP", "name": "FUJI", "weight_pct": 0.04, "shares": 800}
+{"ticker": "1721.JP", "name": "Comsys Holdings", "weight_pct": 0.04, "shares": 1000}
+{"ticker": "4182.JP", "name": "MGC", "weight_pct": 0.04, "shares": 1500}
+{"ticker": "9007.JP", "name": "Odakyu Electric Railway", "weight_pct": 0.04, "shares": 3200}
+{"ticker": "3941.JP", "name": "Rengo", "weight_pct": 0.04, "shares": 3500}
+{"ticker": "5991.JP", "name": "Nhk Spring", "weight_pct": 0.04, "shares": 1600}
+{"ticker": "2002.JP", "name": "Nisshin Seifun Group", "weight_pct": 0.04, "shares": 2700}
+{"ticker": "5233.JP", "name": "Taiheiyo Cement", "weight_pct": 0.04, "shares": 1300}
+{"ticker": "4912.JP", "name": "Lion", "weight_pct": 0.04, "shares": 2900}
+{"ticker": "3774.JP", "name": "Internet Initiative Japan", "weight_pct": 0.04, "shares": 1500}
+{"ticker": "6305.JP", "name": "Hitachi Const. Mach.", "weight_pct": 0.04, "shares": 1000}
+{"ticker": "8088.JP", "name": "Iwatani", "weight_pct": 0.04, "shares": 2800}
+{"ticker": "9064.JP", "name": "Yamato Holdings", "weight_pct": 0.04, "shares": 2600}
+{"ticker": "6268.JP", "name": "Nabtesco", "weight_pct": 0.04, "shares": 1200}
+{"ticker": "5857.JP", "name": "ARE Holdings", "weight_pct": 0.04, "shares": 1600}
+{"ticker": "5631.JP", "name": "JSW", "weight_pct": 0.04, "shares": 800}
+{"ticker": "9048.JP", "name": "Nagoya Railroad", "weight_pct": 0.04, "shares": 2900}
+{"ticker": "9142.JP", "name": "Kyushu Railway", "weight_pct": 0.04, "shares": 1600}
+{"ticker": "6323.JP", "name": "RORZE", "weight_pct": 0.04, "shares": 1200}
+{"ticker": "9009.JP", "name": "Keisei", "weight_pct": 0.04, "shares": 3900}
+{"ticker": "8227.JP", "name": "Shimamura", "weight_pct": 0.04, "shares": 1600}
+{"ticker": "7282.JP", "name": "TOYODA GOSEI", "weight_pct": 0.04, "shares": 5000}
+{"ticker": "2371.JP", "name": "Kakaku.Com", "weight_pct": 0.04, "shares": 1400}
+{"ticker": "3405.JP", "name": "Kuraray", "weight_pct": 0.04, "shares": 2800}
+{"ticker": "6417.JP", "name": "Sankyo", "weight_pct": 0.04, "shares": 2400}
+{"ticker": "7988.JP", "name": "Nifco", "weight_pct": 0.04, "shares": 2000}
+{"ticker": "7327.JP", "name": "Daishi Hokuetsu Financial Group", "weight_pct": 0.04, "shares": 2100}
+{"ticker": "9404.JP", "name": "Nippon Television Holdings", "weight_pct": 0.04, "shares": 1800}
+{"ticker": "9143.JP", "name": "SG HOLDINGS", "weight_pct": 0.04, "shares": 3500}
+{"ticker": "8012.JP", "name": "Nagase", "weight_pct": 0.04, "shares": 4300}
+{"ticker": "1860.JP", "name": "Toda", "weight_pct": 0.04, "shares": 3800}
+{"ticker": "8303.JP", "name": "SBI Shinsei Bank", "weight_pct": 0.04, "shares": 3500}
+{"ticker": "6923.JP", "name": "Stanley Electric", "weight_pct": 0.04, "shares": 1400}
+{"ticker": "5110.JP", "name": "SRI", "weight_pct": 0.04, "shares": 2500}
+{"ticker": "4967.JP", "name": "KOBAYASHI PHARMACEUTICAL", "weight_pct": 0.04, "shares": 700}
+{"ticker": "2579.JP", "name": "Coca-Cola Bottlers", "weight_pct": 0.04, "shares": 1300}
+{"ticker": "7951.JP", "name": "YAMAHA", "weight_pct": 0.04, "shares": 4100}
+{"ticker": "2331.JP", "name": "ALSOK", "weight_pct": 0.04, "shares": 4200}
+{"ticker": "5344.JP", "name": "Maruwa", "weight_pct": 0.04, "shares": 100}
+{"ticker": "5076.JP", "name": "INFRONEER Holdings", "weight_pct": 0.04, "shares": 2200}
+{"ticker": "9504.JP", "name": "Energia", "weight_pct": 0.04, "shares": 5100}
+{"ticker": "5444.JP", "name": "Yamato Kogyo", "weight_pct": 0.04, "shares": 400}
+{"ticker": "5714.JP", "name": "DOWA HOLDINGS", "weight_pct": 0.04, "shares": 600}
+{"ticker": "1969.JP", "name": "Takasago Thermal", "weight_pct": 0.04, "shares": 1200}
+{"ticker": "3231.JP", "name": "NOMURA REAL ESTATE HOLDINGS, INC.", "weight_pct": 0.04, "shares": 5800}
+{"ticker": "9934.JP", "name": "Inaba", "weight_pct": 0.04, "shares": 1600}
+{"ticker": "9861.JP", "name": "Yoshinoya Holdings", "weight_pct": 0.04, "shares": 1200}
+{"ticker": "6925.JP", "name": "Ushio", "weight_pct": 0.04, "shares": 1300}
+{"ticker": "6592.JP", "name": "Mabuchi Motor", "weight_pct": 0.04, "shares": 2800}
+{"ticker": "7867.JP", "name": "Tomy", "weight_pct": 0.04, "shares": 1100}
+{"ticker": "7003.JP", "name": "MITSUI E&S", "weight_pct": 0.04, "shares": 1300}
+{"ticker": "5021.JP", "name": "COSMO ENERGY", "weight_pct": 0.04, "shares": 1200}
+{"ticker": "9065.JP", "name": "Sankyu", "weight_pct": 0.04, "shares": 3000}
+{"ticker": "6135.JP", "name": "Makino Milling Machine", "weight_pct": 0.04, "shares": 1500}
+{"ticker": "4205.JP", "name": "ZEON", "weight_pct": 0.04, "shares": 2100}
+{"ticker": "4118.JP", "name": "Kaneka", "weight_pct": 0.04, "shares": 800}
+{"ticker": "1951.JP", "name": "EXEO Group", "weight_pct": 0.04, "shares": 1900}
+{"ticker": "2809.JP", "name": "Kewpie", "weight_pct": 0.04, "shares": 1100}
+{"ticker": "9364.JP", "name": "Kamigumi", "weight_pct": 0.04, "shares": 1000}
+{"ticker": "6952.JP", "name": "Casio", "weight_pct": 0.04, "shares": 2100}
+{"ticker": "8060.JP", "name": "Canon Marketing Japan", "weight_pct": 0.04, "shares": 1200}
+{"ticker": "4626.JP", "name": "TAIYO HOLDINGS", "weight_pct": 0.04, "shares": 1000}
+{"ticker": "9533.JP", "name": "TOHO GAS", "weight_pct": 0.04, "shares": 4000}
+{"ticker": "9023.JP", "name": "Tokyo Metro", "weight_pct": 0.04, "shares": 3300}
+{"ticker": "1808.JP", "name": "HASEKO", "weight_pct": 0.04, "shares": 1800}
+{"ticker": "1893.JP", "name": "Penta-Ocean", "weight_pct": 0.04, "shares": 3500}
+{"ticker": "6770.JP", "name": "ALPS ALPINE", "weight_pct": 0.04, "shares": 2200}
+{"ticker": "7731.JP", "name": "Nikon", "weight_pct": 0.04, "shares": 2600}
+{"ticker": "4733.JP", "name": "Obic Business", "weight_pct": 0.04, "shares": 500}
+{"ticker": "4208.JP", "name": "UBE", "weight_pct": 0.04, "shares": 1400}
+{"ticker": "3288.JP", "name": "Open House Group", "weight_pct": 0.04, "shares": 600}
+{"ticker": "9468.JP", "name": "KADOKAWA", "weight_pct": 0.04, "shares": 1200}
+{"ticker": "9072.JP", "name": "NIKKON Holdings", "weight_pct": 0.04, "shares": 1000}
+{"ticker": "6951.JP", "name": "Jeol", "weight_pct": 0.04, "shares": 600}
+{"ticker": "3769.JP", "name": "GMO Payment Gateway", "weight_pct": 0.04, "shares": 500}
+{"ticker": "6471.JP", "name": "NSK", "weight_pct": 0.04, "shares": 4400}
+{"ticker": "7984.JP", "name": "Kokuyo", "weight_pct": 0.04, "shares": 5200}
+{"ticker": "1959.JP", "name": "KRAFTIA", "weight_pct": 0.04, "shares": 600}
+{"ticker": "4631.JP", "name": "DIC", "weight_pct": 0.04, "shares": 900}
+{"ticker": "3994.JP", "name": "Money Forward", "weight_pct": 0.04, "shares": 700}
+{"ticker": "9008.JP", "name": "Keio", "weight_pct": 0.04, "shares": 6000}
+{"ticker": "6674.JP", "name": "Gs Yuasa", "weight_pct": 0.04, "shares": 900}
+{"ticker": "3291.JP", "name": "Iida Group Holdings Co., Ltd.", "weight_pct": 0.04, "shares": 2100}
+{"ticker": "5214.JP", "name": "Nippon Electric Glass", "weight_pct": 0.04, "shares": 900}
+{"ticker": "3110.JP", "name": "Nittobo", "weight_pct": 0.03, "shares": 1500}
+{"ticker": "1963.JP", "name": "JGC HOLDINGS", "weight_pct": 0.03, "shares": 2100}
+{"ticker": "8252.JP", "name": "Marui", "weight_pct": 0.03, "shares": 1600}
+{"ticker": "9706.JP", "name": "Japan Airport Terminal", "weight_pct": 0.03, "shares": 800}
+{"ticker": "4043.JP", "name": "Tokuyama", "weight_pct": 0.03, "shares": 1100}
+{"ticker": "4114.JP", "name": "Nippon Shokubai", "weight_pct": 0.03, "shares": 1700}
+{"ticker": "4202.JP", "name": "Daicel", "weight_pct": 0.03, "shares": 3000}
+{"ticker": "3401.JP", "name": "TEIJIN", "weight_pct": 0.03, "shares": 2600}
+{"ticker": "2433.JP", "name": "HAKUHODO DY HOLDINGS", "weight_pct": 0.03, "shares": 3100}
+{"ticker": "7164.JP", "name": "Zenkoku Hosho", "weight_pct": 0.03, "shares": 1400}
+{"ticker": "6787.JP", "name": "Meiko Electronics", "weight_pct": 0.03, "shares": 200}
+{"ticker": "9987.JP", "name": "Suzuken", "weight_pct": 0.03, "shares": 1600}
+{"ticker": "3107.JP", "name": "Daiwabo Holdings", "weight_pct": 0.03, "shares": 1200}
+{"ticker": "9006.JP", "name": "Keikyu", "weight_pct": 0.03, "shares": 2800}
+{"ticker": "9069.JP", "name": "SENKO Group", "weight_pct": 0.03, "shares": 1800}
+{"ticker": "2810.JP", "name": "House Foods Group Inc.", "weight_pct": 0.03, "shares": 1000}
+{"ticker": "2222.JP", "name": "Kotobuki Spirits", "weight_pct": 0.03, "shares": 1600}
+{"ticker": "6754.JP", "name": "Anritsu", "weight_pct": 0.03, "shares": 1400}
+{"ticker": "7419.JP", "name": "Nojima", "weight_pct": 0.03, "shares": 3300}
+{"ticker": "9303.JP", "name": "Sumitomo Warehouse", "weight_pct": 0.03, "shares": 1000}
+{"ticker": "4401.JP", "name": "ADEKA", "weight_pct": 0.03, "shares": 900}
+{"ticker": "7581.JP", "name": "Saizeriya", "weight_pct": 0.03, "shares": 600}
+{"ticker": "9044.JP", "name": "NANKAI", "weight_pct": 0.03, "shares": 1400}
+{"ticker": "5463.JP", "name": "Maruichi Steel Tube", "weight_pct": 0.03, "shares": 2400}
+{"ticker": "2264.JP", "name": "MORINAGA MILK", "weight_pct": 0.03, "shares": 4000}
+{"ticker": "8381.JP", "name": "San-In Godo Bank", "weight_pct": 0.03, "shares": 1800}
+{"ticker": "9045.JP", "name": "Keihan Holdings", "weight_pct": 0.03, "shares": 1300}
+{"ticker": "9449.JP", "name": "GMO internet group", "weight_pct": 0.03, "shares": 1000}
+{"ticker": "8022.JP", "name": "Mizuno", "weight_pct": 0.03, "shares": 900}
+{"ticker": "6728.JP", "name": "Ulvac", "weight_pct": 0.03, "shares": 500}
+{"ticker": "5947.JP", "name": "Rinnai", "weight_pct": 0.03, "shares": 1200}
+{"ticker": "4902.JP", "name": "Konica Minolta", "weight_pct": 0.03, "shares": 6000}
+{"ticker": "4544.JP", "name": "H.U. Group Holdings", "weight_pct": 0.03, "shares": 1100}
+{"ticker": "6269.JP", "name": "Modec", "weight_pct": 0.03, "shares": 500}
+{"ticker": "1332.JP", "name": "Nissui", "weight_pct": 0.03, "shares": 3700}
+{"ticker": "2206.JP", "name": "Glico", "weight_pct": 0.03, "shares": 800}
+{"ticker": "4716.JP", "name": "ORACLE JAPAN", "weight_pct": 0.03, "shares": 400}
+{"ticker": "8056.JP", "name": "BIPROGY", "weight_pct": 0.03, "shares": 800}
+{"ticker": "8174.JP", "name": "Nippon Gas", "weight_pct": 0.03, "shares": 4500}
+{"ticker": "1417.JP", "name": "MIRAIT ONE", "weight_pct": 0.03, "shares": 1200}
+{"ticker": "8098.JP", "name": "Inabata", "weight_pct": 0.03, "shares": 900}
+{"ticker": "6871.JP", "name": "MICRONICS", "weight_pct": 0.03, "shares": 300}
+{"ticker": "9301.JP", "name": "Mitsubishi Logistics", "weight_pct": 0.03, "shares": 2700}
+{"ticker": "6371.JP", "name": "Tsubakimoto Chain", "weight_pct": 0.03, "shares": 1500}
+{"ticker": "6622.JP", "name": "Daihen", "weight_pct": 0.03, "shares": 1500}
+{"ticker": "8242.JP", "name": "H2O RETAILING", "weight_pct": 0.03, "shares": 1400}
+{"ticker": "4681.JP", "name": "Resorttrust", "weight_pct": 0.03, "shares": 2200}
+{"ticker": "4272.JP", "name": "Nippon Kayaku", "weight_pct": 0.03, "shares": 1800}
+{"ticker": "6141.JP", "name": "DMG MORI", "weight_pct": 0.03, "shares": 1400}
+{"ticker": "2871.JP", "name": "Nichirei", "weight_pct": 0.03, "shares": 1800}
+{"ticker": "6432.JP", "name": "TAKEUCHI MFG.", "weight_pct": 0.03, "shares": 500}
+{"ticker": "6526.JP", "name": "Socionext", "weight_pct": 0.03, "shares": 2000}
+{"ticker": "1719.JP", "name": "Hazama Ando", "weight_pct": 0.03, "shares": 2200}
+{"ticker": "5805.JP", "name": "SWCC", "weight_pct": 0.03, "shares": 1500}
+{"ticker": "6368.JP", "name": "Organo", "weight_pct": 0.03, "shares": 1500}
+{"ticker": "2229.JP", "name": "CALBEE,Inc.", "weight_pct": 0.03, "shares": 1200}
+{"ticker": "4061.JP", "name": "Denka", "weight_pct": 0.03, "shares": 1200}
+{"ticker": "7956.JP", "name": "Pigeon", "weight_pct": 0.03, "shares": 1700}
+{"ticker": "6849.JP", "name": "Nihon Kohden", "weight_pct": 0.03, "shares": 2200}
+{"ticker": "2327.JP", "name": "NS Solutions", "weight_pct": 0.03, "shares": 900}
+{"ticker": "1662.JP", "name": "JAPEX", "weight_pct": 0.03, "shares": 2200}
+{"ticker": "5384.JP", "name": "FUJIMI", "weight_pct": 0.03, "shares": 1100}
+{"ticker": "9989.JP", "name": "Sundrug", "weight_pct": 0.03, "shares": 1000}
+{"ticker": "6005.JP", "name": "Miura", "weight_pct": 0.03, "shares": 1200}
+{"ticker": "2730.JP", "name": "Edion", "weight_pct": 0.03, "shares": 1500}
+{"ticker": "6590.JP", "name": "Shibaura Mechatronics", "weight_pct": 0.03, "shares": 1000}
+{"ticker": "4666.JP", "name": "Park24", "weight_pct": 0.03, "shares": 2000}
+{"ticker": "3048.JP", "name": "BIC CAMERA INC.", "weight_pct": 0.03, "shares": 2000}
+{"ticker": "3397.JP", "name": "TORIDOLL Holdings", "weight_pct": 0.03, "shares": 800}
+{"ticker": "4680.JP", "name": "Round One", "weight_pct": 0.03, "shares": 2600}
+{"ticker": "6407.JP", "name": "CKD", "weight_pct": 0.03, "shares": 700}
+{"ticker": "2670.JP", "name": "ABC-MART", "weight_pct": 0.03, "shares": 1200}
+{"ticker": "9076.JP", "name": "SEINO HOLDINGS", "weight_pct": 0.03, "shares": 1300}
+{"ticker": "9509.JP", "name": "HEPCO", "weight_pct": 0.03, "shares": 3200}
+{"ticker": "8425.JP", "name": "Mizuho Leasing", "weight_pct": 0.03, "shares": 2700}
+{"ticker": "8876.JP", "name": "Relo Group", "weight_pct": 0.03, "shares": 1400}
+{"ticker": "4540.JP", "name": "Tsumura", "weight_pct": 0.03, "shares": 900}
+{"ticker": "9759.JP", "name": "NSD", "weight_pct": 0.03, "shares": 1100}
+{"ticker": "9744.JP", "name": "MEITEC", "weight_pct": 0.03, "shares": 1000}
+{"ticker": "3387.JP", "name": "Create Restaurants", "weight_pct": 0.03, "shares": 4600}
+{"ticker": "9616.JP", "name": "Kyoritsu Maintenance", "weight_pct": 0.03, "shares": 1000}
+{"ticker": "3635.JP", "name": "KOEI TECMO", "weight_pct": 0.03, "shares": 2000}
+{"ticker": "7616.JP", "name": "Colowide", "weight_pct": 0.03, "shares": 1600}
+{"ticker": "7649.JP", "name": "Sugi Holdings", "weight_pct": 0.03, "shares": 2600}
+{"ticker": "8111.JP", "name": "GOLDWIN", "weight_pct": 0.03, "shares": 1500}
+{"ticker": "6544.JP", "name": "JAPAN ELEVATOR SERVICE HOLDINGS", "weight_pct": 0.03, "shares": 2200}
+{"ticker": "3050.JP", "name": "DCM Holdings", "weight_pct": 0.03, "shares": 2100}
+{"ticker": "8282.JP", "name": "K'S HOLDINGS", "weight_pct": 0.03, "shares": 1900}
+{"ticker": "7211.JP", "name": "Mitsubishi Motors", "weight_pct": 0.03, "shares": 9200}
+{"ticker": "9505.JP", "name": "Rikuden", "weight_pct": 0.03, "shares": 3100}
+{"ticker": "3923.JP", "name": "RAKUS", "weight_pct": 0.03, "shares": 2800}
+{"ticker": "3349.JP", "name": "Cosmos", "weight_pct": 0.03, "shares": 500}
+{"ticker": "6436.JP", "name": "Amano", "weight_pct": 0.03, "shares": 800}
+{"ticker": "8129.JP", "name": "TOHO HOLDINGS", "weight_pct": 0.03, "shares": 800}
+{"ticker": "8410.JP", "name": "Seven Bank,Ltd.", "weight_pct": 0.02, "shares": 9400}
+{"ticker": "1833.JP", "name": "Okumura", "weight_pct": 0.02, "shares": 600}
+{"ticker": "2201.JP", "name": "Morinaga", "weight_pct": 0.02, "shares": 1300}
+{"ticker": "4206.JP", "name": "Aica", "weight_pct": 0.02, "shares": 700}
+{"ticker": "2811.JP", "name": "Kagome", "weight_pct": 0.02, "shares": 1100}
+{"ticker": "4194.JP", "name": "Visional", "weight_pct": 0.02, "shares": 300}
+{"ticker": "8086.JP", "name": "NIPRO", "weight_pct": 0.02, "shares": 2200}
+{"ticker": "8570.JP", "name": "AEON Financial Service", "weight_pct": 0.02, "shares": 2000}
+{"ticker": "3549.JP", "name": "KUSURI NO AOKI HOLDINGS", "weight_pct": 0.02, "shares": 700}
+{"ticker": "4922.JP", "name": "KOSE Holdings", "weight_pct": 0.02, "shares": 500}
+{"ticker": "9605.JP", "name": "Toei", "weight_pct": 0.02, "shares": 500}
+{"ticker": "9682.JP", "name": "DTS", "weight_pct": 0.02, "shares": 2400}
+{"ticker": "7476.JP", "name": "As One", "weight_pct": 0.02, "shares": 1100}
+{"ticker": "2593.JP", "name": "ITO En", "weight_pct": 0.02, "shares": 900}
+{"ticker": "6103.JP", "name": "Okuma", "weight_pct": 0.02, "shares": 600}
+{"ticker": "2432.JP", "name": "DeNA", "weight_pct": 0.02, "shares": 1100}
+{"ticker": "9793.JP", "name": "Daiseki", "weight_pct": 0.02, "shares": 800}
+{"ticker": "8572.JP", "name": "Acom", "weight_pct": 0.02, "shares": 6200}
+{"ticker": "3360.JP", "name": "SHIP HEALTHCARE", "weight_pct": 0.02, "shares": 1100}
+{"ticker": "4665.JP", "name": "DUSKIN CO., LTD.", "weight_pct": 0.02, "shares": 600}
+{"ticker": "7458.JP", "name": "DAIICHIKOSHO", "weight_pct": 0.02, "shares": 1600}
+{"ticker": "9003.JP", "name": "Sotetsu Holdings", "weight_pct": 0.02, "shares": 1100}
+{"ticker": "417A.JP", "name": "BLUE ZONES HOLDINGS", "weight_pct": 0.02, "shares": 1500}
+{"ticker": "4516.JP", "name": "Nippon Shinyaku", "weight_pct": 0.02, "shares": 800}
+{"ticker": "9412.JP", "name": "SKY Perfect JSAT", "weight_pct": 0.02, "shares": 1400}
+{"ticker": "7313.JP", "name": "TS TECH CO., LTD.", "weight_pct": 0.02, "shares": 1500}
+{"ticker": "7014.JP", "name": "Namura Shipbuilding", "weight_pct": 0.02, "shares": 600}
+{"ticker": "7780.JP", "name": "Menicon", "weight_pct": 0.02, "shares": 1400}
+{"ticker": "4887.JP", "name": "SAWAI GROUP HOLDINGS", "weight_pct": 0.02, "shares": 1600}
+{"ticker": "7004.JP", "name": "Kanadevia", "weight_pct": 0.02, "shares": 2400}
+{"ticker": "1820.JP", "name": "Nishimatsu", "weight_pct": 0.02, "shares": 500}
+{"ticker": "6315.JP", "name": "TOWA", "weight_pct": 0.02, "shares": 1200}
+{"ticker": "4812.JP", "name": "DENTSU SOKEN", "weight_pct": 0.02, "shares": 900}
+{"ticker": "8424.JP", "name": "Fuyo General Lease", "weight_pct": 0.02, "shares": 600}
+{"ticker": "6055.JP", "name": "JAPAN MATERIAL Co.,Ltd.", "weight_pct": 0.02, "shares": 1200}
+{"ticker": "2127.JP", "name": "Nihon M&A Center", "weight_pct": 0.02, "shares": 4000}
+{"ticker": "3591.JP", "name": "WACOAL", "weight_pct": 0.02, "shares": 700}
+{"ticker": "1414.JP", "name": "SHO-BOND HOLDINGS CO., LTD.", "weight_pct": 0.02, "shares": 2000}
+{"ticker": "4927.JP", "name": "POLA ORBIS HOLDINGS INC.", "weight_pct": 0.02, "shares": 1700}
+{"ticker": "3116.JP", "name": "Toyota Boshoku", "weight_pct": 0.02, "shares": 1100}
+{"ticker": "3697.JP", "name": "SHIFT", "weight_pct": 0.02, "shares": 2200}
+{"ticker": "2726.JP", "name": "PAL GROUP", "weight_pct": 0.02, "shares": 1600}
+{"ticker": "6753.JP", "name": "Sharp", "weight_pct": 0.02, "shares": 3900}
+{"ticker": "9627.JP", "name": "AIN HOLDINGS", "weight_pct": 0.02, "shares": 400}
+{"ticker": "8698.JP", "name": "Monex Group", "weight_pct": 0.02, "shares": 3200}
+{"ticker": "4041.JP", "name": "Soda", "weight_pct": 0.02, "shares": 600}
+{"ticker": "6632.JP", "name": "JVCKENWOOD", "weight_pct": 0.02, "shares": 2100}
+{"ticker": "3765.JP", "name": "Gungho", "weight_pct": 0.02, "shares": 800}
+{"ticker": "8522.JP", "name": "Bank Of Nagoya", "weight_pct": 0.02, "shares": 300}
+{"ticker": "4044.JP", "name": "Central Glass", "weight_pct": 0.01, "shares": 400}
+{"ticker": "1980.JP", "name": "Dai-Dan", "weight_pct": 0.01, "shares": 600}
+{"ticker": "6707.JP", "name": "Sanken Electric", "weight_pct": 0.01, "shares": 300}
+{"ticker": "4919.JP", "name": "Milbon", "weight_pct": 0.01, "shares": 500}
+{"ticker": "3778.JP", "name": "Sakura Internet", "weight_pct": 0.01, "shares": 500}
+{"ticker": "3865.JP", "name": "Hokuetsu", "weight_pct": 0.01, "shares": 1900}
+{"ticker": "543A.JP", "name": "ARCHION", "weight_pct": 0.01, "shares": 5500}
+{"ticker": "6516.JP", "name": "Sanyo Denki", "weight_pct": 0.01, "shares": 300}
+{"ticker": "9722.JP", "name": "Fujita Kanko", "weight_pct": 0.01, "shares": 500}
+{"ticker": "7148.JP", "name": "Financial Products Group", "weight_pct": 0.01, "shares": 900}
+{"ticker": "1515.JP", "name": "Nittetsu", "weight_pct": 0.01, "shares": 500}
+{"ticker": "2760.JP", "name": "Tokyo Electron Device", "weight_pct": 0.01, "shares": 300}
+{"ticker": "7516.JP", "name": "Kohnan Shoji", "weight_pct": 0.01, "shares": 300}
+{"ticker": "8366.JP", "name": "Shiga Bank", "weight_pct": 0.01, "shares": 500}
+{"ticker": "4587.JP", "name": "PeptiDream", "weight_pct": 0.01, "shares": 1300}
+{"ticker": "5331.JP", "name": "NORITAKE", "weight_pct": 0.01, "shares": 400}
+{"ticker": "9869.JP", "name": "Kato Sangyo", "weight_pct": 0.01, "shares": 200}
+{"ticker": "7846.JP", "name": "Pilot", "weight_pct": 0.01, "shares": 600}
+{"ticker": "1766.JP", "name": "Token", "weight_pct": 0.01, "shares": 100}
+{"ticker": "6507.JP", "name": "Sinfonia Technology", "weight_pct": 0.01, "shares": 100}
+{"ticker": "6651.JP", "name": "Nitto Kogyo", "weight_pct": 0.01, "shares": 300}
+{"ticker": "6966.JP", "name": "Mitsui High-Tec", "weight_pct": 0.01, "shares": 1500}
+{"ticker": "8032.JP", "name": "Japan Pulp & Paper", "weight_pct": 0.01, "shares": 1000}
+{"ticker": "7380.JP", "name": "Juroku Financial Group", "weight_pct": 0.01, "shares": 500}
+{"ticker": "7173.JP", "name": "Tokyo Kiraboshi Financial Group", "weight_pct": 0.01, "shares": 800}
+{"ticker": "6258.JP", "name": "HIRATA", "weight_pct": 0.01, "shares": 300}
+{"ticker": "2602.JP", "name": "Nisshin Oillio", "weight_pct": 0.01, "shares": 600}
+{"ticker": "3106.JP", "name": "Kurabo", "weight_pct": 0.01, "shares": 500}
+{"ticker": "7381.JP", "name": "CCIG", "weight_pct": 0.01, "shares": 1000}
+{"ticker": "8057.JP", "name": "Uchida Yoko", "weight_pct": 0.01, "shares": 500}
+{"ticker": "7740.JP", "name": "Tamron", "weight_pct": 0.01, "shares": 800}
+{"ticker": "5482.JP", "name": "Aichi Steel", "weight_pct": 0.01, "shares": 400}
+{"ticker": "6508.JP", "name": "Meidensha", "weight_pct": 0.01, "shares": 100}
+{"ticker": "6490.JP", "name": "PILLAR", "weight_pct": 0.01, "shares": 100}
+{"ticker": "7552.JP", "name": "Happinet", "weight_pct": 0.01, "shares": 200}
+{"ticker": "8386.JP", "name": "The Hyakujushi Bank", "weight_pct": 0.01, "shares": 400}
+{"ticker": "3097.JP", "name": "The Monogatari Corporation", "weight_pct": 0.01, "shares": 200}
+{"ticker": "1518.JP", "name": "MITSUI MATSUSHIMA HOLDINGS", "weight_pct": 0.01, "shares": 500}
+{"ticker": "9601.JP", "name": "Shochiku", "weight_pct": 0.01, "shares": 100}
+{"ticker": "8154.JP", "name": "Kaga Electronics", "weight_pct": 0.01, "shares": 200}
+{"ticker": "5232.JP", "name": "Sumitomo Osaka Cement", "weight_pct": 0.01, "shares": 600}
+{"ticker": "8059.JP", "name": "Daiichi Jitsugyo", "weight_pct": 0.01, "shares": 300}
+{"ticker": "9110.JP", "name": "NS United Kaiun Kaisha", "weight_pct": 0.01, "shares": 100}
+{"ticker": "6875.JP", "name": "Megachips", "weight_pct": 0.01, "shares": 100}
+{"ticker": "8388.JP", "name": "Awa Bank", "weight_pct": 0.01, "shares": 500}
+{"ticker": "6457.JP", "name": "Glory", "weight_pct": 0.01, "shares": 200}
+{"ticker": "4686.JP", "name": "JUSTSYSTEMS CORPORATION", "weight_pct": 0.01, "shares": 200}
+{"ticker": "1899.JP", "name": "Fukuda", "weight_pct": 0.01, "shares": 200}
+{"ticker": "9302.JP", "name": "MITSUI-SOKO HOLDINGS", "weight_pct": 0.01, "shares": 300}
+{"ticker": "6961.JP", "name": "ENPLAS", "weight_pct": 0.01, "shares": 100}
+{"ticker": "8370.JP", "name": "The Kiyo Bank, Ltd.", "weight_pct": 0.01, "shares": 600}
+{"ticker": "1861.JP", "name": "Kumagai Gumi", "weight_pct": 0.01, "shares": 800}
+{"ticker": "4368.JP", "name": "FUSO CHEMICAL", "weight_pct": 0.01, "shares": 300}
+{"ticker": "6254.JP", "name": "Nomura Micro", "weight_pct": 0.01, "shares": 300}
+{"ticker": "7242.JP", "name": "KYB", "weight_pct": 0.01, "shares": 600}
+{"ticker": "7389.JP", "name": "Aichi FG", "weight_pct": 0.01, "shares": 500}
+{"ticker": "8367.JP", "name": "Nanto Bank", "weight_pct": 0.01, "shares": 500}
+{"ticker": "8345.JP", "name": "Bank Of Iwate", "weight_pct": 0.01, "shares": 400}
+{"ticker": "6866.JP", "name": "Hioki E.E.", "weight_pct": 0.01, "shares": 100}
+{"ticker": "4480.JP", "name": "MEDLEY", "weight_pct": 0.01, "shares": 400}
+{"ticker": "8803.JP", "name": "Heiwa Real Estate", "weight_pct": 0.01, "shares": 400}
+{"ticker": "6941.JP", "name": "YAMAICHI ELECTRONICS", "weight_pct": 0.01, "shares": 100}
+{"ticker": "9746.JP", "name": "TKC", "weight_pct": 0.01, "shares": 200}
+{"ticker": "5192.JP", "name": "Mitsuboshi Belting", "weight_pct": 0.01, "shares": 200}
+{"ticker": "6284.JP", "name": "Nissei ASB Machine", "weight_pct": 0.01, "shares": 100}
+{"ticker": "1377.JP", "name": "Sakata Seed", "weight_pct": 0.01, "shares": 200}
+{"ticker": "9889.JP", "name": "JBCC", "weight_pct": 0.01, "shares": 400}
+{"ticker": "8361.JP", "name": "OKB", "weight_pct": 0.01, "shares": 500}
+{"ticker": "9824.JP", "name": "Senshu Electric", "weight_pct": 0.01, "shares": 100}
+{"ticker": "3002.JP", "name": "Gunze", "weight_pct": 0.01, "shares": 200}
+{"ticker": "5273.JP", "name": "Mitani Sekisan", "weight_pct": 0.01, "shares": 400}
+{"ticker": "5741.JP", "name": "UACJ", "weight_pct": 0.01, "shares": 400}
+{"ticker": "8336.JP", "name": "Musashino Bank", "weight_pct": 0.01, "shares": 300}
+{"ticker": "8153.JP", "name": "Mos Food Services", "weight_pct": 0.01, "shares": 200}
+{"ticker": "2121.JP", "name": "MIXI", "weight_pct": 0.01, "shares": 200}
+{"ticker": "2296.JP", "name": "ITOHAM YONEKYU", "weight_pct": 0.01, "shares": 160}
+{"ticker": "8218.JP", "name": "Komeri", "weight_pct": 0.01, "shares": 200}
+{"ticker": "9010.JP", "name": "Fuji Kyuko", "weight_pct": 0.01, "shares": 300}
+{"ticker": "9336.JP", "name": "Daiei Kankyo", "weight_pct": 0.01, "shares": 200}
+{"ticker": "1961.JP", "name": "Sanki", "weight_pct": 0.01, "shares": 300}
+{"ticker": "167A.JP", "name": "Ryoyo Ryosan Holdings", "weight_pct": 0.01, "shares": 232}
+{"ticker": "4023.JP", "name": "KUREHA", "weight_pct": 0.01, "shares": 200}
+{"ticker": "6454.JP", "name": "MAX", "weight_pct": 0.01, "shares": 400}
+{"ticker": "4521.JP", "name": "Kaken Pharmaceutical", "weight_pct": 0.01, "shares": 200}
+{"ticker": "4483.JP", "name": "JMDC", "weight_pct": 0.01, "shares": 200}
+{"ticker": "4825.JP", "name": "Weathernews", "weight_pct": 0.01, "shares": 400}
+{"ticker": "6387.JP", "name": "SAMCO INC.", "weight_pct": 0.01, "shares": 100}
+{"ticker": "4008.JP", "name": "Sumitomo Seika Chemicals", "weight_pct": 0.01, "shares": 500}
+{"ticker": "1979.JP", "name": "Taikisha", "weight_pct": 0.01, "shares": 200}
+{"ticker": "9068.JP", "name": "Maruzen Showa Unyu", "weight_pct": 0.01, "shares": 200}
+{"ticker": "7350.JP", "name": "Okinawa Financial Group", "weight_pct": 0.01, "shares": 100}
+{"ticker": "1968.JP", "name": "TAIHEI DENGYO", "weight_pct": 0.01, "shares": 300}
+{"ticker": "1333.JP", "name": "Umios", "weight_pct": 0.01, "shares": 600}
+{"ticker": "5310.JP", "name": "TOYO TANSO CO., LTD.", "weight_pct": 0.01, "shares": 100}
+{"ticker": "5186.JP", "name": "Nitta", "weight_pct": 0.01, "shares": 100}
+{"ticker": "2270.JP", "name": "MEGMILK SNOW BRAND", "weight_pct": 0.01, "shares": 200}
+{"ticker": "4216.JP", "name": "ASAHI YUKIZAI", "weight_pct": 0.01, "shares": 100}
+{"ticker": "3569.JP", "name": "Seiren", "weight_pct": 0.01, "shares": 200}
+{"ticker": "7734.JP", "name": "Riken Keiki", "weight_pct": 0.01, "shares": 200}
+{"ticker": "7995.JP", "name": "VALQUA", "weight_pct": 0.01, "shares": 100}
+{"ticker": "9267.JP", "name": "Genky DrugStores", "weight_pct": 0.01, "shares": 200}
+{"ticker": "8584.JP", "name": "Jaccs", "weight_pct": 0.01, "shares": 200}
+{"ticker": "9621.JP", "name": "CTI Engineering", "weight_pct": 0.01, "shares": 200}
+{"ticker": "5451.JP", "name": "YODOKO", "weight_pct": 0.01, "shares": 500}
+{"ticker": "4958.JP", "name": "T.Hasegawa", "weight_pct": 0.01, "shares": 200}
+{"ticker": "6420.JP", "name": "GALILEI HOLDINGS", "weight_pct": 0.01, "shares": 200}
+{"ticker": "4471.JP", "name": "Sanyo Chemical", "weight_pct": 0.01, "shares": 400}
+{"ticker": "8919.JP", "name": "KATITAS", "weight_pct": 0.01, "shares": 200}
+{"ticker": "6877.JP", "name": "Obara Group", "weight_pct": 0.01, "shares": 100}
+{"ticker": "9948.JP", "name": "ARCS Company Limited", "weight_pct": 0.01, "shares": 200}
+{"ticker": "1982.JP", "name": "Hibiya Engineering", "weight_pct": 0.01, "shares": 200}
+{"ticker": "4914.JP", "name": "Takasago", "weight_pct": 0.01, "shares": 500}
+{"ticker": "7456.JP", "name": "Matsuda Sangyo", "weight_pct": 0.01, "shares": 100}
+{"ticker": "8566.JP", "name": "Ricoh Leasing", "weight_pct": 0.01, "shares": 100}
+{"ticker": "9075.JP", "name": "Fukuyama Transporting", "weight_pct": 0.01, "shares": 100}
+{"ticker": "4971.JP", "name": "MEC", "weight_pct": 0.01, "shares": 100}
+{"ticker": "2326.JP", "name": "Digital Arts", "weight_pct": 0.01, "shares": 100}
+{"ticker": "3465.JP", "name": "KI-STAR REAL ESTATE", "weight_pct": 0.0, "shares": 200}
+{"ticker": "3148.JP", "name": "Create SD Holdings", "weight_pct": 0.0, "shares": 200}
+{"ticker": "6277.JP", "name": "Hosokawa Micron", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6995.JP", "name": "Tokai Rika", "weight_pct": 0.0, "shares": 200}
+{"ticker": "6737.JP", "name": "Eizo", "weight_pct": 0.0, "shares": 200}
+{"ticker": "8130.JP", "name": "Sangetsu", "weight_pct": 0.0, "shares": 200}
+{"ticker": "8074.JP", "name": "YUASA", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7744.JP", "name": "Noritsu Koki", "weight_pct": 0.0, "shares": 300}
+{"ticker": "6588.JP", "name": "Toshiba Tec", "weight_pct": 0.0, "shares": 200}
+{"ticker": "5122.JP", "name": "Okamoto Industries", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3156.JP", "name": "Restar Corporation", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2659.JP", "name": "San-A", "weight_pct": 0.0, "shares": 200}
+{"ticker": "2590.JP", "name": "DyDo GROUP HOLDINGS", "weight_pct": 0.0, "shares": 200}
+{"ticker": "9039.JP", "name": "SAKAI MOVING SERVICE CO., LTD.", "weight_pct": 0.0, "shares": 200}
+{"ticker": "9974.JP", "name": "Belc CO.LTD.", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3046.JP", "name": "JINS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4025.JP", "name": "Taki Chemical", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6013.JP", "name": "Takuma", "weight_pct": 0.0, "shares": 200}
+{"ticker": "6340.JP", "name": "SHIBUYA", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3091.JP", "name": "BRONCO BILLY Co.,LTD", "weight_pct": 0.0, "shares": 200}
+{"ticker": "3543.JP", "name": "KOMEDA Holdings", "weight_pct": 0.0, "shares": 200}
+{"ticker": "9936.JP", "name": "Ohsho Food", "weight_pct": 0.0, "shares": 200}
+{"ticker": "6947.JP", "name": "Zuken", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7278.JP", "name": "Exedy", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7966.JP", "name": "Lintec", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4975.JP", "name": "JCU", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2384.JP", "name": "SBS Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2001.JP", "name": "NIPPN", "weight_pct": 0.0, "shares": 200}
+{"ticker": "7947.JP", "name": "FP", "weight_pct": 0.0, "shares": 200}
+{"ticker": "8273.JP", "name": "Izumi", "weight_pct": 0.0, "shares": 600}
+{"ticker": "7433.JP", "name": "Hakuto", "weight_pct": 0.0, "shares": 300}
+{"ticker": "6807.JP", "name": "JAE", "weight_pct": 0.0, "shares": 200}
+{"ticker": "9678.JP", "name": "Kanamoto", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9031.JP", "name": "Nishitetsu", "weight_pct": 0.0, "shares": 200}
+{"ticker": "9887.JP", "name": "MATSUYA FOODS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2175.JP", "name": "SMS CO.LTD.", "weight_pct": 0.0, "shares": 200}
+{"ticker": "3445.JP", "name": "RS Technologies", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6474.JP", "name": "Nachi-Fujikoshi", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6351.JP", "name": "Tsurumi Mfg.", "weight_pct": 0.0, "shares": 200}
+{"ticker": "3186.JP", "name": "NEXTAGE", "weight_pct": 0.0, "shares": 200}
+{"ticker": "9418.JP", "name": "U-NEXT HOLDINGS", "weight_pct": 0.0, "shares": 300}
+{"ticker": "8179.JP", "name": "Royal Holdings", "weight_pct": 0.0, "shares": 400}
+{"ticker": "7595.JP", "name": "Argo Graphics", "weight_pct": 0.0, "shares": 400}
+{"ticker": "3636.JP", "name": "Mitsubishi Research Institute,Inc.", "weight_pct": 0.0, "shares": 100}
+{"ticker": "1941.JP", "name": "Chudenko", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2733.JP", "name": "Arata", "weight_pct": 0.0, "shares": 200}
+{"ticker": "2815.JP", "name": "Ariake Japan", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6101.JP", "name": "Tsugami", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5480.JP", "name": "Nippon Yakin", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4819.JP", "name": "Digital Garage", "weight_pct": 0.0, "shares": 200}
+{"ticker": "5302.JP", "name": "Nippon Carbon", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4373.JP", "name": "Simplex", "weight_pct": 0.0, "shares": 400}
+{"ticker": "4634.JP", "name": "artience", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2767.JP", "name": "TSUBURAYA FIELDS HOLDINGS", "weight_pct": 0.0, "shares": 200}
+{"ticker": "7917.JP", "name": "ZACROS", "weight_pct": 0.0, "shares": 400}
+{"ticker": "8084.JP", "name": "RYODEN", "weight_pct": 0.0, "shares": 200}
+{"ticker": "8037.JP", "name": "Kamei", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9830.JP", "name": "Trusco Nakayama", "weight_pct": 0.0, "shares": 200}
+{"ticker": "4187.JP", "name": "Osaka Organic Chemical", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4099.JP", "name": "SHIKOKU KASEI", "weight_pct": 0.0, "shares": 200}
+{"ticker": "4109.JP", "name": "Stella Chemifa", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4985.JP", "name": "Earth Corporation", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6104.JP", "name": "SHIBAURA MACHINE", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3817.JP", "name": "SRA HOLDINGS, INC.", "weight_pct": 0.0, "shares": 100}
+{"ticker": "1882.JP", "name": "Toa Road", "weight_pct": 0.0, "shares": 300}
+{"ticker": "9757.JP", "name": "Funai Soken", "weight_pct": 0.0, "shares": 400}
+{"ticker": "9663.JP", "name": "NAGAWA", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9672.JP", "name": "Tokyotokeiba", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8043.JP", "name": "Starzen", "weight_pct": 0.0, "shares": 300}
+{"ticker": "8194.JP", "name": "Life", "weight_pct": 0.0, "shares": 200}
+{"ticker": "8159.JP", "name": "Tachibana Eletech", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4928.JP", "name": "Noevir Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "1301.JP", "name": "KYOKUYO", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2607.JP", "name": "FUJI OIL", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3191.JP", "name": "JOYFUL HONDA CO.,LTD.", "weight_pct": 0.0, "shares": 200}
+{"ticker": "7839.JP", "name": "SHOEI", "weight_pct": 0.0, "shares": 200}
+{"ticker": "7384.JP", "name": "Procrea Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8850.JP", "name": "STARTS CORPORATION", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8595.JP", "name": "JAFCO Group", "weight_pct": 0.0, "shares": 200}
+{"ticker": "8707.JP", "name": "IwaiCosmo Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6859.JP", "name": "Espec", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7994.JP", "name": "OKAMURA", "weight_pct": 0.0, "shares": 200}
+{"ticker": "3950.JP", "name": "The Pack", "weight_pct": 0.0, "shares": 300}
+{"ticker": "6080.JP", "name": "M&A Capital Partners", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6250.JP", "name": "Yamabiko", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4674.JP", "name": "Cresco", "weight_pct": 0.0, "shares": 200}
+{"ticker": "4046.JP", "name": "OSAKA SODA", "weight_pct": 0.0, "shares": 200}
+{"ticker": "1852.JP", "name": "Asanuma", "weight_pct": 0.0, "shares": 500}
+{"ticker": "8014.JP", "name": "Chori", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8079.JP", "name": "Shoei Foods", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7296.JP", "name": "F.C.C.", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9699.JP", "name": "NISHIO", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6744.JP", "name": "Nohmi Bosai", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8173.JP", "name": "Joshin", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7715.JP", "name": "Nagano Keiki", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2154.JP", "name": "Open Up", "weight_pct": 0.0, "shares": 200}
+{"ticker": "1885.JP", "name": "Toa", "weight_pct": 0.0, "shares": 200}
+{"ticker": "6412.JP", "name": "Heiwa", "weight_pct": 0.0, "shares": 200}
+{"ticker": "6517.JP", "name": "Denyo", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4443.JP", "name": "Sansan", "weight_pct": 0.0, "shares": 200}
+{"ticker": "1762.JP", "name": "Takamatsu Construction Group", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2664.JP", "name": "CAWACHI", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7821.JP", "name": "MAEDA KOSEN CO., LTD.", "weight_pct": 0.0, "shares": 200}
+{"ticker": "2220.JP", "name": "KAMEDA SEIKA", "weight_pct": 0.0, "shares": 300}
+{"ticker": "1835.JP", "name": "Totetsu Kogyo", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2004.JP", "name": "Showa", "weight_pct": 0.0, "shares": 100}
+{"ticker": "1926.JP", "name": "Raito", "weight_pct": 0.0, "shares": 400}
+{"ticker": "5715.JP", "name": "Furukawa", "weight_pct": 0.0, "shares": 100}
+{"ticker": "646A.JP", "name": "Crasus Chemical", "weight_pct": 0.0, "shares": 1900}
+{"ticker": "4432.JP", "name": "WingArc1st", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4694.JP", "name": "BML", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4547.JP", "name": "Kissei", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4849.JP", "name": "en", "weight_pct": 0.0, "shares": 200}
+{"ticker": "1950.JP", "name": "Nippon Densetsu", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2109.JP", "name": "Mitsui DM Sugar", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2146.JP", "name": "UT Group", "weight_pct": 0.0, "shares": 1500}
+{"ticker": "2791.JP", "name": "DAIKOKUTENBUSSAN", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7944.JP", "name": "Roland", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7976.JP", "name": "Mitsubishi Pencil", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8255.JP", "name": "Axial Retailing Inc.", "weight_pct": 0.0, "shares": 300}
+{"ticker": "6652.JP", "name": "IDEC", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6929.JP", "name": "Nippon Ceramic", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9037.JP", "name": "Hamakyorex", "weight_pct": 0.0, "shares": 200}
+{"ticker": "9715.JP", "name": "Transcosmos", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7864.JP", "name": "Fuji Seal International", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2742.JP", "name": "HALOWS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4095.JP", "name": "Nihon Parkerizing", "weight_pct": 0.0, "shares": 200}
+{"ticker": "4045.JP", "name": "Toagosei", "weight_pct": 0.0, "shares": 200}
+{"ticker": "4553.JP", "name": "Towa Pharmaceutical", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4617.JP", "name": "Chugoku Marine Paints", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4506.JP", "name": "Sumitomo Pharma", "weight_pct": 0.0, "shares": 200}
+{"ticker": "6458.JP", "name": "Sinko Industries", "weight_pct": 0.0, "shares": 300}
+{"ticker": "6333.JP", "name": "TEIKOKU", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6036.JP", "name": "KeePer Technical Laboratory", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6376.JP", "name": "Nikkiso", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7184.JP", "name": "FIRST BANK OF TOYAMA", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8923.JP", "name": "TOSEI CORP.", "weight_pct": 0.0, "shares": 200}
+{"ticker": "9413.JP", "name": "TV TOKYO", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5975.JP", "name": "Topre", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3762.JP", "name": "Techmatrix Corp.", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4072.JP", "name": "Densan System Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4189.JP", "name": "KH Neochem", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2695.JP", "name": "Kura Sushi", "weight_pct": 0.0, "shares": 200}
+{"ticker": "2379.JP", "name": "DIP corporation", "weight_pct": 0.0, "shares": 200}
+{"ticker": "3087.JP", "name": "DOUTORL NICHIRES HOLDINGS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4481.JP", "name": "BASE", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4534.JP", "name": "Mochida", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4776.JP", "name": "Cybozu", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9882.JP", "name": "Yellow Hat", "weight_pct": 0.0, "shares": 200}
+{"ticker": "9956.JP", "name": "VALOR HOLDINGS", "weight_pct": 0.0, "shares": 200}
+{"ticker": "6914.JP", "name": "OPTEX GROUP", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7231.JP", "name": "Topy Industries", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7483.JP", "name": "Doshisha", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7730.JP", "name": "MANI,INC.", "weight_pct": 0.0, "shares": 200}
+{"ticker": "9832.JP", "name": "AUTOBACS SEVEN", "weight_pct": 0.0, "shares": 200}
+{"ticker": "9790.JP", "name": "Fukui Computer Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9409.JP", "name": "TV Asahi", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9551.JP", "name": "METAWATER", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4526.JP", "name": "Riken Vitamin", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4369.JP", "name": "Tri Chemical", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6419.JP", "name": "Mars Group Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3076.JP", "name": "AI HOLDINGS CORP.", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3036.JP", "name": "ALCONIX CORPORATION", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3612.JP", "name": "WORLD", "weight_pct": 0.0, "shares": 200}
+{"ticker": "4212.JP", "name": "Sekisui Jushi", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2685.JP", "name": "and ST HD", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3539.JP", "name": "JM HOLDINGS", "weight_pct": 0.0, "shares": 200}
+{"ticker": "3302.JP", "name": "Teikoku Sen-I", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6463.JP", "name": "TPR", "weight_pct": 0.0, "shares": 200}
+{"ticker": "6379.JP", "name": "RAIZNEXT", "weight_pct": 0.0, "shares": 300}
+{"ticker": "4577.JP", "name": "Daito Pharmaceutical", "weight_pct": 0.0, "shares": 220}
+{"ticker": "4956.JP", "name": "Konishi", "weight_pct": 0.0, "shares": 200}
+{"ticker": "8399.JP", "name": "Bank Of The Ryukyus", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7611.JP", "name": "Hiday Hidaka", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7745.JP", "name": "A&D HOLON Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7981.JP", "name": "Takara Standard", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7128.JP", "name": "UNISOL Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7965.JP", "name": "Zojirushi", "weight_pct": 0.0, "shares": 200}
+{"ticker": "7943.JP", "name": "Nichiha", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9025.JP", "name": "Konoike Transport", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9347.JP", "name": "NIPPON KANZAI Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5410.JP", "name": "Godo Steel", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5911.JP", "name": "Yokogawa Bridge", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3433.JP", "name": "Tocalo", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4180.JP", "name": "Appier", "weight_pct": 0.0, "shares": 200}
+{"ticker": "1419.JP", "name": "Tama Home", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4028.JP", "name": "ISHIHARA SANGYO KAISHA", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5851.JP", "name": "Ryobi", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5703.JP", "name": "Nippon Light Metal Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6363.JP", "name": "Torishima Pump", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6282.JP", "name": "OILES", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6287.JP", "name": "SATO", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5208.JP", "name": "Arisawa Mfg.", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4641.JP", "name": "Altech Corp.", "weight_pct": 0.0, "shares": 300}
+{"ticker": "4362.JP", "name": "NFC", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9755.JP", "name": "OYO", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7130.JP", "name": "YAMAE GROUP HOLDINGS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7220.JP", "name": "Musashi Seimitsu", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6908.JP", "name": "IRISO ELECTRONICS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6703.JP", "name": "Oki", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9729.JP", "name": "TOKAI Corp.", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8739.JP", "name": "SPARX Group", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8544.JP", "name": "Keiyo Bank", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4318.JP", "name": "QUICK", "weight_pct": 0.0, "shares": 300}
+{"ticker": "4633.JP", "name": "Sakata Inx", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5195.JP", "name": "Bando Chemical", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6395.JP", "name": "Tadano", "weight_pct": 0.0, "shares": 200}
+{"ticker": "3863.JP", "name": "Nippon Paper Industries", "weight_pct": 0.0, "shares": 200}
+{"ticker": "3395.JP", "name": "Saint Marc", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3167.JP", "name": "TOKAI Holdings", "weight_pct": 0.0, "shares": 200}
+{"ticker": "2918.JP", "name": "WARABEYA NICHIYO", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2292.JP", "name": "Sfoods", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2211.JP", "name": "Fujiya", "weight_pct": 0.0, "shares": 100}
+{"ticker": "1934.JP", "name": "Yurtec", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3028.JP", "name": "ALPEN CO., LTD.", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6455.JP", "name": "Morita Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4565.JP", "name": "Nxera", "weight_pct": 0.0, "shares": 200}
+{"ticker": "4549.JP", "name": "Eiken Chemical", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9090.JP", "name": "AZ-COM MARUWA Holdings", "weight_pct": 0.0, "shares": 300}
+{"ticker": "9740.JP", "name": "CSP", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6810.JP", "name": "Maxell", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7972.JP", "name": "Itoki", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7990.JP", "name": "Daiwa Seiko", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7606.JP", "name": "United Arrows", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8276.JP", "name": "Heiwado", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8097.JP", "name": "SAN-AI OBBLI", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8160.JP", "name": "KISOJI", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8200.JP", "name": "Ringer Hut", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8131.JP", "name": "Mitsuuroko Group Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8237.JP", "name": "Matsuya", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7970.JP", "name": "Shin-Etsu Polymer", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6804.JP", "name": "Hosiden", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6996.JP", "name": "Nichicon", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7239.JP", "name": "Tachi-S", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9692.JP", "name": "CEC", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9536.JP", "name": "SAIBU GAS HOLDINGS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4722.JP", "name": "Future", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6430.JP", "name": "Daikoku Denki", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6332.JP", "name": "TSUKISHIMA HOLDINGS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5726.JP", "name": "OSAKA Titanium", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6235.JP", "name": "OPTORUN", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3034.JP", "name": "Qol Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2980.JP", "name": "SRE", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3176.JP", "name": "Sanyo Trading", "weight_pct": 0.0, "shares": 200}
+{"ticker": "2124.JP", "name": "JAC Recruitment", "weight_pct": 0.0, "shares": 200}
+{"ticker": "1879.JP", "name": "Shinnihon", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2281.JP", "name": "Primaham", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2681.JP", "name": "GEO Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2613.JP", "name": "J-Oil Mills", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5970.JP", "name": "G-TEKT", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5943.JP", "name": "Noritz", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6413.JP", "name": "RISO KAGAKU", "weight_pct": 0.0, "shares": 200}
+{"ticker": "5011.JP", "name": "NICHIREKI GROUP", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9308.JP", "name": "Inui Global Logistics", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8628.JP", "name": "Matsui Securities", "weight_pct": 0.0, "shares": 200}
+{"ticker": "9900.JP", "name": "Sagami Holdings", "weight_pct": 0.0, "shares": 200}
+{"ticker": "7199.JP", "name": "Premium Group", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8219.JP", "name": "Aoyama", "weight_pct": 0.0, "shares": 300}
+{"ticker": "8368.JP", "name": "Hyakugo Bank", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8133.JP", "name": "Itochu Enex", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7630.JP", "name": "Ichibanya", "weight_pct": 0.0, "shares": 200}
+{"ticker": "7226.JP", "name": "Kyokuto Kaihatsu Kogyo", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7283.JP", "name": "Aisan Industry", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6999.JP", "name": "KOA", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8511.JP", "name": "JSF", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9603.JP", "name": "HIS", "weight_pct": 0.0, "shares": 200}
+{"ticker": "5461.JP", "name": "Chubu Steel Plate", "weight_pct": 0.0, "shares": 100}
+{"ticker": "1870.JP", "name": "Yahagi", "weight_pct": 0.0, "shares": 100}
+{"ticker": "1379.JP", "name": "Hokuto", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3201.JP", "name": "The Japan Wool Textile", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3962.JP", "name": "CHANGE Holdings", "weight_pct": 0.0, "shares": 200}
+{"ticker": "3687.JP", "name": "Fixstars", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4047.JP", "name": "Kanto Denka Kogyo", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3880.JP", "name": "Daio Paper", "weight_pct": 0.0, "shares": 200}
+{"ticker": "2594.JP", "name": "KEY Coffee", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5440.JP", "name": "KYOEI STEEL LTD.", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4559.JP", "name": "Zeria", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4326.JP", "name": "INTAGE HOLDINGS Inc.", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6349.JP", "name": "Komori", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6289.JP", "name": "GIKEN", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6498.JP", "name": "Kitz", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5946.JP", "name": "Chofu Seisakusho", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6058.JP", "name": "VECTOR", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9052.JP", "name": "Sanyo Electric Railway", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6750.JP", "name": "Elecom", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7366.JP", "name": "LITALICO", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7545.JP", "name": "Nishimatsuya Chain", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8008.JP", "name": "YONDOSHI HOLDINGS INC.", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8051.JP", "name": "Yamazen", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8278.JP", "name": "FUJI", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8125.JP", "name": "Wakita", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7224.JP", "name": "Shinmaywa", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6741.JP", "name": "Nippon Signal", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8771.JP", "name": "eGuarantee", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8818.JP", "name": "Keihanshin Building", "weight_pct": 0.0, "shares": 200}
+{"ticker": "9842.JP", "name": "ARCLANDS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5930.JP", "name": "Bunka Shutter", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6381.JP", "name": "Anest Iwata", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4848.JP", "name": "FULLCAST HOLDINGS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5423.JP", "name": "Tokyo Steel", "weight_pct": 0.0, "shares": 100}
+{"ticker": "1976.JP", "name": "Meisei Industrial", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2874.JP", "name": "Yoko Rei", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9247.JP", "name": "TRE HOLDINGS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7033.JP", "name": "Management Solutions", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7447.JP", "name": "Nagaileben", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8214.JP", "name": "AOKI Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7613.JP", "name": "Siix", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8163.JP", "name": "SRS HOLDINGS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7421.JP", "name": "KAPPA CREATE", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7575.JP", "name": "Japan Lifeline", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9119.JP", "name": "Iino Kaiun", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3182.JP", "name": "Oisix", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3101.JP", "name": "TOYOBO", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2908.JP", "name": "Fujicco", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6459.JP", "name": "DAIWA", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5702.JP", "name": "Daiki Aluminium", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5988.JP", "name": "Piolax", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6143.JP", "name": "Sodick", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6191.JP", "name": "AirTrip", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2395.JP", "name": "SNBL", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2168.JP", "name": "PASONA GROUP INC.", "weight_pct": 0.0, "shares": 100}
+{"ticker": "1898.JP", "name": "Seikitokyu Kogyo", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8167.JP", "name": "RETAIL PARTNERS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7508.JP", "name": "G-7 Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7414.JP", "name": "Onoken", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9543.JP", "name": "SHIZUOKA GAS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2910.JP", "name": "Rock Field", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3844.JP", "name": "COMTURE CORPORATION", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6183.JP", "name": "BELLSYSTEM24", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5949.JP", "name": "Unipres", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6523.JP", "name": "PHC Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6088.JP", "name": "SIGMAXYZ Holdings", "weight_pct": 0.0, "shares": 200}
+{"ticker": "6118.JP", "name": "Aida", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3836.JP", "name": "AVANT GROUP", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3608.JP", "name": "TSI Holdings Co.,Ltd.", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2678.JP", "name": "Askul", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2752.JP", "name": "FUJIO FOOD GROUP", "weight_pct": 0.0, "shares": 100}
+{"ticker": "1720.JP", "name": "Tokyu Construction", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8609.JP", "name": "OKASAN SECURITIES", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9716.JP", "name": "Nomura", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7860.JP", "name": "Avex", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7915.JP", "name": "Nissha", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8346.JP", "name": "Toho Bank", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7085.JP", "name": "Curves Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9997.JP", "name": "Belluna", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8714.JP", "name": "Senshu Ikeda Holdings,Inc.", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8715.JP", "name": "Anicom", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8600.JP", "name": "TOMONY Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8892.JP", "name": "ES-CON JAPAN", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9511.JP", "name": "Okiden", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9416.JP", "name": "VISION", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9274.JP", "name": "KPP GROUP HOLDINGS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2734.JP", "name": "Sala", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3673.JP", "name": "Broadleaf", "weight_pct": 0.0, "shares": 200}
+{"ticker": "4246.JP", "name": "DaikyoNishikawa Corporation", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6140.JP", "name": "Asahi Diamond", "weight_pct": 0.0, "shares": 100}
+{"ticker": "590A.JP", "name": "giftee Group", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6339.JP", "name": "Sintokogio", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4569.JP", "name": "KYORIN", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6222.JP", "name": "Shima Seiki", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2317.JP", "name": "Systena", "weight_pct": 0.0, "shares": 200}
+{"ticker": "2157.JP", "name": "Koshidaka Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8848.JP", "name": "Leopalace21", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7246.JP", "name": "Press Kogyo", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7599.JP", "name": "IDOM", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6768.JP", "name": "Tamura", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6727.JP", "name": "Wacom", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6630.JP", "name": "YA-MAN", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8616.JP", "name": "Tokai Tokyo Financial Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8585.JP", "name": "Orient", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9519.JP", "name": "RENOVA", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2492.JP", "name": "Infomart", "weight_pct": 0.0, "shares": 100}
+{"ticker": "547A.JP", "name": "Muninova Holdings", "weight_pct": 0.0, "shares": 200}
+{"ticker": "4996.JP", "name": "Kumiai Chemical", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4290.JP", "name": "Prestige International", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6200.JP", "name": "Insource", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6472.JP", "name": "NTN", "weight_pct": 0.0, "shares": 200}
+{"ticker": "2929.JP", "name": "Pharma Foods", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2931.JP", "name": "euglena", "weight_pct": 0.0, "shares": 200}
+{"ticker": "3222.JP", "name": "United Super Markets", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9517.JP", "name": "eREX", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8016.JP", "name": "ONWARD HOLDINGS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "1887.JP", "name": "JDC", "weight_pct": 0.0, "shares": 100}
+{"ticker": "4552.JP", "name": "JCR Pharmaceuticals", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5408.JP", "name": "Nakayama Steel Works", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5074.JP", "name": "TESS Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "5563.JP", "name": "Nippon Denko", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2337.JP", "name": "Ichigo", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3632.JP", "name": "GREE Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3679.JP", "name": "ZIGExN", "weight_pct": 0.0, "shares": 100}
+{"ticker": "3668.JP", "name": "COLOPL", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7593.JP", "name": "VT HOLDINGS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "7071.JP", "name": "Amvis Holdings", "weight_pct": 0.0, "shares": 100}
+{"ticker": "8897.JP", "name": "MIRARTH HOLDINGS", "weight_pct": 0.0, "shares": 100}
+{"ticker": "2353.JP", "name": "Nippon Parking Development", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6464.JP", "name": "TSUBAKI NAKASHIMA", "weight_pct": 0.0, "shares": 100}
+{"ticker": "6619.JP", "name": "W-SCOPE", "weight_pct": 0.0, "shares": 100}
+{"ticker": "9424.JP", "name": "Japan Communications", "weight_pct": 0.0, "shares": 100}

@@ -1,0 +1,12 @@
+id: card:ticker:00661
+type: ticker
+schema_version: 1.0.0
+ticker: "00661"
+title: "元大日經225"
+full_name: "元大已開發國家傘型證券投資信託基金之元大日經225證券投資信託基金"
+currency: TWD
+exchange: TWSE
+category: ETF
+manager: "劉宗聖"
+benchmark: "日經225指數"
+last_model_update: "2026-10-18"

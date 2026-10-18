@@ -1,0 +1,12 @@
+id: card:ticker:00645
+type: ticker
+schema_version: 1.0.0
+ticker: "00645"
+title: "富邦日本"
+full_name: "富邦日本東証證券投資信託基金"
+currency: TWD
+exchange: TWSE
+category: ETF
+manager: "黃昭棠"
+benchmark: "東證股價指數"
+last_model_update: "2026-10-18"
