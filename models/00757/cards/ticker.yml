@@ -1,0 +1,12 @@
+id: card:ticker:00757
+type: ticker
+schema_version: 1.0.0
+ticker: "00757"
+title: "統一FANG+"
+full_name: "統一NYSE FANG+ ETF證券投資信託基金"
+currency: TWD
+exchange: TWSE
+category: ETF
+manager: "鄧潤澤"
+benchmark: "NYSE FANG+ Index"
+last_model_update: "2026-10-18"

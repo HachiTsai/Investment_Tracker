@@ -1,0 +1,7 @@
+id: card:interlock:yield_trap
+type: interlock
+schema_version: 1.0.0
+target_ticker: "00937B"
+description: "高息陷阱與成分股集中度防禦互鎖"
+trigger_rule: "IF yield_pct > 12.0 AND dividend_sustainability < 40 THEN alert"
+valve_action: "暫停額外單筆加碼，維持例行再投入"

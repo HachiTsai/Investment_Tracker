@@ -1,0 +1,31 @@
+{"ticker": "NVDA.US", "name": "NVIDIA", "weight_pct": 11.77, "shares": 1246077}
+{"ticker": "AVGO.US", "name": "Broadcom", "weight_pct": 9.27, "shares": 619070}
+{"ticker": "MU.US", "name": "Micron", "weight_pct": 7.75, "shares": 191309}
+{"ticker": "AMD.US", "name": "AMD", "weight_pct": 4.76, "shares": 194822}
+{"ticker": "MRVL.US", "name": "Marvell", "weight_pct": 4.55, "shares": 433273}
+{"ticker": "ADI.US", "name": "Analog Devices", "weight_pct": 4.45, "shares": 253235}
+{"ticker": "TXN.US", "name": "Texas Instruments", "weight_pct": 4.27, "shares": 351488}
+{"ticker": "INTC.US", "name": "Intel", "weight_pct": 4.25, "shares": 1024540}
+{"ticker": "QCOM.US", "name": "QUALCOMM", "weight_pct": 4.17, "shares": 537932}
+{"ticker": "TSM.US", "name": "TSMC(ADR)", "weight_pct": 4.05, "shares": 220810}
+{"ticker": "KLAC.US", "name": "KLA", "weight_pct": 3.97, "shares": 522694}
+{"ticker": "ASML.US", "name": "ASML Holding", "weight_pct": 3.9, "shares": 54072}
+{"ticker": "AMAT.US", "name": "Applied Materials", "weight_pct": 3.74, "shares": 200062}
+{"ticker": "LRCX.US", "name": "Lam Research", "weight_pct": 3.67, "shares": 304178}
+{"ticker": "MPWR.US", "name": "Monolithic Power Systems", "weight_pct": 2.77, "shares": 51070}
+{"ticker": "NXPI.US", "name": "NXP Semiconductors", "weight_pct": 2.63, "shares": 262054}
+{"ticker": "TER.US", "name": "Teradyne", "weight_pct": 2.42, "shares": 162472}
+{"ticker": "ALAB.US", "name": "Astera Labs", "weight_pct": 2.37, "shares": 180289}
+{"ticker": "COHR.US", "name": "Coherent", "weight_pct": 2.22, "shares": 203513}
+{"ticker": "MCHP.US", "name": "Microchip Technology", "weight_pct": 1.82, "shares": 564305}
+{"ticker": "ARM.US", "name": "Arm", "weight_pct": 1.61, "shares": 151073}
+{"ticker": "CRDO.US", "name": "Credo", "weight_pct": 1.52, "shares": 195305}
+{"ticker": "ON.US", "name": "ON Semiconductor", "weight_pct": 1.3, "shares": 404581}
+{"ticker": "GFS.US", "name": "GlobalFoundries", "weight_pct": 1.21, "shares": 570221}
+{"ticker": "Q.US", "name": "Qnity", "weight_pct": 1.13, "shares": 217414}
+{"ticker": "TSEM.US", "name": "Tower Semiconductor", "weight_pct": 1.07, "shares": 117250}
+{"ticker": "ENTG.US", "name": "Entegris", "weight_pct": 1.01, "shares": 158793}
+{"ticker": "MTSI.US", "name": "MACOM Technology Solutions", "weight_pct": 0.94, "shares": 79366}
+{"ticker": "LSCC.US", "name": "Lattice Semiconductor", "weight_pct": 0.62, "shares": 133027}
+{"ticker": "SITM.US", "name": "SiTime", "weight_pct": 0.61, "shares": 28165}
+{"ticker": "小型那斯達克100指數 2026/12", "name": "小型那斯達克100指數 2026/12", "weight_pct": 0.24, "shares": 9}

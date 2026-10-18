@@ -1,0 +1,12 @@
+id: card:ticker:00937B
+type: ticker
+schema_version: 1.0.0
+ticker: "00937B"
+title: "00937B"
+full_name: "00937B"
+currency: TWD
+exchange: TWSE
+category: ETF
+manager: "投信發行"
+benchmark: "對應指數"
+last_model_update: "2026-10-18"

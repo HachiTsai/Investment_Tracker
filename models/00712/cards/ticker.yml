@@ -1,0 +1,12 @@
+id: card:ticker:00712
+type: ticker
+schema_version: 1.0.0
+ticker: "00712"
+title: "復華富時不動產"
+full_name: "復華全球收益ETF傘型證券投資信託基金之復華富時不動產證券化證券投資信託基金"
+currency: TWD
+exchange: TWSE
+category: ETF
+manager: "杜俊雄"
+benchmark: "富時NAREIT抵押權型不動產投資信託指數"
+last_model_update: "2026-10-18"

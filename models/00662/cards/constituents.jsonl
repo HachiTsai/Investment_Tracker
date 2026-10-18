@@ -1,0 +1,102 @@
+{"ticker": "NVDA.US", "name": "NVIDIA", "weight_pct": 7.97, "shares": 1336291}
+{"ticker": "AAPL.US", "name": "Apple", "weight_pct": 7.6, "shares": 809215}
+{"ticker": "MSFT.US", "name": "Microsoft", "weight_pct": 6.1, "shares": 411730}
+{"ticker": "MU.US", "name": "Micron", "weight_pct": 4.42, "shares": 172881}
+{"ticker": "AMZN.US", "name": "Amazon", "weight_pct": 4.18, "shares": 598077}
+{"ticker": "AMD.US", "name": "AMD", "weight_pct": 3.86, "shares": 249890}
+{"ticker": "META.US", "name": "Meta", "weight_pct": 3.33, "shares": 164878}
+{"ticker": "GOOGL.US", "name": "Alphabet - Class A Common Stock", "weight_pct": 3.12, "shares": 325367}
+{"ticker": "GOOG.US", "name": "Alphabet - Class C Capital Stock", "weight_pct": 2.9, "shares": 306460}
+{"ticker": "TSLA.US", "name": "Tesla", "weight_pct": 2.9, "shares": 291282}
+{"ticker": "SPCX.US", "name": "SpaceX", "weight_pct": 2.68, "shares": 656667}
+{"ticker": "AVGO.US", "name": "Broadcom", "weight_pct": 2.49, "shares": 263797}
+{"ticker": "WMT.US", "name": "Walmart", "weight_pct": 2.41, "shares": 744440}
+{"ticker": "INTC.US", "name": "Intel", "weight_pct": 2.11, "shares": 804332}
+{"ticker": "PLTR.US", "name": "Palantir Technologies", "weight_pct": 1.94, "shares": 352179}
+{"ticker": "COST.US", "name": "Costco", "weight_pct": 1.82, "shares": 67885}
+{"ticker": "CSCO.US", "name": "Cisco", "weight_pct": 1.82, "shares": 603331}
+{"ticker": "LRCX.US", "name": "Lam Research", "weight_pct": 1.46, "shares": 191545}
+{"ticker": "AMAT.US", "name": "Applied Materials", "weight_pct": 1.43, "shares": 121479}
+{"ticker": "2026/12小型那斯達克100指數", "name": "2026/12小型那斯達克100指數", "weight_pct": 1.34, "shares": 81}
+{"ticker": "NFLX.US", "name": "Netflix", "weight_pct": 1.27, "shares": 637391}
+{"ticker": "PANW.US", "name": "Palo Alto", "weight_pct": 1.27, "shares": 124755}
+{"ticker": "TXN.US", "name": "Texas Instruments", "weight_pct": 1.07, "shares": 139794}
+{"ticker": "CRWD.US", "name": "CrowdStrike Holdings", "weight_pct": 1.05, "shares": 156738}
+{"ticker": "AMGN.US", "name": "Amgen Inc.", "weight_pct": 0.99, "shares": 82757}
+{"ticker": "KLAC.US", "name": "KLA", "weight_pct": 0.96, "shares": 199998}
+{"ticker": "LIN.US", "name": "Linde", "weight_pct": 0.96, "shares": 70564}
+{"ticker": "SHOP.US", "name": "Shopify", "weight_pct": 0.9, "shares": 185001}
+{"ticker": "MRVL.US", "name": "Marvell", "weight_pct": 0.89, "shares": 134231}
+{"ticker": "SNDK.US", "name": "Sandisk", "weight_pct": 0.86, "shares": 22413}
+{"ticker": "ADI.US", "name": "Analog Devices", "weight_pct": 0.82, "shares": 74174}
+{"ticker": "GILD.US", "name": "Gilead Sciences", "weight_pct": 0.82, "shares": 189805}
+{"ticker": "QCOM.US", "name": "QUALCOMM", "weight_pct": 0.79, "shares": 160764}
+{"ticker": "PEP.US", "name": "PepsiCo", "weight_pct": 0.74, "shares": 208929}
+{"ticker": "TMUS.US", "name": "T-Mobile US", "weight_pct": 0.71, "shares": 164198}
+{"ticker": "STX.US", "name": "Seagate", "weight_pct": 0.66, "shares": 34693}
+{"ticker": "ASML.US", "name": "ASML Holding", "weight_pct": 0.65, "shares": 14391}
+{"ticker": "ISRG.US", "name": "Intuitive Surgical", "weight_pct": 0.64, "shares": 54078}
+{"ticker": "FTNT.US", "name": "Fortinet", "weight_pct": 0.56, "shares": 112312}
+{"ticker": "VRTX.US", "name": "Vertex Pharmaceuticals", "weight_pct": 0.54, "shares": 38798}
+{"ticker": "WDC.US", "name": "Western Digital", "weight_pct": 0.54, "shares": 55189}
+{"ticker": "BKNG.US", "name": "Booking Holdings", "weight_pct": 0.52, "shares": 115017}
+{"ticker": "ADP.US", "name": "Automatic Data Processing", "weight_pct": 0.48, "shares": 60811}
+{"ticker": "SBUX.US", "name": "Starbucks", "weight_pct": 0.46, "shares": 174504}
+{"ticker": "ARM.US", "name": "Arm", "weight_pct": 0.45, "shares": 66758}
+{"ticker": "MAR.US", "name": "Marriott International", "weight_pct": 0.42, "shares": 39917}
+{"ticker": "ADBE.US", "name": "Adobe", "weight_pct": 0.42, "shares": 60847}
+{"ticker": "CEG.US", "name": "Constellation", "weight_pct": 0.41, "shares": 54235}
+{"ticker": "MRNA.US", "name": "Moderna", "weight_pct": 0.4, "shares": 61113}
+{"ticker": "MELI.US", "name": "MercadoLibre", "weight_pct": 0.4, "shares": 7760}
+{"ticker": "INTU.US", "name": "Intuit", "weight_pct": 0.38, "shares": 41871}
+{"ticker": "CSX.US", "name": "CSX", "weight_pct": 0.38, "shares": 283566}
+{"ticker": "SNPS.US", "name": "Synopsys", "weight_pct": 0.38, "shares": 29335}
+{"ticker": "CDNS.US", "name": "Cadence Design Systems", "weight_pct": 0.38, "shares": 42156}
+{"ticker": "DDOG.US", "name": "Datadog", "weight_pct": 0.37, "shares": 51265}
+{"ticker": "MNST.US", "name": "Monster Beverage", "weight_pct": 0.37, "shares": 299415}
+{"ticker": "CTAS.US", "name": "Cintas", "weight_pct": 0.36, "shares": 61256}
+{"ticker": "APP.US", "name": "Applovin", "weight_pct": 0.36, "shares": 46602}
+{"ticker": "REGN.US", "name": "Regeneron Pharmaceuticals", "weight_pct": 0.34, "shares": 15482}
+{"ticker": "MDLZ.US", "name": "Mondelez International", "weight_pct": 0.34, "shares": 195369}
+{"ticker": "DASH.US", "name": "DoorDash", "weight_pct": 0.33, "shares": 62620}
+{"ticker": "LITE.US", "name": "Lumentum", "weight_pct": 0.33, "shares": 13731}
+{"ticker": "CMCSA.US", "name": "Comcast", "weight_pct": 0.32, "shares": 541758}
+{"ticker": "ROST.US", "name": "Ross Stores, Inc.", "weight_pct": 0.32, "shares": 49103}
+{"ticker": "ABNB.US", "name": "Airbnb", "weight_pct": 0.31, "shares": 64219}
+{"ticker": "ORLY.US", "name": "O'Reilly Automotive", "weight_pct": 0.3, "shares": 123831}
+{"ticker": "AEP.US", "name": "American Electric Power", "weight_pct": 0.28, "shares": 83333}
+{"ticker": "HON.US", "name": "Honeywell", "weight_pct": 0.28, "shares": 48515}
+{"ticker": "MPWR.US", "name": "Monolithic Power Systems", "weight_pct": 0.26, "shares": 7523}
+{"ticker": "PCAR.US", "name": "PACCAR", "weight_pct": 0.25, "shares": 80573}
+{"ticker": "NXPI.US", "name": "NXP Semiconductors", "weight_pct": 0.24, "shares": 38600}
+{"ticker": "FAST.US", "name": "Fastenal", "weight_pct": 0.24, "shares": 175652}
+{"ticker": "MSTR.US", "name": "Strategy", "weight_pct": 0.23, "shares": 55809}
+{"ticker": "PDD.US", "name": "PDD", "weight_pct": 0.23, "shares": 102242}
+{"ticker": "FANG.US", "name": "Diamondback Energy", "weight_pct": 0.23, "shares": 42864}
+{"ticker": "BKR.US", "name": "Baker Hughes", "weight_pct": 0.23, "shares": 151953}
+{"ticker": "TER.US", "name": "Teradyne", "weight_pct": 0.23, "shares": 23932}
+{"ticker": "ALAB.US", "name": "Astera Labs", "weight_pct": 0.22, "shares": 26556}
+{"ticker": "HONA.US", "name": "Honeywell Aerospace", "weight_pct": 0.22, "shares": 48498}
+{"ticker": "ADSK.US", "name": "Autodesk", "weight_pct": 0.22, "shares": 31993}
+{"ticker": "PYPL.US", "name": "PayPal", "weight_pct": 0.21, "shares": 130949}
+{"ticker": "CCEP.US", "name": "Coca-Cola Europacific Partners", "weight_pct": 0.2, "shares": 66593}
+{"ticker": "XEL.US", "name": "Xcel Energy", "weight_pct": 0.2, "shares": 95615}
+{"ticker": "KDP.US", "name": "Keurig Dr Pepper", "weight_pct": 0.2, "shares": 208307}
+{"ticker": "NBIS.US", "name": "Nebius Group", "weight_pct": 0.19, "shares": 36493}
+{"ticker": "EXC.US", "name": "Exelon", "weight_pct": 0.18, "shares": 158011}
+{"ticker": "IDXX.US", "name": "IDEXX Laboratories", "weight_pct": 0.18, "shares": 12059}
+{"ticker": "TRI.US", "name": "Thomson Reuters", "weight_pct": 0.17, "shares": 57679}
+{"ticker": "MCHP.US", "name": "Microchip Technology", "weight_pct": 0.17, "shares": 83121}
+{"ticker": "PAYX.US", "name": "Paychex", "weight_pct": 0.17, "shares": 54446}
+{"ticker": "ODFL.US", "name": "Old Dominion Freight Line", "weight_pct": 0.16, "shares": 31741}
+{"ticker": "TTWO.US", "name": "Take-Two", "weight_pct": 0.16, "shares": 28622}
+{"ticker": "WDAY.US", "name": "Workday", "weight_pct": 0.16, "shares": 30002}
+{"ticker": "ROP.US", "name": "Roper Technologies", "weight_pct": 0.16, "shares": 15139}
+{"ticker": "FER.US", "name": "Ferrovial", "weight_pct": 0.15, "shares": 111676}
+{"ticker": "AXON.US", "name": "Axon Enterprise", "weight_pct": 0.14, "shares": 12435}
+{"ticker": "DXCM.US", "name": "DexCom", "weight_pct": 0.14, "shares": 57764}
+{"ticker": "RKLB.US", "name": "Rocket Lab", "weight_pct": 0.14, "shares": 91609}
+{"ticker": "CRWV.US", "name": "CoreWeave", "weight_pct": 0.13, "shares": 70241}
+{"ticker": "GEHC.US", "name": "GE HealthCare", "weight_pct": 0.13, "shares": 69141}
+{"ticker": "ALNY.US", "name": "Alnylam Pharmaceuticals", "weight_pct": 0.13, "shares": 20483}
+{"ticker": "CPRT.US", "name": "Copart", "weight_pct": 0.11, "shares": 141718}

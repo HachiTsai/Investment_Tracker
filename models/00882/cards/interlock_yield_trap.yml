@@ -46,7 +46,7 @@ logic_sequence:
     condition: "yield_rate >= hysteresis_bands.aggressive_entry AND net_score >= 70 AND div_score >= 60"
     posture: "AGGRESSIVE_ACCUMULATE"
     posture_label: "【積極進攻 (Aggressive Accumulate)】"
-    valve_action: "股息 100% 立即再投入，若有閒置本金啟動額外加碼，最大化滾動張數"
+    valve_action: "股息 100% 立即再投入，若有閒置資金啟動額外加碼，最大化滾動張數"
 
   - priority: 4
     name: "估值過熱防禦姿態 (Overvalued / Hold)"

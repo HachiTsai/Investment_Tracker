@@ -144,7 +144,7 @@ def evaluate_ticker_posture(
         posture_key = "AGGRESSIVE_ACCUMULATE"
         posture_label = "🟢 積極進攻"
         posture_name = "積極進攻姿態 (Aggressive Accumulate)"
-        valve_action = "股息 100% 立即再投入，若有閒置本金啟動額外加碼，最大化滾動張數"
+        valve_action = "股息 100% 立即再投入，若有閒置資金啟動額外加碼，最大化滾動張數"
         priority = 3
     # 優先級 4：過熱防禦
     elif yield_rate <= 0.048:
