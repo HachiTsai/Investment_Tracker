@@ -1,10 +1,49 @@
-{"id": "card:comp:1919", "code": "1919", "name": "中遠海控", "sector": "航運與港口", "soe_type": "央企控股", "nature": "景氣週期", "weight": 0.0377, "interim2026": "派息每股0.43元", "annual_div_unit": 0.43, "currency": "RMB", "provenance": "HKEX公告:2026082803772.pdf"}
-{"id": "card:comp:939", "code": "939", "name": "建設銀行", "sector": "銀行", "soe_type": "中央國企", "nature": "剛性高息", "weight": 0.0310, "interim2026": "派息率31%", "annual_div_unit": 0.197, "currency": "RMB", "provenance": "HKEX公告:20260829"}
-{"id": "card:comp:1398", "code": "1398", "name": "工商銀行", "sector": "銀行", "soe_type": "中央國企", "nature": "剛性高息", "weight": 0.0310, "interim2026": "派息率31%", "annual_div_unit": 0.143, "currency": "RMB", "provenance": "HKEX公告:20260829"}
-{"id": "card:comp:3988", "code": "3988", "name": "中國銀行", "sector": "銀行", "soe_type": "中央國企", "nature": "剛性高息", "weight": 0.0264, "interim2026": "每10股派1.190元", "annual_div_unit": 0.119, "currency": "RMB", "provenance": "HKEX公告:20260829"}
-{"id": "card:comp:1658", "code": "1658", "name": "郵儲銀行", "sector": "銀行", "soe_type": "中央國企", "nature": "剛性高息", "weight": 0.0271, "interim2026": "每10股派0.953元", "annual_div_unit": 0.0953, "currency": "RMB", "provenance": "HKEX公告:20260829"}
-{"id": "card:comp:3311", "code": "3311", "name": "中國建築國際", "sector": "地產與物管", "soe_type": "央企控股", "nature": "穩定增長", "weight": 0.0305, "interim2026": "派息33仙", "annual_div_unit": 0.33, "currency": "HKD", "provenance": "HKEX公告:20260818"}
-{"id": "card:comp:270", "code": "270", "name": "粵海投資", "sector": "公用事業", "soe_type": "地方國企", "nature": "公用防禦", "weight": 0.0291, "interim2026": "派息29.19仙", "annual_div_unit": 0.2919, "currency": "HKD", "provenance": "HKEX公告:20260829"}
-{"id": "card:comp:836", "code": "836", "name": "華潤電力", "sector": "公用事業", "soe_type": "央企控股", "nature": "公用防禦", "weight": 0.0277, "interim2026": "派息每股0.321港元", "annual_div_unit": 0.321, "currency": "HKD", "provenance": "HKEX公告:20260820"}
-{"id": "card:comp:1088", "code": "1088", "name": "中國神華", "sector": "工業與能源", "soe_type": "中央國企", "nature": "資源剛性高息", "weight": 0.0280, "interim2026": "已公告分紅政策", "annual_div_unit": 2.26, "currency": "RMB", "provenance": "HKEX公告"}
-{"id": "card:comp:902", "code": "902", "name": "華能國際電力", "sector": "公用事業", "soe_type": "中央國企", "nature": "公用防禦", "weight": 0.0295, "interim2026": "已公告中期不派息", "annual_div_unit": 0.0, "currency": "RMB", "provenance": "HKEX公告:20260730"}
+{"ticker": "1919.HK", "code": "1919", "name": "中遠海控", "weight_pct": 3.5, "shares": 14589000}
+{"ticker": "3311.HK", "code": "3311", "name": "中國建築國際", "weight_pct": 3.05, "shares": 25452000}
+{"ticker": "0902.HK", "code": "902", "name": "華能國際電力股份", "weight_pct": 2.95, "shares": 34564000}
+{"ticker": "0998.HK", "code": "998", "name": "中信銀行", "weight_pct": 2.94, "shares": 24776000}
+{"ticker": "0270.HK", "code": "270", "name": "粵海投資", "weight_pct": 2.91, "shares": 23216000}
+{"ticker": "0836.HK", "code": "836", "name": "華潤電力", "weight_pct": 2.77, "shares": 9923000}
+{"ticker": "3998.HK", "code": "3998", "name": "波司登", "weight_pct": 2.71, "shares": 44344000}
+{"ticker": "1658.HK", "code": "1658", "name": "郵儲銀行", "weight_pct": 2.71, "shares": 35173000}
+{"ticker": "3988.HK", "code": "3988", "name": "中國銀行", "weight_pct": 2.64, "shares": 30713000}
+{"ticker": "2328.HK", "code": "2328", "name": "中國財險", "weight_pct": 2.63, "shares": 11974000}
+{"ticker": "0148.HK", "code": "148", "name": "建滔集團", "weight_pct": 2.6, "shares": 3947500}
+{"ticker": "1398.HK", "code": "1398", "name": "工商銀行", "weight_pct": 2.57, "shares": 24017000}
+{"ticker": "1288.HK", "code": "1288", "name": "農業銀行", "weight_pct": 2.53, "shares": 26652000}
+{"ticker": "1199.HK", "code": "1199", "name": "中遠海運港口", "weight_pct": 2.51, "shares": 28532000}
+{"ticker": "0322.HK", "code": "322", "name": "康師傅控股", "weight_pct": 2.51, "shares": 14633000}
+{"ticker": "3328.HK", "code": "3328", "name": "交通銀行", "weight_pct": 2.5, "shares": 20797000}
+{"ticker": "3360.HK", "code": "3360", "name": "遠東宏信", "weight_pct": 2.5, "shares": 29093000}
+{"ticker": "0220.HK", "code": "220", "name": "統一企業中國", "weight_pct": 2.5, "shares": 23262000}
+{"ticker": "0267.HK", "code": "267", "name": "中信股份", "weight_pct": 2.42, "shares": 13651000}
+{"ticker": "0939.HK", "code": "939", "name": "建設銀行", "weight_pct": 2.32, "shares": 16681000}
+{"ticker": "0144.HK", "code": "144", "name": "招商局港口", "weight_pct": 2.17, "shares": 9084000}
+{"ticker": "1579.HK", "code": "1579", "name": "頤海國際", "weight_pct": 1.96, "shares": 9448000}
+{"ticker": "6690.HK", "code": "6690", "name": "海爾智家", "weight_pct": 1.91, "shares": 6799000}
+{"ticker": "1908.HK", "code": "1908", "name": "建發國際集團", "weight_pct": 1.9, "shares": 10598000}
+{"ticker": "1988.HK", "code": "1988", "name": "民生銀行", "weight_pct": 1.89, "shares": 40640500}
+{"ticker": "1766.HK", "code": "1766", "name": "中國中車", "weight_pct": 1.89, "shares": 25196000}
+{"ticker": "0392.HK", "code": "392", "name": "北京控股", "weight_pct": 1.88, "shares": 4488000}
+{"ticker": "3968.HK", "code": "3968", "name": "招商銀行", "weight_pct": 1.88, "shares": 2497000}
+{"ticker": "1336.HK", "code": "1336", "name": "新華人壽保險", "weight_pct": 1.87, "shares": 3168000}
+{"ticker": "6818.HK", "code": "6818", "name": "中國光大銀行", "weight_pct": 1.84, "shares": 47096000}
+{"ticker": "1088.HK", "code": "1088", "name": "中國神華", "weight_pct": 1.79, "shares": 2975500}
+{"ticker": "0384.HK", "code": "384", "name": "中國燃氣", "weight_pct": 1.68, "shares": 23674000}
+{"ticker": "1044.HK", "code": "1044", "name": "恒安國際", "weight_pct": 1.65, "shares": 5899000}
+{"ticker": "0683.HK", "code": "683", "name": "嘉里建設", "weight_pct": 1.56, "shares": 6374000}
+{"ticker": "0152.HK", "code": "152", "name": "深圳國際", "weight_pct": 1.54, "shares": 21400000}
+{"ticker": "0257.HK", "code": "257", "name": "光大環境", "weight_pct": 1.51, "shares": 22800000}
+{"ticker": "2602.HK", "code": "2602", "name": "萬物雲", "weight_pct": 1.51, "shares": 5708000}
+{"ticker": "6186.HK", "code": "6186", "name": "中國飛鶴", "weight_pct": 1.46, "shares": 41491000}
+{"ticker": "1339.HK", "code": "1339", "name": "中國人民保險集團", "weight_pct": 1.43, "shares": 19882000}
+{"ticker": "0688.HK", "code": "688", "name": "中國海外發展", "weight_pct": 1.42, "shares": 7829000}
+{"ticker": "0390.HK", "code": "390", "name": "中國中鐵", "weight_pct": 1.36, "shares": 30134000}
+{"ticker": "1109.HK", "code": "1109", "name": "華潤置地", "weight_pct": 1.34, "shares": 3192000}
+{"ticker": "2318.HK", "code": "2318", "name": "中國平安", "weight_pct": 1.22, "shares": 1741000}
+{"ticker": "1209.HK", "code": "1209", "name": "華潤萬象生活", "weight_pct": 1.07, "shares": 1977000}
+{"ticker": "0914.HK", "code": "914", "name": "海螺水泥", "weight_pct": 1.01, "shares": 4493000}
+{"ticker": "0371.HK", "code": "371", "name": "北控水務集團", "weight_pct": 0.95, "shares": 46112000}
+{"ticker": "3808.HK", "code": "3808", "name": "中國重汽", "weight_pct": 0.82, "shares": 1846000}
+{"ticker": "1368.HK", "code": "1368", "name": "特步國際", "weight_pct": 0.81, "shares": 16245000}
+{"ticker": "6110.HK", "code": "6110", "name": "滔搏", "weight_pct": 0.19, "shares": 12855000}

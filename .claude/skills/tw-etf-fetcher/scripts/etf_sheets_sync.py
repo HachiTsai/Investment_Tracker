@@ -106,7 +106,14 @@ def load_all_etf_models(models_dir: Path) -> List[Dict[str, Any]]:
                         continue
 
         # 排序權重高者在前
-        constituents.sort(key=lambda x: float(x.get("weight_pct", 0.0)), reverse=True)
+        def _get_w(x: Dict[str, Any]) -> float:
+            w = x.get("weight_pct")
+            if w is None:
+                raw_w = float(x.get("weight", 0.0))
+                return raw_w * 100 if raw_w < 1.0 else raw_w
+            return float(w)
+
+        constituents.sort(key=_get_w, reverse=True)
 
         models.append({
             "ticker": ticker_code,
@@ -136,12 +143,19 @@ def generate_flattened_constituents(models: List[Dict[str, Any]]) -> List[Dict[s
         update_date = m["last_model_update"]
 
         for c in m["constituents"]:
+            ticker_val = c.get("ticker") or c.get("symbol") or c.get("code") or ""
+            weight_val = c.get("weight_pct")
+            if weight_val is None:
+                raw_w = float(c.get("weight", 0.0))
+                weight_val = raw_w * 100 if raw_w < 1.0 else raw_w
+            weight_val = float(weight_val)
+
             rows.append({
                 "etf_id": etf_id,
                 "etf_name": etf_name,
-                "constituent_ticker": c.get("ticker", ""),
+                "constituent_ticker": ticker_val,
                 "constituent_name": c.get("name", ""),
-                "weight_pct": f"{float(c.get('weight_pct', 0.0)):.2f}",
+                "weight_pct": f"{weight_val:.2f}",
                 "shares": c.get("shares", ""),
                 "update_date": update_date,
             })
@@ -173,7 +187,11 @@ def generate_summary_rows(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         def format_top(c: Dict[str, Any]) -> str:
             if not c:
                 return "-"
-            return f"{c.get('name', '')} ({c.get('weight_pct', 0.0)}%)"
+            w = c.get('weight_pct')
+            if w is None:
+                raw_w = float(c.get('weight', 0.0))
+                w = raw_w * 100 if raw_w < 1.0 else raw_w
+            return f"{c.get('name', '')} ({float(w):.2f}%)"
 
         w_roe = "-"
         net_s = 70.0
