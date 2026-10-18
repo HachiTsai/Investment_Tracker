@@ -10,6 +10,9 @@
    - **禁止直接 push 到 `main` 分支**。
 2. **合併方式一律採用 Merge Commit**：
    - 不使用 squash、不使用 rebase，保留分支上每個 commit 的完整訊息與歷程，便於以 `git log --grep` 追溯歷史決策。
+3. **全自動持續交付（模式 B）**：
+   - Agent 端到端流程：獨立分支 ➔ 本地驗證（pytest / mdlint）➔ 提交並推送 ➔ 發起 PR ➔ 監聽 CI 狀態。
+   - 確認 GitHub Actions CI 全綠通過後，Agent 自動以標準 Merge Commit（`gh pr merge <id> --merge --delete-branch`）合入 `main` 並切回 `main` 保持最新同步。
 
 ## 2. 結構化 Commit 流程
 
