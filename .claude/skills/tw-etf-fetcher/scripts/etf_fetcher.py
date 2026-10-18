@@ -14,8 +14,8 @@
   # 3. 投資組合穿透分析 (Look-through)
   python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py lookthrough --portfolio "00878:10,00919:5"
 
-  # 4. 一鍵建立 DCS 建模卡片
-  python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py scaffold-model 00878
+  # 5. 同步成分股至 Google Sheets
+  python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets
 """
 
 import argparse
@@ -34,6 +34,7 @@ from etf_holdings_scraper import clean_ticker, fetch_etf_holdings, format_holdin
 from etf_list_scraper import fetch_twse_etf_list, filter_etfs, format_etf_list_ascii  # noqa: E402
 from etf_lookthrough import calculate_lookthrough, format_lookthrough_ascii  # noqa: E402
 from etf_model_scaffolder import scaffold_etf_model  # noqa: E402
+from etf_sheets_sync import DEFAULT_SHEET_ID, run_sync_pipeline  # noqa: E402
 
 
 def cmd_list(args) -> int:
@@ -143,6 +144,32 @@ def cmd_scaffold(args) -> int:
     return 0
 
 
+def cmd_sync_sheets(args) -> int:
+    """處理 sync-sheets 子命令。"""
+    print("🚀 啟動全市場 ETF 成分股與摘要 Google Sheets 雲端同步...")
+    models_dir = Path(args.models_dir) if args.models_dir else REPO_ROOT / "models"
+    output_dir = Path(args.output_dir) if args.output_dir else REPO_ROOT / "reports"
+    res = run_sync_pipeline(
+        models_dir=models_dir,
+        output_dir=output_dir,
+        sheet_id=args.sheet_id,
+        export_only=args.export_only,
+        dry_run=args.dry_run,
+    )
+    if res["status"] == "success":
+        print(f"✅ 成功處理 {res['etf_count']} 檔 ETF，共 {res['constituents_count']} 筆底層成分股紀錄。")
+        print(f"   📁 摘要 CSV：{res['summary_csv']}")
+        print(f"   📁 成分股 CSV：{res['constituents_csv']}")
+        if res.get("synced"):
+            print(f"   ☁️ 雲端同步成功：試算表 ID [{res['sheet_id']}]")
+        else:
+            print(f"   ℹ️ {res.get('message', '')}")
+        return 0
+    else:
+        print(f"❌ 同步失敗：{res.get('message', '未知錯誤')}", file=sys.stderr)
+        return 1
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -180,6 +207,15 @@ def main(argv=None) -> int:
     p_scaffold.add_argument("ticker", help="目標 ETF 代號（例如 00878）")
     p_scaffold.add_argument("--models-dir", help="指定 models 目錄（測試用）")
     p_scaffold.set_defaults(func=cmd_scaffold)
+
+    # sync-sheets
+    p_sync = subparsers.add_parser("sync-sheets", help="將全市場 ETF 成分股與摘要同步至 Google Sheets")
+    p_sync.add_argument("--sheet-id", default=DEFAULT_SHEET_ID, help="目標 Google Sheet ID")
+    p_sync.add_argument("--models-dir", help="指定 models 目錄（預設 REPO/models）")
+    p_sync.add_argument("--output-dir", help="指定 CSV 輸出目錄（預設 REPO/reports）")
+    p_sync.add_argument("--export-only", action="store_true", help="僅產出本機 CSV，不上傳雲端")
+    p_sync.add_argument("--dry-run", action="store_true", help="模擬執行，不變更雲端試算表")
+    p_sync.set_defaults(func=cmd_sync_sheets)
 
     args = parser.parse_args(argv)
     return args.func(args)

@@ -222,3 +222,69 @@ def test_cli_subcommands(tmp_path, monkeypatch, capsys):
     rc_scaffold = facade.main(["scaffold-model", "00878", "--models-dir", str(tmp_path / "models")])
     assert rc_scaffold == 0
     assert (tmp_path / "models" / "00878" / "cards" / "ticker.yml").exists()
+
+    # 測試 sync-sheets --dry-run
+    rc_sync = facade.main([
+        "sync-sheets",
+        "--models-dir", str(tmp_path / "models"),
+        "--output-dir", str(tmp_path / "reports"),
+        "--dry-run",
+    ])
+    assert rc_sync == 0
+    assert (tmp_path / "reports" / "etf_summary.csv").exists()
+    assert (tmp_path / "reports" / "etf_constituents.csv").exists()
+
+
+def test_etf_sheets_sync_functions(tmp_path):
+    from etf_sheets_sync import (
+        generate_flattened_constituents,
+        generate_summary_rows,
+        load_all_etf_models,
+        run_sync_pipeline,
+        write_csv,
+    )
+
+    # 建立測試用 models
+    m_dir = tmp_path / "models"
+    etf_dir = m_dir / "00878" / "cards"
+    etf_dir.mkdir(parents=True)
+    (etf_dir / "ticker.yml").write_text(
+        "ticker: \"00878\"\ntitle: \"國泰永續高股息\"\nbenchmark: \"MSCI高股息\"\nlast_model_update: \"2026-10-18\"\n",
+        encoding="utf-8",
+    )
+    (etf_dir / "constituents.jsonl").write_text(
+        '{"ticker": "2891.TW", "name": "中信金", "weight_pct": 10.16, "shares": 1000}\n'
+        '{"ticker": "2382.TW", "name": "廣達", "weight_pct": 8.63, "shares": 2000}\n',
+        encoding="utf-8",
+    )
+
+    models = load_all_etf_models(m_dir)
+    assert len(models) == 1
+    assert models[0]["ticker"] == "00878"
+    assert len(models[0]["constituents"]) == 2
+
+    flat = generate_flattened_constituents(models)
+    assert len(flat) == 2
+    assert flat[0]["etf_id"] == "00878"
+    assert flat[0]["constituent_ticker"] == "2891.TW"
+    assert flat[0]["weight_pct"] == "10.16"
+
+    summary = generate_summary_rows(models)
+    assert len(summary) == 1
+    assert summary[0]["etf_id"] == "00878"
+    assert summary[0]["constituent_count"] == 2
+    assert "中信金" in summary[0]["top1_holding"]
+
+    out_dir = tmp_path / "reports"
+    res = run_sync_pipeline(
+        models_dir=m_dir,
+        output_dir=out_dir,
+        sheet_id="test_sheet_id",
+        export_only=True,
+    )
+    assert res["status"] == "success"
+    assert res["etf_count"] == 1
+    assert res["constituents_count"] == 2
+    assert Path(res["summary_csv"]).exists()
+    assert Path(res["constituents_csv"]).exists()
+

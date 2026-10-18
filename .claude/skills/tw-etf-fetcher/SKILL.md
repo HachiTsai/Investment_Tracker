@@ -15,6 +15,7 @@ description: 台股 ETF 專用資料管線與穿透分析工具。負責抓取�
 2. **完整成分股穿透抓取**：精準解析指定 ETF 之 100% 完整底層個股代號、名稱、投資權重（%）與持有股數。
 3. **投資組合實質穿透分析（Look-through）**：輸入個人多檔 ETF 持股張數，自動折算加權背後實質持有各個股之總金額與投資組合總佔比，偵測隱形集中度風險。
 4. **DCS 建模卡片一鍵建置（Scaffold Model）**：自動將抓取的 ETF 與成分股資料轉換為 `models/<ticker>/cards/` 標準卡片，無縫納入 `portfolio-patrol` 日常巡檢體系。
+5. **Google Sheets 雲端同步管線（Sync Sheets）**：將全市場 27 檔 ETF 的 4,300+ 筆成分股與摘要自動匯出為標準 CSV，並同步上傳至「全市場_ETF成分股資料庫」Google Sheets，供前端 `Stock_AIStudio` 免登入 gviz 讀取。
 
 ---
 
@@ -35,6 +36,9 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py lookthrough --portf
 
 # 4. 為指定 ETF 一鍵建置 DCS 建模卡片（自動放入 models/<ticker>/cards/）
 python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py scaffold-model 00878
+
+# 5. 一鍵同步全市場 ETF 成分股與摘要至 Google Sheets 雲端匯流排
+python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets
 ```
 
 ---
