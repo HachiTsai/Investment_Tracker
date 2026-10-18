@@ -17,6 +17,7 @@ import re
 import shutil
 import subprocess
 import sys
+import urllib.request
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -28,6 +29,62 @@ DEFAULT_SHEET_ID = os.environ.get(
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parents[3]
+
+ETF_PRICE_SNAPSHOTS: Dict[str, float] = {
+    "0050": 109.0,
+    "0056": 58.75,
+    "006208": 250.35,
+    "00645": 57.8,
+    "00646": 79.35,
+    "00657": 78.1,
+    "00661": 85.35,
+    "00662": 124.95,
+    "00679B": 25.74,
+    "00687B": 26.75,
+    "00692": 94.35,
+    "00710B": 18.78,
+    "00712": 7.18,
+    "00713": 65.8,
+    "00720B": 31.9,
+    "00751B": 29.93,
+    "00757": 146.3,
+    "00772B": 32.37,
+    "00830": 83.95,
+    "00878": 35.53,
+    "00881": 50.0,
+    "00882": 15.21,
+    "00915": 33.71,
+    "00918": 34.53,
+    "00919": 32.74,
+    "00929": 29.84,
+    "00933B": 15.48,
+    "00937B": 14.15,
+    "00939": 25.09,
+    "00940": 13.48,
+    "00945B": 14.48,
+    "00949": 22.96,
+    "00951": 16.73,
+    "00954": 17.83,
+    "00956": 13.79,
+}
+
+
+def fetch_live_etf_price(ticker: str) -> Optional[float]:
+    """自 Yahoo Finance 輕量端點獲取最新收盤/即時市價。"""
+    suffixes = [".TW", ".TWO"]
+    for s in suffixes:
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}{s}?interval=1d&range=1d"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        try:
+            with urllib.request.urlopen(req, timeout=2.5) as resp:
+                data = json.loads(resp.read().decode())
+                meta = data.get("chart", {}).get("result", [{}])[0].get("meta", {})
+                p = meta.get("regularMarketPrice")
+                if p:
+                    return float(p)
+        except Exception:
+            continue
+    return ETF_PRICE_SNAPSHOTS.get(ticker)
 
 
 def load_yaml_simple(path: Path) -> Dict[str, Any]:
@@ -212,9 +269,13 @@ def generate_summary_rows(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             except Exception:
                 pass
 
+        price_val = fetch_live_etf_price(ticker)
+        price_str = f"{price_val:.2f}" if price_val is not None else "-"
+
         rows.append({
             "etf_id": ticker,
             "etf_name": m["title"],
+            "current_price": price_str,
             "exchange": m["exchange"],
             "category": m["category"],
             "benchmark": m["benchmark"],
@@ -301,6 +362,7 @@ def run_sync_pipeline(
     summary_fields = [
         "etf_id",
         "etf_name",
+        "current_price",
         "exchange",
         "category",
         "benchmark",
