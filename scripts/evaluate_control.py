@@ -33,8 +33,10 @@ def load_yaml_simple(path: Path) -> Dict[str, Any]:
     current_section: Optional[Dict[str, Any]] = None
 
     for line in content.splitlines():
+        if "#" in line:
+            line = line.split("#", 1)[0]
         stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
+        if not stripped:
             continue
 
         indent = len(line) - len(line.lstrip())

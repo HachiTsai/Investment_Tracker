@@ -94,3 +94,26 @@ def test_parse_ccass_and_southbound_share():
     assert [r["id"] for r in rows] == ["C00019", "A00003", "A00004"]
     assert rows[0]["shares"] == 33551231626
     assert h.southbound_share(rows) == dict(shares=36309856937, pct=15.09)
+
+
+def test_parse_lpr():
+    payload = json.dumps({"success": True, "result": {"data": [{"TRADE_DATE": "2026-09-20 00:00:00", "LPR1Y": 3.0, "LPR5Y": 3.5}]}})
+    res = h.parse_lpr(payload)
+    assert res == dict(date="2026-09-20", lpr_1y=3.0, lpr_5y=3.5)
+
+
+def test_parse_chinabond():
+    html = """
+    <tr><td>中债国债收益率曲线</td><td>2026-10-16</td><td>1.15</td><td>1.16</td><td>1.17</td><td>1.27</td><td>1.38</td><td>1.47</td><td>1.6480</td><td>2.0600</td></tr>
+    """
+    res = h.parse_chinabond(html)
+    assert res == dict(date="2026-10-16", yield_10y=1.648, yield_30y=2.06)
+
+
+def test_parse_sse_index():
+    html = """
+    <tr><td>综合指数 Comprehensive Index</td><td>USD/TEU</td><td>100%</td><td>3664.11</td><td>3679.58</td><td>15.47</td></tr>
+    """
+    res = h.parse_sse_index(html, "综合指数 Comprehensive Index")
+    assert res == dict(prev=3664.11, current=3679.58, change=15.47)
+
