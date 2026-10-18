@@ -1,0 +1,65 @@
+# 風控互鎖卡片：殖利率陷阱與多空姿態互鎖邏輯 (BLS)
+id: "card:interlock:yield_trap_guard"
+kind: "interlock"
+title: "殖利率陷阱與多空戰術姿態互鎖邏輯"
+
+inputs:
+  market:
+    current_price: "sensor:00882:price"
+    model_annual_dividend: "calculated:model_dividend"
+    yield_rate: "calculated:model_dividend / current_price"
+  intelligence:
+    net_score: "sensor:intel_sheet:netScore"       # 綜合多空分 (0~100)
+    div_score: "sensor:intel_sheet:divScore"       # 股利可持續性 (0~100)
+    val_score: "sensor:intel_sheet:valScore"       # 估值安全邊際 (0~100)
+    fric_score: "sensor:intel_sheet:fricScore"     # 摩擦匯率分 (0~100)
+  dynamics:
+    southbound_flow_velocity: "sensor:hkdata:southbound_2d_net" # 百萬港元
+    cnh_fx_trend: "sensor:market:usdcnh_trend"    # 前饋離岸人民幣
+
+hysteresis_bands:
+  aggressive_entry: 0.082     # 殖利率需 ≥ 8.2% 才能進入積極姿態
+  aggressive_exit: 0.078      # 殖利率跌破 7.8% 才退出積極姿態
+  expensive_entry: 0.048      # 殖利率跌至 ≤ 4.8% 進入過熱防禦
+  expensive_exit: 0.052       # 殖利率回升至 ≥ 5.2% 退出過熱防禦
+
+logic_sequence:
+  - priority: 1
+    name: "高息陷阱斷路保護 (Yield Trap Trip)"
+    description: "殖利率表面高但基本面/評分大崩塌，防止接飛刀"
+    condition: "yield_rate >= 0.08 AND (net_score < 50 OR div_score < 40)"
+    posture: "TRAP_ALERT"
+    posture_label: "【陷阱警戒 (Yield Trap Alert)】"
+    valve_action: "強制關閉加碼閥門！股息暫時不執行再投入，全數留存現金緩衝池，啟動持股專案審查"
+
+  - priority: 2
+    name: "資金流速過快警報 (Velocity Trip)"
+    description: "南向資金兩日流出逾 80 億港元，流速過急"
+    condition: "southbound_flow_velocity < -8000"
+    posture: "VELOCITY_PAUSE"
+    posture_label: "【流速警戒 (Velocity Pause)】"
+    valve_action: "暫緩大額市價單買進，等待資金流速放緩再行佈置"
+
+  - priority: 3
+    name: "積極進攻姿態 (Aggressive Accumulate)"
+    description: "估值進入便宜區且基本面與多空分扎實"
+    condition: "yield_rate >= hysteresis_bands.aggressive_entry AND net_score >= 70 AND div_score >= 60"
+    posture: "AGGRESSIVE_ACCUMULATE"
+    posture_label: "【積極進攻 (Aggressive Accumulate)】"
+    valve_action: "股息 100% 立即再投入，若有閒置本金啟動額外加碼，最大化滾動張數"
+
+  - priority: 4
+    name: "估值過熱防禦姿態 (Overvalued / Hold)"
+    description: "殖利率低於 5%，估值透支未來股息"
+    condition: "yield_rate <= hysteresis_bands.expensive_entry"
+    posture: "OVERVALUED_HOLD"
+    posture_label: "【防禦觀望 (Overvalued / Hold)】"
+    valve_action: "停止加碼買進，維持既有部位持有，股息可部分保留現金儲備"
+
+  - priority: 5
+    name: "預設穩健複利姿態 (Steady Reinvest)"
+    description: "指標在正常區間"
+    condition: "DEFAULT"
+    posture: "STEADY_REINVEST"
+    posture_label: "【穩健複利 (Steady Reinvest)】"
+    valve_action: "維持例行性半年配息再投入，按部就班累積雪球"

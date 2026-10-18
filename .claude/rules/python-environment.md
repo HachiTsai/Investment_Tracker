@@ -58,6 +58,8 @@ dependencies = [
     "pyportfolioopt>=1.6.0",
     "plotly>=7.1.0",
     "mplfinance>=0.12.10b0",
+    # 設定檔與卡片建模解析
+    "pyyaml>=6.0.0",
 ]
 
 

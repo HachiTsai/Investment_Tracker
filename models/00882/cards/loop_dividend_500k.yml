@@ -1,0 +1,32 @@
+# 控制迴路卡片：50萬被動股利閉環目標迴路
+id: "card:loop:dividend_500k"
+kind: "control_loop"
+title: "年被動股利 50 萬 TWD 閉環控制迴路"
+
+hierarchy:
+  role: "master_loop"              # 主目標迴路（ISA-88/95 控制層級：全資產現金流目標）
+  slave_units:
+    - "card:ticker:00882"          # 目前唯一的現金流主力貢獻單元
+  future_expansion_units:
+    - "card:ticker:00878"          # 未來預留副迴路單元
+    - "card:ticker:SCHD"           # 美股預留副迴路單元
+
+parameters:
+  setpoint_sp: 500000.0            # 目標設定值 (SP, 單位 TWD/年)
+  target_currency: "TWD"
+  pv_formula: "holding_shares * model_annual_dividend * tax_retention_rate"
+  error_formula: "max(0.0, setpoint_sp - pv)"
+
+controllers:
+  reinvestment_policy:
+    mode: "auto"
+    action: "下期除息實收現金流 100% 執行再投入 (Reinvest)"
+    odd_lot_handling: "整張優先，剩餘款項保留於現金緩衝池"
+  capital_injection_eval:
+    formula: "error / (current_price * (model_annual_dividend / current_price))"
+    description: "在當前價格與模型殖利率下，一次性補足缺口所需之理論追加本金"
+
+snowball_simulator:
+  base_shares: 300000              # 基準持股張數 (300 張，來自最新快照)
+  reinvest_frequency_months: 6     # 半年滾動一次 (每年 1 月、7 月)
+  benchmark_target_years: 7.2      # 當前基準下純股息滾動預估達標年限

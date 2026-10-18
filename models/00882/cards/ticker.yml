@@ -1,0 +1,32 @@
+# 標的母卡片：00882 中信中國高股息
+id: "card:ticker:00882"
+kind: "ticker"
+title: "00882 中信中國高股息"
+ticker: "00882"
+currency: "TWD"
+
+spec:
+  benchmark_rule: "architecture/00882_股利目標模型.md"
+  target_loop: "card:loop:dividend_500k"
+  interlock_guard: "card:interlock:yield_trap_guard"
+
+calibration:
+  payout_ratio: 0.954             # 2024/1~2026/7 六期實際配發比均值 (88.2%~102.9%)
+  tax_retention_rate: 0.9923       # 實收留存率 (1 - 36.6% 大陸所得門檻 × 2.11% 健保補充保費)
+  management_fee_rate: 0.0045      # 經理費 0.45%
+  custody_fee_rate: 0.0018         # 保管費 0.18%
+
+thresholds:
+  yield_cheap: 0.08               # 殖利率 > 8% 為便宜估值區間
+  yield_expensive: 0.05           # 殖利率 < 5% 為偏貴防禦區間
+  hysteresis_band: 0.002          # 遲滯死區 ±0.2%（進入積極需 ≥8.2%，退回穩健需 <7.8%）
+
+fail_safe:
+  max_stale_days: 5               # 超過 5 個交易日無新行情，觸發 BAD_PV 故障安全模式
+  fallback_annual_dividend: 0.86  # 降級預設每股年配息基準 (TWD)
+
+provenance:
+  issuer: "中信投信"
+  index: "恒生中國高股息率指數 (HSHDYI)"
+  constituents_count: 49
+  dividend_frequency: "半年配 (1月評價/除息、7月評價/除息)"
