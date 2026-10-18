@@ -45,8 +45,11 @@ def load_yaml_simple(path: Path) -> Dict[str, Any]:
     current_section: Optional[Dict[str, Any]] = None
 
     for line in content.splitlines():
+        # 先去除註解
+        if "#" in line:
+            line = line.split("#", 1)[0]
         stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
+        if not stripped:
             continue
 
         indent = len(line) - len(line.lstrip())
@@ -143,8 +146,10 @@ def check_watchdog(cards_data: Dict[str, Any], max_stale_days: int = 5) -> Dict[
     """數據心跳檢查（Watchdog）：檢查標的卡片與成分股資料庫之更新時效性。"""
     files_mtime = cards_data.get("files_mtime", {})
     ticker_info = cards_data.get("ticker", {})
-    fail_safe = ticker_info.get("fail_safe", {})
-    stale_limit = fail_safe.get("max_stale_days", max_stale_days)
+    try:
+        stale_limit = int(fail_safe.get("max_stale_days", max_stale_days))
+    except Exception:
+        stale_limit = max_stale_days
 
     today = datetime.date.today()
     most_recent_date: Optional[datetime.date] = None
