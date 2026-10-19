@@ -1,0 +1,12 @@
+id: card:ticker:00955
+type: ticker
+schema_version: 1.0.0
+ticker: "00955"
+title: "中信日本商社"
+full_name: "中國信託日本商社及批發ETF證券投資信託基金"
+currency: TWD
+exchange: TPEx
+category: ETF
+manager: "辛忠駿"
+benchmark: "NYSE FactSet 日本商社及批發指數"
+last_model_update: "2026-10-19"

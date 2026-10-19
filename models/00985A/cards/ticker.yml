@@ -1,0 +1,12 @@
+id: card:ticker:00985A
+type: ticker
+schema_version: 1.0.0
+ticker: "00985A"
+title: "主動野村台灣50"
+full_name: "野村臺灣增強50主動式ETF證券投資信託基金"
+currency: TWD
+exchange: TWSE
+category: ETF
+manager: "毛昱文"
+benchmark: "不適用"
+last_model_update: "2026-10-19"
