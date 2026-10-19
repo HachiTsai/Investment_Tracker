@@ -1,3 +1,4 @@
+import json
 import re
 import sys
 from pathlib import Path
@@ -248,3 +249,34 @@ def test_research_example_passes_markdown_lint(tmp_path):
     _with_lint_config(tmp_path)
     write_research(tmp_path, "00882_股利追蹤", research_example())
     assert n.main(["--root", str(tmp_path), "check"]) == 0
+
+
+def test_export_sheet_filters_private_and_splits_tabs(tmp_path):
+    import note_export as ex
+
+    research = tmp_path / "research"
+    research.mkdir()
+    (research / "00882_測試.md").write_text(
+        "---\ntype: research\ntitle: 00882_測試\nstatus: 持有\ncreated: 2026-10-01\nupdated: 2026-10-02\n"
+        "tags: [高股息]\ntickers: [00882]\n---\n\n## 摘要\n\n年配息 1.00 元。以 300 張計，實收 276,845。\n\n"
+        "## 依據\n\n| 年度 | 配息次數 | 年度合計 |\n| :-: | :-: | --: |\n| 2026 | 2 | 1.00 |\n\n"
+        "| 情境 | 每單位年配息 | 年股利實收 | 缺口 |\n| :-: | --: | --: | --: |\n| 保守 | 0.66 | 196,471 | 303,529 |\n\n"
+        "## 追蹤指標\n\n- 低於 0.40 時提醒。\n",
+        encoding="utf-8",
+    )
+    (research / "00882_排除.md").write_text(
+        "---\ntype: research\ntitle: 00882_排除\ntickers: [00882]\n---\n", encoding="utf-8")
+    data = ex.build_export(tmp_path, "00882", ["00882_排除"])
+    tabs = data["tabs"]
+    assert tabs["來源說明"][1][0] == "HEAD commit"
+    assert [r[0] for r in tabs["筆記清單"][1:]] == ["research/00882_測試.md"]
+    assert tabs["歷年配息"] == [["年度", "配息次數", "年度合計"], ["2026", "2", "1.00"]]
+    assert tabs["每單位情境"] == [["情境", "每單位年配息"], ["保守", "0.66"]]
+    flat = json.dumps(tabs, ensure_ascii=False)
+    assert "300" not in flat and "276,845" not in flat and "303,529" not in flat
+    assert tabs["摘要論點風險"][1][2] == "年配息 1.00 元。"
+    assert tabs["追蹤指標"][1][1] == "低於 0.40 時提醒。"
+
+
+def test_export_sheet_cli_requires_matching_ticker(tmp_path):
+    assert n.main(["--root", str(tmp_path), "export-sheet", "--ticker", "00882"]) == 1
