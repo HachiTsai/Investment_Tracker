@@ -7,6 +7,7 @@
   notes.py check [PATH ...]           檢查指定筆記；省略時檢查全部
   notes.py find [條件...]              依欄位或全文搜尋筆記
   notes.py vocab                      列出受控詞彙
+  notes.py export-sheet --ticker 00882 [--exclude 筆記名]   匯出成 Sheet 分頁 JSON
 """
 
 import argparse
@@ -40,6 +41,7 @@ from note_models import (
     parse_note,
     repo_root,
 )
+from note_export import cmd_export_sheet
 from note_operations import (
     _split_csv,
     cmd_check,
@@ -86,6 +88,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     f.add_argument("--due", action="store_true", help="只列已到回顧日的筆記")
     f.add_argument("--text", help="全文關鍵字（不分大小寫）")
     f.set_defaults(func=cmd_find)
+
+    e = sub.add_parser("export-sheet", help="把某標的筆記匯出成 Sheet 分頁 JSON（過濾個人部位）")
+    e.add_argument("--ticker", required=True)
+    e.add_argument("--exclude", action="append", help="排除的筆記名（不含 .md），可重複")
+    e.set_defaults(func=cmd_export_sheet)
 
     sub.add_parser("vocab", help="列出受控詞彙").set_defaults(func=cmd_vocab)
 

@@ -16,7 +16,7 @@ description: 撰寫、修改與搜尋財商工程 REPO 的筆記，所有筆記�
 
 - **受控詞彙**：`references/vocabulary.md`。`domain`、`tags`、arch 的 `status`、research 的 `status`（`research_status`）只能用表內的詞。
 - **情報資料庫**：筆記的硬數據歸納成 Sheet 列，規格 `references/intel-sheet.md`，流程見「歸納到情報資料庫」。
-- **工具**：`scripts/notes.py`，提供 `new`、`check`、`find`、`vocab` 四個指令。
+- **工具**：`scripts/notes.py`，提供 `new`、`check`、`find`、`vocab`、`export-sheet` 五個指令。
 - **相依**：`check` 會呼叫 `markdown-linter` skill，需要安裝 Node.js。
 
 以下指令都在 REPO 根目錄執行：`python3 .claude/skills/tool-note-writer/scripts/notes.py <指令>`。
@@ -95,6 +95,19 @@ notes.py check                               # 檢查全部筆記格式
 4. 寫完讀回確認，並告訴 Hachi 新增或更新了哪些 id。
 
 該資料夾是公開連結，放進去的內容視同公開；含持股與成本的數字，入庫前先問 Hachi。
+
+## 匯出到 Drive Sheet
+
+`export-sheet` 把某標的的筆記（`research/`、`trends/`）拆成固定分頁的 JSON，每格只放一個值，供排程用 Sheets `update_values` 寫入 Drive，取代手工整理。
+
+```bash
+notes.py export-sheet --ticker 00882 --exclude 00882_舊經濟風向
+```
+
+- 輸出 `{"head": <commit>, "tabs": {分頁名: [[表頭], [列]...]}}`；分頁為 `來源說明`（B2 固定為 HEAD commit，用來判斷是否需要同步）、`筆記清單`、`歷年配息`、`逐次配息`、`每單位情境`、`成分股中期息`、`摘要論點風險`、`追蹤指標`。
+- 公開邊界：含「張」「缺口」「成本」「實收」「持股快照」「達標所需」的句子與表格列一律過濾，情境表只留每單位年配息。
+- 分頁靠表格第一欄表頭辨識（年度、除息日、情境、代號）；筆記表格改了表頭，要同步更新 `note_export.py` 的 `TABLE_TABS`。
+- 只輸出 JSON，不寫 Drive；寫入由排程負責。
 
 ## Obsidian 相容性
 
