@@ -97,9 +97,9 @@ def test_scan_freshness_and_state_change(monkeypatch):
     assert same_day["fresh"] is True and next_day["fresh"] is False
     cur = sw.scan([{"ticker": "TPE:1", "name": "a"}], now=last_day)[0]
     assert cur["combo"] and cur["long"] and cur["mid"] in ("偏多", "中性", "偏空") and cur["short"] and cur["fib3"]
-    row = sw.scan([{"ticker": "TPE:1", "name": "a"}], prev={"TPE:1": {"label": "⚪ 無訊號", "combo": "其他"}}, now=last_day)[0]
-    assert row["prev_label"] == "⚪ 無訊號"
-    assert row["changed"] == (row["label"] != "⚪ 無訊號")
+    row = sw.scan([{"ticker": "TPE:1", "name": "a"}], prev={"TPE:1": {"label": "⚪ 未觸發條件", "combo": "其他"}}, now=last_day)[0]
+    assert row["prev_label"] == "⚪ 未觸發條件"
+    assert row["changed"] == (row["label"] != "⚪ 未觸發條件")
     assert row["combo_changed"] == (row["combo"] != "其他")
     from swing_levels import KEY_COMBOS
     assert row["alert"] == (row["combo_changed"] and row["combo"] in KEY_COMBOS)
@@ -107,6 +107,7 @@ def test_scan_freshness_and_state_change(monkeypatch):
     old = sw.scan([{"ticker": "TPE:1", "name": "a"}], prev={"TPE:1": {"label": "🟠 過熱"}}, now=last_day)[0]
     assert old["combo_changed"] is False and old["alert"] is False
     assert old["prev_label"] == "🟠 短線偏熱"
+    assert sw.scan([{"ticker": "TPE:1", "name": "a"}], prev={"TPE:1": {"label": "⚪ 無訊號"}}, now=last_day)[0]["prev_label"] == "⚪ 未觸發條件"
 
 
 def test_sheet_table_columns_fixed_order():
@@ -116,7 +117,7 @@ def test_sheet_table_columns_fixed_order():
 
 
 def test_render_page_fills_template():
-    html = sw.render_page([{"ticker": "TPE:1", "name": "a", "market": "台股", "state": "NEUTRAL", "label": "⚪ 無訊號"}], "2026-10-21")
+    html = sw.render_page([{"ticker": "TPE:1", "name": "a", "market": "台股", "state": "NEUTRAL", "label": "⚪ 未觸發條件"}], "2026-10-21")
     assert "__SWING_" not in html and "TPE:1" in html and '"2026-10-21"' in html
 
 
