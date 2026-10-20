@@ -64,3 +64,11 @@ python3 .claude/skills/price-dividend-fetcher/scripts/hot5.py render hot5.json -
 
 - `fetch` 不帶日期＝台北今天；今天證交所沒有資料（休市或尚未收盤）時輸出 `NO_DATA_FOR_TODAY`，exit code 3，不寫檔，排程應據此不更新。
 - `render` 的日期區間與基準日都從 JSON 的 `days` 推出，不寫死。
+
+## 個股波段指標（`scripts/swing.py`）
+
+5 天到 4 週波段用的日線指標（均線、RSI、MACD、ATR、布林、量能、52 週位置）與狀態判定，另有超跌反彈規則回測。只用標準函式庫、唯讀 Yahoo；只描述條件，不構成買賣指示，波段部位與股利再投入部位分開看。
+
+```bash
+python3 .claude/skills/price-dividend-fetcher/scripts/swing.py TPE:2356 --backtest
+```
