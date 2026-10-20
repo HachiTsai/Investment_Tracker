@@ -4,6 +4,7 @@
 1. 敏感機密檔案偵測（find_sensitive）
 2. 規則文件索引同步檢查（find_rule_sync_issues）
 3. Python AST 語法樹 imports 與 pyproject.toml 依賴比對（find_dependency_issues）
+4. pyproject.toml 與實際安裝環境（.venv）比對（find_env_issues，SessionStart 唯讀警告）
 """
 
 import ast
@@ -182,4 +183,33 @@ def find_dependency_issues(files: Sequence[str], repo_root: Path = REPO_ROOT) ->
             except importlib.metadata.PackageNotFoundError:
                 spec = dist
             issues.append(f"{spec}（於 {f} 匯入 `{mod}`，未記錄於 pyproject.toml）")
+    return issues
+
+
+def _version_tuple(v: str) -> tuple:
+    return tuple(int(x) for x in re.findall(r"\d+", v.split("+")[0])[:3])
+
+
+def find_env_issues(repo_root: Path = REPO_ROOT) -> List[str]:
+    """Compare pyproject.toml dependencies with what is actually installed (.venv, else current interpreter)."""
+    pyproj = repo_root / "pyproject.toml"
+    if not pyproj.is_file():
+        return []
+    sites = sorted((repo_root / ".venv").glob("lib/python*/site-packages"))
+    dists = (
+        importlib.metadata.distributions(path=[str(s) for s in sites])
+        if sites
+        else importlib.metadata.distributions()
+    )
+    installed = {normalize_pkg_name(d.metadata["Name"]): d.version for d in dists if d.metadata["Name"]}
+    m = DEPS_BLOCK_RE.search(pyproj.read_text(encoding="utf-8", errors="replace"))
+    block = "\n".join(l.split("#")[0] for l in (m.group(1) if m else "").splitlines())
+    issues: List[str] = []
+    for spec in re.findall(r'"([^"]+)"', block):
+        name = normalize_pkg_name(re.split(r"[<>=!~\[ ;]", spec)[0])
+        floor = re.search(r">=\s*([\w.]+)", spec)
+        if name not in installed:
+            issues.append(f"{name}（pyproject.toml 已宣告，環境未安裝）")
+        elif floor and _version_tuple(installed[name]) < _version_tuple(floor.group(1)):
+            issues.append(f"{name}（已安裝 {installed[name]}，低於 pyproject.toml 要求 >={floor.group(1)}）")
     return issues

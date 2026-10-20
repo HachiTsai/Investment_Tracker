@@ -18,6 +18,7 @@ from dep_guard import (
     REPO_ROOT,
     SENSITIVE_PATTERNS,
     find_dependency_issues,
+    find_env_issues,
     find_rule_sync_issues,
     find_sensitive,
     normalize_pkg_name,
@@ -256,6 +257,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     p.add_argument("--allow-sensitive", action="store_true", help="略過敏感檔案檢查")
     p.add_argument("--allow-missing-deps", action="store_true", help="略過未記錄套件與依賴檔同步檢查")
     p.add_argument("--check", type=Path, metavar="FILE", help="只檢查訊息檔格式（commit-msg hook 用）")
+    p.add_argument("--check-env", action="store_true", help="比對 pyproject.toml 與實際安裝套件（唯讀，只警告）")
     p.add_argument("--install-hook", action="store_true", help="安裝 commit-msg hook")
     return p.parse_args(argv)
 
@@ -268,6 +270,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 0 if report(errors, warnings) else 1
     if args.install_hook:
         return install_hook()
+    if args.check_env:
+        issues = find_env_issues()
+        if issues:
+            print("⚠️ [Env] pyproject.toml 與安裝環境不一致：", *issues, sep="\n   - ")
+            print("   ➜ 請用 `uv sync` 或 `uv add <pkg>` 對齊（此檢查只警告，不中止）。")
+        else:
+            print("✅ [Env] pyproject.toml 與安裝環境一致。")
+        return 0
     if args.auto_quick and args.message_file:
         print("   ❌ --auto-quick 與 --message-file 不可併用。", file=sys.stderr)
         return 1
