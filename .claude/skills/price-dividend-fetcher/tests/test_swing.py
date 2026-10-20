@@ -77,3 +77,24 @@ def test_watchlist_includes_stock_cards():
 def test_market_of():
     assert sw.market_of("TPE:2356") == "台股" and sw.market_of("HKG:1919") == "港股"
     assert sw.market_of("TYO:7203") == "日股" and sw.market_of("NASDAQ:AAPL") == "美股"
+
+
+def test_scan_freshness_and_state_change(monkeypatch):
+    from datetime import datetime, timezone
+    closes = [100 + (i % 30) * 0.5 for i in range(300)]
+    bars = make_bars(closes)
+    last_ts = bars[-1]["ts"]
+    monkeypatch.setattr(sw, "load_ohlcv", lambda t, rng="2y": bars)
+    last_day = datetime.fromtimestamp(last_ts, timezone.utc)
+    same_day = sw.scan([{"ticker": "TPE:1", "name": "a"}], now=last_day)[0]
+    next_day = sw.scan([{"ticker": "TPE:1", "name": "a"}], now=datetime.fromtimestamp(last_ts + 3 * 86400, timezone.utc))[0]
+    assert same_day["fresh"] is True and next_day["fresh"] is False
+    row = sw.scan([{"ticker": "TPE:1", "name": "a"}], prev={"TPE:1": "⚪ 無訊號"}, now=last_day)[0]
+    assert row["prev_label"] == "⚪ 無訊號"
+    assert row["changed"] == (row["label"] != "⚪ 無訊號")
+    assert row["alert"] == (row["changed"] and row["state"] in sw.ALERT_STATES)
+
+
+def test_render_page_fills_template():
+    html = sw.render_page([{"ticker": "TPE:1", "name": "a", "market": "台股", "state": "NEUTRAL", "label": "⚪ 無訊號"}], "2026-10-21")
+    assert "__SWING_" not in html and "TPE:1" in html and '"2026-10-21"' in html
