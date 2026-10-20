@@ -51,6 +51,19 @@ def taipei_today():
     return (dt.datetime.now(dt.timezone.utc) + dt.timedelta(hours=8)).date()
 
 
+def rank(src, win, base):
+    agg = {}
+    for d in win:
+        for c, r in (src[d] or {}).items():
+            a = agg.setdefault(c, dict(name=r['name'], amt=0, sh=0)); a['amt'] += r['amt'] or 0; a['sh'] += r['sh'] or 0
+    out = []
+    for c, a in sorted(agg.items(), key=lambda kv: -kv[1]['amt'])[:5]:
+        b = (src[base] or {}).get(c, {}).get('close'); l = (src[win[-1]] or {}).get(c, {}).get('close')
+        chg = (l / b - 1) * 100 if b and l else None
+        out.append(dict(code=c, name=a['name'], amt=a['amt'], lots=a['sh'] / 1000, base=b, last=l, chg=chg))
+    return out
+
+
 def fetch(today):
     """回傳 res；今天沒有證交所資料時回傳 None。"""
     days = []; tw = {}; d = today
@@ -67,18 +80,7 @@ def fetch(today):
     for d in days:
         tp[d] = tpex(d); time.sleep(0.6)
     base, win = days[0], days[1:]
-    def rank(src):
-        agg = {}
-        for d in win:
-            for c, r in (src[d] or {}).items():
-                a = agg.setdefault(c, dict(name=r['name'], amt=0, sh=0)); a['amt'] += r['amt'] or 0; a['sh'] += r['sh'] or 0
-        out = []
-        for c, a in sorted(agg.items(), key=lambda kv: -kv[1]['amt'])[:5]:
-            b = (src[base] or {}).get(c, {}).get('close'); l = (src[win[-1]] or {}).get(c, {}).get('close')
-            chg = (l / b - 1) * 100 if b and l else None
-            out.append(dict(code=c, name=a['name'], amt=a['amt'], lots=a['sh'] / 1000, base=b, last=l, chg=chg))
-        return out
-    res = {'days': [str(x) for x in days], 'twse': rank(tw), 'tpex': rank(tp)}
+    res = {'days': [str(x) for x in days], 'twse': rank(tw, win, base), 'tpex': rank(tp, win, base)}
     # emerging
     lat = get("https://www.tpex.org.tw/www/zh-tw/emerging/latest?response=json")['tables'][0]['data']
     codes = [(r[0], r[1]) for r in lat if ok(r[0])]

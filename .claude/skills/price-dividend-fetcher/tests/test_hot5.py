@@ -51,3 +51,15 @@ def test_fetch_writes_json_and_render_cli(monkeypatch, tmp_path):
     assert json.loads(j.read_text())["days"][-1] == "2026-10-19"
     assert hot5.main(["render", str(j), "--out", str(h)]) == 0
     assert "台股三市場" in h.read_text()
+
+
+def test_rank_cumulative_amount_and_change():
+    d0, d1 = '2026-10-12', '2026-10-13'
+    src = {
+        d0: {'A': dict(name='甲', amt=0, sh=0, close=10.0), 'B': dict(name='乙', amt=0, sh=0, close=20.0)},
+        d1: {'A': dict(name='甲', amt=800, sh=5000, close=12.0), 'B': dict(name='乙', amt=100, sh=1000, close=18.0)},
+    }
+    out = hot5.rank(src, [d1], d0)
+    assert [r['code'] for r in out] == ['A', 'B']
+    assert out[0]['amt'] == 800 and out[0]['lots'] == 5
+    assert round(out[0]['chg'], 1) == 20.0 and round(out[1]['chg'], 1) == -10.0
