@@ -117,3 +117,10 @@ def test_parse_sse_index():
     res = h.parse_sse_index(html, "综合指数 Comprehensive Index")
     assert res == dict(prev=3664.11, current=3679.58, change=15.47)
 
+
+
+def test_wind_report_template_is_complete_page():
+    t = (Path(__file__).resolve().parent.parent / "references" / "wind_report.html").read_text(encoding="utf-8")
+    assert "<title>00882 舊經濟風向</title>" in t
+    assert t.count("<main>") == 1 and t.count("</main>") == 1
+    assert "prefers-color-scheme:dark" in t
