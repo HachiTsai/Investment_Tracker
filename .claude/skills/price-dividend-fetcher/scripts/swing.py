@@ -8,6 +8,7 @@
 import argparse
 import json
 import sys
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from fetch_common import parse_ticker
@@ -138,7 +139,7 @@ def backtest_oversold(bars: List[Dict], hold_max: int = 20, stop_atr: float = 2.
             entry, stop, j, reason = closes[i], closes[i] - stop_atr * at[i], i + 1, "time"
             while j < len(bars):
                 if bars[j]["low"] <= stop:
-                    exit_p, reason = stop, "stop"; break
+                    exit_p, reason = min(stop, bars[j]["open"]), "stop"; break  # 跳空開低以開盤價出場，不假設剛好成交在停損價
                 if (rs[j] or 0) >= 50:
                     exit_p, reason = closes[j], "rsi50"; break
                 if j - i >= hold_max:
@@ -160,11 +161,59 @@ def backtest_oversold(bars: List[Dict], hold_max: int = 20, stop_atr: float = 2.
     }
 
 
+def backtest_many(tickers: List[str], hold_max: int = 20, stop_atr: float = 2.0) -> Dict:
+    """多檔彙總回測；單檔抓取失敗只記錄，不中斷。"""
+    per, all_ret, failed, base = {}, [], {}, []
+    for t in tickers:
+        try:
+            bars = load_ohlcv(t, "5y")
+            res = backtest_oversold(bars, hold_max, stop_atr)
+        except (ValueError, RuntimeError) as e:
+            failed[t] = str(e)[:80]
+            continue
+        closes = [b["close"] for b in bars]
+        base += [(closes[i + 10] / closes[i] - 1) * 100 for i in range(len(closes) - 10)]
+        per[t] = {k: res[k] for k in ("trades", "win_rate_pct", "avg_return_pct", "worst_pct")}
+        all_ret += res["returns_pct"]
+    wins = [r for r in all_ret if r > 0]
+    return {
+        "tickers_ok": len(per), "tickers_failed": failed, "trades": len(all_ret),
+        "win_rate_pct": round(len(wins) / len(all_ret) * 100, 1) if all_ret else None,
+        "avg_return_pct": round(sum(all_ret) / len(all_ret), 2) if all_ret else None,
+        "median_return_pct": round(sorted(all_ret)[len(all_ret) // 2], 2) if all_ret else None,
+        "worst_pct": min(all_ret) if all_ret else None, "best_pct": max(all_ret) if all_ret else None,
+        "baseline_any_day_10d_avg_pct": round(sum(base) / len(base), 2) if base else None,
+        "per_ticker": per,
+        "caveat": "baseline 為任選一天買進持有 10 個交易日的平均報酬，用來看規則有沒有比隨機進場好；已含存活者偏差（只測現在的成分股）、不含手續費與稅；僅供判斷指標是否值得接進簡報",
+    }
+
+
+def card_universe(card: str, top: int) -> List[str]:
+    """讀 models/<card>/cards/constituents.jsonl 的前 top 大，轉成 fetcher 代號。"""
+    path = Path(__file__).resolve().parents[4] / "models" / card / "cards" / "constituents.jsonl"
+    out = []
+    for line in path.read_text(encoding="utf-8").splitlines()[:top]:
+        row = json.loads(line)
+        sym = row["ticker"]
+        if sym.endswith(".HK"):
+            out.append("HKG:" + sym[:-3].lstrip("0"))
+        elif sym.endswith(".TW"):
+            out.append("TPE:" + sym[:-3])
+    return out
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="個股波段指標與訊號（只讀）")
-    p.add_argument("ticker", help="例如 TPE:2356、HKG:1919、NASDAQ:AAPL")
+    p.add_argument("ticker", nargs="?", help="例如 TPE:2356、HKG:1919、NASDAQ:AAPL")
+    p.add_argument("--batch", metavar="卡片:前N大", help="多檔彙總回測，例如 00882:15（讀 models/<卡片>/cards/constituents.jsonl）")
     p.add_argument("--backtest", action="store_true", help="加跑超跌反彈規則回測（抓 5 年日線）")
     a = p.parse_args(argv)
+    if a.batch:
+        card, _, top = a.batch.partition(":")
+        print(json.dumps(backtest_many(card_universe(card, int(top or 15))), ensure_ascii=False, indent=2))
+        return 0
+    if not a.ticker:
+        p.error("需要 ticker 或 --batch")
     bars = load_ohlcv(a.ticker, "5y" if a.backtest else "2y")
     out = {"ticker": a.ticker, "bars": len(bars), "swing": snapshot(bars)}
     if a.backtest:

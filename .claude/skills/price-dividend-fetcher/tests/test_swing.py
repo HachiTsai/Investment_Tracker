@@ -46,3 +46,17 @@ def test_snapshot_and_backtest_run_on_synthetic_data():
     assert snap["stop_price"] < snap["close"] and "state" in snap
     bt = sw.backtest_oversold(bars)
     assert bt["trades"] == len(bt["returns_pct"])
+
+
+def test_backtest_many_survives_failures(monkeypatch):
+    closes = [100 + (i % 30) * 0.5 - (i // 30) * 0.2 for i in range(300)]
+
+    def fake(t, rng="2y"):
+        if t == "BAD":
+            raise ValueError("no data")
+        return make_bars(closes)
+
+    monkeypatch.setattr(sw, "load_ohlcv", fake)
+    res = sw.backtest_many(["A", "BAD", "B"])
+    assert res["tickers_ok"] == 2 and "BAD" in res["tickers_failed"]
+    assert res["trades"] == sum(v["trades"] for v in res["per_ticker"].values())
