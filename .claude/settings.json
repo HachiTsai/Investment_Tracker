@@ -7,6 +7,10 @@
           {
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/skills/fin-commit/scripts/committer.py\" --install-hook"
+          },
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/skills/fin-commit/scripts/committer.py\" --check-env"
           }
         ]
       }

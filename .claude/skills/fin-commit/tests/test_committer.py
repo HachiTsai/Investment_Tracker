@@ -219,3 +219,11 @@ def test_patrol_commit_message_and_inference():
     assert c.infer_category(["reports/portfolio_briefing.md"]) == c.CATEGORY_PORTFOLIO
     assert c.infer_scope(["reports/portfolio_briefing.md"]) == "fleet"
     assert c.infer_commit_type(["reports/portfolio_briefing.md"]) == "patrol"
+
+
+def test_find_env_issues_reports_missing_and_old(tmp_path):
+    repo = tmp_path
+    (repo / "pyproject.toml").write_text('[project]\ndependencies = [\n    "pytest>=0.0.1",\n    "no-such-pkg-xyz>=1.0",\n]\n', encoding="utf-8")
+    issues = c.find_env_issues(repo_root=repo)
+    assert any("no-such-pkg-xyz" in i for i in issues)
+    assert not any(i.startswith("pytest") for i in issues)
