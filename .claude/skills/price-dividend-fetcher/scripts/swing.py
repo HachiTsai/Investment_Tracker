@@ -8,6 +8,7 @@
 import argparse
 import json
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -231,18 +232,42 @@ def watchlist(universe: Optional[str] = None) -> List[Dict]:
     return items
 
 
-def scan(items: List[Dict]) -> List[Dict]:
-    """逐檔取日線算快照；失敗的檔記錄原因，不中斷。"""
+MARKET_TZ_HOURS = {"台股": 8, "港股": 8, "日股": 9, "美股": -4}
+ALERT_STATES = ("OVERHEATED", "OVERSOLD_WATCH")
+
+
+def market_today(market: str, now: Optional[datetime] = None) -> str:
+    """該市場所在時區的今天日期（YYYY-MM-DD）。"""
+    now = now or datetime.now(timezone.utc)
+    return (now + timedelta(hours=MARKET_TZ_HOURS.get(market, 8))).strftime("%Y-%m-%d")
+
+
+def scan(items: List[Dict], prev: Optional[Dict[str, str]] = None, now: Optional[datetime] = None) -> List[Dict]:
+    """逐檔取日線算快照；失敗的檔記錄原因，不中斷。
+
+    last_date：最後一根日線的日期。fresh：last_date 是否為該市場的今天（收盤後執行時，False 代表休市或尚未收盤，
+    排程應保留該市場舊資料不覆寫）。prev：{代號: 上次狀態標籤}，給了就多出 changed、alert。
+    """
     out = []
     for it in items:
+        market = market_of(it["ticker"])
         try:
-            s = snapshot(load_ohlcv(it["ticker"], "1y"))
-        except (ValueError, RuntimeError) as e:
-            out.append({**it, "market": market_of(it["ticker"]), "state": "ERROR", "label": "⚠️ 抓取失敗", "reason": str(e)[:80]})
+            bars = load_ohlcv(it["ticker"], "1y")
+            s = snapshot(bars)
+        except (ValueError, RuntimeError, KeyError, IndexError) as e:
+            out.append({**it, "market": market, "state": "ERROR", "label": "⚠️ 抓取失敗", "reason": str(e)[:80], "last_date": None, "fresh": False})
             continue
-        out.append({**it, "market": market_of(it["ticker"]), **{k: s.get(k) for k in (
+        last = datetime.fromtimestamp(bars[-1]["ts"], timezone.utc) + timedelta(hours=MARKET_TZ_HOURS.get(market, 8))
+        row = {**it, "market": market, **{k: s.get(k) for k in (
             "state", "label", "reason", "close", "rsi14", "sma20", "sma60", "macd_hist",
-            "volume_ratio", "pos_52w_pct", "support_20d", "resistance_20d", "stop_price", "stop_distance_pct")}})
+            "volume_ratio", "pos_52w_pct", "support_20d", "resistance_20d", "stop_price", "stop_distance_pct")}}
+        row["last_date"] = last.strftime("%Y-%m-%d")
+        row["fresh"] = row["last_date"] == market_today(market, now)
+        if prev is not None:
+            row["prev_label"] = prev.get(it["ticker"])
+            row["changed"] = row["prev_label"] is not None and row["prev_label"] != row["label"]
+            row["alert"] = row["changed"] and row["state"] in ALERT_STATES
+        out.append(row)
     return out
 
 
@@ -250,11 +275,13 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="個股波段指標與訊號（只讀）")
     p.add_argument("ticker", nargs="?", help="例如 TPE:2356、HKG:1919、NASDAQ:AAPL")
     p.add_argument("--scan", nargs="?", const="", metavar="卡片:前N大", help="掃描觀察清單（個股卡片，可加 ETF 成分股）並輸出 JSON")
+    p.add_argument("--prev", metavar="JSON", help="上次狀態檔 [{\"ticker\":..,\"label\":..}]，給了 --scan 就標出狀態變化與提醒")
     p.add_argument("--batch", metavar="卡片:前N大", help="多檔彙總回測，例如 00882:15（讀 models/<卡片>/cards/constituents.jsonl）")
     p.add_argument("--backtest", action="store_true", help="加跑超跌反彈規則回測（抓 5 年日線）")
     a = p.parse_args(argv)
     if a.scan is not None:
-        print(json.dumps(scan(watchlist(a.scan or None)), ensure_ascii=False, indent=1))
+        prev = {r["ticker"]: r["label"] for r in json.loads(Path(a.prev).read_text(encoding="utf-8"))} if a.prev else None
+        print(json.dumps(scan(watchlist(a.scan or None), prev), ensure_ascii=False, indent=1))
         return 0
     if a.batch:
         card, _, top = a.batch.partition(":")
