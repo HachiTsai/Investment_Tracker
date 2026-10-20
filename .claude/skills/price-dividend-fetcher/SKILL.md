@@ -72,6 +72,7 @@ python3 .claude/skills/price-dividend-fetcher/scripts/hot5.py render hot5.json -
 ```bash
 python3 .claude/skills/price-dividend-fetcher/scripts/swing.py TPE:2356 --backtest
 python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --batch 00882:15   # 成分股彙總回測
+python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --fib-backtest   # 費波那契回檔位置（近 30 日高低點）之後 5/10/20 日含息報酬，觀察清單全標的
 python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15      # 觀察清單掃描（個股卡片＋成分股前 N 大），輸出 JSON
-python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --prev prev.json --html out.html   # --html 另存 Artifact 頁面（模板 references/swing_watch_template.html）；--prev 加上次狀態檔：標出 changed／alert（只有變成過熱或超跌觀察才 alert）；每列另有 last_date、fresh（False＝該市場休市或未收盤，不要覆寫舊資料），抓取失敗列 state=ERROR
+python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --prev prev.json --html out.html   # --html 另存 Artifact 頁面（模板 references/swing_watch_template.html）；--prev 加上次狀態檔：標出 changed／alert（只有變成過熱或超跌觀察才 alert）；每列另有 last_date、fresh（False＝該市場休市或未收盤，不要覆寫舊資料），抓取失敗列 state=ERROR；每列另有 fib_label／fib_pct（近 30 日費波那契回檔或反彈位置，只當參考欄位，不參與狀態判定與提醒）
 ```
