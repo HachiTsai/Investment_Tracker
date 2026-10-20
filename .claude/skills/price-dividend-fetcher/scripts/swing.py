@@ -30,11 +30,13 @@ def load_ohlcv(ticker: str, rng: str = "2y") -> List[Dict]:
     exch, code = parse_ticker(ticker)
     r = yahoo_result(get_yahoo(exch, code, rng), exch, code)
     q = r["indicators"]["quote"][0]
+    adj = (r["indicators"].get("adjclose") or [{}])[0].get("adjclose")
     bars = []
     for i, ts in enumerate(r.get("timestamp") or []):
         vals = [q[k][i] for k in ("open", "high", "low", "close", "volume")]
         if None not in vals:
-            bars.append(dict(ts=ts, open=vals[0], high=vals[1], low=vals[2], close=vals[3], volume=vals[4]))
+            a = adj[i] if adj and adj[i] is not None else vals[3]
+            bars.append(dict(ts=ts, open=vals[0], high=vals[1], low=vals[2], close=vals[3], volume=vals[4], adj=a))
     return bars
 
 
@@ -171,6 +173,59 @@ def backtest_oversold(bars: List[Dict], hold_max: int = 20, stop_atr: float = 2.
     }
 
 
+FIB_LOOKBACK = 30
+FIB_BUCKETS = ((0.236, "0-23.6"), (0.382, "23.6-38.2"), (0.618, "38.2-61.8"), (0.786, "61.8-78.6"), (float("inf"), "78.6以上"))
+
+
+def fib_zone(bars: List[Dict], lookback: int = FIB_LOOKBACK) -> Optional[Dict]:
+    """費波那契回檔位置：取近 lookback 日最高最低（與 APP 彈窗同口徑，以 K 棒高低點）。
+
+    低點在前、高點在後為上升波，回檔 % ＝ (高 − 收) / 區間；高點在前為下跌波，反彈 % ＝ (收 − 低) / 區間。
+    只描述收盤相對位置，不是買賣指示；高低點換手時位置會跳動。
+    """
+    w = bars[-lookback:]
+    if len(w) < 5:
+        return None
+    hi_i = max(range(len(w)), key=lambda i: (w[i]["high"], i))
+    lo_i = max(range(len(w)), key=lambda i: (-w[i]["low"], i))
+    high, low = w[hi_i]["high"], w[lo_i]["low"]
+    if high <= low:
+        return None
+    up = lo_i < hi_i
+    close = w[-1]["close"]
+    pct = ((high - close) if up else (close - low)) / (high - low)
+    pct = min(max(pct, 0.0), 1.0)
+    bucket = next(name for edge, name in FIB_BUCKETS if pct < edge or edge == float("inf"))
+    kind = "回檔" if up else "反彈"
+    return {"dir": "up" if up else "down", "pct": round(pct * 100, 1), "bucket": bucket,
+            "label": f"{kind} {bucket}%", "high": high, "low": low}
+
+
+def backtest_fib(per_ticker_bars: Dict[str, List[Dict]], horizons=(5, 10, 20), lookback: int = FIB_LOOKBACK) -> Dict:
+    """各回檔位置之後 N 日含息報酬（還原收盤價）。baseline 為同樣檔數、任選一天買進的平均。
+
+    已含存活者偏差（只測現在的標的）、不含手續費與稅；同一檔連續多日落在同一位置，樣本彼此高度相關。
+    """
+    cells: Dict[str, Dict[int, List[float]]] = {}
+    base: Dict[int, List[float]] = {h: [] for h in horizons}
+    for bars in per_ticker_bars.values():
+        adj = [b["adj"] for b in bars]
+        for i in range(lookback, len(bars)):
+            z = fib_zone(bars[:i + 1], lookback)
+            for h in horizons:
+                if i + h >= len(bars) or not adj[i]:
+                    continue
+                r = (adj[i + h] / adj[i] - 1) * 100
+                base[h].append(r)
+                if z:
+                    cells.setdefault(f"{'上升波回檔' if z['dir'] == 'up' else '下跌波反彈'} {z['bucket']}%", {}).setdefault(h, []).append(r)
+    stat = lambda xs: {"n": len(xs), "avg": round(sum(xs) / len(xs), 2), "median": round(sorted(xs)[len(xs) // 2], 2),
+                       "win_pct": round(sum(x > 0 for x in xs) / len(xs) * 100, 1)} if xs else None
+    return {"horizons": list(horizons), "baseline": {h: stat(base[h]) for h in horizons},
+            "zones": {k: {h: stat(v.get(h, [])) for h in horizons} for k, v in sorted(cells.items())},
+            "caveat": "含息報酬（還原收盤價），已含存活者偏差、不含手續費與稅，樣本高度重疊，僅供判斷位置欄位是否值得接進狀態判斷"}
+
+
 def backtest_many(tickers: List[str], hold_max: int = 20, stop_atr: float = 2.0) -> Dict:
     """多檔彙總回測；單檔抓取失敗只記錄，不中斷。"""
     per, all_ret, failed, base = {}, [], {}, []
@@ -295,6 +350,9 @@ def scan(items: List[Dict], prev: Optional[Dict[str, str]] = None, now: Optional
         row = {**it, "market": market, **{k: s.get(k) for k in (
             "state", "label", "reason", "close", "rsi14", "sma20", "sma60", "macd_hist",
             "volume_ratio", "pos_52w_pct", "support_20d", "resistance_20d", "stop_price", "stop_distance_pct")}}
+        fz = fib_zone(bars)
+        row["fib_label"] = fz["label"] if fz else None
+        row["fib_pct"] = fz["pct"] if fz else None
         row["last_date"] = last.strftime("%Y-%m-%d")
         row["fresh"] = row["last_date"] == market_today(market, now)
         if prev is not None:
@@ -321,6 +379,7 @@ def main(argv=None) -> int:
     p.add_argument("--prev", metavar="JSON", help="上次狀態檔 [{\"ticker\":..,\"label\":..}]，給了 --scan 就標出狀態變化與提醒")
     p.add_argument("--html", metavar="OUT", help="搭配 --scan：另存 Artifact 頁面（讀 references/swing_watch_template.html）")
     p.add_argument("--batch", metavar="卡片:前N大", help="多檔彙總回測，例如 00882:15（讀 models/<卡片>/cards/constituents.jsonl）")
+    p.add_argument("--fib-backtest", action="store_true", help="回測各費波那契回檔位置之後 5/10/20 日含息報酬（觀察清單全部標的，抓 5 年日線）")
     p.add_argument("--backtest", action="store_true", help="加跑超跌反彈規則回測（抓 5 年日線）")
     a = p.parse_args(argv)
     if a.scan is not None:
@@ -330,6 +389,15 @@ def main(argv=None) -> int:
             date = max((r["last_date"] for r in rows if r.get("last_date")), default="")
             Path(a.html).write_text(render_page(rows, date), encoding="utf-8")
         print(json.dumps(rows, ensure_ascii=False, indent=1))
+        return 0
+    if a.fib_backtest:
+        data = {}
+        for it in watchlist(a.scan or None):
+            try:
+                data[it["ticker"]] = load_ohlcv(it["ticker"], "5y")
+            except (ValueError, RuntimeError, KeyError, IndexError):
+                continue
+        print(json.dumps(backtest_fib(data), ensure_ascii=False, indent=1))
         return 0
     if a.batch:
         card, _, top = a.batch.partition(":")

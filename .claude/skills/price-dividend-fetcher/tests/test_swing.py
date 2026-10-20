@@ -118,3 +118,32 @@ def test_stock_profile_degrades_on_error(monkeypatch):
     monkeypatch.setattr(sw, "load_ohlcv", lambda t, rng="2y": (_ for _ in ()).throw(ValueError("x")))
     with pytest.raises(ValueError):
         sw.stock_profile("TPE:1")
+
+
+def _bars(rows):
+    return [dict(ts=i * 86400, open=c, high=h, low=l, close=c, volume=1000, adj=c) for i, (h, l, c) in enumerate(rows)]
+
+
+def test_fib_zone_uptrend_retracement():
+    # 低點在前、高點在後：100 → 200，收在 150 為回檔 50%
+    rows = [(101 + i, 100 + i, 100 + i) for i in range(30)]
+    rows[-1] = (200, 100, 150)
+    z = sw.fib_zone(_bars(rows[:-1] + [(200, 195, 150)]))
+    assert z["dir"] == "up" and z["bucket"] == "38.2-61.8"
+
+
+def test_fib_zone_downtrend_rebound():
+    rows = [(200 - i, 199 - i, 200 - i) for i in range(30)]
+    z = sw.fib_zone(_bars(rows))
+    assert z["dir"] == "down" and z["bucket"] == "0-23.6"
+
+
+def test_fib_zone_needs_data_and_range():
+    assert sw.fib_zone(_bars([(10, 9, 9.5)] * 3)) is None
+    assert sw.fib_zone(_bars([(10, 10, 10)] * 30)) is None
+
+
+def test_backtest_fib_groups_by_zone():
+    rows = [(100 + i + 1, 100 + i, 100 + i) for i in range(80)]
+    res = sw.backtest_fib({"A": _bars(rows)}, horizons=(5,))
+    assert res["baseline"][5]["n"] > 0 and any("上升波" in k for k in res["zones"])
