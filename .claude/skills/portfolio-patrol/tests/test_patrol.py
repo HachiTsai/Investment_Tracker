@@ -269,3 +269,31 @@ def test_stock_card_patrol(repo_root, tmp_path, monkeypatch):
     assert row["category"] == "STOCK"
     assert row["lot_contribution_pct"] == pytest.approx(1.0)  # 1000 股 × 5 元 ÷ 50 萬
     assert row["goal_progress_pct"] == 0.0
+
+
+def test_stock_uses_swing_posture_not_yield_trap(repo_root, tmp_path, monkeypatch):
+    """個股不套高息陷阱互鎖：殖利率 12% 但評分差，ETF 會陷阱警戒，個股依波段狀態判定並顯示含息報酬。"""
+    import patrol_evaluator as ev
+    import patrol_cards as pc
+
+    card_dir = tmp_path / "models" / "9998" / "cards"
+    card_dir.mkdir(parents=True)
+    (card_dir / "ticker.yml").write_text(
+        'id: card:ticker:9998\ncategory: STOCK\nsymbol: "9998.TW"\ncurrency: TWD\ncontribution:\n  lot_shares: 1000\n',
+        encoding="utf-8",
+    )
+    swing = {"state": "OVERSOLD_WATCH", "returns_total": {"3M": -4.2, "1Y": 12.0}}
+    monkeypatch.setattr(ev, "fetch_stock_live_data", lambda t, c, r: {
+        "price": 50.0, "annual_dividend": 6.0, "tax_retention": 1.0, "swing": swing,
+        "scores": {"netScore": 30, "divScore": 20, "valScore": 40, "fricScore": 50}, "southbound_2d_net": 0.0})
+    res = ev.run_portfolio_patrol(repo_root, filter_tickers=["9998"], custom_models_dir=tmp_path / "models", mock_macro={})
+    row = res["targets"][0]
+    assert row["posture_key"] == "SWING_OVERSOLD_WATCH" and row["posture_key"] != "TRAP_ALERT"
+    assert pc.format_yield_or_return(row) == "3M-4.2% 1Y+12.0%"
+
+
+def test_stock_without_swing_is_no_data(repo_root):
+    import patrol_evaluator as ev
+
+    key, label, *_ = ev._stock_posture(None)
+    assert key == "NO_DATA" and "資料不足" in label

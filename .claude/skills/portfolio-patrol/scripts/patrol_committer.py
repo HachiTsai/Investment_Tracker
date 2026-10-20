@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from patrol_cards import format_progress
+from patrol_cards import format_progress, format_yield_or_return
 from patrol_reporter import format_markdown_briefing, update_briefing_file
 
 
@@ -56,12 +56,12 @@ def build_patrol_commit_message(report: Dict[str, Any], agent: str = "Antigravit
     lines.append("")
     lines.append("### 📊 投資組合目標控制與配置矩陣")
     lines.append("")
-    lines.append("| 標的 | 現價 | 殖利率 | 當前狀態 | 50萬目標達成率 | 數據時效性 |")
+    lines.append("| 標的 | 現價 | 殖利率/階段含息報酬 | 當前狀態 | 50萬目標達成率 | 數據時效性 |")
     lines.append("| :--- | :---: | :---: | :---: | :---: | :---: |")
     for item in fleet:
         t = item["ticker"]
         p = f"{item['price']:.2f} {item['currency']}"
-        y = f"{item['yield_pct']:.2f}%"
+        y = format_yield_or_return(item)
         posture = item["posture_label"]
         prog = format_progress(item)
         w = item["watchdog"]["label"]

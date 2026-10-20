@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from patrol_cards import format_progress
+from patrol_cards import format_progress, format_yield_or_return
 
 
 def format_ascii_dashboard(report: Dict[str, Any]) -> str:
@@ -23,19 +23,19 @@ def format_ascii_dashboard(report: Dict[str, Any]) -> str:
     lines.append("-" * 86)
 
     # 標的表格
-    lines.append(f"{'標的代號':<8} {'標的名稱':<18} {'現價':<10} {'殖利率':<9} {'當前狀態':<16} {'目標達成率':<10} {'數據時效'}")
+    lines.append(f"{'標的代號':<8} {'標的名稱':<18} {'現價':<10} {'殖利率/含息報酬':<14} {'當前狀態':<16} {'目標達成率':<10} {'數據時效'}")
     lines.append("-" * 86)
 
     for item in report.get("fleet", []):
         ticker = item["ticker"]
         title = item["title"][:14]
         price_str = f"{item['price']:.2f} {item['currency']}"
-        yield_str = f"{item['yield_pct']:.2f}%"
+        yield_str = format_yield_or_return(item)
         posture = item["posture_label"]
         progress = format_progress(item)
         watchdog = item["watchdog"]["label"]
 
-        lines.append(f"{ticker:<8} {title:<18} {price_str:<10} {yield_str:<9} {posture:<16} {progress:<10} {watchdog}")
+        lines.append(f"{ticker:<8} {title:<18} {price_str:<10} {yield_str:<14} {posture:<16} {progress:<10} {watchdog}")
 
     lines.append("-" * 86)
 
@@ -70,14 +70,14 @@ def format_markdown_briefing(report: Dict[str, Any]) -> str:
     lines.append("")
     lines.append("## 📊 投資組合目標達成進度與配置矩陣")
     lines.append("")
-    lines.append("| 標的代號 | 標的名稱 | 即時現價 | 模型殖利率 | 當前狀態 | 50萬目標達成率 | 數據時效性 |")
+    lines.append("| 標的代號 | 標的名稱 | 即時現價 | 殖利率/階段含息報酬 | 當前狀態 | 50萬目標達成率 | 數據時效性 |")
     lines.append("| :--- | :--- | :---: | :---: | :---: | :---: | :---: |")
 
     for item in report.get("fleet", []):
         t = item["ticker"]
         name = item["title"]
         p = f"{item['price']:.2f} {item['currency']}"
-        y = f"{item['yield_pct']:.2f}%"
+        y = format_yield_or_return(item)
         posture = item["posture_label"]
         prog = format_progress(item)
         w = item["watchdog"]["label"]

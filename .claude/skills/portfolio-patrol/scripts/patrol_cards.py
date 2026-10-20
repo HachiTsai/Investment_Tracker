@@ -174,3 +174,12 @@ def format_progress(item: Dict[str, Any]) -> str:
     if item.get("lot_contribution_pct") is not None:
         return f"每千股+{item['lot_contribution_pct']:.2f}%"
     return f"{item['goal_progress_pct']:.1f}%"
+
+
+def format_yield_or_return(item: Dict[str, Any]) -> str:
+    """ETF 顯示殖利率；個股顯示階段性含息報酬率（3M／1Y），抓不到時顯示 -。"""
+    if item.get("category") == "STOCK":
+        r = ((item.get("swing") or {}).get("returns_total")) or {}
+        parts = [f"{k}{r[k]:+.1f}%" for k in ("3M", "1Y") if r.get(k) is not None]
+        return " ".join(parts) if parts else "-"
+    return f"{item['yield_pct']:.2f}%"
