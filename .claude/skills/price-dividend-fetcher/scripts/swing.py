@@ -271,17 +271,31 @@ def scan(items: List[Dict], prev: Optional[Dict[str, str]] = None, now: Optional
     return out
 
 
+def render_page(rows: List[Dict], date: str) -> str:
+    """把掃描結果塞進 references/swing_watch_template.html，產出可發布成 Artifact 的頁面。"""
+    tpl = (Path(__file__).resolve().parents[1] / "references" / "swing_watch_template.html").read_text(encoding="utf-8")
+    keep = ("ticker", "name", "market", "source", "state", "label", "close", "rsi14", "sma20",
+            "stop_price", "stop_distance_pct", "pos_52w_pct", "reason")
+    data = [{k: r.get(k) for k in keep} for r in rows]
+    return tpl.replace("__SWING_DATA__", json.dumps(data, ensure_ascii=False)).replace("__SWING_DATE__", date)
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="個股波段指標與訊號（只讀）")
     p.add_argument("ticker", nargs="?", help="例如 TPE:2356、HKG:1919、NASDAQ:AAPL")
     p.add_argument("--scan", nargs="?", const="", metavar="卡片:前N大", help="掃描觀察清單（個股卡片，可加 ETF 成分股）並輸出 JSON")
     p.add_argument("--prev", metavar="JSON", help="上次狀態檔 [{\"ticker\":..,\"label\":..}]，給了 --scan 就標出狀態變化與提醒")
+    p.add_argument("--html", metavar="OUT", help="搭配 --scan：另存 Artifact 頁面（讀 references/swing_watch_template.html）")
     p.add_argument("--batch", metavar="卡片:前N大", help="多檔彙總回測，例如 00882:15（讀 models/<卡片>/cards/constituents.jsonl）")
     p.add_argument("--backtest", action="store_true", help="加跑超跌反彈規則回測（抓 5 年日線）")
     a = p.parse_args(argv)
     if a.scan is not None:
         prev = {r["ticker"]: r["label"] for r in json.loads(Path(a.prev).read_text(encoding="utf-8"))} if a.prev else None
-        print(json.dumps(scan(watchlist(a.scan or None), prev), ensure_ascii=False, indent=1))
+        rows = scan(watchlist(a.scan or None), prev)
+        if a.html:
+            date = max((r["last_date"] for r in rows if r.get("last_date")), default="")
+            Path(a.html).write_text(render_page(rows, date), encoding="utf-8")
+        print(json.dumps(rows, ensure_ascii=False, indent=1))
         return 0
     if a.batch:
         card, _, top = a.batch.partition(":")
