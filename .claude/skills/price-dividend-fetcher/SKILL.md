@@ -52,3 +52,15 @@ python3 -m pytest -q .claude/skills/price-dividend-fetcher/tests
 ```
 
 測試使用內嵌的樣本，不需要網路。
+
+## 三市場近 5 日熱門股（`scripts/hot5.py`）
+
+排程「台股三市場五日熱門股_每日更新」用的腳本，只讀公開資料（證交所 MI_INDEX、櫃買中心 dailyQuotes、興櫃 emerging），不碰 Core。熱門 = 近 5 個交易日累計成交金額排名，只計普通股與 ETF，各市場前 5 名；上市櫃漲跌用收盤價，興櫃用日成交均價，未還原除權息。
+
+```bash
+python3 .claude/skills/price-dividend-fetcher/scripts/hot5.py fetch [YYYY-MM-DD] --out hot5.json   # 約 3 分鐘
+python3 .claude/skills/price-dividend-fetcher/scripts/hot5.py render hot5.json --out hot5.html
+```
+
+- `fetch` 不帶日期＝台北今天；今天證交所沒有資料（休市或尚未收盤）時輸出 `NO_DATA_FOR_TODAY`，exit code 3，不寫檔，排程應據此不更新。
+- `render` 的日期區間與基準日都從 JSON 的 `days` 推出，不寫死。
