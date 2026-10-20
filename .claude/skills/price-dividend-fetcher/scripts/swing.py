@@ -114,7 +114,7 @@ def classify(snap: Dict) -> Dict:
         return {"state": "OVERSOLD_WATCH", "label": "🟢 超跌觀察", "reason": "RSI≤30 或觸及布林下緣，且未明顯跌離半年線，可觀察反彈訊號"}
     if c > s20 > s60 and h > 0:
         return {"state": "UPTREND", "label": "🔵 趨勢偏多", "reason": "收盤在 20、60 日線之上且 MACD 柱為正"}
-    return {"state": "NEUTRAL", "label": "⚪ 無訊號", "reason": "指標未達任何條件"}
+    return {"state": "NEUTRAL", "label": "⚪ 未觸發條件", "reason": "指標未達任何條件"}
 
 
 def snapshot(bars: List[Dict], stop_atr: float = 2.0) -> Dict:
@@ -322,7 +322,7 @@ def watchlist(universe: Optional[str] = None) -> List[Dict]:
 
 
 MARKET_TZ_HOURS = {"台股": 8, "港股": 8, "日股": 9, "美股": -4}
-LEGACY_LABELS = {"🟠 過熱": "🟠 短線偏熱"}  # 舊狀態檔的標籤對應到新用語，避免改名被當成狀態變化
+LEGACY_LABELS = {"🟠 過熱": "🟠 短線偏熱", "⚪ 無訊號": "⚪ 未觸發條件"}  # 舊狀態檔的標籤對應到新用語，避免改名被當成狀態變化
 
 
 def market_today(market: str, now: Optional[datetime] = None) -> str:
