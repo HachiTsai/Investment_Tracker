@@ -106,6 +106,7 @@ scripts/                     共用計算或抓價工具
 | `portfolio-patrol` | 投資組合全標的自動巡檢與每日簡報，動態遍歷 models/*/cards/ 求值，例外管理（MBE）分診 |
 | `tw-etf-fetcher` | 抓取全市場台股 ETF 股號清單、穿透完整成分股與權重、計算投資組合實質曝險（Look-through），並支援一鍵生成 DCS 建模卡片；唯讀 |
 | `fundamental-analyzer` | 個股三大財務報表量化體檢（ROE、自由現金流覆蓋、盈餘配發率）與 ETF 穿透加權聚合評分（netScore、divScore、valScore、fricScore）；唯讀 |
+| `artifact-registry` | 追蹤每個 Artifact 的來源、腳本與排程，偵測斷鏈並產出告警；每日巡檢檢查 Artifact、排程、repo 腳本與 Drive 公開 Sheet 是否一致 |
 
 ## 思考類文件的寫法
 
