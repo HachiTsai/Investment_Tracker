@@ -167,3 +167,10 @@ def check_watchdog(cards_data: Dict[str, Any], max_stale_days: int = 5) -> Dict[
         "label": f"✅ 正常 ({most_recent_date.isoformat()})",
         "days_ago": days_ago,
     }
+
+
+def format_progress(item: Dict[str, Any]) -> str:
+    """目標達成率顯示：個股卡片顯示每 1,000 股對 50 萬目標的貢獻，ETF 顯示整體達成率。"""
+    if item.get("lot_contribution_pct") is not None:
+        return f"每千股+{item['lot_contribution_pct']:.2f}%"
+    return f"{item['goal_progress_pct']:.1f}%"

@@ -23,6 +23,7 @@ REPO_ROOT = SCRIPT_DIR.parents[3]
 
 from fundamental_calculator import calculate_stock_fundamentals  # noqa: E402
 from lookthrough_fundamentals import aggregate_etf_fundamentals  # noqa: E402
+from stock_card import scaffold_stock_card  # noqa: E402
 
 
 def format_stock_ascii(res: dict) -> str:
@@ -94,6 +95,23 @@ def cmd_stock(args) -> int:
     return 0
 
 
+def cmd_scaffold_stock(args) -> int:
+    """處理 scaffold-stock 命令，建立個股卡片。"""
+    try:
+        path = scaffold_stock_card(
+            code=args.code, symbol=args.symbol, yf_symbol=args.yf_symbol, title=args.title, repo_root=REPO_ROOT,
+            sector=args.sector, nature_tag=args.nature_tag, currency=args.currency, exchange=args.exchange,
+            related_etfs=args.related_etf, dividend_currency=args.dividend_currency, frequency=args.frequency,
+            last_dps=args.last_dps, last_ex_date=args.last_ex_date, last_source=args.last_source,
+            lot_shares=args.lot_shares,
+        )
+    except FileExistsError as e:
+        print(f"❌ {e}", file=sys.stderr)
+        return 1
+    print(f"✅ 已建立個股卡片：{path}")
+    return 0
+
+
 def cmd_etf(args) -> int:
     """處理 etf 命令。"""
     models_dir = Path(args.models_dir) if args.models_dir else REPO_ROOT
@@ -120,9 +138,17 @@ def cmd_portfolio(args) -> int:
     print("-" * 80)
 
     for ticker in etf_dirs:
-        res = aggregate_etf_fundamentals(ticker, top_n=args.top, repo_root=REPO_ROOT)
+        card_file = models_dir / ticker / "cards" / "ticker.yml"
+        if card_file.exists() and "category: STOCK" in card_file.read_text(encoding="utf-8"):
+            sym = next((ln.split(":", 1)[1].split("#")[0].strip().strip('"') for ln in card_file.read_text(encoding="utf-8").splitlines()
+                        if ln.startswith("yf_symbol:")), ticker)
+            res = calculate_stock_fundamentals(sym)
+            res["weighted_roe"] = res.get("roe")
+            cat = "個股"
+        else:
+            res = aggregate_etf_fundamentals(ticker, top_n=args.top, repo_root=REPO_ROOT)
+            cat = "債券ETF" if res.get("is_bond") else "股票ETF"
         sc = res.get("scores", {})
-        cat = "債券ETF" if res.get("is_bond") else "股票ETF"
         roe_str = f"{res.get('weighted_roe', '-')}%" if res.get("weighted_roe") is not None else "-"
         print(
             f"{ticker:<10} {cat:<8} {roe_str:<10} "
@@ -144,6 +170,24 @@ def main(argv=None) -> int:
     p_stock.set_defaults(func=cmd_stock)
 
     # etf
+    p_sc = subparsers.add_parser("scaffold-stock", help="建立個股卡片 models/<代號>/cards/ticker.yml")
+    p_sc.add_argument("code", help="資料夾代號（例如 1919、2330）")
+    p_sc.add_argument("--symbol", required=True, help="報價代號，fetcher 格式（例如 HKG:1919、TPE:2330）")
+    p_sc.add_argument("--yf-symbol", required=True, help="財報代號，Yahoo 格式（例如 1919.HK、2330.TW）")
+    p_sc.add_argument("--title", required=True)
+    p_sc.add_argument("--sector", default="")
+    p_sc.add_argument("--nature-tag", default="", help="性質標籤（如 央企控股、週期型民企）")
+    p_sc.add_argument("--currency", default="TWD", help="交易幣別")
+    p_sc.add_argument("--exchange", default="TWSE")
+    p_sc.add_argument("--related-etf", action="append", help="持有此股的 ETF 代號，可重複")
+    p_sc.add_argument("--dividend-currency", help="股利宣告幣別（與交易幣別不同時填）")
+    p_sc.add_argument("--frequency", default="")
+    p_sc.add_argument("--last-dps", type=float)
+    p_sc.add_argument("--last-ex-date")
+    p_sc.add_argument("--last-source", help="最近一次配息出處（公告網址）")
+    p_sc.add_argument("--lot-shares", type=int, default=1000, help="貢獻度計算單位股數（預設 1000 股）")
+    p_sc.set_defaults(func=cmd_scaffold_stock)
+
     p_etf = subparsers.add_parser("etf", help="查詢 ETF 穿透聚合基本面與評分")
     p_etf.add_argument("etf_id", help="ETF 代號（例如 00878, 0050）")
     p_etf.add_argument("--top", type=int, default=10, help="計算前 N 大重倉成分股（預設 10）")
