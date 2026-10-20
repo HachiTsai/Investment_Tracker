@@ -212,6 +212,38 @@ def card_universe(card: str, top: int) -> List[str]:
     return out
 
 
+RETURN_WINDOWS = {"1W": 5, "1M": 21, "3M": 63, "6M": 126, "1Y": 252}
+
+
+def period_returns(adj_closes: List[float], closes: List[float]) -> Dict[str, Dict[str, Optional[float]]]:
+    """階段性報酬率（%）：total 用還原收盤價（含息再投入），price 用原始收盤價；日線不足該窗口則為 None。"""
+    out: Dict[str, Dict[str, Optional[float]]] = {"total": {}, "price": {}}
+    for name, n in RETURN_WINDOWS.items():
+        for key, xs in (("total", adj_closes), ("price", closes)):
+            out[key][name] = round((xs[-1] / xs[-1 - n] - 1) * 100, 2) if len(xs) > n and xs[-1 - n] else None
+    return out
+
+
+def load_adj_closes(ticker: str, rng: str = "2y") -> List[Dict]:
+    """抓日線並附還原收盤價 adj（Yahoo adjclose，已含配息調整）；缺值的 K 棒丟掉。"""
+    exch, code = parse_ticker(ticker)
+    r = yahoo_result(get_yahoo(exch, code, rng), exch, code)
+    close = r["indicators"]["quote"][0]["close"]
+    adj = (r["indicators"].get("adjclose") or [{}])[0].get("adjclose") or close
+    return [dict(ts=ts, close=close[i], adj=adj[i]) for i, ts in enumerate(r.get("timestamp") or [])
+            if close[i] is not None and adj[i] is not None]
+
+
+def stock_profile(ticker: str) -> Dict:
+    """個股卡片用：波段狀態＋階段性含息報酬率。抓取失敗拋 ValueError/RuntimeError，由呼叫端降級。"""
+    snap = snapshot(load_ohlcv(ticker, "1y"))
+    rows = load_adj_closes(ticker)
+    rets = period_returns([b["adj"] for b in rows], [b["close"] for b in rows])
+    return {"state": snap["state"], "label": snap["label"], "reason": snap["reason"],
+            "stop_price": snap.get("stop_price"), "stop_distance_pct": snap.get("stop_distance_pct"),
+            "returns_total": rets["total"], "returns_price": rets["price"]}
+
+
 def watchlist(universe: Optional[str] = None) -> List[Dict]:
     """觀察清單：models 內所有 category: STOCK 卡片，加上選填的 ETF 成分股前 N 大（卡片:N）。"""
     root = Path(__file__).resolve().parents[4] / "models"

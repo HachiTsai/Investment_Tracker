@@ -147,9 +147,36 @@ def fetch_stock_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: Pa
             scores = calculate_stock_fundamentals(info.get("yf_symbol") or symbol).get("scores", scores)
         except Exception:
             pass
+    live["swing"] = None
+    pdf_dir = repo_root / ".claude" / "skills" / "price-dividend-fetcher" / "scripts"
+    if pdf_dir.exists():
+        if str(pdf_dir) not in sys.path:
+            sys.path.insert(0, str(pdf_dir))
+        try:
+            import swing
+            live["swing"] = swing.stock_profile(symbol)
+        except Exception:
+            pass
     live.update({"scores": scores, "tax_retention": info.get("contribution", {}).get("tax_retention_rate") or 1.0,
                  "southbound_2d_net": 0.0})
     return live
+
+
+_STOCK_POSTURES = {
+    "UPTREND": ("🔵 趨勢偏多", "收盤在 20、60 日線之上且 MACD 柱為正", "維持持有；停損價以 2×ATR 為參考，是否進出由 Hachi 決定", 5),
+    "NEUTRAL": ("⚪ 無訊號", "指標未達任何波段條件", "無新動作，持續觀察", 5),
+    "OVERHEATED": ("🟠 過熱", "RSI≥70 或觸及布林上緣", "已持有者留意減碼條件，不追高", 3),
+    "OVERSOLD_WATCH": ("🟢 超跌觀察", "RSI≤30 或觸及布林下緣，且未明顯跌離半年線", "可觀察反彈訊號，進場前先決定停損價", 3),
+    "DOWNTREND": ("🔴 偏空迴避", "收盤在 20、60 日線之下且 MACD 柱為負", "順勢方向向下，暫不加碼", 4),
+}
+
+
+def _stock_posture(swing: Optional[Dict[str, Any]]):
+    """個股狀態：取波段分類；抓不到日線時標示資料不足。回傳 (key, label, name, action, priority)。"""
+    if not swing or swing.get("state") not in _STOCK_POSTURES:
+        return "NO_DATA", "⚪ 資料不足", "缺日線資料，暫不判定", "待下次巡檢取得日線後再評估", 5
+    label, name, action, priority = _STOCK_POSTURES[swing["state"]]
+    return f"SWING_{swing['state']}", label, name, action, priority
 
 
 def evaluate_ticker_posture(
@@ -178,8 +205,14 @@ def evaluate_ticker_posture(
     valve_action = "維持例行性半年配息再投入，按部就班累積雪球"
     priority = 5
 
+    is_stock = ticker_info.get("category") == "STOCK"
+    swing = live_data.get("swing") if is_stock else None
+
+    # 個股：不套高息陷阱互鎖（殖利率門檻是為 ETF 設計），改用波段狀態＋階段性含息報酬率
+    if is_stock:
+        posture_key, posture_label, posture_name, valve_action, priority = _stock_posture(swing)
     # 無報價或無配息資料：不判定估值姿態，避免殖利率 0% 被誤判為過熱
-    if price <= 0 or annual_div <= 0:
+    elif price <= 0 or annual_div <= 0:
         posture_key = "NO_DATA"
         posture_label = "⚪ 資料不足"
         posture_name = "缺報價或配息資料，暫不判定"
@@ -253,6 +286,7 @@ def evaluate_ticker_posture(
         "scores": scores,
         "category": ticker_info.get("category", "ETF"),
         "lot_contribution_pct": contribution_pct,
+        "swing": swing,
     }
 
 

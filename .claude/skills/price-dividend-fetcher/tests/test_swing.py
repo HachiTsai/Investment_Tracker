@@ -98,3 +98,17 @@ def test_scan_freshness_and_state_change(monkeypatch):
 def test_render_page_fills_template():
     html = sw.render_page([{"ticker": "TPE:1", "name": "a", "market": "台股", "state": "NEUTRAL", "label": "⚪ 無訊號"}], "2026-10-21")
     assert "__SWING_" not in html and "TPE:1" in html and '"2026-10-21"' in html
+
+
+def test_period_returns_total_vs_price():
+    closes = [100.0] * 300
+    adj = [100.0 + i * 0.1 for i in range(300)]  # 還原價逐步上升，代表配息再投入
+    r = sw.period_returns(adj, closes)
+    assert r["price"]["1M"] == 0.0 and r["total"]["1M"] > 0
+    assert sw.period_returns(adj[:50], closes[:50])["total"]["1Y"] is None
+
+
+def test_stock_profile_degrades_on_error(monkeypatch):
+    monkeypatch.setattr(sw, "load_ohlcv", lambda t, rng="2y": (_ for _ in ()).throw(ValueError("x")))
+    with pytest.raises(ValueError):
+        sw.stock_profile("TPE:1")
