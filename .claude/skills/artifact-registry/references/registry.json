@@ -1,0 +1,67 @@
+{
+  "_doc": "Artifact／排程／腳本登記簿（SSOT）。新增或刪除 Artifact、排程、公開 Sheet 時同步更新；檢查規則見 SKILL.md。",
+  "artifacts": [
+    {
+      "id": "wind",
+      "name": "00882 舊經濟風向",
+      "url": "https://claude.ai/artifact/KCxKkuXrhYFm81C94tym3t",
+      "kind": "scheduled",
+      "trigger": "00882_舊經濟風向日報",
+      "max_age_hours": 30,
+      "files": [
+        ".claude/skills/hk-market-data/scripts/hkdata.py",
+        ".claude/skills/hk-market-data/references/wind_report.html"
+      ]
+    },
+    {
+      "id": "hot5",
+      "name": "台股五日熱門股",
+      "url": "https://claude.ai/artifact/9xyetsvZ5j6MdpA3UvWBuS",
+      "kind": "scheduled",
+      "trigger": "台股三市場五日熱門股_每日更新",
+      "max_age_hours": 30,
+      "files": [
+        ".claude/skills/price-dividend-fetcher/scripts/hot5.py"
+      ]
+    },
+    {
+      "id": "constituents",
+      "name": "00882 成分股股利明細",
+      "url": "https://claude.ai/artifact/DSbfrxfywurJVo3TVwSzia",
+      "kind": "scheduled",
+      "trigger": "00882 成分股股利表每週五更新",
+      "max_age_hours": 192,
+      "files": [
+        ".claude/skills/hk-market-data/scripts/constituents_table.py",
+        ".claude/skills/hk-market-data/references/constituents_template.html"
+      ]
+    },
+    {
+      "id": "deep-research",
+      "name": "00882 深度調研",
+      "url": "https://claude.ai/artifact/JUXi5RCjj3t3badqZ3TYqC",
+      "kind": "manual"
+    },
+    {
+      "id": "guide",
+      "name": "Claude 使用指南",
+      "url": "https://claude.ai/artifact/QDi42LXR3yEXBdzN4xXTZx",
+      "kind": "manual"
+    },
+    {
+      "id": "dividend-tracking",
+      "name": "00882 股利追蹤",
+      "url": "https://claude.ai/artifact/4TZ7tvBGKYWMnhjf3QaweL",
+      "kind": "manual"
+    }
+  ],
+  "triggers": [
+    "00882_舊經濟風向日報",
+    "台股三市場五日熱門股_每日更新",
+    "00882 成分股股利表每週五更新"
+  ],
+  "drive_public": [
+    {"id": "1BF2xvF0cmyODdN0nXR8QHbOTC3ikqswvSwBboY1cGQo", "name": "情報資料庫 Sheet", "reason": "APP 匿名讀取"},
+    {"id": "1Jq599WzoQUDsooZDhJhyK8uaEMgDiLLCoZthWk2WXtw", "name": "00882_成分股股利資料庫 Sheet", "reason": "APP 匿名讀取"}
+  ]
+}
