@@ -165,7 +165,7 @@ def fetch_stock_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: Pa
 _STOCK_POSTURES = {
     "UPTREND": ("🔵 趨勢偏多", "收盤在 20、60 日線之上且 MACD 柱為正", "維持持有；停損價以 2×ATR 為參考，是否進出由 Hachi 決定", 5),
     "NEUTRAL": ("⚪ 無訊號", "指標未達任何波段條件", "無新動作，持續觀察", 5),
-    "OVERHEATED": ("🟠 過熱", "RSI≥70 或觸及布林上緣", "已持有者留意減碼條件，不追高", 3),
+    "OVERHEATED": ("🟠 短線偏熱", "RSI≥70 或觸及布林上緣", "已持有者留意減碼條件，不追高", 3),
     "OVERSOLD_WATCH": ("🟢 超跌觀察", "RSI≤30 或觸及布林下緣，且未明顯跌離半年線", "可觀察反彈訊號，進場前先決定停損價", 3),
     "DOWNTREND": ("🔴 偏空迴避", "收盤在 20、60 日線之下且 MACD 柱為負", "順勢方向向下，暫不加碼", 4),
 }

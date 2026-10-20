@@ -82,6 +82,42 @@ def combo(st: Dict) -> str:
     return "其他"
 
 
+KEY_COMBOS = ("三週期共振偏多", "三週期共振偏空", "長多短回檔", "長空短反彈")  # 組合變成這幾種才提醒
+FIB_FAR = 0.786
+FIB_NEAR = 0.236
+
+
+def mid_label(score: int) -> str:
+    """中期 3 級（回測顯示中期 5 級不單調，合併為偏多／中性／偏空）。"""
+    return "偏多" if score >= 1 else "偏空" if score <= -1 else "中性"
+
+
+def fib3(bars: List[Dict], lookback: int = 30) -> Optional[str]:
+    """費波那契 3 段：近端、中段、遠端（上升波看回檔，下跌波看反彈）。極端段才有統計差異，中間幾級合併。"""
+    from swing import fib_zone
+    z = fib_zone(bars, lookback)
+    if not z:
+        return None
+    p = z["pct"] / 100
+    up = z["dir"] == "up"
+    if p < FIB_NEAR:
+        return "近前高" if up else "近波段低點"
+    if p >= FIB_FAR:
+        return "深度回檔" if up else "反彈近前高"
+    return "回檔中段" if up else "反彈中段"
+
+
+def current_levels(bars: List[Dict]) -> Optional[Dict]:
+    """最新一根的正式分級：長期 5 級、中期 3 級、短期只標註、費波那契 3 段、三週期組合。資料不足回 None。"""
+    st = horizon_states(bars, build_series(bars), len(bars) - 1)
+    if not st:
+        return None
+    ser_c, s20 = bars[-1]["close"], sma([b["close"] for b in bars], 20)[-1]
+    short = ("站上20日線" if ser_c > s20 else "跌破20日線") + {"過熱": "・短線偏熱", "超跌": "・短線超跌"}.get(st["flag"], "")
+    return {"long": st["長"]["state"], "mid": mid_label(st["中"]["score"]), "short": short,
+            "fib3": fib3(bars), "combo": combo(st)}
+
+
 def _stat(xs: List[float]) -> Optional[Dict]:
     if not xs:
         return None
