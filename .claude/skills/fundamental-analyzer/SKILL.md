@@ -45,3 +45,12 @@ python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py portfolio
 1. **嚴禁修改 Core**：本技能僅作為分析運算工具，絕不寫入 `Investment_Tracker_Core`。
 2. **客觀量化無情緒**：所有結論必由數學公式與財報硬數據推導，不預設立場。
 3. **離線單元測試保證**：全套單元測試內建 Mock 機制，無網路環境亦可驗證。
+
+## 建立個股卡片
+
+```bash
+python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py scaffold-stock 1919 \
+  --symbol HKG:1919 --yf-symbol 1919.HK --title "1919 中遠海控" --currency HKD --exchange HKEX
+```
+
+卡片規格見 `architecture/個股卡片規範.md`；`portfolio-patrol` 會自動納入 `category: STOCK` 的卡片。

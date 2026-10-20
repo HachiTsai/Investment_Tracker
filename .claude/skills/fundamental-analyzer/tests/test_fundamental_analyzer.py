@@ -200,3 +200,18 @@ def test_cli_commands(tmp_path, monkeypatch, capsys):
     captured_port = capsys.readouterr()
     assert "投資組合全標的基本面穿透評分矩陣" in captured_port.out
     assert "00878" in captured_port.out
+
+
+def test_scaffold_stock_card(tmp_path):
+    from stock_card import scaffold_stock_card
+
+    path = scaffold_stock_card("1919", "HKG:1919", "1919.HK", "1919 中遠海控", tmp_path, currency="HKD", exchange="HKEX",
+                               related_etfs=["00882"], dividend_currency="CNY", last_dps=0.43)
+    text = path.read_text(encoding="utf-8")
+    assert "category: STOCK" in text and 'symbol: "HKG:1919"' in text and 'yf_symbol: "1919.HK"' in text
+    assert "lot_shares: 1000" in text and "tax_retention_rate: null" in text
+    try:
+        scaffold_stock_card("1919", "HKG:1919", "1919.HK", "x", tmp_path)
+        assert False, "應拒絕覆蓋既有卡片"
+    except FileExistsError:
+        pass

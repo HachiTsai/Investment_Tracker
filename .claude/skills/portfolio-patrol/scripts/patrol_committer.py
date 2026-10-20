@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from patrol_cards import format_progress
 from patrol_reporter import format_markdown_briefing, update_briefing_file
 
 
@@ -62,7 +63,7 @@ def build_patrol_commit_message(report: Dict[str, Any], agent: str = "Antigravit
         p = f"{item['price']:.2f} {item['currency']}"
         y = f"{item['yield_pct']:.2f}%"
         posture = item["posture_label"]
-        prog = f"{item['goal_progress_pct']:.1f}%"
+        prog = format_progress(item)
         w = item["watchdog"]["label"]
         lines.append(f"| {t} | {p} | {y} | {posture} | {prog} | {w} |")
     lines.append("")

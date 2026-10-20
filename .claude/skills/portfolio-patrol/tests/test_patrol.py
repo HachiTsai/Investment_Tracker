@@ -249,3 +249,23 @@ def test_inspect_ticker(repo_root):
     assert "目標控制迴路與個人深度試算" in ascii_out
     assert "500,000 TWD/年" in ascii_out
 
+
+
+def test_stock_card_patrol(repo_root, tmp_path, monkeypatch):
+    import patrol_evaluator as ev
+
+    card_dir = tmp_path / "models" / "9999" / "cards"
+    card_dir.mkdir(parents=True)
+    (card_dir / "ticker.yml").write_text(
+        'id: card:ticker:9999\ncategory: STOCK\nsymbol: "9999.TW"\ncurrency: TWD\ncontribution:\n  lot_shares: 1000\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(ev, "fetch_stock_live_data", lambda t, c, r: {
+        "price": 50.0, "annual_dividend": 5.0, "tax_retention": 1.0,
+        "scores": {"netScore": 80, "divScore": 80, "valScore": 60, "fricScore": 90}, "southbound_2d_net": 0.0})
+    res = ev.run_portfolio_patrol(repo_root, filter_tickers=["9999"], custom_models_dir=tmp_path / "models",
+                                  mock_macro={})
+    row = res["targets"][0]
+    assert row["category"] == "STOCK"
+    assert row["lot_contribution_pct"] == pytest.approx(1.0)  # 1000 股 × 5 元 ÷ 50 萬
+    assert row["goal_progress_pct"] == 0.0

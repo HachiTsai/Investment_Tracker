@@ -8,6 +8,8 @@ import re
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from patrol_cards import format_progress
+
 
 def format_ascii_dashboard(report: Dict[str, Any]) -> str:
     """輸出終端彩色 ASCII 巡檢儀表板。"""
@@ -30,7 +32,7 @@ def format_ascii_dashboard(report: Dict[str, Any]) -> str:
         price_str = f"{item['price']:.2f} {item['currency']}"
         yield_str = f"{item['yield_pct']:.2f}%"
         posture = item["posture_label"]
-        progress = f"{item['goal_progress_pct']:.1f}%"
+        progress = format_progress(item)
         watchdog = item["watchdog"]["label"]
 
         lines.append(f"{ticker:<8} {title:<18} {price_str:<10} {yield_str:<9} {posture:<16} {progress:<10} {watchdog}")
@@ -77,7 +79,7 @@ def format_markdown_briefing(report: Dict[str, Any]) -> str:
         p = f"{item['price']:.2f} {item['currency']}"
         y = f"{item['yield_pct']:.2f}%"
         posture = item["posture_label"]
-        prog = f"{item['goal_progress_pct']:.1f}%"
+        prog = format_progress(item)
         w = item["watchdog"]["label"]
         lines.append(f"| {t} | {name} | {p} | {y} | {posture} | {prog} | {w} |")
 

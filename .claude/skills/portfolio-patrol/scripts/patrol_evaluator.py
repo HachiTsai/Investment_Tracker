@@ -112,6 +112,46 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
     }
 
 
+def fetch_stock_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: Path) -> Dict[str, Any]:
+    """個股卡片（category: STOCK）求值：現價與近 12 個月配息取自 price-dividend-fetcher，評分取自 fundamental-analyzer。"""
+    info = cards_data.get("ticker", {})
+    symbol = info.get("symbol") or ticker
+    baseline = (info.get("dividend") or {}).get("annual_dps_baseline")
+    live: Dict[str, Any] = {"price": 0.0, "annual_dividend": baseline or 0.0, "source_notes": "個股卡片基準值"}
+
+    fetch_script = repo_root / ".claude" / "skills" / "price-dividend-fetcher" / "scripts" / "fetch.py"
+    if fetch_script.exists():
+        try:
+            out = subprocess.run(
+                [sys.executable, str(fetch_script), "both", symbol],
+                capture_output=True, text=True, timeout=20,
+            )
+            res = json.loads(out.stdout) if out.returncode == 0 else {}
+            price_info = res.get("price") if isinstance(res.get("price"), dict) else res
+            if price_info.get("price"):
+                live["price"] = float(price_info["price"])
+                live["source_notes"] = f"live-fetcher ({price_info.get('source', 'web')})"
+            ttm = (res.get("dividends") or res).get("ttm_total")
+            if ttm:
+                live["annual_dividend"] = float(ttm)
+        except Exception:
+            pass
+
+    scores = {"netScore": 50.0, "divScore": 50.0, "valScore": 50.0, "fricScore": 50.0}
+    fund_dir = repo_root / ".claude" / "skills" / "fundamental-analyzer" / "scripts"
+    if fund_dir.exists():
+        if str(fund_dir) not in sys.path:
+            sys.path.insert(0, str(fund_dir))
+        try:
+            from fundamental_calculator import calculate_stock_fundamentals
+            scores = calculate_stock_fundamentals(info.get("yf_symbol") or symbol).get("scores", scores)
+        except Exception:
+            pass
+    live.update({"scores": scores, "tax_retention": info.get("contribution", {}).get("tax_retention_rate") or 1.0,
+                 "southbound_2d_net": 0.0})
+    return live
+
+
 def evaluate_ticker_posture(
     cards_data: Dict[str, Any],
     live_data: Dict[str, Any],
@@ -138,8 +178,14 @@ def evaluate_ticker_posture(
     valve_action = "維持例行性半年配息再投入，按部就班累積雪球"
     priority = 5
 
+    # 無報價或無配息資料：不判定估值姿態，避免殖利率 0% 被誤判為過熱
+    if price <= 0 or annual_div <= 0:
+        posture_key = "NO_DATA"
+        posture_label = "⚪ 資料不足"
+        posture_name = "缺報價或配息資料，暫不判定"
+        valve_action = "待下次巡檢取得報價與近 12 個月配息後再評估"
     # 優先級 1：高息陷阱斷路
-    if yield_rate >= 0.08 and (net_score < 50 or div_score < 40):
+    elif yield_rate >= 0.08 and (net_score < 50 or div_score < 40):
         posture_key = "TRAP_ALERT"
         posture_label = "🚨 陷阱警戒"
         posture_name = "高息陷阱斷路保護 (Yield Trap Trip)"
@@ -166,6 +212,13 @@ def evaluate_ticker_posture(
         posture_name = "估值過熱防禦姿態 (Overvalued / Hold)"
         valve_action = "停止加碼買進，維持既有部位持有，股息可部分保留現金儲備"
         priority = 4
+
+    # 個股卡片：以「每一張（lot_shares）對 50 萬目標的貢獻度」取代持股達成率（不輸出個人持股）
+    contribution_pct = None
+    lot_shares = (ticker_info.get("contribution") or {}).get("lot_shares")
+    fx_to_twd = 1.0 if currency == "TWD" else live_data.get("fx_to_twd")
+    if ticker_info.get("category") == "STOCK" and lot_shares and annual_div and fx_to_twd:
+        contribution_pct = round(lot_shares * annual_div * fx_to_twd * tax_retention / 500000.0 * 100.0, 2)
 
     # 50 萬被動股利目標達成率計算（比率計算，不輸出個人持股張數）
     progress_pct = 0.0
@@ -198,6 +251,8 @@ def evaluate_ticker_posture(
         "goal_progress_pct": progress_pct,
         "goal_title": sp_title,
         "scores": scores,
+        "category": ticker_info.get("category", "ETF"),
+        "lot_contribution_pct": contribution_pct,
     }
 
 
@@ -251,7 +306,13 @@ def run_portfolio_patrol(
     for ticker in tickers:
         cards = load_cards(models_root, ticker)
         watchdog = check_watchdog(cards)
-        live_data = fetch_ticker_live_data(ticker, cards, repo_root)
+        if cards.get("ticker", {}).get("category") == "STOCK":
+            live_data = fetch_stock_live_data(ticker, cards, repo_root)
+            ccy = cards["ticker"].get("currency", "TWD")
+            fx_row = macro_data.get("fx", {}).get(f"{ccy}_TWD") or macro_data.get("fx", {}).get(f"{ccy}TWD") or {}
+            live_data.setdefault("fx_to_twd", fx_row.get("rate") or fx_row.get("price"))
+        else:
+            live_data = fetch_ticker_live_data(ticker, cards, repo_root)
         evaluation = evaluate_ticker_posture(cards, live_data)
 
         evaluation["watchdog"] = watchdog
