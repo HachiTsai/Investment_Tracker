@@ -17,6 +17,8 @@
    - 提交前必須先執行測試與語法檢查（`pytest` 與 `markdown-linter`）。
    - 變更提交一律遵循分支與 PR 機制，不得直接 push 至 `main`。
 
+4. **憲法（同 `CLAUDE.md`）**：變更 `.claude/` 下的 skills／workflows／hooks／tools 時，提交前必須先掃描 `.claude/rules/`、`CLAUDE.md` 與本檔，條列可能需要更新的規定並詢問 Hachi，經同意才更新。
+
 ---
 
 ## 2. 專案規則與技能自動載入（指向 `.claude/`）
@@ -34,5 +36,7 @@
 - **Markdown 檢查 Skill**：@[.claude/skills/markdown-linter/SKILL.md](../../.claude/skills/markdown-linter/SKILL.md)
 - **投資組合全標的巡檢 Skill**：@[.claude/skills/portfolio-patrol/SKILL.md](../../.claude/skills/portfolio-patrol/SKILL.md)
 - **台股 ETF 資料管線 Skill**：@[.claude/skills/tw-etf-fetcher/SKILL.md](../../.claude/skills/tw-etf-fetcher/SKILL.md)
+- **基本面財務指標評分 Skill**：@[.claude/skills/fundamental-analyzer/SKILL.md](../../.claude/skills/fundamental-analyzer/SKILL.md)
+- **Artifact 來源登記與斷鏈檢查 Skill**：@[.claude/skills/artifact-registry/SKILL.md](../../.claude/skills/artifact-registry/SKILL.md)
 - **00882 成分股股利調查工作流**：@[.claude/workflows/component-dividend-investigation.md](../../.claude/workflows/component-dividend-investigation.md)
 - **投資組合全標的巡檢工作流**：@[.claude/workflows/portfolio-patrol.md](../../.claude/workflows/portfolio-patrol.md)
