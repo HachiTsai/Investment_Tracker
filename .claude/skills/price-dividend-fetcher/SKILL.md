@@ -19,6 +19,8 @@ python3 .claude/skills/price-dividend-fetcher/scripts/fetch.py dividends 00882 [
 python3 .claude/skills/price-dividend-fetcher/scripts/fetch.py both 00882
 ```
 
+正式版分級（`--scan` 每列多出 long、mid、short、fib3、combo）：長期 5 級（強勢、偏多、中性、偏弱、弱勢）、中期 3 級（偏多、中性、偏空）、短期只標註（站上或跌破 20 日線，加短線偏熱或短線超跌）、費波那契 3 段（近端、中段、遠端）。提醒只在三週期組合變成「三週期共振偏多、三週期共振偏空、長多短回檔、長空短反彈」時觸發。短期各級回測後續報酬差異不明顯，因此不分級；中期 5 級不單調，因此合併成 3 級。狀態標籤「過熱」已改稱「短線偏熱」，舊狀態檔的標籤會自動對應。
+
 代號格式為 `交易所:代號`（與 Core 的 `TPE:00882` 一致），只寫代號視為台股。交易所：`TPE`、`NASDAQ`、`NYSE`、`NYSEARCA`、`NYSEAMERICAN`、`TYO`、`HKG`。
 
 | 指令 | 回傳重點 |
@@ -73,6 +75,7 @@ python3 .claude/skills/price-dividend-fetcher/scripts/hot5.py render hot5.json -
 python3 .claude/skills/price-dividend-fetcher/scripts/swing.py TPE:2356 --backtest
 python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --batch 00882:15   # 成分股彙總回測
 python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --fib-backtest   # 費波那契回檔位置（近 30 日高低點）之後 5/10/20 日含息報酬，觀察清單全標的
+python3 .claude/skills/price-dividend-fetcher/scripts/swing_levels.py   # 短、中、長期分級回測：各週期 5 級、費波那契 6 級、三週期組合的後續含息報酬（正式版只採用回測站得住的部分，見下）
 python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15      # 觀察清單掃描（個股卡片＋成分股前 N 大），輸出 JSON
-python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --prev prev.json --html out.html   # --html 另存 Artifact 頁面（模板 references/swing_watch_template.html）；--prev 加上次狀態檔：標出 changed／alert（只有變成過熱或超跌觀察才 alert）；每列另有 last_date、fresh（False＝該市場休市或未收盤，不要覆寫舊資料），抓取失敗列 state=ERROR；每列另有 fib_label／fib_pct（近 30 日費波那契回檔或反彈位置，只當參考欄位，不參與狀態判定與提醒）
+python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --prev prev.json --html out.html --sheet sheet.json   # --html 另存 Artifact 頁面；--prev 給上次 --scan 輸出，標出狀態變化；--sheet 輸出 Sheet 二維表（表頭加資料列，A 到 X 欄順序固定，排程整張寫入）
 ```

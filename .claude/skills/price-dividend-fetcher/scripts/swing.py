@@ -107,7 +107,7 @@ def classify(snap: Dict) -> Dict:
     if None in (s20, s60, r, lo, up):
         return {"state": "NO_DATA", "label": "⚪ 資料不足", "reason": "日線不足以計算指標"}
     if r >= 70 or c >= up:
-        return {"state": "OVERHEATED", "label": "🟠 過熱", "reason": "RSI≥70 或觸及布林上緣，追高風險升高，已持有者留意減碼條件"}
+        return {"state": "OVERHEATED", "label": "🟠 短線偏熱", "reason": "RSI≥70 或觸及布林上緣，短線漲幅偏大，已持有者留意減碼條件"}
     if c < s20 < s60 and h < 0:
         return {"state": "DOWNTREND", "label": "🔴 偏空迴避", "reason": "收盤在 20、60 日線之下且 MACD 柱為負，順勢方向向下"}
     if (r <= 30 or c <= lo) and (s120 is None or c >= s120 * 0.9):
@@ -322,7 +322,7 @@ def watchlist(universe: Optional[str] = None) -> List[Dict]:
 
 
 MARKET_TZ_HOURS = {"台股": 8, "港股": 8, "日股": 9, "美股": -4}
-ALERT_STATES = ("OVERHEATED", "OVERSOLD_WATCH")
+LEGACY_LABELS = {"🟠 過熱": "🟠 短線偏熱"}  # 舊狀態檔的標籤對應到新用語，避免改名被當成狀態變化
 
 
 def market_today(market: str, now: Optional[datetime] = None) -> str:
@@ -331,11 +331,11 @@ def market_today(market: str, now: Optional[datetime] = None) -> str:
     return (now + timedelta(hours=MARKET_TZ_HOURS.get(market, 8))).strftime("%Y-%m-%d")
 
 
-def scan(items: List[Dict], prev: Optional[Dict[str, str]] = None, now: Optional[datetime] = None) -> List[Dict]:
+def scan(items: List[Dict], prev: Optional[Dict[str, Dict]] = None, now: Optional[datetime] = None) -> List[Dict]:
     """逐檔取日線算快照；失敗的檔記錄原因，不中斷。
 
     last_date：最後一根日線的日期。fresh：last_date 是否為該市場的今天（收盤後執行時，False 代表休市或尚未收盤，
-    排程應保留該市場舊資料不覆寫）。prev：{代號: 上次狀態標籤}，給了就多出 changed、alert。
+    排程應保留該市場舊資料不覆寫）。prev：{代號: {"label":..,"combo":..}}，給了就多出 changed（狀態標籤變化）、combo_changed、alert（三週期組合變成關鍵組合才提醒）。
     """
     out = []
     for it in items:
@@ -353,14 +353,35 @@ def scan(items: List[Dict], prev: Optional[Dict[str, str]] = None, now: Optional
         fz = fib_zone(bars)
         row["fib_label"] = fz["label"] if fz else None
         row["fib_pct"] = fz["pct"] if fz else None
+        from swing_levels import current_levels
+        lv = current_levels(bars) or {}
+        row.update({"long": lv.get("long"), "mid": lv.get("mid"), "short": lv.get("short"), "fib3": lv.get("fib3"), "combo": lv.get("combo")})
         row["last_date"] = last.strftime("%Y-%m-%d")
         row["fresh"] = row["last_date"] == market_today(market, now)
         if prev is not None:
-            row["prev_label"] = prev.get(it["ticker"])
+            old = prev.get(it["ticker"]) or {}
+            row["prev_label"] = LEGACY_LABELS.get(old.get("label"), old.get("label"))
+            row["prev_combo"] = old.get("combo")
             row["changed"] = row["prev_label"] is not None and row["prev_label"] != row["label"]
-            row["alert"] = row["changed"] and row["state"] in ALERT_STATES
+            row["combo_changed"] = row["prev_combo"] is not None and row["combo"] is not None and row["prev_combo"] != row["combo"]
+            from swing_levels import KEY_COMBOS
+            row["alert"] = row["combo_changed"] and row["combo"] in KEY_COMBOS
         out.append(row)
     return out
+
+
+SHEET_COLUMNS = (
+    ("代號", "ticker"), ("名稱", "name"), ("市場", "market"), ("來源", "source"), ("狀態", "label"), ("收盤", "close"),
+    ("RSI14", "rsi14"), ("20日線", "sma20"), ("60日線", "sma60"), ("量比", "volume_ratio"), ("52週位置%", "pos_52w_pct"),
+    ("20日支撐", "support_20d"), ("20日壓力", "resistance_20d"), ("2xATR停損價", "stop_price"), ("停損距離%", "stop_distance_pct"),
+    ("判定依據", "reason"), ("更新日", "last_date"), ("費波那契位置30日", "fib_label"), ("位置幅度%", "fib_pct"),
+    ("長期", "long"), ("中期", "mid"), ("短期", "short"), ("費波那契3段", "fib3"), ("三週期組合", "combo"),
+)  # 順序即 Sheet A 欄起；APP 以表頭名稱讀取
+
+
+def sheet_table(rows: List[Dict]) -> List[List]:
+    """掃描結果轉成 Sheet 二維表（第一列表頭、欄位順序固定 A 到 X），排程整張寫入即可，不必自己對欄。"""
+    return [[h for h, _ in SHEET_COLUMNS]] + [["" if r.get(k) is None else r[k] for _, k in SHEET_COLUMNS] for r in rows]
 
 
 def render_page(rows: List[Dict], date: str) -> str:
@@ -376,18 +397,21 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="個股波段指標與訊號（只讀）")
     p.add_argument("ticker", nargs="?", help="例如 TPE:2356、HKG:1919、NASDAQ:AAPL")
     p.add_argument("--scan", nargs="?", const="", metavar="卡片:前N大", help="掃描觀察清單（個股卡片，可加 ETF 成分股）並輸出 JSON")
-    p.add_argument("--prev", metavar="JSON", help="上次狀態檔 [{\"ticker\":..,\"label\":..}]，給了 --scan 就標出狀態變化與提醒")
+    p.add_argument("--prev", metavar="JSON", help="上次狀態檔 [{\"ticker\":..,\"label\":..,\"combo\":..}]（即上次 --scan 輸出），給了 --scan 就標出狀態變化與提醒")
+    p.add_argument("--sheet", metavar="OUT", help="搭配 --scan：另存 Sheet 二維表 JSON（表頭加資料列，欄位順序固定 A 到 X）")
     p.add_argument("--html", metavar="OUT", help="搭配 --scan：另存 Artifact 頁面（讀 references/swing_watch_template.html）")
     p.add_argument("--batch", metavar="卡片:前N大", help="多檔彙總回測，例如 00882:15（讀 models/<卡片>/cards/constituents.jsonl）")
     p.add_argument("--fib-backtest", action="store_true", help="回測各費波那契回檔位置之後 5/10/20 日含息報酬（觀察清單全部標的，抓 5 年日線）")
     p.add_argument("--backtest", action="store_true", help="加跑超跌反彈規則回測（抓 5 年日線）")
     a = p.parse_args(argv)
     if a.scan is not None:
-        prev = {r["ticker"]: r["label"] for r in json.loads(Path(a.prev).read_text(encoding="utf-8"))} if a.prev else None
+        prev = {r["ticker"]: {"label": r.get("label"), "combo": r.get("combo")} for r in json.loads(Path(a.prev).read_text(encoding="utf-8"))} if a.prev else None
         rows = scan(watchlist(a.scan or None), prev)
         if a.html:
             date = max((r["last_date"] for r in rows if r.get("last_date")), default="")
             Path(a.html).write_text(render_page(rows, date), encoding="utf-8")
+        if a.sheet:
+            Path(a.sheet).write_text(json.dumps(sheet_table(rows), ensure_ascii=False), encoding="utf-8")
         print(json.dumps(rows, ensure_ascii=False, indent=1))
         return 0
     if a.fib_backtest:

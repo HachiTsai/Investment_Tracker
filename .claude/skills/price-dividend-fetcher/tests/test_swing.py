@@ -95,10 +95,24 @@ def test_scan_freshness_and_state_change(monkeypatch):
     same_day = sw.scan([{"ticker": "TPE:1", "name": "a"}], now=last_day)[0]
     next_day = sw.scan([{"ticker": "TPE:1", "name": "a"}], now=datetime.fromtimestamp(last_ts + 3 * 86400, timezone.utc))[0]
     assert same_day["fresh"] is True and next_day["fresh"] is False
-    row = sw.scan([{"ticker": "TPE:1", "name": "a"}], prev={"TPE:1": "⚪ 無訊號"}, now=last_day)[0]
+    cur = sw.scan([{"ticker": "TPE:1", "name": "a"}], now=last_day)[0]
+    assert cur["combo"] and cur["long"] and cur["mid"] in ("偏多", "中性", "偏空") and cur["short"] and cur["fib3"]
+    row = sw.scan([{"ticker": "TPE:1", "name": "a"}], prev={"TPE:1": {"label": "⚪ 無訊號", "combo": "其他"}}, now=last_day)[0]
     assert row["prev_label"] == "⚪ 無訊號"
     assert row["changed"] == (row["label"] != "⚪ 無訊號")
-    assert row["alert"] == (row["changed"] and row["state"] in sw.ALERT_STATES)
+    assert row["combo_changed"] == (row["combo"] != "其他")
+    from swing_levels import KEY_COMBOS
+    assert row["alert"] == (row["combo_changed"] and row["combo"] in KEY_COMBOS)
+    # 舊狀態檔沒有 combo：不提醒；舊「過熱」標籤對應到新用語，不算變化
+    old = sw.scan([{"ticker": "TPE:1", "name": "a"}], prev={"TPE:1": {"label": "🟠 過熱"}}, now=last_day)[0]
+    assert old["combo_changed"] is False and old["alert"] is False
+    assert old["prev_label"] == "🟠 短線偏熱"
+
+
+def test_sheet_table_columns_fixed_order():
+    t = sw.sheet_table([{"ticker": "TPE:1", "name": "a", "long": "偏多", "combo": "其他"}])
+    assert t[0][0] == "代號" and t[0][-1] == "三週期組合" and len(t[0]) == len(t[1]) == 24
+    assert t[1][0] == "TPE:1" and t[1][19] == "偏多" and t[1][5] == ""
 
 
 def test_render_page_fills_template():
@@ -147,3 +161,39 @@ def test_backtest_fib_groups_by_zone():
     rows = [(100 + i + 1, 100 + i, 100 + i) for i in range(80)]
     res = sw.backtest_fib({"A": _bars(rows)}, horizons=(5,))
     assert res["baseline"][5]["n"] > 0 and any("上升波" in k for k in res["zones"])
+
+
+def test_swing_levels_horizons_and_combo():
+    import swing_levels as sl
+    rows = [(100 + i * 0.5 + 1, 100 + i * 0.5 - 1, 100 + i * 0.5) for i in range(300)]
+    bars = _bars(rows)
+    ser = sl.build_series(bars)
+    assert sl.horizon_states(bars, ser, 50) is None  # 資料不足
+    st = sl.horizon_states(bars, ser, 299)
+    assert st["長"]["state"] in sl.STATES.values() and sl.combo(st) == "三週期共振偏多"
+    assert sl.fib_level(bars, 299, 20)["level"] == "F1"
+
+
+def test_swing_levels_combo_names():
+    import swing_levels as sl
+    mk = lambda s, m, l_: {"短": {"score": s}, "中": {"score": m}, "長": {"score": l_}}
+    assert sl.combo(mk(-1, -1, -2)) == "三週期共振偏空"
+    assert sl.combo(mk(0, 1, 2)) == "長多短回檔"
+    assert sl.combo(mk(1, 0, -1)) == "長空短反彈"
+
+
+def test_backtest_levels_runs():
+    import swing_levels as sl
+    rows = [(100 + i * 0.5 + 1, 100 + i * 0.5 - 1, 100 + i * 0.5 + (i % 7) * 0.3) for i in range(420)]
+    res = sl.backtest_levels({"A": _bars(rows)})
+    assert res["baseline"][5]["n"] > 0 and res["combo"]
+
+
+def test_current_levels_and_fib3():
+    import swing_levels as sl
+    bars = make_bars([100 + i * 0.3 for i in range(300)])
+    lv = sl.current_levels(bars)
+    assert lv["long"] in ("強勢", "偏多", "中性", "偏弱", "弱勢") and lv["mid"] in ("偏多", "中性", "偏空")
+    assert lv["fib3"] in ("近前高", "回檔中段", "深度回檔", "近波段低點", "反彈中段", "反彈近前高")
+    assert sl.current_levels(make_bars([100.0] * 30)) is None
+    assert sl.mid_label(2) == "偏多" and sl.mid_label(0) == "中性" and sl.mid_label(-1) == "偏空"
