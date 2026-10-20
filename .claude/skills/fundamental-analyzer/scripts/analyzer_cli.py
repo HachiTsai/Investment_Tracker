@@ -2,7 +2,7 @@
 """基本面財務指標與評分引擎入口 CLI (Fundamental Analyzer Facade)。
 
 用法：
-  # 1. 查詢單一個股財報指標與四象限評分
+  # 1. 查詢單一個股財報指標與動態評分矩陣分數
   python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py stock 2330.TW
   python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py stock NVDA --json
 
@@ -62,7 +62,7 @@ def format_etf_ascii(res: dict) -> str:
         f"  覆蓋成分股檔數: 前 {res.get('covered_holdings_count')} 大重倉 ｜ 覆蓋總權重: {res.get('total_weight_covered_pct')}%",
         f"  加權 ROE: {res.get('weighted_roe', '-')}%",
         "-" * 72,
-        "【穿透聚合四象限評分】：",
+        "【穿透聚合動態評分矩陣分數】：",
         f"  • 綜合財務健康分 (netScore)  : {scores.get('netScore', 0):>5} / 100",
         f"  • 股利可持續性分 (divScore)  : {scores.get('divScore', 0):>5} / 100",
         f"  • 估值與安全邊際 (valScore)  : {scores.get('valScore', 0):>5} / 100",
