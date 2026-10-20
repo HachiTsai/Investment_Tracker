@@ -74,6 +74,12 @@ def test_watchlist_includes_stock_cards():
     assert "HKG:1919" in tickers and "TPE:2356" in tickers
 
 
+def test_watchlist_includes_etf_cards():
+    by = {i["ticker"]: i for i in sw.watchlist()}
+    assert by["TPE:00882"]["source"] == "ETF 卡片" and by["TPE:0050"]["source"] == "ETF 卡片"
+    assert by["TPE:2356"]["source"] == "個股卡片"
+
+
 def test_market_of():
     assert sw.market_of("TPE:2356") == "台股" and sw.market_of("HKG:1919") == "港股"
     assert sw.market_of("TYO:7203") == "日股" and sw.market_of("NASDAQ:AAPL") == "美股"

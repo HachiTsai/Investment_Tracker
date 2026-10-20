@@ -245,15 +245,17 @@ def stock_profile(ticker: str) -> Dict:
 
 
 def watchlist(universe: Optional[str] = None) -> List[Dict]:
-    """觀察清單：models 內所有 category: STOCK 卡片，加上選填的 ETF 成分股前 N 大（卡片:N）。"""
+    """觀察清單：models 內所有 category: STOCK 與 ETF 卡片，加上選填的 ETF 成分股前 N 大（卡片:N）。"""
     root = Path(__file__).resolve().parents[4] / "models"
     items = []
     for card in sorted(root.glob("*/cards/ticker.yml")):
         txt = card.read_text(encoding="utf-8")
-        if "category: STOCK" not in txt:
-            continue
         field = lambda k: next((ln.split(":", 1)[1].split("#")[0].strip().strip('"') for ln in txt.splitlines() if ln.startswith(k + ":")), "")
-        items.append({"ticker": field("symbol"), "name": field("title"), "source": "個股卡片"})
+        if "category: STOCK" in txt:
+            items.append({"ticker": field("symbol"), "name": field("title"), "source": "個股卡片"})
+        else:
+            # 其餘卡片為 ETF（部分卡片沒有 category 欄）；沒有 symbol 欄，代號是不帶交易所的 ticker（台股 ETF 預設 TPE）
+            items.append({"ticker": f"TPE:{field('ticker')}", "name": field("title"), "source": "ETF 卡片"})
     if universe:
         name, _, top = universe.partition(":")
         path = root / name / "cards" / "constituents.jsonl"
