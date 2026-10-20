@@ -147,3 +147,29 @@ def test_backtest_fib_groups_by_zone():
     rows = [(100 + i + 1, 100 + i, 100 + i) for i in range(80)]
     res = sw.backtest_fib({"A": _bars(rows)}, horizons=(5,))
     assert res["baseline"][5]["n"] > 0 and any("上升波" in k for k in res["zones"])
+
+
+def test_swing_levels_horizons_and_combo():
+    import swing_levels as sl
+    rows = [(100 + i * 0.5 + 1, 100 + i * 0.5 - 1, 100 + i * 0.5) for i in range(300)]
+    bars = _bars(rows)
+    ser = sl.build_series(bars)
+    assert sl.horizon_states(bars, ser, 50) is None  # 資料不足
+    st = sl.horizon_states(bars, ser, 299)
+    assert st["長"]["state"] in sl.STATES.values() and sl.combo(st) == "三週期共振偏多"
+    assert sl.fib_level(bars, 299, 20)["level"] == "F1"
+
+
+def test_swing_levels_combo_names():
+    import swing_levels as sl
+    mk = lambda s, m, l_: {"短": {"score": s}, "中": {"score": m}, "長": {"score": l_}}
+    assert sl.combo(mk(-1, -1, -2)) == "三週期共振偏空"
+    assert sl.combo(mk(0, 1, 2)) == "長多短回檔"
+    assert sl.combo(mk(1, 0, -1)) == "長空短反彈"
+
+
+def test_backtest_levels_runs():
+    import swing_levels as sl
+    rows = [(100 + i * 0.5 + 1, 100 + i * 0.5 - 1, 100 + i * 0.5 + (i % 7) * 0.3) for i in range(420)]
+    res = sl.backtest_levels({"A": _bars(rows)})
+    assert res["baseline"][5]["n"] > 0 and res["combo"]
