@@ -1,0 +1,55 @@
+<title>00882 成分股股利明細</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* 版面：一頁摘要加一張可排序的 49 檔表格，數字靠右、狀態用文字標籤 */
+:root{--bg:#f6f7f5;--fg:#1d2420;--mut:#5d6862;--line:#d9ded9;--card:#ffffff;--acc:#1f6b57;--up:#1a7a46;--down:#b3402f;--flat:#6b6f37;--warn:#946200;--head:#eceee9}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141916;--fg:#e4e9e5;--mut:#9aa59e;--line:#2c3530;--card:#1b221e;--acc:#5fc2a2;--up:#58c487;--down:#ee8b78;--flat:#c2c57a;--warn:#e0b04d;--head:#222a25;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141916;--fg:#e4e9e5;--mut:#9aa59e;--line:#2c3530;--card:#1b221e;--acc:#5fc2a2;--up:#58c487;--down:#ee8b78;--flat:#c2c57a;--warn:#e0b04d;--head:#222a25;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:15px/1.65 "Noto Sans TC",system-ui,sans-serif;padding-block:28px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+h1{font-size:1.5rem;line-height:1.3;margin:0;text-wrap:balance}
+p{margin:0;max-width:68ch}.mut{color:var(--mut);font-size:.88rem}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.sum div{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 14px;min-width:0}
+.sum b{display:block;font-size:1.25rem;font-variant-numeric:tabular-nums}.sum span{font-size:.82rem;color:var(--mut)}
+.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--card)}
+table{border-collapse:collapse;width:100%;min-width:900px;font-size:.88rem;font-variant-numeric:tabular-nums}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{background:var(--head);position:sticky;top:0;cursor:pointer;font-weight:600;user-select:none}
+th:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+td.n,th.n{text-align:right}tr:last-child td{border-bottom:0}
+.up{color:var(--up)}.down{color:var(--down)}.flat{color:var(--flat)}.fx{color:var(--warn)}
+.tag{font-size:.78rem;padding:1px 7px;border:1px solid currentColor;border-radius:10px}
+ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;max-width:72ch}
+</style>
+<main>
+<header><h1>00882 成分股股利明細</h1>
+<p class="mut">資料日期 __ASOF__。持股、股數、權重來自中信投信官方明細（2026-10-13）；股息來自富途牛牛；去年中期股利來自先前的搜尋摘要，可信度較低。</p></header>
+<section class="sum" aria-label="摘要">
+<div><b>__N__ 檔</b><span>最大一檔 __TOP__</span></div>
+<div><b>約 __HAS26__ 檔</b><span>已有 2026 中期股利金額</span></div>
+<div><b>__CHG__</b><span>近 12 月股息對上一財年（__UPDN__）</span></div>
+<div><b>__UNIT__</b><span>以今日持股推算的每單位年股利（台幣，毛額）</span></div>
+</section>
+<section><div class="wrap"><table id="t"><thead><tr id="h"></tr></thead><tbody id="b"></tbody></table></div></section>
+<section><ul class="mut">
+<li>股息欄單位為港元（富途報價幣別）。近 12 月股息若含特別股息會偏高，例如 6186 飛鶴、6110 滔搏。</li>
+<li>「對去年中期」標籤：增＝金額較高；減＝金額較低；持平；幣別＝人民幣與港元混用，需換算，只能說大致持平。</li>
+<li>2026 中期欄來自公告標題，幣別沒標的照原文寫「未標」。</li>
+<li>沒有找到獨立的歷史股利表，這是用報價頁股息與公告標題拼出來的。</li>
+</ul></section>
+</main>
+<script>
+const D=__DATA__;
+const cols=[['c','代號',0],['n','名稱',0],['w','權重%',1],['px','股價',1],['ttm','近12月股息',1],['lfy','上一財年',1],['chg','變化%',1],['y','殖利率%',1],['i26','2026 中期股利',0],['p25','去年中期（摘要）',0],['cmp','對去年中期',0]];
+let key='w',dir=-1;
+const lab={up:'增',down:'減',flat:'持平',fx:'幣別'};
+function head(){const h=document.getElementById('h');h.innerHTML='';cols.forEach(([k,t,n])=>{const th=document.createElement('th');th.textContent=t+(k===key?(dir>0?' ▲':' ▼'):'');if(n)th.className='n';th.tabIndex=0;const go=()=>{dir=(k===key)?-dir:(n?-1:1);key=k;draw()};th.onclick=go;th.onkeydown=e=>{if(e.key==='Enter')go()};h.appendChild(th)})}
+function draw(){head();const rows=[...D].sort((a,b)=>{const x=a[key],y=b[key];return (typeof x==='number'?x-y:String(x).localeCompare(String(y),'zh'))*dir});
+const b=document.getElementById('b');b.innerHTML='';rows.forEach(r=>{const tr=document.createElement('tr');cols.forEach(([k,t,n])=>{const td=document.createElement('td');if(n)td.className='n';let v=r[k];
+if(k==='cmp'){td.innerHTML=v?'<span class="tag '+v+'">'+lab[v]+'</span>':'';}
+else if(k==='chg'){td.textContent=(v>0?'+':'')+v.toFixed(1);td.className+=' '+(v>0.5?'up':v<-0.5?'down':'flat')}
+else if(typeof v==='number'){td.textContent=k==='c'?v:v.toFixed(k==='w'||k==='y'?2:k==='px'?2:3)}
+else td.textContent=v;tr.appendChild(td)});b.appendChild(tr)})}
+draw();
+</script>
