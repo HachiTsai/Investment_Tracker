@@ -202,12 +202,51 @@ def card_universe(card: str, top: int) -> List[str]:
     return out
 
 
+def watchlist(universe: Optional[str] = None) -> List[Dict]:
+    """觀察清單：models 內所有 category: STOCK 卡片，加上選填的 ETF 成分股前 N 大（卡片:N）。"""
+    root = Path(__file__).resolve().parents[4] / "models"
+    items = []
+    for card in sorted(root.glob("*/cards/ticker.yml")):
+        txt = card.read_text(encoding="utf-8")
+        if "category: STOCK" not in txt:
+            continue
+        field = lambda k: next((ln.split(":", 1)[1].split("#")[0].strip().strip('"') for ln in txt.splitlines() if ln.startswith(k + ":")), "")
+        items.append({"ticker": field("symbol"), "name": field("title"), "source": "個股卡片"})
+    if universe:
+        name, _, top = universe.partition(":")
+        path = root / name / "cards" / "constituents.jsonl"
+        rows = [json.loads(ln) for ln in path.read_text(encoding="utf-8").splitlines()[:int(top or 15)]]
+        for row, t in zip(rows, card_universe(name, int(top or 15))):
+            if all(i["ticker"] != t for i in items):
+                items.append({"ticker": t, "name": row["name"], "source": f"{name} 成分股"})
+    return items
+
+
+def scan(items: List[Dict]) -> List[Dict]:
+    """逐檔取日線算快照；失敗的檔記錄原因，不中斷。"""
+    out = []
+    for it in items:
+        try:
+            s = snapshot(load_ohlcv(it["ticker"], "1y"))
+        except (ValueError, RuntimeError) as e:
+            out.append({**it, "state": "ERROR", "label": "⚠️ 抓取失敗", "reason": str(e)[:80]})
+            continue
+        out.append({**it, **{k: s.get(k) for k in (
+            "state", "label", "reason", "close", "rsi14", "sma20", "sma60", "macd_hist",
+            "volume_ratio", "pos_52w_pct", "support_20d", "resistance_20d", "stop_price", "stop_distance_pct")}})
+    return out
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="個股波段指標與訊號（只讀）")
     p.add_argument("ticker", nargs="?", help="例如 TPE:2356、HKG:1919、NASDAQ:AAPL")
+    p.add_argument("--scan", nargs="?", const="", metavar="卡片:前N大", help="掃描觀察清單（個股卡片，可加 ETF 成分股）並輸出 JSON")
     p.add_argument("--batch", metavar="卡片:前N大", help="多檔彙總回測，例如 00882:15（讀 models/<卡片>/cards/constituents.jsonl）")
     p.add_argument("--backtest", action="store_true", help="加跑超跌反彈規則回測（抓 5 年日線）")
     a = p.parse_args(argv)
+    if a.scan is not None:
+        print(json.dumps(scan(watchlist(a.scan or None)), ensure_ascii=False, indent=1))
+        return 0
     if a.batch:
         card, _, top = a.batch.partition(":")
         print(json.dumps(backtest_many(card_universe(card, int(top or 15))), ensure_ascii=False, indent=2))

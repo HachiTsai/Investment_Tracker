@@ -60,3 +60,15 @@ def test_backtest_many_survives_failures(monkeypatch):
     res = sw.backtest_many(["A", "BAD", "B"])
     assert res["tickers_ok"] == 2 and "BAD" in res["tickers_failed"]
     assert res["trades"] == sum(v["trades"] for v in res["per_ticker"].values())
+
+
+def test_scan_records_errors(monkeypatch):
+    closes = [100 + (i % 30) * 0.5 for i in range(300)]
+    monkeypatch.setattr(sw, "load_ohlcv", lambda t, rng="2y": make_bars(closes) if t == "A" else (_ for _ in ()).throw(ValueError("x")))
+    rows = sw.scan([{"ticker": "A", "name": "a"}, {"ticker": "B", "name": "b"}])
+    assert rows[0]["state"] != "ERROR" and rows[1]["state"] == "ERROR"
+
+
+def test_watchlist_includes_stock_cards():
+    tickers = [i["ticker"] for i in sw.watchlist()]
+    assert "HKG:1919" in tickers and "TPE:2356" in tickers
