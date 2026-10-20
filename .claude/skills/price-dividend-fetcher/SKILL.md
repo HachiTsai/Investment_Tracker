@@ -1,6 +1,6 @@
 ---
 name: price-dividend-fetcher
-description: 抓台股、美股、日股、港股的最新股價與歷史配息，並用近 12 個月配息算殖利率。使用者說「查股價」「現價多少」「抓 00882 的價格」「美股／日股／港股報價」「配息紀錄」「除息日」「最近一次配多少」「殖利率更新」「更新股價」，或要更新持股快照、股利試算需要最新價格與配息時使用。唯讀，只抓公開網頁，不寫入 Investment_Tracker_Core。
+description: 抓台股、美股、日股、港股的最新股價與歷史配息，並用近 12 個月配息算殖利率。使用者說「查股價」「現價多少」「抓 00882 的價格」「美股／日股／港股報價」「配息紀錄」「除息日」「最近一次配多少」「殖利率更新」「更新股價」，或要更新持股快照、股利試算需要最新價格與配息時使用；使用者說「熱門股」「五日成交金額排名」「上市上櫃興櫃熱門股」時用 hot5 子功能。唯讀，只抓公開網頁，不寫入 Investment_Tracker_Core。
 ---
 
 # price-dividend-fetcher：抓股價與配息
@@ -52,3 +52,17 @@ python3 -m pytest -q .claude/skills/price-dividend-fetcher/tests
 ```
 
 測試使用內嵌的樣本，不需要網路。
+
+## 三市場近 5 日熱門股（hot5）
+
+- **腳本**：`scripts/hot5_fetch.py` 抓資料並輸出 `hot5.json`，`scripts/hot5_report.py` 把它轉成 `hot5.html`。兩支都只用標準函式庫，唯讀。
+- **用法**（在工作目錄執行，檔案寫到目前目錄）：
+
+```bash
+python3 .claude/skills/price-dividend-fetcher/scripts/hot5_fetch.py [YYYY-MM-DD]
+python3 .claude/skills/price-dividend-fetcher/scripts/hot5_report.py
+```
+
+- **口徑**：取最近 6 個交易日，最早一天當漲跌基準，其後 5 日累計成交金額排名；只算普通股與 ETF；上市取證交所 `MI_INDEX`，上櫃取櫃買中心 `dailyQuotes`，興櫃取 `emerging/latest` 加逐檔 `emerging/historical`（興櫃用均價）。區間漲跌未還原除權息。
+- **休市**：今天證交所還沒有資料（休市或尚未收盤）時 `hot5_fetch.py` 以 exit code 3 結束，不寫檔，呼叫端不要發佈。
+- 產出的 `hot5.html` 用 Artifact 發佈到既有的「台股五日熱門股」網址，每日排程負責執行。
