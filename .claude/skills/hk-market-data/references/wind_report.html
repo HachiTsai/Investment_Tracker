@@ -1,0 +1,118 @@
+<title>00882 舊經濟風向</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+/* 單欄研究報告：產業權重表 → 各產業風向 → 回扣股利目標 */
+:root{--bg:#f6f7f5;--fg:#1d2422;--muted:#5d6865;--line:#d6dcd9;--accent:#a3312a;--up:#2f6f4f;--warn:#a06a10;--down:#a3312a;--panel:#ffffff;
+--display:"Noto Serif TC",serif;--body:"Noto Sans TC",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151a19;--fg:#e4e9e7;--muted:#9aa5a1;--line:#2d3634;--accent:#e0796f;--up:#6cc196;--warn:#e0b153;--down:#e0796f;--panel:#1c2321;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#151a19;--fg:#e4e9e7;--muted:#9aa5a1;--line:#2d3634;--accent:#e0796f;--up:#6cc196;--warn:#e0b153;--down:#e0796f;--panel:#1c2321;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);line-height:1.7;font-size:15px}
+main{max-width:760px;margin:0 auto;padding-block:32px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2{font-family:var(--display);text-wrap:balance;line-height:1.3}
+h1{font-size:1.9rem;margin:0 0 4px}h2{font-size:1.3rem;margin:36px 0 10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+h3{font-size:1.05rem;margin:22px 0 4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.meta{color:var(--muted);font-size:.85rem}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.9rem}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}td.n{text-align:right}
+.pill{font-size:.75rem;font-weight:700;padding:1px 8px;border-radius:99px;border:1px solid currentColor;letter-spacing:.04em}
+.up{color:var(--up)}.warn{color:var(--warn)}.down{color:var(--down)}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px}
+ul{padding-left:1.2em}li{margin:3px 0}.op{color:var(--muted)}.ok{font-size:.7rem;font-weight:700;color:var(--up);margin-left:4px}.fix{color:var(--warn);font-weight:700}
+a{color:var(--accent)}small{color:var(--muted)}
+</style>
+<main>
+<h1>00882 港股舊經濟風向</h1>
+<p class="meta">更新 2026-10-19（南向至 10/16；產業與 CCASS 見各表資料日）· 平日 18:13（台北）自動更新 · 持股：中信投信官方 API（2026-10-13，49 檔）· 標 <span class="pill up">港交所</span> 的數字已對照公司公告原文 · 「觀點」為 Claude 推論</p>
+
+<div class="box">
+<strong>一句話結論（觀點）：</strong>00882 的股利引擎是銀行與保險（約 37%），這一塊目前是穩的，淨息差止跌、配息率小幅上調；拖累股利的是航運（運價過剩）和火電（電價降），地產則是政策加碼但只有一線城市回溫。整體看，2027 年股利「持平偏弱」的機率較高，與先前自下而上推估的 0.69～0.82／年一致。
+</div>
+
+<h2>持股按產業分組</h2>
+<p class="meta">分組由 Claude 依公司主業歸類（官方沒提供產業權重），權重為 2026-10-13 官方數字加總。</p>
+<div class="tw"><table>
+<tr><th>產業</th><th>權重</th><th>主要成分（權重%）</th><th>風向</th></tr>
+<tr><td>銀行</td><td class="n">23.9%</td><td>中行 2.84、工行 2.72、交行 2.66、農行 2.66、中信銀 2.53、建行 2.48 等 10 檔</td><td><span class="pill up">穩</span></td></tr>
+<tr><td>保險／金融其他</td><td class="n">12.9%</td><td>中國財險 2.82、遠東宏信 2.58、中信股份 2.53、新華保險 2.16、人保 1.62、平安 1.23</td><td><span class="pill up">穩</span></td></tr>
+<tr><td>消費</td><td class="n">15.1%</td><td>統一 2.43、康師傅 2.42、波司登 2.42、頤海 1.92、海爾智家 1.91、恒安 1.61</td><td><span class="pill warn">未查</span></td></tr>
+<tr><td>公用事業</td><td class="n">14.0%</td><td>華能國際 2.74、粵海投資 2.69、華潤電力 2.55、北京控股 1.84、中國燃氣 1.75</td><td><span class="pill down">偏弱</span></td></tr>
+<tr><td>地產與物管</td><td class="n">11.7%</td><td>中國建築國際 2.88、建發國際 1.91、嘉里建設 1.57、萬物雲 1.52、中海外 1.41</td><td><span class="pill warn">分化</span></td></tr>
+<tr><td>航運與港口</td><td class="n">10.4%</td><td>中遠海控 3.75（第一大）、中遠海運港口 2.70、招商局港口 2.37、深圳國際 1.56</td><td><span class="pill down">偏弱</span></td></tr>
+<tr><td>工業／原物料／能源</td><td class="n">9.7%</td><td>建滔集團 3.14、中國神華 1.79、中國中車 1.77、中國中鐵 1.15、海螺水泥 0.98</td><td><span class="pill warn">未細查</span></td></tr>
+</table></div>
+<p class="meta">註：00882 沒有電信股；石油只有神華（煤）。合計 97.72%，其餘為現金。</p>
+
+<h2>近一週產業漲跌</h2>
+<p class="meta">以中信投信公布的成分股價格算，產業內依權重加權；「今年」以 2025-12-31 持股價格為基準，當時不在持股中的個股不計。資料日 2026-10-16，對比 10-09。</p>
+<div class="tw"><table>
+<tr><th>產業</th><th>權重</th><th>近一週</th><th>今年以來</th></tr>
+<tr><td>銀行</td><td class="n">23.0%</td><td class="n down">−1.20%</td><td class="n up">+13.62%</td></tr>
+<tr><td>保險與金融</td><td class="n">11.6%</td><td class="n down">−4.01%</td><td class="n down">−12.87%</td></tr>
+<tr><td>公用事業</td><td class="n">14.7%</td><td class="n up">+0.34%</td><td class="n up">+2.48%</td></tr>
+<tr><td>地產與物管</td><td class="n">12.4%</td><td class="n up">+1.57%</td><td class="n down">−3.39%</td></tr>
+<tr><td>航運與港口</td><td class="n">9.6%</td><td class="n up">+0.24%</td><td class="n up">+9.06%</td></tr>
+<tr><td>消費</td><td class="n">15.7%</td><td class="n up">+0.42%</td><td class="n down">−4.22%</td></tr>
+<tr><td>工業與能源</td><td class="n">9.4%</td><td class="n down">−2.89%</td><td class="n up">+12.98%</td></tr>
+</table></div>
+
+<h2>港股資金流向</h2>
+<ul>
+<li>事實：中遠海控中期息每股 0.43 元人民幣，較去年 0.56 元減 23%，是第一大持股股利下修（見航運段）。</li>
+<li>事實：南向資金 2026 年至 9/29 累計淨流入 4,282.03 億港元，全年只有 5 月小幅淨流出（<a href="https://finance.sina.com.cn/jjxw/2026-09-30/doc-initpxxr2435916.shtml">新浪財經 9/30</a>）。</li>
+<li>事實：截至 10/9 的一週（只有兩個交易日）淨買入 67.68 億港元，連續 7 週淨買入；買最多的是騰訊，不是高息股（<a href="https://www.stcn.com/article/detail/4211331.html">證券時報·數據寶</a>）。</li>
+<li>事實：近一年南向淨買入金融業超過 1,200 億港元（至 8/24，Wind）；中證港股通內地金融指數市淨率約 0.57 倍；南向持有建行超過 3,500 億港元（<a href="https://www.chnfund.com/article/ARe3e25d75-5f4e-b9aa-9999-3a236d9fa367">中國基金報</a>）。</li>
+<li class="op">觀點：內地資金長期配置內銀與高息股，是 00882 銀行持股今年漲 16% 的主要推力；但近期增量資金轉向科技股，高息股的價格支撐可能減弱。</li>
+</ul>
+<h3>南向資金每日淨額（百萬港元，港股通滬＋深）</h3>
+<p class="meta">來源：東方財富，已與港交所港股通統計（hkex.com.hk DailyStat）逐日對照一致，資料至 2026-10-16（10/19 執行時尚未發布）。</p>
+<div class="tw"><table>
+<tr><th>日期</th><th>淨買入</th><th>買入</th><th>賣出</th><th>恒指收盤（漲跌）</th></tr>
+<tr><td>2026-10-16</td><td class="n down">-3,568.43</td><td class="n">30,917</td><td class="n">34,485</td><td class="n">24,186.83（+0.52%）</td></tr>
+<tr><td>2026-10-15</td><td class="n down">-5,080.23</td><td class="n">37,529</td><td class="n">42,609</td><td class="n">24,062.72（−1.03%）</td></tr>
+<tr><td>2026-10-14</td><td class="n down">-135.05</td><td class="n">35,299</td><td class="n">35,434</td><td class="n">24,314.17（−0.13%）</td></tr>
+<tr><td>2026-10-13</td><td class="n down">-456.62</td><td class="n">35,271</td><td class="n">35,728</td><td class="n">24,345.22（+0.30%）</td></tr>
+<tr><td>2026-10-12</td><td class="n up">2,603.27</td><td class="n">32,882</td><td class="n">30,279</td><td class="n">24,271.20（+0.25%）</td></tr>
+</table></div>
+<p class="meta">10/15、10/16 連兩日淨賣出，合計 8,648.66 百萬港元。單日數字不代表趨勢（觀點）。</p>
+<h3>南向資金持股占比（港交所 CCASS，資料日 2026-10-18 對比 10-11）</h3>
+<p class="meta">南向持股＝中央結算系統參與者 A00003＋A00004（滬、深港通）。取 00882 前 10 大持股。CCASS 回傳日期為週末 10/18，結算日未能確認。</p>
+<div class="tw"><table>
+<tr><th>個股</th><th>南向占已發行股份</th><th>一週變化</th></tr>
+<tr><td>中遠海控（1919）</td><td class="n">28.63%</td><td class="n down">-0.41 個百分點</td></tr>
+<tr><td>中國建築國際（3311）</td><td class="n">13.32%</td><td class="n down">-0.05 個百分點</td></tr>
+<tr><td>華能國際（902）</td><td class="n">57.71%</td><td class="n down">-0.39 個百分點</td></tr>
+<tr><td>中信銀行（998）</td><td class="n">30.21%</td><td class="n up">+0.18 個百分點</td></tr>
+<tr><td>粵海投資（270）</td><td class="n">9.73%</td><td class="n down">-0.06 個百分點</td></tr>
+<tr><td>華潤電力（836）</td><td class="n">21.39%</td><td class="n down">-0.20 個百分點</td></tr>
+<tr><td>郵儲銀行（1658）</td><td class="n">30.46%</td><td class="n up">+0.22 個百分點</td></tr>
+<tr><td>波司登（3998）</td><td class="n">9.88%</td><td class="n up">+0.23 個百分點</td></tr>
+<tr><td>中國銀行（3988）</td><td class="n">35.65%</td><td class="n up">+0.10 個百分點</td></tr>
+<tr><td>中國財險（2328）</td><td class="n">32.05%</td><td class="n up">+0.30 個百分點</td></tr>
+</table></div>
+<div class="tw"><table>
+<tr><th>指標</th><th>看什麼</th><th>影響哪一塊</th><th>來源</th></tr>
+<tr><td>南向資金週淨買入</td><td>連續淨買入週數、是否流向內銀與高息股</td><td>整體估值</td><td>港交所港股通統計、東方財富（自動）</td></tr>
+<tr><td>成分股港交所公告</td><td>業績、股息、盈利警告</td><td>2027/1 配息</td><td>港交所披露易（自動）</td></tr>
+<tr><td>產業加權漲跌</td><td>近一週、今年以來</td><td>淨值</td><td>中信投信持股 API（自動）</td></tr>
+<tr><td>貨櫃運價</td><td>Drewry WCI、SCFI 週變化</td><td>中遠海控（第一大持股）</td><td>新聞搜尋</td></tr>
+<tr><td>電價與煤價</td><td>秦皇島動力煤、各省電價政策</td><td>華能、華潤電力</td><td>新聞搜尋</td></tr>
+<tr><td>房地產</td><td>百強房企月銷售、70 城房價</td><td>地產與物管</td><td>國家統計局、克而瑞</td></tr>
+<tr><td>利率</td><td>LPR、存款利率調整</td><td>銀行淨息差</td><td>人民銀行</td></tr>
+<tr><td>人民幣與港幣兌台幣</td><td>匯率變化</td><td>台幣計價配息</td><td>中信投信追蹤資料</td></tr>
+</table></div>
+
+<h2>來源（查詢日 2026-10-16）</h2>
+<ul style="font-size:.85rem">
+<li>中信投信 ETFHoldingWeight API（00882 持股，資料日 2026-10-13）</li>
+<li>港交所披露易公告：<a href="https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0828/2026082800783.pdf">建行中期業績</a> · <a href="https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0828/2026082801515.pdf">建行中期股息</a> · <a href="https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0828/2026082800399.pdf">工行中期業績</a> · <a href="https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0929/2026092901753.pdf">工行中期股息</a> · <a href="https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0828/2026082800485.pdf">中行中期業績</a> · <a href="https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0828/2026082800581.pdf">中行中期股息</a> · <a href="https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0828/2026082800437.pdf">農行中期業績</a> · <a href="https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0930/2026093000033.pdf">農行中期股息</a> · <a href="https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0828/2026082801289.pdf">招行中期業績</a> · <a href="https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0826/2026082600195.pdf">華潤電力中期業績</a> · <a href="https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0818/2026081801927.pdf">華能國際中期業績</a> · <a href="https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0828/2026082803772.pdf">中遠海控中期業績</a> · <a href="https://www1.hkexnews.hk/listedco/listconews/sehk/2026/0924/2026092401431.pdf">中遠海控中期股息</a></li>
+<li><a href="https://theedgemalaysia.com/node/816165">The Edge：China's major banks post higher profits as margin squeeze eases</a></li>
+<li><a href="https://ca.investing.com/news/stock-market-news/china-construction-bank-h1-2026-slides-profit-rises-56-nim-improves-93CH-4821481">Investing.com：建行 H1 2026</a> · <a href="https://www.investing.com/news/transcripts/earnings-call-transcript-china-merchants-bank-posts-mixed-h1-2026-results-93CH-4882124">招行 H1 2026 法說</a></li>
+<li><a href="https://www.ad-hoc-news.de/boerse/news/corporate-news/agricultural-bank-of-china-sets-cny-1-297-dividend-for-agricultural-bank-of-china-stock/70322468">農行中期股利</a> · <a href="https://www.ad-hoc-news.de/boerse/news/corporate-news/bank-of-china-reports-5-10-percent-profit-growth-bank-of-china-stock-gains-1-49-percent/70241570">中行 H1</a></li>
+<li><a href="https://hkg.itiger.com/news/1174773617">老虎：華潤電力 2026 中期</a> · <a href="https://news.futunn.com/en/post/77853969/huaneng-power-international-00902-announced-its-interim-results-with-net">富途：華能國際中期</a> · <a href="https://www.investing.com/news/transcripts/earnings-call-transcript-huaneng-power-q2-2026-profit-falls-as-stock-slips-93CH-4866798">華能法說</a></li>
+<li><a href="https://www.bloomberg.com/news/articles/2026-08-28/china-pushes-forward-home-sale-overhaul-as-crisis-drags-on">Bloomberg 2026-08-28</a> · <a href="https://www.bloomberg.com/news/articles/2026-09-07/china-property-moves-to-fuel-30-hit-to-land-sales-goldman-says">Bloomberg 2026-09-07</a> · <a href="https://www.scmp.com/economy/china-economy/article/3365649/china-moves-stabilise-property-sector-stronger-expected-package">SCMP 地產政策</a> · <a href="https://finance.biggo.com/news/6449ee9a-5a98-4d4e-8e6b-b435723131e5">BigGo 百強房企</a> · <a href="https://finance.biggo.com/news/3c332352-5dc5-420a-ab0e-78c80186f1d8">BigGo 二手房</a></li>
+<li><a href="https://www.freightos.com/freight-resources/ocean-and-air-freight-forecast-2026-what-to-expect/">Freightos 2026 展望</a> · <a href="https://www.xeneta.com/blog/how-carriers-are-changing-tactics-across-global-trades-to-tackle-overcapacity-in-ocean-container-shipping-supply">Xeneta 運力過剩</a></li>
+<li><a href="https://finance.biggo.com/news/311c84c4-c12c-455c-9eae-893aeae535c8">BigGo：10/8 南向淨買</a> · <a href="https://cms.hangseng.com/cms/ipd/eng/analyses/PDF/quarterlyen.pdf">恒生銀行 Q2 展望</a> · <a href="https://www.hsi.com.hk/static/uploads/contents/en/dl_centre/factsheets/hsmchyie.pdf">恒生指數公司 factsheet</a></li>
+</ul>
+<p><small>銀行、火電、中遠海控的數字已對照港交所公告；地產、運價、資金流向來自媒體或官方統計轉述，港交所沒有對應公告。不構成買賣建議。</small></p>
+</main>
