@@ -107,6 +107,7 @@ scripts/                     共用計算或抓價工具
 | `tw-etf-fetcher` | 抓取全市場台股 ETF 股號清單、穿透完整成分股與權重、計算投資組合實質曝險（Look-through），並支援一鍵生成 DCS 建模卡片；唯讀 |
 | `fundamental-analyzer` | 個股三大財務報表量化體檢（ROE、自由現金流覆蓋、盈餘配發率）與 ETF 穿透加權聚合評分（netScore、divScore、valScore、fricScore）；唯讀 |
 | `artifact-registry` | 追蹤每個 Artifact 的來源、腳本與排程，偵測斷鏈並產出告警；每日巡檢檢查 Artifact、排程、repo 腳本與 Drive 公開 Sheet 是否一致 |
+| `repo-manager` | 跨 REPO 安全拉取（sync，只快轉）、巡檢實際環境與 pyproject、提交前檢查；唯讀巡檢，不寫入 Core |
 
 ## 思考類文件的寫法
 

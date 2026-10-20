@@ -1,0 +1,15 @@
+{
+  "_doc": "巡檢實際環境時要求的系統工具。required=true 缺少即 FAIL，否則 WARN。min 為最低版本（可省略）。",
+  "tools": [
+    {"name": "git",     "cmd": ["git", "--version"],     "required": true,  "min": "2.30"},
+    {"name": "gh",      "cmd": ["gh", "--version"],      "required": true},
+    {"name": "uv",      "cmd": ["uv", "--version"],      "required": true},
+    {"name": "python3", "cmd": ["python3", "--version"], "required": true,  "min": "3.12"},
+    {"name": "node",    "cmd": ["node", "--version"],    "required": false, "min": "20"},
+    {"name": "npm",     "cmd": ["npm", "--version"],     "required": false},
+    {"name": "gcloud",  "cmd": ["gcloud", "--version"],  "required": false},
+    {"name": "git-lfs", "cmd": ["git", "lfs", "version"],"required": false},
+    {"name": "pio",     "cmd": ["pio", "--version"],     "required": false},
+    {"name": "markdownlint-cli2", "cmd": ["markdownlint-cli2", "--help"], "required": false}
+  ]
+}

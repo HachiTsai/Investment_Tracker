@@ -1,0 +1,53 @@
+{
+  "_doc": "提交前檢查規則。可直接增修，不需改 committer.py。",
+  "sensitive_patterns": [
+    ".env",
+    ".env.*",
+    "*.key",
+    "*.pem",
+    "*.p12",
+    "credentials.json",
+    "credentials/*",
+    "*service_account*.json",
+    "id_rsa*"
+  ],
+  "protected_branches": [
+    "main",
+    "master"
+  ],
+  "import_to_dist": {
+    "yaml": "pyyaml",
+    "dotenv": "python-dotenv",
+    "PIL": "pillow",
+    "fitz": "pymupdf",
+    "bs4": "beautifulsoup4",
+    "cv2": "opencv-python",
+    "sklearn": "scikit-learn",
+    "google": "",
+    "pdf2image": "pdf2image",
+    "rapidocr_onnxruntime": "rapidocr-onnxruntime"
+  },
+  "message_footer": [
+    "Co-Authored-By: Claude <noreply@anthropic.com>"
+  ],
+  "forbidden_git": [
+    "push --force",
+    "reset --hard",
+    "rebase"
+  ],
+  "rules_scan": {
+    "_doc": "改了 trigger_paths 卻沒同時暫存 rule_paths 任一檔時，check 給 WARN 提醒（憲法：變更 .claude/ 必先掃描 rules 並詢問使用者）",
+    "trigger_paths": [
+      ".claude/skills/",
+      ".claude/workflows/",
+      ".claude/hooks/",
+      ".claude/tools/",
+      ".claude/settings.json"
+    ],
+    "rule_paths": [
+      ".claude/rules/",
+      "CLAUDE.md",
+      ".agent/rules/AGENT.md"
+    ]
+  }
+}
