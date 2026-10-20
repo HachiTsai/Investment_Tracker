@@ -72,4 +72,5 @@ python3 .claude/skills/price-dividend-fetcher/scripts/hot5.py render hot5.json -
 ```bash
 python3 .claude/skills/price-dividend-fetcher/scripts/swing.py TPE:2356 --backtest
 python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --batch 00882:15   # 成分股彙總回測
+python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15      # 觀察清單掃描（個股卡片＋成分股前 N 大），輸出 JSON
 ```
