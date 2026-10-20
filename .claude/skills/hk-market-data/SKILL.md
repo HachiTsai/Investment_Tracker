@@ -41,3 +41,10 @@ python3 $S macro                             # 宏觀指標：LPR利率、中債
 - 排程在乾淨的 session 執行，改過的頁面不會寫回 REPO；要延續前一天的內容，先讀取目前已發佈的 Artifact 當基礎，底稿只在第一次或版面需要重置時使用。
 - 版面調整（欄位、樣式）直接改這份底稿並走 PR；每日資料不要 commit。
 - 事實附來源與日期，港交所核對過的標「港交所」，觀點標為觀點。
+
+## 00882 成分股股利表（`scripts/constituents_table.py`）
+
+- 產生 49 檔成分股股利明細頁與 `table.json`：持股、股數、權重取中信投信官方 API，股息 TTM／LFY 與中期股利取富途牛牛（需無頭 Chromium），頁面範本為 `references/constituents_template.html`。
+- 用法：`python3 .claude/skills/hk-market-data/scripts/constituents_table.py out.html [prev.html] [table.json]`，約 10 分鐘；`prev.html` 是上一版頁面，用來沿用去年欄位。輸出的 JSON 摘要有 `rows`、`fails`、`has26`，`fails` 超過 5 檔或連不上 futunn.com／ctbcinvestments.com.tw 就不要發佈。
+- 這支腳本只產生頁面與 JSON，不寫 Drive、不碰 Investment_Tracker_Core；寫 Sheet 由排程用 Sheets 工具做，且不得放持股張數、成本、缺口等個人部位數字。
+- 腳本載入時即連網抓資料，測試只做靜態檢查（編譯、佔位符與範本一致）。
