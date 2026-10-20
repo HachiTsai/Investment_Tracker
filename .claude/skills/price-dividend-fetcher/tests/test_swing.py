@@ -72,3 +72,8 @@ def test_scan_records_errors(monkeypatch):
 def test_watchlist_includes_stock_cards():
     tickers = [i["ticker"] for i in sw.watchlist()]
     assert "HKG:1919" in tickers and "TPE:2356" in tickers
+
+
+def test_market_of():
+    assert sw.market_of("TPE:2356") == "台股" and sw.market_of("HKG:1919") == "港股"
+    assert sw.market_of("TYO:7203") == "日股" and sw.market_of("NASDAQ:AAPL") == "美股"

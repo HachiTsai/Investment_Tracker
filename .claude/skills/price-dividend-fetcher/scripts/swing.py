@@ -15,6 +15,15 @@ from fetch_common import parse_ticker
 from global_fetcher import get_yahoo, yahoo_result
 
 
+MARKETS = {"TPE": "台股", "HKG": "港股", "TYO": "日股"}
+
+
+def market_of(ticker: str) -> str:
+    """交易所前綴轉市場分類：TPE 台股、HKG 港股、TYO 日股，其餘（NASDAQ、NYSE…）視為美股。"""
+    exch, _ = parse_ticker(ticker)
+    return MARKETS.get(exch, "美股")
+
+
 def load_ohlcv(ticker: str, rng: str = "2y") -> List[Dict]:
     """抓日線並丟掉缺值的 K 棒。"""
     exch, code = parse_ticker(ticker)
@@ -229,9 +238,9 @@ def scan(items: List[Dict]) -> List[Dict]:
         try:
             s = snapshot(load_ohlcv(it["ticker"], "1y"))
         except (ValueError, RuntimeError) as e:
-            out.append({**it, "state": "ERROR", "label": "⚠️ 抓取失敗", "reason": str(e)[:80]})
+            out.append({**it, "market": market_of(it["ticker"]), "state": "ERROR", "label": "⚠️ 抓取失敗", "reason": str(e)[:80]})
             continue
-        out.append({**it, **{k: s.get(k) for k in (
+        out.append({**it, "market": market_of(it["ticker"]), **{k: s.get(k) for k in (
             "state", "label", "reason", "close", "rsi14", "sma20", "sma60", "macd_hist",
             "volume_ratio", "pos_52w_pct", "support_20d", "resistance_20d", "stop_price", "stop_distance_pct")}})
     return out
