@@ -17,6 +17,8 @@
    - 提交前必須先執行測試與語法檢查（`pytest` 與 `markdown-linter`）。
    - 變更提交一律遵循分支與 PR 機制，不得直接 push 至 `main`。
 
+4. **憲法（同 `CLAUDE.md`）**：變更 `.claude/` 下的 skills／workflows／hooks／tools 時，提交前必須先掃描 `.claude/rules/`、`CLAUDE.md` 與本檔，條列可能需要更新的規定並詢問 Hachi，經同意才更新。
+
 ---
 
 ## 2. 專案規則與技能自動載入（指向 `.claude/`）

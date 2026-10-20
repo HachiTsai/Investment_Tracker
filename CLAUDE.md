@@ -22,6 +22,16 @@
 - **投資組合全標的自動巡檢工作流**：@[.claude/workflows/portfolio-patrol.md](.claude/workflows/portfolio-patrol.md)
 - **情資管線與 APP 整合架構**：@[architecture/情資管線與APP整合架構.md](architecture/情資管線與APP整合架構.md)
 
+## 憲法：`.claude/` 變更必先掃描 rules
+
+只要變更 `.claude/` 下任何內容（`skills/`、`workflows/`、`hooks`／`settings.json`、`tools`／腳本，含新增、修改、刪除），**提交前必須先做這三步，不得省略、不待提醒**：
+
+1. **掃描**：逐一檢查 `.claude/rules/*.md`、`CLAUDE.md`、`.agent/rules/AGENT.md` 是否與本次變更相關（觸發時機、檢查機制、指令、技能清單、索引）。
+2. **列出**：在回覆中條列「哪些規則檔可能需要更新、為什麼」；掃描後確認無關也要明寫「已掃描 rules，無需更新」。
+3. **詢問**：把清單交給 Hachi，詢問是否更新；經同意才改規則檔，並與本次變更放在同一個 PR。
+
+規則檔與實際行為不一致時，視為缺漏，須在同一輪回報。
+
 ## 投資目標與原則
 
 - **核心目標**：每年股利收入 ≥ 500,000 TWD。
