@@ -30,7 +30,7 @@ jobs:
           node-version: "22"
       - run: python -m pip install pytest beautifulsoup4 requests pyyaml yfinance
       - name: pytest（.claude/skills/*/tests）
-        run: python -m pytest -q .claude/skills
+        run: python -m pytest -q --durations=15 .claude/skills
 
   auto-merge:
     name: auto-merge
