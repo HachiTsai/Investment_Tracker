@@ -191,7 +191,15 @@ def test_cli_commands(tmp_path, monkeypatch, capsys):
     captured_etf = capsys.readouterr()
     assert "00679B" in captured_etf.out
 
-    # 測試 portfolio
+    # 測試 portfolio：成分股改用假財報、快取寫到 tmp，避免逐檔連網抓真實財報
+    import lookthrough_fundamentals as lt
+
+    monkeypatch.setattr(lt, "ETF_CACHE_FILE", tmp_path / "etf_cache.json")
+    monkeypatch.setattr(
+        lt,
+        "calculate_stock_fundamentals",
+        lambda s, **kw: calculate_stock_fundamentals(s, mock_data=mock_stock),
+    )
     m_dir = tmp_path / "models"
     (m_dir / "00878").mkdir(parents=True)
     (m_dir / "00679B").mkdir(parents=True)
