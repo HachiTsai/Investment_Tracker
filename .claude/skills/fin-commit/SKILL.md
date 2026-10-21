@@ -44,6 +44,9 @@ python3 .claude/skills/fin-commit/scripts/committer.py --no-stage --message-file
 | `--status` `--next` `--blocker` | L1 的 Session-Sync 欄位 |
 | `--check F` | 只檢查訊息檔（commit-msg hook 用） |
 | `--install-hook` | 安裝 commit-msg hook，讓直接 `git commit` 也經過檢查 |
+| `--sync` | 安全拉取：`fetch --prune` 後只做 `--ff-only`；有未提交變更、與遠端分叉時不動並回報，分支已併入 `main` 或落後 `main` 時提醒；絕不 rebase／reset／force |
+| `--fetch-only` | 搭配 `--sync`：只 fetch 並回報落後，不快轉 |
+| `--patrol` | 巡檢系統工具（git、python3、uv、gh）、git 狀態，環境比對沿用 `--check-env`；只回報，不安裝 |
 
 ## 自動補強與檢查
 
