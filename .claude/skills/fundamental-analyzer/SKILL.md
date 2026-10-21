@@ -54,3 +54,17 @@ python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py scaffold-sto
 ```
 
 卡片規格見 `architecture/個股卡片規範.md`；`portfolio-patrol` 會自動納入 `category: STOCK` 的卡片。
+
+## 多市場財報資料層（`scripts/fetchers/`）
+
+`calculate_stock_fundamentals` 先走各市場來源，抓不到才退回 yfinance（備援）。各模組輸出 yfinance 風格欄位，評分公式不變。
+
+| 市場 | 模組 | 來源 | 範圍與限制 |
+| --- | --- | --- | --- |
+| 港股 | `eastmoney.fetch_hk` | 東方財富 `RPT_HKF10_FN_MAININDICATOR`（年報列） | 無 FCF；非官方彙整源，關鍵數字用 `hk-market-data` 對公告原文 |
+| A 股 | `eastmoney.fetch_cn` | 東方財富 `RPT_DMSK_FN_INCOME／BALANCE／CASHFLOW`（年報列） | 無 PE／PB |
+| 台股 | `twse.fetch` | 證交所 OpenAPI `t187ap06_L_ci`／`t187ap07_L_ci` | 只有最新單季，不提供 ROE 與現金流；上櫃未支援 |
+| 美股 | `sec.fetch` | SEC EDGAR companyfacts（需聯絡資訊 User-Agent） | 取 10-K 全年數字，多標籤擇最新者 |
+| 日股 | 尚未實作 | EDINET 需 API key | 目前直接退回 yfinance |
+
+抓不到的欄位省略，不用估值補；整檔失敗回空 dict。測試離線：`tests/test_fetchers.py`。

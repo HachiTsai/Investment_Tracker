@@ -319,6 +319,12 @@ def calculate_stock_fundamentals(
     data = mock_data
     if data is None:
         try:
+            from fetchers import fetch_info
+            data = fetch_info(symbol)
+        except Exception:
+            data = {}
+    if data is None or (mock_data is None and not data):
+        try:
             import yfinance as yf
             yf_sym = normalize_ticker_for_yf(symbol)
             if yf_sym:
