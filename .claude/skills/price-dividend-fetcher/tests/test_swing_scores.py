@@ -85,3 +85,10 @@ def test_daily_template_has_popup_matrix_and_trajectory():
     tpl = (Path(swing.__file__).resolve().parent.parent / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
     for key in ("dMatrix", "trajInit", "data-dt", "cvJ"):
         assert key in tpl
+
+
+def test_render_daily_page_excludes_constituents():
+    rows = [{"ticker": "TPE:1", "name": "留下", "market": "台股", "source": "ETF 卡片"},
+            {"ticker": "HKG:1288", "name": "港股成分", "market": "港股", "source": "00882 成分股"}]
+    html = sw.render_daily_page(rows, {"fleet": []}, "2026-10-20")
+    assert "留下" in html and "港股成分" not in html
