@@ -183,6 +183,9 @@ dl.addEventListener("wheel",function(e){var sv=e.target.closest("svg.ch");if(!sv
 dl.addEventListener("pointerdown",function(e){if(e.button||!e.target.closest("svg.ch")||dtab!=="k")return;dr={x:e.clientX,ve:cView(pickRow(curT).chart).vb};mv=false});
 dl.addEventListener("pointermove",function(e){if(!dr)return;var r=pickRow(curT),sv=dl.querySelector("svg.ch");if(!r||!r.chart||!sv)return;var dx=e.clientX-dr.x;if(!mv&&Math.abs(dx)<4)return;mv=true;var V=cView(r.chart),rc=sv.getBoundingClientRect(),bars=dx/rc.width*780/(720/V.vn);cfg.vn=V.vn;cfg.ve=Math.max(V.vn,Math.min(V.n,dr.ve-bars));redo()});
 window.addEventListener("pointerup",function(){dr=null});
+var ctip=document.createElement("div");ctip.className="tip";ctip.style.position="fixed";document.body.appendChild(ctip);
+dl.addEventListener("pointermove",function(e){var sv=e.target.closest&&e.target.closest("svg.ch"),r=pickRow(curT);if(!sv||dtab!=="k"||dr||!r||!r.chart){ctip.style.display="none";return}var ch=r.chart,V=cView(ch),rc=sv.getBoundingClientRect(),sx=(e.clientX-rc.left)/rc.width*780,st=(780-52-8)/V.vn,k=V.va+Math.floor((sx-8)/st);if(k<V.va||k>=V.vb){ctip.style.display="none";return}var pc=k>0?ch.c[k-1]:null,chg=pc?(ch.c[k]/pc-1)*100:null;ctip.innerHTML='<b>'+esc(ch.d[k])+'</b>　開 '+f(ch.o[k],2)+'　高 '+f(ch.h[k],2)+'　低 '+f(ch.l[k],2)+'　收 '+f(ch.c[k],2)+(chg==null?"":'（'+(chg>=0?"+":"")+f(chg,2)+'%）')+'<br>RSI14 '+f(ch.rsi[k],1)+'　MACD 柱 '+f(ch.hist[k],3);ctip.style.display="block";var w=ctip.offsetWidth,x=e.clientX+14;if(x+w>innerWidth-8)x=e.clientX-w-14;ctip.style.left=Math.max(4,x)+"px";ctip.style.top=Math.max(4,e.clientY-48)+"px"});
+dl.addEventListener("pointerleave",function(){ctip.style.display="none"});
 dl.addEventListener("click",function(e){var b=e.target.closest("[data-cz]");if(!b)return;cfg.vn=null;cfg.ve=null;openDlg(curT)})})();
 var ZS=[80,90,100,110,125,150,175,200],zp=100;
 try{var zv=+localStorage.getItem("dpZoom");if(ZS.indexOf(zv)>=0)zp=zv}catch(e){}
