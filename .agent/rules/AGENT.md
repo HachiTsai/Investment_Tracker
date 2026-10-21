@@ -37,6 +37,5 @@
 - **投資組合全標的巡檢 Skill**：@[.claude/skills/portfolio-patrol/SKILL.md](../../.claude/skills/portfolio-patrol/SKILL.md)
 - **台股 ETF 資料管線 Skill**：@[.claude/skills/tw-etf-fetcher/SKILL.md](../../.claude/skills/tw-etf-fetcher/SKILL.md)
 - **基本面財務指標評分 Skill**：@[.claude/skills/fundamental-analyzer/SKILL.md](../../.claude/skills/fundamental-analyzer/SKILL.md)
-- **Artifact 來源登記與斷鏈檢查 Skill**：@[.claude/skills/artifact-registry/SKILL.md](../../.claude/skills/artifact-registry/SKILL.md)
 - **00882 成分股股利調查工作流**：@[.claude/workflows/component-dividend-investigation.md](../../.claude/workflows/component-dividend-investigation.md)
 - **投資組合全標的巡檢工作流**：@[.claude/workflows/portfolio-patrol.md](../../.claude/workflows/portfolio-patrol.md)
