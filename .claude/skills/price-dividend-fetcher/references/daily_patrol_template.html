@@ -73,6 +73,7 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 <div class="row"><span class="lbl">地區</span><span class="row" id="mk"></span></div>
 <div class="row"><span class="lbl">類型</span><span class="row" id="kd"></span></div>
 <div class="row"><span class="lbl">收藏</span><span class="row" id="fv"></span><span class="mac" id="fvs"></span></div>
+<div class="row"><span class="lbl">搜尋</span><input type="search" id="q" placeholder="股號、名稱或關鍵字（如 0056、高股息、偏多，空白分隔為且）" autocomplete="off" style="flex:1;min-width:200px;font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:99px;padding:5px 16px"></div>
 <section class="sum" id="sum" aria-label="狀態統計"></section>
 <div class="row"><span class="lbl">檢視</span><span class="row" id="vw"></span></div>
 <div class="tw" id="vTable"><table><thead><tr>
@@ -103,7 +104,8 @@ var MK=["全部","台股","港股","美股","日股"],KD=["全部","ETF","個股
 try{var a=localStorage.getItem("dpMk"),b=localStorage.getItem("dpKd");if(MK.indexOf(a)>=0)mk=a;if(KD.indexOf(b)>=0)kd=b}catch(e){}
 var dtab="k",autoJ=true,TJ={th:.7,ph:.5,dist:17,drag:null,raf:0},CUR=[],VWS=["表格","矩陣","象限","3D"],vw="表格";
 try{var vv=localStorage.getItem("dpVw");if(VWS.indexOf(vv)>=0)vw=vv}catch(e){}
-var FAV={},favOnly=false,FDB=null;
+var FAV={},favOnly=false,FDB=null,Q=[];
+function hit(r){if(!Q.length)return true;var h=[r.ticker,r.name,r.market,r.kind,r.label,r.posture_label,r.combo,r.fib_label,r.long,r.mid,r.short,r.reason].join(" ").toLowerCase();return Q.every(function(k){return h.indexOf(k)>=0})}
 try{var fa=JSON.parse(localStorage.getItem("dpFav")||"[]");fa.forEach(function(t){FAV[t]=1});favOnly=localStorage.getItem("dpFavOnly")==="1"}catch(e){}
 function favList(){return Object.keys(FAV)}
 function saveFav(){try{localStorage.setItem("dpFav",JSON.stringify(favList()));localStorage.setItem("dpFavOnly",favOnly?"1":"0")}catch(e){}if(FDB)FDB.set({t:favList()}).catch(function(){})}
@@ -113,12 +115,12 @@ var sc=function(v){if(v==null)return "-";var c=v>=60?"hi":v<40?"lo":"mid";return
 var esc=function(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})};
 function btns(list,cur,key,all){return list.map(function(m){var n=all.filter(function(r){return m==="全部"||r[key]===m}).length;return '<button type="button" class="tab" data-k="'+key+'" data-v="'+m+'" aria-pressed="'+(m===cur)+'">'+m+' '+n+'</button>'}).join("")}
 function render(){
-var base=DATA.filter(function(r){return kd==="全部"||r.kind===kd}),list=DATA.filter(function(r){return (mk==="全部"||r.market===mk)&&(kd==="全部"||r.kind===kd)&&(!favOnly||FAV[r.ticker])});
+var base=DATA.filter(function(r){return kd==="全部"||r.kind===kd}),list=DATA.filter(function(r){return (mk==="全部"||r.market===mk)&&(kd==="全部"||r.kind===kd)&&(!favOnly||FAV[r.ticker])&&hit(r)});
 document.getElementById("mk").innerHTML=btns(MK,mk,"market",base);
 document.getElementById("kd").innerHTML=btns(KD,kd,"kind",DATA.filter(function(r){return mk==="全部"||r.market===mk}));
 var nf=DATA.filter(function(r){return FAV[r.ticker]&&(mk==="全部"||r.market===mk)&&(kd==="全部"||r.kind===kd)}).length;document.getElementById("fv").innerHTML='<button type="button" class="tab" data-fvo="1" aria-pressed="'+favOnly+'">★ 只看我的最愛 '+nf+'</button>';
 document.getElementById("fvs").textContent=FDB?"最愛已同步到你的帳號":"最愛只存在這個瀏覽器";
-document.getElementById("meta").textContent="指標與評分以 "+DATE+" 日線收盤計算　"+mk+"／"+kd+(favOnly?"／最愛":"")+" "+list.length+" 檔";
+document.getElementById("meta").textContent="指標與評分以 "+DATE+" 日線收盤計算　"+mk+"／"+kd+(favOnly?"／最愛":"")+(Q.length?"／搜尋「"+Q.join(" ")+"」":"")+" "+list.length+" 檔";
 var w=[];var al=list.filter(function(r){return r.alert});if(al.length)w.push("三週期組合變化提醒："+al.map(function(r){return esc(r.name)+"（"+esc(r.combo)+"）"}).join("、"));
 if(HEAD.stale.length)w.push("數據過期：需更新 "+esc(HEAD.stale.join("、")));
 var er=list.filter(function(r){return r.state==="ERROR"});if(er.length)w.push("抓取失敗 "+er.length+" 檔："+er.map(function(r){return esc(r.ticker)}).join("、"));
@@ -134,6 +136,7 @@ var h=e.target.closest("th[data-k]");if(h){var k=h.dataset.k;if(sk===k)asc=!asc;
 
 document.addEventListener("click",function(e){var s=e.target.closest("[data-fav]");if(s){e.stopPropagation();var t=s.dataset.fav;if(FAV[t])delete FAV[t];else FAV[t]=1;saveFav();if(curT)document.querySelectorAll("#dlg [data-fav]").forEach(function(b){b.outerHTML=starB(b.dataset.fav)});render();return}var o=e.target.closest("[data-fvo]");if(o){e.stopPropagation();favOnly=!favOnly;saveFav();render()}},true);
 var ZCH='<div class="zc" role="group" aria-label="畫面縮放"><button type="button" data-z="o" aria-label="縮小" title="縮小">−</button><button type="button" data-z="r" class="zp" title="還原 100%"></button><button type="button" data-z="i" aria-label="放大" title="放大">＋</button></div>';var LB=[5,10,15,30,45,60,90,120],cfg={lb:60,boll:true,ma:true,fib:true};var curT=null;
+document.getElementById("q").addEventListener("input",function(){Q=this.value.toLowerCase().split(/\s+/).filter(Boolean);render()});
 function pickRow(t){return DATA.filter(function(r){return r.ticker===t})[0]}
 function cView(ch){var n=ch.c.length,vn=Math.max(10,Math.min(n,cfg.vn||n)),vb=cfg.ve==null?n:Math.max(vn,Math.min(n,Math.round(cfg.ve))),va=vb-vn;return {n:n,vn:vn,va:va,vb:vb}}
 function chartSvg(ch,lb){var V=cView(ch),n=V.n,va=V.va,vb=V.vb,vn=V.vn,W=780,PH=290,RH=70,gap=18,L=8,R=52,x0=L,x1=W-R,st=(x1-x0)/vn,cw=Math.max(1.5,st*.62);
