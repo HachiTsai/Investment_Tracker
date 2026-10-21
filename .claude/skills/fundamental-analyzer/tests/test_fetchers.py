@@ -74,3 +74,19 @@ def test_sec_prefers_freshest_tag():
         "Revenues": {"units": {"USD": [{"form": "10-K", "fp": "FY", "start": "2017-10-01", "end": "2018-09-29", "val": 1}]}},
         "SalesRevenueNet": {"units": {"USD": [{"form": "10-K", "fp": "FY", "start": "2024-10-01", "end": "2025-09-27", "val": 5}]}}}}}
     assert sec.latest_annual(facts, "Revenues", "SalesRevenueNet") == 5
+
+
+def test_hk_detail_shape(monkeypatch):
+    calls = []
+
+    def fake(base, report, code, size=6):
+        calls.append(report)
+        if report == "RPT_HKF10_FN_MAININDICATOR":
+            return [{"REPORT_DATE": "2026-06-30 00:00:00", "REPORT_TYPE": "2026年中报", "OPERATE_INCOME": 5, "DIVI_RATIO": 0.2}]
+        return [{"CURRENCY": "人民币"}]
+
+    monkeypatch.setattr(eastmoney, "query", fake)
+    out = eastmoney.hk_detail("700")
+    assert out["period"] == "2026-06-30" and out["cur"] == "人民币" and out["rev"] == 5 and out["payout"] == 20.0
+    monkeypatch.setattr(eastmoney, "query", lambda *a, **k: [])
+    assert eastmoney.hk_detail("700") == {}

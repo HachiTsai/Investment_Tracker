@@ -9,6 +9,8 @@ OUT = sys.argv[1]
 PREV = sys.argv[2] if len(sys.argv) > 2 else None
 JSON_OUT = sys.argv[3] if len(sys.argv) > 3 else None
 import glob
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "fundamental-analyzer", "scripts"))
+from fetchers import eastmoney  # 財報頁沿用 fundamental-analyzer 的東方財富資料層
 CH = sorted(glob.glob("/opt/pw-browsers/chromium-*/chrome-linux*/chrome"))[-1]
 B = "https://www.ctbcinvestments.com.tw/API/"
 HDR = {"content-type": "application/json; charset=utf-8", "User-Agent": "Mozilla/5.0", "Referer": "https://www.ctbcinvestments.com.tw/"}
@@ -74,6 +76,15 @@ def one(x):
 
 with ThreadPoolExecutor(6) as ex:
     rows = list(ex.map(one, stocks))
+def fin_one(x):
+    try:
+        return x["code_"].split()[0], eastmoney.hk_detail(x["code_"].split()[0])
+    except Exception:
+        return x["code_"].split()[0], {}
+
+with ThreadPoolExecutor(6) as ex:
+    fin = dict(ex.map(fin_one, stocks))
+fin_fails = [c for c, v in fin.items() if not v]
 fails = [r["c"] for r in rows if r.get("fail")]
 ok = [r for r in rows if not r.get("fail")]
 
@@ -97,13 +108,14 @@ rows_out = [dict(c=r["c"], n=r["n"], w=r["w"], q=r["q"], px=r["px"], ttm=r["ttm"
                  i26=r["i26"], p25=r["p25"], cmp=r["cmp"]) for r in ok]
 tpl = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "references", "constituents_template.html"), encoding="utf-8").read()
 page = (tpl.replace("__DATA__", json.dumps(rows_out, ensure_ascii=False))
+        .replace("__FIN__", json.dumps({c: v for c, v in fin.items() if v}, ensure_ascii=False))
         .replace("__ASOF__", f"{date.today().isoformat()}（持股 {asof}）")
         .replace("__N__", str(len(ok))).replace("__TOP__", f'{top["n"]} {top["w"]}%')
         .replace("__HAS26__", str(has26)).replace("__CHG__", f"{net / base * 100:+.1f}%")
         .replace("__UPDN__", f"{up} 檔增、{dn} 檔減、{len(ok) - up - dn} 檔持平")
         .replace("__UNIT__", f"{lfy_unit:.2f}～{ttm_unit:.2f}"))
 open(OUT, "w", encoding="utf-8").write(page)
-print(json.dumps(dict(rows=len(ok), fails=fails, fx=round(FX, 4), nav=nav, units=units, ttm_unit=round(ttm_unit, 3), lfy_unit=round(lfy_unit, 3), has26=has26, chg=round(net / base * 100, 1))))
+print(json.dumps(dict(rows=len(ok), fails=fails, fin_fails=fin_fails, fx=round(FX, 4), nav=nav, units=units, ttm_unit=round(ttm_unit, 3), lfy_unit=round(lfy_unit, 3), has26=has26, chg=round(net / base * 100, 1))))
 if JSON_OUT:
     json.dump(dict(asof=date.today().isoformat(), holdings_asof=asof, fx=round(FX, 4), nav=nav, units=units,
                    ttm_unit=round(ttm_unit, 3), lfy_unit=round(lfy_unit, 3), has26=has26, rows=rows_out, fails=fails),
