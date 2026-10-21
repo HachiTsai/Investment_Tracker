@@ -1,5 +1,8 @@
 # 投資組合每日巡檢簡報 ｜ 2026-10-20（週二）
 
+> ⛔ **已終止（2026-10-21）**：本檔原由 Antigravity 每日巡檢（`patrol.py --commit`）更新，已停用，內容停在 2026-10-20，不再更新。
+> 改由 Claude 排程產出 [每日投資組合巡檢 Artifact](https://claude.ai/artifact/WLXXvrX7BzLemm9TxqZ6di)。
+>
 > ⏱️ 巡檢時間：2026-10-20 16:35 CST ｜ 巡檢代理：Antigravity
 
 ## 🚨 今日焦點與指引（例外管理 MBE）
