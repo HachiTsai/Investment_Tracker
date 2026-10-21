@@ -65,6 +65,6 @@ python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py scaffold-sto
 | A 股 | `eastmoney.fetch_cn` | 東方財富 `RPT_DMSK_FN_INCOME／BALANCE／CASHFLOW`（年報列） | 無 PE／PB |
 | 台股 | `twse.fetch` | 證交所 OpenAPI `t187ap06_L_ci`／`t187ap07_L_ci` | 只有最新單季，不提供 ROE 與現金流；上櫃未支援 |
 | 美股 | `sec.fetch` | SEC EDGAR companyfacts（需聯絡資訊 User-Agent） | 取 10-K 全年數字，多標籤擇最新者 |
-| 日股 | 尚未實作 | EDINET 需 API key | 目前直接退回 yfinance |
+| 日股 | `edinet.fetch` | EDINET API v2 有價證券報告書（官方；key 由環境代理以標頭注入，腳本不帶 key） | 取合併當期，IFRS 與日本會計準則兩套要素都對照；依證券代碼掃申報日（3、6 月下旬先掃，結果快取 `~/.cache/investment_tracker/edinet_docs.json`），3、12 月以外決算的公司首次查詢較慢 |
 
 抓不到的欄位省略，不用估值補；整檔失敗回空 dict。測試離線：`tests/test_fetchers.py`。

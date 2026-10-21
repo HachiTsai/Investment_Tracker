@@ -90,3 +90,56 @@ def test_hk_detail_shape(monkeypatch):
     assert out["period"] == "2026-06-30" and out["cur"] == "人民币" and out["rev"] == 5 and out["payout"] == 20.0
     monkeypatch.setattr(eastmoney, "query", lambda *a, **k: [])
     assert eastmoney.hk_detail("700") == {}
+
+
+def test_edinet_scan_order_prefers_filing_season():
+    import datetime
+    from fetchers import edinet
+    order = edinet.scan_order(datetime.date(2026, 10, 21))
+    assert len(order) == 366 and order[0] == datetime.date(2026, 6, 30)
+    assert all(d.month == 6 and d.day >= 15 for d in order[:16])
+
+
+def test_edinet_find_doc_picks_latest_hit_and_stops():
+    import datetime
+    from fetchers import edinet
+    calls = []
+
+    def lister(d):
+        calls.append(d)
+        return [{"secCode": "72030", "docTypeCode": "120", "docID": f"S{d.day}"}] if d == datetime.date(2026, 6, 10) else []
+
+    doc = edinet.find_doc("72030", datetime.date(2026, 10, 21), lister)
+    assert doc == {"docID": "S10", "date": "2026-06-10"}
+    assert len(calls) < 366
+
+
+def test_edinet_info_ifrs_and_jgaap():
+    from fetchers import edinet
+    ifrs = {"TotalNetRevenuesIFRS": 100.0, "OperatingProfitLossIFRS": 10.0,
+            "ProfitLossAttributableToOwnersOfParentIFRSSummaryOfBusinessResults": 8.0,
+            "EquityAttributableToOwnersOfParentIFRSSummaryOfBusinessResults": 40.0, "LiabilitiesIFRS": 60.0,
+            "CashFlowsFromUsedInOperatingActivitiesIFRSSummaryOfBusinessResults": 12.0,
+            "DividendsPaidToOwnersOfParentFinCFIFRS": -2.0}
+    out = edinet.edinet_info(ifrs)
+    assert out["operatingMargins"] == 0.1 and out["returnOnEquity"] == 0.2 and out["debtToEquity"] == 150.0
+    assert out["payoutRatio"] == 0.25 and "freeCashflow" not in out
+    jg = {"NetSales": 200.0, "OperatingIncome": 30.0, "ProfitLossAttributableToOwnersOfParent": 20.0, "NetAssets": 100.0,
+          "Liabilities": 50.0, "RateOfReturnOnEquitySummaryOfBusinessResults": 0.15,
+          "NetCashProvidedByUsedInOperatingActivities": 40.0, "PurchaseOfPropertyPlantAndEquipmentInvCF": -10.0}
+    out = edinet.edinet_info(jg)
+    assert out["returnOnEquity"] == 0.15 and out["freeCashflow"] == 30.0 and out["debtToEquity"] == 50.0
+
+
+def test_edinet_parse_rows_uses_consolidated_current_year():
+    import io
+    import zipfile
+    from fetchers import edinet
+    header = '"要素ID"\t"項目名"\t"コンテキストID"\t"相対年度"\t"連結・個別"\t"期間・時点"\t"ユニットID"\t"単位"\t"値"'
+    row = lambda e, c, v: f'"jppfs_cor:{e}"\t"x"\t"{c}"\t"y"\t"z"\t"w"\t"u"\t"円"\t"{v}"'  # noqa: E731
+    text = "\n".join([header, row("NetSales", "CurrentYearDuration", "5"), row("NetSales", "Prior1YearDuration", "4"),
+                      row("TotalAssets", "CurrentYearInstant_NonConsolidatedMember", "9"), row("Liabilities", "CurrentYearInstant", "－")])
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("XBRL_TO_CSV/jpcrp030000-asr-001.csv", text.encode("utf-16"))
+    assert edinet.parse_rows(buf.getvalue()) == {"NetSales": 5.0}
