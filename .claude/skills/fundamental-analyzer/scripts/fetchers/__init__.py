@@ -25,6 +25,12 @@ def http_json(url: str, headers: Optional[Dict[str, str]] = None, timeout: int =
     return json.loads(raw.decode("utf-8"))
 
 
+def http_bytes(url: str, headers: Optional[Dict[str, str]] = None, timeout: int = 90) -> bytes:
+    req = urllib.request.Request(url, headers={"User-Agent": UA, **(headers or {})})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return resp.read()
+
+
 def classify(symbol: str) -> Tuple[str, str]:
     """回傳 (市場, 代號)；市場為 HK／CN／TW／US／JP／''。"""
     s = (symbol or "").strip().upper()
@@ -46,8 +52,8 @@ def fetch_info(symbol: str, fetchers: Optional[Dict[str, Callable[[str], Dict[st
     """依市場取財報 info；任何錯誤回 {}。"""
     market, code = classify(symbol)
     if fetchers is None:
-        from . import eastmoney, sec, twse
-        fetchers = {"HK": eastmoney.fetch_hk, "CN": eastmoney.fetch_cn, "TW": twse.fetch, "US": sec.fetch}
+        from . import eastmoney, edinet, sec, twse
+        fetchers = {"HK": eastmoney.fetch_hk, "CN": eastmoney.fetch_cn, "TW": twse.fetch, "US": sec.fetch, "JP": edinet.fetch}
     fn = fetchers.get(market)
     if not fn:
         return {}
