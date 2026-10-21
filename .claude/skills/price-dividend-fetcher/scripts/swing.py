@@ -331,7 +331,22 @@ def market_today(market: str, now: Optional[datetime] = None) -> str:
     return (now + timedelta(hours=MARKET_TZ_HOURS.get(market, 8))).strftime("%Y-%m-%d")
 
 
-def scan(items: List[Dict], prev: Optional[Dict[str, Dict]] = None, now: Optional[datetime] = None) -> List[Dict]:
+CHART_BARS = 120
+
+
+def chart_series(bars: List[Dict], n: int = CHART_BARS) -> Dict:
+    """彈窗圖表用：最近 n 根日 K 與同期指標（指標用完整日線算，不受視窗截斷影響），數值取兩位小數。"""
+    closes = [b["close"] for b in bars]
+    up, mid, lo = bollinger(closes)
+    r2 = lambda xs: [None if x is None else round(x, 2) for x in xs[-n:]]
+    return {
+        "d": [datetime.fromtimestamp(b["ts"], timezone.utc).strftime("%m-%d") for b in bars[-n:]],
+        "o": r2([b["open"] for b in bars]), "h": r2([b["high"] for b in bars]), "l": r2([b["low"] for b in bars]), "c": r2(closes),
+        "ma20": r2(mid), "bu": r2(up), "bl": r2(lo), "rsi": r2(rsi(closes)), "hist": [None if x is None else round(x, 3) for x in macd_hist(closes)[-n:]],
+    }
+
+
+def scan(items: List[Dict], prev: Optional[Dict[str, Dict]] = None, now: Optional[datetime] = None, with_chart: bool = False) -> List[Dict]:
     """逐檔取日線算快照；失敗的檔記錄原因，不中斷。
 
     last_date：最後一根日線的日期。fresh：last_date 是否為該市場的今天（收盤後執行時，False 代表休市或尚未收盤，
@@ -358,6 +373,8 @@ def scan(items: List[Dict], prev: Optional[Dict[str, Dict]] = None, now: Optiona
         row.update({"long": lv.get("long"), "mid": lv.get("mid"), "short": lv.get("short"), "fib3": lv.get("fib3"), "combo": lv.get("combo")})
         from swing_scores import compute_scores
         row.update(compute_scores(bars) or {})
+        if with_chart:
+            row["chart"] = chart_series(bars)
         row["last_date"] = last.strftime("%Y-%m-%d")
         row["fresh"] = row["last_date"] == market_today(market, now)
         if prev is not None:
@@ -415,7 +432,8 @@ def render_daily_page(rows: List[Dict], patrol: Dict, date: str) -> str:
     tpl = (Path(__file__).resolve().parents[1] / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
     keep = ("ticker", "name", "market", "state", "label", "close", "rsi14", "pos_52w_pct", "stop_price", "stop_distance_pct",
             "fib_label", "long", "mid", "short", "combo", "alert", "reason", "trend_score", "macd_score", "vol_score",
-            "return_score", "return_1y_pct", "total_score", "posture_label", "yield_pct", "watchdog", "last_date", "fresh")
+            "return_score", "return_1y_pct", "total_score", "posture_label", "yield_pct", "watchdog", "last_date", "fresh",
+            "support_20d", "resistance_20d", "chart")
     data = [{**{k: r.get(k) for k in keep}, "kind": kind_of(r.get("source", ""))} for r in rows]
     head = {"macro": patrol.get("macro_feed", ""), "stale": [f["ticker"] for f in patrol.get("fleet", []) if (f.get("watchdog") or {}).get("is_stale")]}
     return (tpl.replace("__DAILY_DATA__", json.dumps(data, ensure_ascii=False))
@@ -437,7 +455,7 @@ def main(argv=None) -> int:
     a = p.parse_args(argv)
     if a.scan is not None:
         prev = {r["ticker"]: {"label": r.get("label"), "combo": r.get("combo")} for r in json.loads(Path(a.prev).read_text(encoding="utf-8"))} if a.prev else None
-        rows = scan(watchlist(a.scan or None), prev)
+        rows = scan(watchlist(a.scan or None), prev, with_chart=bool(a.daily_html))
         patrol = json.loads(Path(a.patrol).read_text(encoding="utf-8")) if a.patrol else {}
         merge_patrol(rows, patrol)
         if a.daily_html:
@@ -448,6 +466,7 @@ def main(argv=None) -> int:
             Path(a.html).write_text(render_page(rows, date), encoding="utf-8")
         if a.sheet:
             Path(a.sheet).write_text(json.dumps(sheet_table(rows), ensure_ascii=False), encoding="utf-8")
+        rows = [{k: v for k, v in r.items() if k != "chart"} for r in rows]
         print(json.dumps(rows, ensure_ascii=False, indent=1))
         return 0
     if a.fib_backtest:

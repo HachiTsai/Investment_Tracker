@@ -50,3 +50,11 @@ def test_merge_patrol_and_kind():
 def test_render_daily_page_embeds_data():
     html = sw.render_daily_page([{"ticker": "TPE:1", "name": "測試", "market": "台股", "source": "ETF 卡片"}], {"macro_feed": "x", "fleet": []}, "2026-10-20")
     assert "__DAILY_DATA__" not in html and "2026-10-20" in html and '"kind": "ETF"' in html
+
+
+def test_chart_series_lengths_and_page_embeds_chart():
+    bars = [dict(ts=1_700_000_000 + i * 86400, open=10 + i * .1, high=11 + i * .1, low=9 + i * .1, close=10 + i * .1, adj=10 + i * .1, volume=1000) for i in range(150)]
+    ch = sw.chart_series(bars)
+    assert all(len(ch[k]) == sw.CHART_BARS for k in ("d", "o", "h", "l", "c", "ma20", "bu", "bl", "rsi", "hist"))
+    html = sw.render_daily_page([{"ticker": "TPE:1", "name": "測試", "market": "台股", "source": "ETF 卡片", "chart": ch}], {"fleet": []}, "2026-10-20")
+    assert '"chart"' in html and "openDlg" in html
