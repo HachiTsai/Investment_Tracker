@@ -45,6 +45,7 @@
 | `datacenter.eastmoney.com` | 東方財富 F10 數據中心 | ✅ HTTP 200 | 港股主要財務指標年報（`RPT_HKF10_FN_MAININDICATOR`，`fundamental-analyzer`；2026-10-21 實測） |
 | `data.sec.gov` | SEC EDGAR 資料 API | ✅ HTTP 200 | 美股 XBRL 財報事實（需帶含聯絡資訊的 User-Agent；2026-10-21 實測） |
 | `www.sec.gov` | SEC EDGAR 官網 | ✅ HTTP 200 | 代號對 CIK 對照表 `files/company_tickers.json`（2026-10-21 實測） |
+| `api.edinet-fsa.go.jp` | 金融廳 EDINET API v2 | ✅ HTTP 200 | 日股有價證券報告書清單與財報 CSV（`fundamental-analyzer`）；API key 由環境「網路密鑰」以標頭注入，腳本不帶 key，無 key 時回 401（2026-10-21 實測） |
 | `webb-site.com` | Webb-site | ✅ HTTP 200 | 港股 CCASS 股權集中度與股東持股變動 |
 | `www.webb-site.com` | Webb-site 完整域名 | ✅ HTTP 200 | 同上 |
 
