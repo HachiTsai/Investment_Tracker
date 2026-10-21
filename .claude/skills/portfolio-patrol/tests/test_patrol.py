@@ -26,6 +26,20 @@ def repo_root():
     return Path(__file__).resolve().parents[4]
 
 
+@pytest.fixture
+def offline_live_data(monkeypatch):
+    """以假行情取代逐檔連網抓價與基本面，讓整份巡檢流程可離線快速執行。"""
+    import patrol_evaluator as ev
+
+    scores = {"netScore": 75.0, "divScore": 70.0, "valScore": 75.0, "fricScore": 80.0}
+    monkeypatch.setattr(ev, "fetch_ticker_live_data", lambda t, c, r: {
+        "price": 15.20 if t == "00882" else 10.00, "annual_dividend": 0.86, "tax_retention": 0.9923,
+        "source_notes": "測試假資料", "scores": dict(scores), "southbound_2d_net": 1250.0})
+    monkeypatch.setattr(ev, "fetch_stock_live_data", lambda t, c, r: {
+        "price": 50.0, "annual_dividend": 2.0, "tax_retention": 1.0, "source_notes": "測試假資料",
+        "swing": None, "scores": dict(scores), "southbound_2d_net": 0.0})
+
+
 def test_discover_tickers(repo_root):
     models_dir = repo_root / "models"
     tickers = patrol.discover_tickers(models_dir)
@@ -154,7 +168,7 @@ def test_evaluate_ticker_postures():
     assert "停止加碼買進" in res_overvalued["valve_action"]
 
 
-def test_patrol_report_and_mbe_output(repo_root):
+def test_patrol_report_and_mbe_output(repo_root, offline_live_data):
     mock_macro = {
         "lpr": {"1Y": 3.0, "5Y": 3.5},
         "chinabond_yield": {"10Y": 1.648},
@@ -188,7 +202,7 @@ def test_patrol_report_and_mbe_output(repo_root):
     assert "總成本" not in md_out
 
 
-def test_build_patrol_commit_message(repo_root):
+def test_build_patrol_commit_message(repo_root, offline_live_data):
     mock_macro = {
         "lpr": {"1Y": 3.0, "5Y": 3.5},
         "chinabond_yield": {"10Y": 1.648},
