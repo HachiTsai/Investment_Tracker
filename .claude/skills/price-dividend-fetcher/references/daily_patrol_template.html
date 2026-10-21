@@ -61,6 +61,7 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 .lg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--mute);margin:8px 0 0}.lg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
 .ax3{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13px;color:var(--mute);margin-bottom:8px}
 .ax3 select{font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:4px}
+.dtabs{display:flex;gap:6px;margin:10px 0}.dtabs .tab{padding:3px 14px}.mx{width:100%;border-collapse:collapse;min-width:0;margin:8px 0}.mx th,.mx td{text-align:center;padding:6px 8px;font-size:13px}.mx td:first-child,.mx th:first-child{text-align:left}.mx td.c{font:500 13px var(--mono)}
 .cv3{position:relative;height:min(520px,72vh);touch-action:none}.cv3 canvas{width:100%;height:100%;display:block;cursor:grab}
 .tip{position:absolute;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12px;display:none;white-space:nowrap;z-index:2}
 [hidden]{display:none!important}
@@ -93,7 +94,7 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 var DATA=__DAILY_DATA__;var HEAD=__DAILY_HEAD__;var DATE="__DAILY_DATE__";
 var MK=["全部","台股","港股","美股","日股"],KD=["全部","ETF","個股"];var mk="全部",kd="全部",sk="total_score",asc=false;
 try{var a=localStorage.getItem("dpMk"),b=localStorage.getItem("dpKd");if(MK.indexOf(a)>=0)mk=a;if(KD.indexOf(b)>=0)kd=b}catch(e){}
-var CUR=[],VWS=["表格","矩陣","象限","3D"],vw="表格";
+var dtab="k",autoJ=true,TJ={th:.7,ph:.5,dist:17,drag:null,raf:0},CUR=[],VWS=["表格","矩陣","象限","3D"],vw="表格";
 try{var vv=localStorage.getItem("dpVw");if(VWS.indexOf(vv)>=0)vw=vv}catch(e){}
 var f=function(v,n){return v==null||v===""?"-":Number(v).toFixed(n)};
 var sc=function(v){if(v==null)return "-";var c=v>=60?"hi":v<40?"lo":"mid";return '<span class="sc '+c+'">'+Number(v).toFixed(0)+'</span>'};
@@ -145,8 +146,10 @@ var head='<div class="dh"><div><h2>'+esc(r.name)+'</h2><div class="mac">'+esc(r.
 var kv='<div class="kv"><div><span>波段狀態</span><br><b>'+esc(r.label)+'</b></div><div><span>收盤</span><br><b>'+f(r.close,2)+'</b></div><div><span>RSI14</span><br><b>'+f(r.rsi14,1)+'</b></div><div><span>52 週位置</span><br><b>'+f(r.pos_52w_pct,0)+'%</b></div><div><span>20 日支撐／壓力</span><br><b>'+f(r.support_20d,2)+' / '+f(r.resistance_20d,2)+'</b></div><div><span>2×ATR 停損</span><br><b>'+f(r.stop_price,2)+(r.stop_distance_pct==null?"":"（-"+f(r.stop_distance_pct,1)+"%）")+'</b></div><div><span>長／中／短期</span><br><b>'+esc([r.long,r.mid,r.short].filter(Boolean).join("／")||"-")+'</b></div><div><span>三週期組合</span><br><b>'+esc(r.combo||"-")+'</b></div><div><span>評分 趨勢／動能／量能／績效</span><br><b>'+[r.trend_score,r.macd_score,r.vol_score,r.return_score].map(function(v){return v==null?"-":Number(v).toFixed(0)}).join(" / ")+'</b></div><div><span>近 1 年含息報酬</span><br><b>'+(r.return_1y_pct==null?"-":f(r.return_1y_pct,1)+"%")+'</b></div></div>';
 var opts='<div class="opts"><label>費波那契回看 <select id="lb">'+LB.map(function(v){return '<option value="'+v+'"'+(v===cfg.lb?" selected":"")+'>'+v+' 日</option>'}).join("")+'</select></label><label><input type="checkbox" id="oFib"'+(cfg.fib?" checked":"")+'>費波那契</label><label><input type="checkbox" id="oBoll"'+(cfg.boll?" checked":"")+'>布林(20,2)</label><label><input type="checkbox" id="oMa"'+(cfg.ma?" checked":"")+'>20 日線</label></div>';
 var body=ch?chartSvg(ch,cfg.lb):null;var note=body&&body.meta.fibs.length?'<p class="mac">費波那契（近 '+cfg.lb+' 日，'+(body.meta.up?"先低後高，自高點量回檔":"先高後低，自低點量反彈")+'）：高 '+body.meta.fh.toFixed(2)+'、低 '+body.meta.fl.toFixed(2)+'。只描述位置，不是買賣指示。</p>':"";
-d.innerHTML=head+kv+(ch?opts+body.svg+note:'<p class="mac">此檔沒有足夠日線可畫圖。</p>')+'<p class="mac">'+esc(r.reason||"")+'</p>';document.getElementById("mask").classList.add("on");applyZ()}
-function closeDlg(){document.getElementById("mask").classList.remove("on");curT=null}
+var tabs='<div class="dtabs">'+[["k","K 線"],["x","指標矩陣"],["j","軌跡 3D"]].map(function(a){return '<button type="button" class="tab" data-dt="'+a[0]+'" aria-pressed="'+(a[0]===dtab)+'">'+a[1]+'</button>'}).join("")+'</div>';
+var main=dtab==="x"?(ch?dMatrix(r,ch):'<p class="mac">此檔沒有足夠日線可畫圖。</p>'):dtab==="j"?(ch&&ch.hs?'<div class="ax3"><label><input type="checkbox" id="autoJ"'+(autoJ?" checked":"")+'> 自動旋轉</label><span>近 60 個交易日在 趨勢×動能×時間 的軌跡，大點是最新一天；拖曳旋轉、滾輪縮放</span></div><div class="cv3" id="cvJ"></div>':'<p class="mac">此檔沒有足夠日線畫軌跡。</p>'):(ch?opts+body.svg+note:'<p class="mac">此檔沒有足夠日線可畫圖。</p>');
+d.innerHTML=head+kv+tabs+main+'<p class="mac">'+esc(r.reason||"")+'</p>';document.getElementById("mask").classList.add("on");applyZ();if(dtab==="j"&&ch&&ch.hs)trajInit(r)}
+function closeDlg(){document.getElementById("mask").classList.remove("on");curT=null;dtab="k";cancelAnimationFrame(TJ.raf)}
 document.addEventListener("click",function(e){if(e.target.id==="cls"||e.target.id==="mask"){closeDlg();return}var tr=e.target.closest("tr.row-click");if(tr&&!e.target.closest("#mask"))openDlg(tr.dataset.t)});
 document.addEventListener("change",function(e){var i=e.target.id;if(i==="lb")cfg.lb=+e.target.value;else if(i==="oFib")cfg.fib=e.target.checked;else if(i==="oBoll")cfg.boll=e.target.checked;else if(i==="oMa")cfg.ma=e.target.checked;else return;openDlg(curT)});
 document.addEventListener("keydown",function(e){if(e.key==="Escape")closeDlg()});
@@ -208,6 +211,37 @@ cancelAnimationFrame(T3.raf);if(vw==="矩陣")drawMatrix();else if(vw==="象限"
 var _render=render;render=function(){_render();showView()};
 document.addEventListener("click",function(e){var b=e.target.closest("[data-vw]");if(b){vw=b.dataset.vw;try{localStorage.setItem("dpVw",vw)}catch(x){}showView();return}var g=e.target.closest("[data-pt]");if(g)openDlg(g.dataset.pt)});
 document.addEventListener("change",function(e){var a=e.target.dataset&&e.target.dataset.ax;if(a){ax3[a]=e.target.value;draw3d()}else if(e.target.id==="auto3")auto3=e.target.checked});
+
+function mxRow(lbl,cells){return '<tr><td>'+lbl+'</td>'+cells.map(function(c){return '<td class="c" style="'+heat(c.v)+'">'+c.t+'</td>'}).join("")+'</tr>'}
+function tv(x,k){return 50+50*Math.tanh(x/k)}
+function dMatrix(r,ch){var n=ch.c.length,c=ch.c,P=[20,60,120].filter(function(w){return w<=n}),cell=function(v,t){return {v:v,t:t}};
+var dev=P.map(function(w){var m=c.slice(n-w).reduce(function(a,b){return a+b},0)/w,x=(c[n-1]-m)/m*100;return cell(tv(x,w===20?4:w===60?8:12),(x>=0?"+":"")+x.toFixed(1)+"%")});
+var pos=P.map(function(w){var h=Math.max.apply(null,ch.h.slice(n-w)),l=Math.min.apply(null,ch.l.slice(n-w)),x=h>l?(c[n-1]-l)/(h-l)*100:50;return cell(x,x.toFixed(0)+"%")});
+var ret=P.map(function(w){var x=(c[n-1]/c[n-w]-1)*100;return cell(tv(x,w===20?6:w===60?12:20),(x>=0?"+":"")+x.toFixed(1)+"%")});
+var bw=ch.bu[n-1]!=null&&ch.bu[n-1]>ch.bl[n-1]?(c[n-1]-ch.bl[n-1])/(ch.bu[n-1]-ch.bl[n-1])*100:null;
+var one=[["RSI14",r.rsi14==null?null:cell(r.rsi14,f(r.rsi14,1))],["MACD 柱（動能分）",r.macd_score==null?null:cell(r.macd_score,f(r.macd_score,0))],["布林位置",bw==null?null:cell(bw,bw.toFixed(0)+"%")],["量能（5 日均量÷60 日）",r.vol_score==null?null:cell(r.vol_score,f(r.vol_score,0))],["52 週位置",r.pos_52w_pct==null?null:cell(r.pos_52w_pct,f(r.pos_52w_pct,0)+"%")],["趨勢分","trend_score"],["績效分","return_score"]].map(function(a){var v=a[1]==="trend_score"||a[1]==="return_score"?(r[a[1]]==null?null:cell(r[a[1]],f(r[a[1]],0))):a[1];return v?'<tr><td>'+a[0]+'</td><td class="c" style="'+heat(v.v)+'">'+v.t+'</td></tr>':""}).join("");
+return '<table class="mx"><thead><tr><th>週期指標</th>'+P.map(function(w){return '<th>'+w+' 日</th>'}).join("")+'</tr></thead><tbody>'+mxRow("價格相對均線乖離",dev)+mxRow("區間位置（低 0％到高 100％）",pos)+mxRow("區間漲跌",ret)+'</tbody></table><table class="mx"><thead><tr><th>單一指標</th><th>現況</th></tr></thead><tbody>'+one+'</tbody></table><p class="mac">顏色以 50 為中性，藍色偏強、紅色偏弱，只描述強度與位置，不是買賣指示。</p>'}
+function trajInit(r){var box=document.getElementById("cvJ");cancelAnimationFrame(TJ.raf);if(!box)return;
+if(typeof THREE==="undefined"){box.innerHTML='<p class="mac">無法載入 3D 元件（需連到 cdnjs）。</p>';return}
+var hs=r.chart.hs,pts=[],i;for(i=0;i<hs.t.length;i++)if(hs.t[i]!=null&&hs.m[i]!=null)pts.push({i:i,t:hs.t[i],m:hs.m[i],d:r.chart.d[r.chart.d.length-hs.t.length+i]});
+if(pts.length<2){box.innerHTML='<p class="mac">分數歷史不足。</p>';return}
+var W=box.clientWidth||600,H=box.clientHeight||400,rd=new THREE.WebGLRenderer({antialias:true,alpha:true});rd.setPixelRatio(Math.min(devicePixelRatio||1,2));rd.setSize(W,H);box.appendChild(rd.domElement);
+var sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(45,W/H,.1,100),S=10,P=function(v){return (v/100-.5)*S},mute=cv("--mute"),line=cv("--line"),grp=new THREE.Group();sc.add(grp);
+grp.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(S,S,S)),new THREE.LineBasicMaterial({color:line})));
+var N=pts.length,Z=function(k){return (k/(N-1)-.5)*S};
+[["趨勢 →",[S/2+1.3,0,0]],["動能 →",[0,S/2+.6,0]],["時間（舊→新） →",[0,0,S/2+1.6]]].forEach(function(a){var s=spr(a[0],mute);s.position.set(a[1][0],a[1][1],a[1][2]);grp.add(s)});
+var c0=new THREE.Color(mute),c1=new THREE.Color(cv("--accent")),vs=[],cs=[];
+pts.forEach(function(p,k){var q=new THREE.Vector3(P(p.t),P(p.m),Z(k)),col=c0.clone().lerp(c1,k/(N-1));vs.push(q);cs.push(col.r,col.g,col.b);
+var last=k===N-1,m=new THREE.Mesh(new THREE.SphereGeometry(last?.36:.14,16,12),new THREE.MeshBasicMaterial({color:last?new THREE.Color(stc(r)):col}));m.position.copy(q);grp.add(m)});
+var g=new THREE.BufferGeometry().setFromPoints(vs);g.setAttribute("color",new THREE.Float32BufferAttribute(cs,3));grp.add(new THREE.Line(g,new THREE.LineBasicMaterial({vertexColors:true})));
+var cvs=rd.domElement;cvs.style.cursor="grab";
+cvs.onpointerdown=function(e){TJ.drag={x:e.clientX,y:e.clientY};cvs.setPointerCapture(e.pointerId)};
+cvs.onpointermove=function(e){if(!TJ.drag)return;TJ.th-=(e.clientX-TJ.drag.x)*.008;TJ.ph=Math.max(-1.45,Math.min(1.45,TJ.ph+(e.clientY-TJ.drag.y)*.008));TJ.drag={x:e.clientX,y:e.clientY}};
+cvs.onpointerup=function(){TJ.drag=null};
+cvs.onwheel=function(e){e.preventDefault();TJ.dist=Math.max(8,Math.min(32,TJ.dist*(1+Math.sign(e.deltaY)*.08)))};
+(function loop(){if(!document.body.contains(cvs))return;if(autoJ&&!TJ.drag)TJ.th+=.003;cam.position.set(TJ.dist*Math.sin(TJ.th)*Math.cos(TJ.ph),TJ.dist*Math.sin(TJ.ph),TJ.dist*Math.cos(TJ.th)*Math.cos(TJ.ph));cam.lookAt(0,0,0);rd.render(sc,cam);TJ.raf=requestAnimationFrame(loop)})()}
+document.addEventListener("click",function(e){var b=e.target.closest("[data-dt]");if(b){dtab=b.dataset.dt;openDlg(curT)}});
+document.addEventListener("change",function(e){if(e.target.id==="autoJ")autoJ=e.target.checked});
 applyZ();
 render();
 </script>

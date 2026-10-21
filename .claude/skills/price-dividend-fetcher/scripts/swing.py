@@ -375,6 +375,8 @@ def scan(items: List[Dict], prev: Optional[Dict[str, Dict]] = None, now: Optiona
         row.update(compute_scores(bars) or {})
         if with_chart:
             row["chart"] = chart_series(bars)
+            from swing_scores import score_history
+            row["chart"]["hs"] = score_history(bars)
         row["last_date"] = last.strftime("%Y-%m-%d")
         row["fresh"] = row["last_date"] == market_today(market, now)
         if prev is not None:
