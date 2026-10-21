@@ -59,3 +59,14 @@ def compute_scores(bars: List[Dict]) -> Optional[Dict[str, float]]:
     }
     out["total_score"] = (out["trend_score"] + out["macd_score"] + out["vol_score"] + out["return_score"]) / 4
     return {k: round(v, 1) for k, v in out.items()}
+
+
+def score_history(bars: List[Dict], n: int = 60) -> Dict[str, List[Optional[float]]]:
+    """最近 n 個交易日各自的趨勢、動能、量能分數（以該日為止的日線算），給軌跡圖用；不足 60 根的日子為 None。"""
+    t, m, v = [], [], []
+    for i in range(len(bars) - n, len(bars)):
+        sc = compute_scores(bars[: i + 1]) if i >= 0 else None
+        t.append(sc["trend_score"] if sc else None)
+        m.append(sc["macd_score"] if sc else None)
+        v.append(sc["vol_score"] if sc else None)
+    return {"t": t, "m": m, "v": v}

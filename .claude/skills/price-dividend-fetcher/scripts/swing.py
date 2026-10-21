@@ -375,6 +375,8 @@ def scan(items: List[Dict], prev: Optional[Dict[str, Dict]] = None, now: Optiona
         row.update(compute_scores(bars) or {})
         if with_chart:
             row["chart"] = chart_series(bars)
+            from swing_scores import score_history
+            row["chart"]["hs"] = score_history(bars)
         row["last_date"] = last.strftime("%Y-%m-%d")
         row["fresh"] = row["last_date"] == market_today(market, now)
         if prev is not None:
@@ -434,6 +436,7 @@ def render_daily_page(rows: List[Dict], patrol: Dict, date: str) -> str:
             "fib_label", "long", "mid", "short", "combo", "alert", "reason", "trend_score", "macd_score", "vol_score",
             "return_score", "return_1y_pct", "total_score", "posture_label", "yield_pct", "watchdog", "last_date", "fresh",
             "support_20d", "resistance_20d", "chart")
+    rows = [r for r in rows if not r.get("source", "").endswith("成分股")]  # 每日巡檢頁只列觀察清單標的，不含 00882 的港股成分股
     data = [{**{k: r.get(k) for k in keep}, "kind": kind_of(r.get("source", ""))} for r in rows]
     head = {"macro": patrol.get("macro_feed", ""), "stale": [f["ticker"] for f in patrol.get("fleet", []) if (f.get("watchdog") or {}).get("is_stale")]}
     return (tpl.replace("__DAILY_DATA__", json.dumps(data, ensure_ascii=False))

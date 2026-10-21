@@ -68,3 +68,27 @@ def test_daily_template_has_matrix_quadrant_3d_views():
         tpl = (Path(swing.__file__).resolve().parent.parent / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
     for key in ("vMatrix", "vQuad", "v3d", "three.min.js", "data-vw", "drawQuad", "draw3d"):
         assert key in tpl
+
+
+def test_score_history_length_and_last_matches_compute_scores():
+    from swing_scores import compute_scores, score_history
+    bars = [{"close": 100 + i * 0.3, "adj": 100 + i * 0.3, "volume": 1000 + i} for i in range(200)]
+    h = score_history(bars, 60)
+    assert len(h["t"]) == len(h["m"]) == len(h["v"]) == 60
+    last = compute_scores(bars)
+    assert h["t"][-1] == last["trend_score"] and h["m"][-1] == last["macd_score"]
+
+
+def test_daily_template_has_popup_matrix_and_trajectory():
+    from pathlib import Path
+    import swing
+    tpl = (Path(swing.__file__).resolve().parent.parent / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
+    for key in ("dMatrix", "trajInit", "data-dt", "cvJ"):
+        assert key in tpl
+
+
+def test_render_daily_page_excludes_constituents():
+    rows = [{"ticker": "TPE:1", "name": "留下", "market": "台股", "source": "ETF 卡片"},
+            {"ticker": "HKG:1288", "name": "港股成分", "market": "港股", "source": "00882 成分股"}]
+    html = sw.render_daily_page(rows, {"fleet": []}, "2026-10-20")
+    assert "留下" in html and "港股成分" not in html
