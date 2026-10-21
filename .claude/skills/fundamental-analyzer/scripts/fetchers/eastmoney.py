@@ -55,3 +55,18 @@ def cn_info(inc: Dict[str, Any], bal: Dict[str, Any], cf: Dict[str, Any]) -> Dic
 def fetch_cn(code: str) -> Dict[str, Any]:
     inc, bal, cf = (annual(query(CN_URL, f"RPT_DMSK_FN_{n}", code)) for n in ("INCOME", "BALANCE", "CASHFLOW"))
     return cn_info(inc, bal, cf)
+
+
+def hk_detail(code: str) -> Dict[str, Any]:
+    """港股最近一份財報（含中報、季報）的顯示用欄位，附報表期間與幣別，供成分股財報頁使用。"""
+    code = code.zfill(5)
+    latest = (query(HK_URL, "RPT_HKF10_FN_MAININDICATOR", code, 1) or [{}])[0]
+    if not latest:
+        return {}
+    cur = (query(HK_URL, "RPT_HKF10_FN_INCOME", code, 1) or [{}])[0].get("CURRENCY")
+    return clean({
+        "period": (latest.get("REPORT_DATE") or "")[:10], "kind": latest.get("REPORT_TYPE"), "cur": cur,
+        "rev": latest.get("OPERATE_INCOME"), "np": latest.get("HOLDER_PROFIT"), "eps": latest.get("BASIC_EPS"),
+        "roe": latest.get("ROE_YEARLY"), "debt": latest.get("DEBT_ASSET_RATIO"), "ocf": latest.get("NETCASH_OPERATE"),
+        "payout": (latest.get("DIVI_RATIO") or 0) * 100 or None, "pe": latest.get("PE_TTM"), "pb": latest.get("PB_TTM"), "dps": latest.get("DPS_HKD"),
+    })

@@ -20,11 +20,16 @@ th:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
 td.n,th.n{text-align:right}tr:last-child td{border-bottom:0}
 .up{color:var(--up)}.down{color:var(--down)}.flat{color:var(--flat)}.fx{color:var(--warn)}
 .tag{font-size:.78rem;padding:1px 7px;border:1px solid currentColor;border-radius:10px}
+nav.tabs{display:flex;gap:8px}nav.tabs button{font:inherit;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px 14px;cursor:pointer}
+nav.tabs button[aria-pressed=true]{border-color:var(--acc);color:var(--acc);font-weight:600}
+nav.tabs button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}[hidden]{display:none!important}
 ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;max-width:72ch}
 </style>
 <main>
 <header><h1>00882 成分股股利明細</h1>
 <p class="mut">資料日期 __ASOF__。持股、股數、權重來自中信投信官方明細（2026-10-13）；股息來自富途牛牛；去年中期股利來自先前的搜尋摘要，可信度較低。</p></header>
+<nav class="tabs" aria-label="分頁"><button id="tb-div" aria-pressed="true">股利明細</button><button id="tb-fin" aria-pressed="false">財報資料</button></nav>
+<div id="pg-div" style="display:contents">
 <section class="sum" aria-label="摘要">
 <div><b>__N__ 檔</b><span>最大一檔 __TOP__</span></div>
 <div><b>約 __HAS26__ 檔</b><span>已有 2026 中期股利金額</span></div>
@@ -38,9 +43,20 @@ ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;max-wi
 <li>2026 中期欄來自公告標題，幣別沒標的照原文寫「未標」。</li>
 <li>沒有找到獨立的歷史股利表，這是用報價頁股息與公告標題拼出來的。</li>
 </ul></section>
+</div>
+<div id="pg-fin" hidden style="display:contents">
+<section><p class="mut">各成分股最近一份已公布財報（含中報、季報），來源：東方財富（非官方彙整，關鍵數字需對港交所公告原文）。金額為報表幣別，不換算，單位億；ROE 為年化滾動口徑；配發率為東方財富提供值。</p></section>
+<section><div class="wrap"><table id="ft"><thead><tr id="fh"></tr></thead><tbody id="fb"></tbody></table></div></section>
+<section><ul class="mut">
+<li>「報表期」是該財報的結算日，各公司不同，不能直接橫向比較累計金額（中報為半年、季報為單季累計）。</li>
+<li>空白代表東方財富沒有該欄位；沒有財報資料的標的不列入。</li>
+<li>這是事實彙整，不構成買賣建議。</li>
+</ul></section>
+</div>
 </main>
 <script>
 const D=__DATA__;
+const F=__FIN__;
 const cols=[['c','代號',0],['n','名稱',0],['w','權重%',1],['px','股價',1],['ttm','近12月股息',1],['lfy','上一財年',1],['chg','變化%',1],['y','殖利率%',1],['i26','2026 中期股利',0],['p25','去年中期（摘要）',0],['cmp','對去年中期',0]];
 let key='w',dir=-1;
 const lab={up:'增',down:'減',flat:'持平',fx:'幣別'};
@@ -52,4 +68,15 @@ else if(k==='chg'){td.textContent=(v>0?'+':'')+v.toFixed(1);td.className+=' '+(v
 else if(typeof v==='number'){td.textContent=k==='c'?v:v.toFixed(k==='w'||k==='y'?2:k==='px'?2:3)}
 else td.textContent=v;tr.appendChild(td)});b.appendChild(tr)})}
 draw();
+const fc=[['c','代號',0],['n','名稱',0],['w','權重%',1],['period','報表期',0],['kind','報表',0],['cur','幣別',0],['rev','營收(億)',1],['np','股東淨利(億)',1],['eps','EPS',1],['roe','ROE%',1],['debt','負債/資產%',1],['ocf','經營現金流(億)',1],['payout','配發率%',1],['pe','PE(TTM)',1],['pb','PB(TTM)',1],['dps','每股股息(港元)',1]];
+const FR=D.filter(r=>F[r.c]).map(r=>Object.assign({c:r.c,n:r.n,w:r.w},F[r.c]));
+let fk='w',fd=-1;
+const yi=v=>typeof v==='number'?(v/1e8).toFixed(1):'';
+function fdraw(){const h=document.getElementById('fh');h.innerHTML='';fc.forEach(([k,t,n])=>{const th=document.createElement('th');th.textContent=t+(k===fk?(fd>0?' ▲':' ▼'):'');if(n)th.className='n';th.tabIndex=0;const go=()=>{fd=(k===fk)?-fd:(n?-1:1);fk=k;fdraw()};th.onclick=go;th.onkeydown=e=>{if(e.key==='Enter')go()};h.appendChild(th)});
+const rows=[...FR].sort((a,b)=>{const x=a[fk],y=b[fk];if(x==null)return 1;if(y==null)return -1;return (typeof x==='number'?x-y:String(x).localeCompare(String(y),'zh'))*fd});
+const b=document.getElementById('fb');b.innerHTML='';rows.forEach(r=>{const tr=document.createElement('tr');fc.forEach(([k,t,n])=>{const td=document.createElement('td');if(n)td.className='n';const v=r[k];
+td.textContent=(k==='rev'||k==='np'||k==='ocf')?yi(v):(typeof v==='number'?v.toFixed(k==='w'||k==='eps'||k==='dps'?2:1):(v==null?'':v));tr.appendChild(td)});b.appendChild(tr)})}
+fdraw();
+function tab(f){document.getElementById('pg-div').hidden=f;document.getElementById('pg-fin').hidden=!f;document.getElementById('tb-div').setAttribute('aria-pressed',String(!f));document.getElementById('tb-fin').setAttribute('aria-pressed',String(f))}
+document.getElementById('tb-div').onclick=()=>tab(false);document.getElementById('tb-fin').onclick=()=>tab(true);
 </script>
