@@ -111,6 +111,14 @@ def test_daily_template_has_favorites():
         assert key in tpl
 
 
+def test_daily_template_caps_table_height():
+    from pathlib import Path
+    import swing
+    tpl = (Path(swing.__file__).resolve().parent.parent / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
+    for key in ("CAPN=20", "function capH", "overflowY"):
+        assert key in tpl
+
+
 def test_render_daily_page_excludes_listed_tickers():
     rows = [{"ticker": "TPE:1", "name": "留下", "market": "台股", "source": "ETF 卡片"},
             {"ticker": "HKG:1919", "name": "中遠海控", "market": "港股", "source": "個股卡片"}]
