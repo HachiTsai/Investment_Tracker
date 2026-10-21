@@ -87,6 +87,7 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 <section class="notes">
 <p>最新報價：按「更新最新報價」會向證交所取台股即時價；未更新或港股、非台股標的顯示最近一個交易日收盤價。指標與評分以日線收盤計算，不隨報價變動；乖離、區間位置、停損距離會用最新報價重算。</p>
 <p>點標的左側星號可加入「我的最愛」，再按「只看我的最愛」，可與地區、類型篩選疊加；最愛會同步到你的帳號，無法同步時只存在這個瀏覽器。</p>
+<p>表格與矩陣最多顯示 20 檔，其餘用縱向捲動，表頭固定在上方。</p>
 <p>點任一標的會跳出日 K、均線、布林通道、費波那契、RSI 與 MACD 圖。</p>
 <p>評分矩陣與 Stock_AIStudio 的波段觀察、雷達頁同一套算法：趨勢（價格相對 60 日線的乖離）、動能（MACD 柱）、量能（5 日均量 ÷ 60 日均量）、績效（近 1 年含息報酬），皆為 0 到 100 分、50 代表持平，描述強度與位置，不是好壞評分。綜合為四項平均，僅供排序參考。</p>
 <p>狀態與組合只描述指標條件，不是買賣指示；進出由你決定，波段部位與股利再投入部位分開記帳。配置狀態與殖利率來自 ETF 卡片的每日巡檢，個股沒有此欄。</p>
@@ -167,7 +168,7 @@ document.addEventListener("change",function(e){var i=e.target.id;if(i==="lb")cfg
 document.addEventListener("keydown",function(e){if(e.key==="Escape")closeDlg()});
 var ZS=[80,90,100,110,125,150,175,200],zp=100;
 try{var zv=+localStorage.getItem("dpZoom");if(ZS.indexOf(zv)>=0)zp=zv}catch(e){}
-function applyZ(){document.documentElement.style.setProperty("--z",zp/100);var i=ZS.indexOf(zp);document.querySelectorAll(".zc").forEach(function(g){g.querySelector('[data-z="r"]').textContent=zp+"%";g.querySelector('[data-z="o"]').disabled=i<=0;g.querySelector('[data-z="i"]').disabled=i>=ZS.length-1});try{localStorage.setItem("dpZoom",String(zp))}catch(e){}}
+function applyZ(){document.documentElement.style.setProperty("--z",zp/100);var i=ZS.indexOf(zp);document.querySelectorAll(".zc").forEach(function(g){g.querySelector('[data-z="r"]').textContent=zp+"%";g.querySelector('[data-z="o"]').disabled=i<=0;g.querySelector('[data-z="i"]').disabled=i>=ZS.length-1});try{localStorage.setItem("dpZoom",String(zp))}catch(e){}if(typeof capH==="function")capH()}
 document.addEventListener("click",function(e){var b=e.target.closest("[data-z]");if(!b)return;var k=b.dataset.z,i=ZS.indexOf(zp);if(k==="o")zp=ZS[Math.max(0,i-1)];else if(k==="i")zp=ZS[Math.min(ZS.length-1,i+1)];else zp=100;applyZ()});
 
 var STC={OVERHEATED:"--over",DOWNTREND:"--down",UPTREND:"--up",OVERSOLD_WATCH:"--accent"};
@@ -219,7 +220,10 @@ cancelAnimationFrame(T3.raf);
 (function loop(){if(vw!=="3D"||!document.body.contains(cvs))return;if(auto3&&!T3.drag&&!document.getElementById("mask").classList.contains("on"))T3.th+=.003;place();rd.render(sc,cam);T3.raf=requestAnimationFrame(loop)})()}
 function showView(){document.getElementById("vw").innerHTML=VWS.map(function(v){return '<button type="button" class="tab" data-vw="'+v+'" aria-pressed="'+(v===vw)+'">'+v+'</button>'}).join("");
 document.getElementById("vTable").hidden=vw!=="表格";document.getElementById("vMatrix").hidden=vw!=="矩陣";document.getElementById("vQuad").hidden=vw!=="象限";document.getElementById("v3d").hidden=vw!=="3D";
-cancelAnimationFrame(T3.raf);if(vw==="矩陣")drawMatrix();else if(vw==="象限")drawQuad();else if(vw==="3D")draw3d()}
+cancelAnimationFrame(T3.raf);if(vw==="矩陣")drawMatrix();else if(vw==="象限")drawQuad();else if(vw==="3D")draw3d();capH()}
+var CAPN=20;
+function capH(){["vTable","vMatrix"].forEach(function(id){var el=document.getElementById(id);if(!el||el.hidden)return;el.style.maxHeight="";el.style.overflowY="auto";var rs=el.querySelectorAll("tbody tr");if(rs.length<=CAPN)return;var r=rs[CAPN-1];el.style.maxHeight=Math.ceil(r.getBoundingClientRect().bottom-el.getBoundingClientRect().top+el.scrollTop+1)+"px"})}
+window.addEventListener("resize",capH);
 var _render=render;render=function(){_render();showView()};
 document.addEventListener("click",function(e){var b=e.target.closest("[data-vw]");if(b){vw=b.dataset.vw;try{localStorage.setItem("dpVw",vw)}catch(x){}showView();return}var g=e.target.closest("[data-pt]");if(g)openDlg(g.dataset.pt)});
 document.addEventListener("change",function(e){var a=e.target.dataset&&e.target.dataset.ax;if(a){ax3[a]=e.target.value;draw3d()}else if(e.target.id==="auto3")auto3=e.target.checked});
