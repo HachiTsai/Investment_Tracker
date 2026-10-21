@@ -119,11 +119,11 @@ def test_daily_template_caps_table_height():
         assert key in tpl
 
 
-def test_daily_template_declutters_quad_and_3d():
+def test_daily_template_small_dots_with_hover_labels():
     from pathlib import Path
     import swing
     tpl = (Path(swing.__file__).resolve().parent.parent / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
-    for key in ("function qFit", "data-qz", "function declutter", "fit3", "貼合資料"):
+    for key in ("function qFit", "data-qz", ".qd .pt:hover .lb", "fit3", "貼合資料"):
         assert key in tpl
 
 
