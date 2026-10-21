@@ -103,6 +103,14 @@ def test_daily_template_uses_latest_quote_wording_and_refresh():
     assert "<th data-k=\"close\">收盤</th>" not in tpl and "<span>收盤</span>" not in tpl
 
 
+def test_daily_template_has_favorites():
+    from pathlib import Path
+    import swing
+    tpl = (Path(swing.__file__).resolve().parent.parent / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
+    for key in ("我的最愛", "data-fav", "favOnly", "function saveFav", 'use("db")', "data/users/"):
+        assert key in tpl
+
+
 def test_render_daily_page_excludes_listed_tickers():
     rows = [{"ticker": "TPE:1", "name": "留下", "market": "台股", "source": "ETF 卡片"},
             {"ticker": "HKG:1919", "name": "中遠海控", "market": "港股", "source": "個股卡片"}]
