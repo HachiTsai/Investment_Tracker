@@ -425,6 +425,9 @@ def merge_patrol(rows: List[Dict], patrol: Dict) -> List[Dict]:
     return rows
 
 
+DAILY_EXCLUDE = {"HKG:1919"}  # 每日巡檢頁不列的標的（Hachi 2026-10-21 指示拿掉中遠海控；卡片與其他流程不受影響）
+
+
 def kind_of(source: str) -> str:
     return "ETF" if "ETF 卡片" in source else "個股"
 
@@ -436,7 +439,7 @@ def render_daily_page(rows: List[Dict], patrol: Dict, date: str) -> str:
             "fib_label", "long", "mid", "short", "combo", "alert", "reason", "trend_score", "macd_score", "vol_score",
             "return_score", "return_1y_pct", "total_score", "posture_label", "yield_pct", "watchdog", "last_date", "fresh",
             "support_20d", "resistance_20d", "chart")
-    rows = [r for r in rows if not r.get("source", "").endswith("成分股")]  # 每日巡檢頁只列觀察清單標的，不含 00882 的港股成分股
+    rows = [r for r in rows if not r.get("source", "").endswith("成分股") and r["ticker"] not in DAILY_EXCLUDE]  # 每日巡檢頁只列觀察清單標的，不含 00882 的港股成分股
     data = [{**{k: r.get(k) for k in keep}, "kind": kind_of(r.get("source", ""))} for r in rows]
     head = {"macro": patrol.get("macro_feed", ""), "stale": [f["ticker"] for f in patrol.get("fleet", []) if (f.get("watchdog") or {}).get("is_stale")]}
     return (tpl.replace("__DAILY_DATA__", json.dumps(data, ensure_ascii=False))
