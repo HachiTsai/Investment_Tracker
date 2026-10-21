@@ -55,7 +55,7 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 .zc button:disabled{opacity:.4;cursor:default}.zc .zp{min-width:56px;font:13px var(--mono)}
 </style>
 <main>
-<header class="hd"><div><h1>每日投資組合巡檢</h1><p class="sub" id="meta"></p></div><div class="zc" role="group" aria-label="畫面縮放"><button type="button" id="zo" aria-label="縮小" title="縮小">−</button><button type="button" id="zr" class="zp" title="還原 100%"></button><button type="button" id="zi" aria-label="放大" title="放大">＋</button></div></header>
+<header class="hd"><div><h1>每日投資組合巡檢</h1><p class="sub" id="meta"></p></div><div class="zc" role="group" aria-label="畫面縮放"><button type="button" data-z="o" aria-label="縮小" title="縮小">−</button><button type="button" data-z="r" class="zp" title="還原 100%"></button><button type="button" data-z="i" aria-label="放大" title="放大">＋</button></div></header>
 <div id="warn"></div>
 <div class="row"><span class="lbl">地區</span><span class="row" id="mk"></span></div>
 <div class="row"><span class="lbl">類型</span><span class="row" id="kd"></span></div>
@@ -98,7 +98,7 @@ return '<tr data-t="'+esc(r.ticker)+'" class="row-click '+(r.last_date&&r.last_d
 document.addEventListener("click",function(e){var b=e.target.closest(".tab");if(b){if(b.dataset.k==="market")mk=b.dataset.v;else kd=b.dataset.v;try{localStorage.setItem("dpMk",mk);localStorage.setItem("dpKd",kd)}catch(x){}render();return}
 var h=e.target.closest("th[data-k]");if(h){var k=h.dataset.k;if(sk===k)asc=!asc;else{sk=k;asc=k==="name"||k==="stop_distance_pct"}render()}});
 
-var LB=[5,10,15,30,45,60,90,120],cfg={lb:60,boll:true,ma:true,fib:true};var curT=null;
+var ZCH='<div class="zc" role="group" aria-label="畫面縮放"><button type="button" data-z="o" aria-label="縮小" title="縮小">−</button><button type="button" data-z="r" class="zp" title="還原 100%"></button><button type="button" data-z="i" aria-label="放大" title="放大">＋</button></div>';var LB=[5,10,15,30,45,60,90,120],cfg={lb:60,boll:true,ma:true,fib:true};var curT=null;
 function pickRow(t){return DATA.filter(function(r){return r.ticker===t})[0]}
 function chartSvg(ch,lb){var n=ch.c.length,W=780,PH=290,RH=70,gap=18,L=8,R=52,x0=L,x1=W-R,st=(x1-x0)/n,cw=Math.max(1.5,st*.62);
 var hi=-1e9,lo=1e9,i;for(i=0;i<n;i++){hi=Math.max(hi,ch.h[i]);lo=Math.min(lo,ch.l[i]);if(cfg.boll&&ch.bu[i]!=null){hi=Math.max(hi,ch.bu[i]);lo=Math.min(lo,ch.bl[i])}}
@@ -122,19 +122,19 @@ for(i=0;i<n;i++){var h=ch.hist[i];if(h==null)continue;var hh=Math.abs(h)/mx*(RH/
 var xs=[0,Math.floor(n/2),n-1];xs.forEach(function(k){o+='<text class="ax" x="'+X(k)+'" y="'+(my+RH+12)+'" text-anchor="middle">'+ch.d[k]+'</text>'});
 var meta={fibs:fibs,up:up,fh:fh,fl:fl};return {svg:o+'</svg>',meta:meta}}
 function openDlg(t){curT=t;var r=pickRow(t);if(!r)return;var ch=r.chart;var d=document.getElementById("dlg");
-var head='<div class="dh"><div><h2>'+esc(r.name)+'</h2><div class="mac">'+esc(r.ticker)+' · '+esc(r.market)+' · '+esc(r.kind)+' · 資料日 '+esc(r.last_date||"-")+'</div></div><button class="x" type="button" id="cls">關閉</button></div>';
+var head='<div class="dh"><div><h2>'+esc(r.name)+'</h2><div class="mac">'+esc(r.ticker)+' · '+esc(r.market)+' · '+esc(r.kind)+' · 資料日 '+esc(r.last_date||"-")+'</div></div><div style="display:flex;gap:8px;align-items:center">'+ZCH+'<button class="x" type="button" id="cls">關閉</button></div></div>';
 var kv='<div class="kv"><div><span>波段狀態</span><br><b>'+esc(r.label)+'</b></div><div><span>收盤</span><br><b>'+f(r.close,2)+'</b></div><div><span>RSI14</span><br><b>'+f(r.rsi14,1)+'</b></div><div><span>52 週位置</span><br><b>'+f(r.pos_52w_pct,0)+'%</b></div><div><span>20 日支撐／壓力</span><br><b>'+f(r.support_20d,2)+' / '+f(r.resistance_20d,2)+'</b></div><div><span>2×ATR 停損</span><br><b>'+f(r.stop_price,2)+(r.stop_distance_pct==null?"":"（-"+f(r.stop_distance_pct,1)+"%）")+'</b></div><div><span>長／中／短期</span><br><b>'+esc([r.long,r.mid,r.short].filter(Boolean).join("／")||"-")+'</b></div><div><span>三週期組合</span><br><b>'+esc(r.combo||"-")+'</b></div><div><span>評分 趨勢／動能／量能／績效</span><br><b>'+[r.trend_score,r.macd_score,r.vol_score,r.return_score].map(function(v){return v==null?"-":Number(v).toFixed(0)}).join(" / ")+'</b></div><div><span>近 1 年含息報酬</span><br><b>'+(r.return_1y_pct==null?"-":f(r.return_1y_pct,1)+"%")+'</b></div></div>';
 var opts='<div class="opts"><label>費波那契回看 <select id="lb">'+LB.map(function(v){return '<option value="'+v+'"'+(v===cfg.lb?" selected":"")+'>'+v+' 日</option>'}).join("")+'</select></label><label><input type="checkbox" id="oFib"'+(cfg.fib?" checked":"")+'>費波那契</label><label><input type="checkbox" id="oBoll"'+(cfg.boll?" checked":"")+'>布林(20,2)</label><label><input type="checkbox" id="oMa"'+(cfg.ma?" checked":"")+'>20 日線</label></div>';
 var body=ch?chartSvg(ch,cfg.lb):null;var note=body&&body.meta.fibs.length?'<p class="mac">費波那契（近 '+cfg.lb+' 日，'+(body.meta.up?"先低後高，自高點量回檔":"先高後低，自低點量反彈")+'）：高 '+body.meta.fh.toFixed(2)+'、低 '+body.meta.fl.toFixed(2)+'。只描述位置，不是買賣指示。</p>':"";
-d.innerHTML=head+kv+(ch?opts+body.svg+note:'<p class="mac">此檔沒有足夠日線可畫圖。</p>')+'<p class="mac">'+esc(r.reason||"")+'</p>';document.getElementById("mask").classList.add("on")}
+d.innerHTML=head+kv+(ch?opts+body.svg+note:'<p class="mac">此檔沒有足夠日線可畫圖。</p>')+'<p class="mac">'+esc(r.reason||"")+'</p>';document.getElementById("mask").classList.add("on");applyZ()}
 function closeDlg(){document.getElementById("mask").classList.remove("on");curT=null}
 document.addEventListener("click",function(e){if(e.target.id==="cls"||e.target.id==="mask"){closeDlg();return}var tr=e.target.closest("tr.row-click");if(tr&&!e.target.closest("#mask"))openDlg(tr.dataset.t)});
 document.addEventListener("change",function(e){var i=e.target.id;if(i==="lb")cfg.lb=+e.target.value;else if(i==="oFib")cfg.fib=e.target.checked;else if(i==="oBoll")cfg.boll=e.target.checked;else if(i==="oMa")cfg.ma=e.target.checked;else return;openDlg(curT)});
 document.addEventListener("keydown",function(e){if(e.key==="Escape")closeDlg()});
 var ZS=[80,90,100,110,125,150,175,200],zp=100;
 try{var zv=+localStorage.getItem("dpZoom");if(ZS.indexOf(zv)>=0)zp=zv}catch(e){}
-function applyZ(){document.documentElement.style.setProperty("--z",zp/100);document.getElementById("zr").textContent=zp+"%";var i=ZS.indexOf(zp);document.getElementById("zo").disabled=i<=0;document.getElementById("zi").disabled=i>=ZS.length-1;try{localStorage.setItem("dpZoom",String(zp))}catch(e){}}
-document.addEventListener("click",function(e){var id=e.target.id,i=ZS.indexOf(zp);if(id==="zo")zp=ZS[Math.max(0,i-1)];else if(id==="zi")zp=ZS[Math.min(ZS.length-1,i+1)];else if(id==="zr")zp=100;else return;applyZ()});
+function applyZ(){document.documentElement.style.setProperty("--z",zp/100);var i=ZS.indexOf(zp);document.querySelectorAll(".zc").forEach(function(g){g.querySelector('[data-z="r"]').textContent=zp+"%";g.querySelector('[data-z="o"]').disabled=i<=0;g.querySelector('[data-z="i"]').disabled=i>=ZS.length-1});try{localStorage.setItem("dpZoom",String(zp))}catch(e){}}
+document.addEventListener("click",function(e){var b=e.target.closest("[data-z]");if(!b)return;var k=b.dataset.z,i=ZS.indexOf(zp);if(k==="o")zp=ZS[Math.max(0,i-1)];else if(k==="i")zp=ZS[Math.min(ZS.length-1,i+1)];else zp=100;applyZ()});
 applyZ();
 render();
 </script>
