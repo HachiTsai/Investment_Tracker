@@ -49,9 +49,13 @@ th[data-k]{cursor:pointer}th[data-k]:hover{color:var(--fg)}
 .opts label{display:flex;gap:4px;align-items:center;cursor:pointer}.opts select{font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:4px}
 .kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px;margin:10px 0;font-size:13px}.kv span{color:var(--mute)}.kv b{font:500 14px var(--mono)}
 svg.ch{width:100%;height:auto;display:block}.ax{fill:var(--mute);font:10px var(--mono)}
+main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / var(--z,1)))}
+.hd{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.zc{display:flex;gap:4px;align-items:center}.zc button{font:inherit;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:6px;min-width:34px;padding:3px 8px;cursor:pointer}
+.zc button:disabled{opacity:.4;cursor:default}.zc .zp{min-width:56px;font:13px var(--mono)}
 </style>
 <main>
-<header><h1>每日投資組合巡檢</h1><p class="sub" id="meta"></p></header>
+<header class="hd"><div><h1>每日投資組合巡檢</h1><p class="sub" id="meta"></p></div><div class="zc" role="group" aria-label="畫面縮放"><button type="button" id="zo" aria-label="縮小" title="縮小">−</button><button type="button" id="zr" class="zp" title="還原 100%"></button><button type="button" id="zi" aria-label="放大" title="放大">＋</button></div></header>
 <div id="warn"></div>
 <div class="row"><span class="lbl">地區</span><span class="row" id="mk"></span></div>
 <div class="row"><span class="lbl">類型</span><span class="row" id="kd"></span></div>
@@ -127,5 +131,10 @@ function closeDlg(){document.getElementById("mask").classList.remove("on");curT=
 document.addEventListener("click",function(e){if(e.target.id==="cls"||e.target.id==="mask"){closeDlg();return}var tr=e.target.closest("tr.row-click");if(tr&&!e.target.closest("#mask"))openDlg(tr.dataset.t)});
 document.addEventListener("change",function(e){var i=e.target.id;if(i==="lb")cfg.lb=+e.target.value;else if(i==="oFib")cfg.fib=e.target.checked;else if(i==="oBoll")cfg.boll=e.target.checked;else if(i==="oMa")cfg.ma=e.target.checked;else return;openDlg(curT)});
 document.addEventListener("keydown",function(e){if(e.key==="Escape")closeDlg()});
+var ZS=[80,90,100,110,125,150,175,200],zp=100;
+try{var zv=+localStorage.getItem("dpZoom");if(ZS.indexOf(zv)>=0)zp=zv}catch(e){}
+function applyZ(){document.documentElement.style.setProperty("--z",zp/100);document.getElementById("zr").textContent=zp+"%";var i=ZS.indexOf(zp);document.getElementById("zo").disabled=i<=0;document.getElementById("zi").disabled=i>=ZS.length-1;try{localStorage.setItem("dpZoom",String(zp))}catch(e){}}
+document.addEventListener("click",function(e){var id=e.target.id,i=ZS.indexOf(zp);if(id==="zo")zp=ZS[Math.max(0,i-1)];else if(id==="zi")zp=ZS[Math.min(ZS.length-1,i+1)];else if(id==="zr")zp=100;else return;applyZ()});
+applyZ();
 render();
 </script>
