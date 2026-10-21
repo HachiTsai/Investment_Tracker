@@ -58,3 +58,13 @@ def test_chart_series_lengths_and_page_embeds_chart():
     assert all(len(ch[k]) == sw.CHART_BARS for k in ("d", "o", "h", "l", "c", "ma20", "bu", "bl", "rsi", "hist"))
     html = sw.render_daily_page([{"ticker": "TPE:1", "name": "測試", "market": "台股", "source": "ETF 卡片", "chart": ch}], {"fleet": []}, "2026-10-20")
     assert '"chart"' in html and "openDlg" in html
+
+
+def test_daily_template_has_matrix_quadrant_3d_views():
+    import swing
+    tpl = (swing.REF_DIR / "daily_patrol_template.html").read_text(encoding="utf-8") if hasattr(swing, "REF_DIR") else None
+    if tpl is None:
+        from pathlib import Path
+        tpl = (Path(swing.__file__).resolve().parent.parent / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
+    for key in ("vMatrix", "vQuad", "v3d", "three.min.js", "data-vw", "drawQuad", "draw3d"):
+        assert key in tpl
