@@ -57,6 +57,7 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 .pnl{border:1px solid var(--line);border-radius:6px;background:var(--card);padding:12px 14px}
 .hm td,.hm th{text-align:center}.hm td:first-child,.hm th:first-child{text-align:left}.hm table{min-width:420px}
 .hm td.c{font:500 13px var(--mono);min-width:64px}
+.chg{display:block;font:11px var(--mono)}.chg.u{color:var(--down)}.chg.d{color:var(--accent)}.live{color:var(--accent)}
 .qd{width:100%;height:auto;display:block}.qd text{fill:var(--mute);font:10px var(--mono);pointer-events:none}.qd .pt{cursor:pointer}.qd .pt:hover{stroke:var(--fg);stroke-width:2}
 .lg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--mute);margin:8px 0 0}.lg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
 .ax3{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13px;color:var(--mute);margin-bottom:8px}
@@ -67,14 +68,14 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 [hidden]{display:none!important}
 </style>
 <main>
-<header class="hd"><div><h1>每日投資組合巡檢</h1><p class="sub" id="meta"></p></div><div class="zc" role="group" aria-label="畫面縮放"><button type="button" data-z="o" aria-label="縮小" title="縮小">−</button><button type="button" data-z="r" class="zp" title="還原 100%"></button><button type="button" data-z="i" aria-label="放大" title="放大">＋</button></div></header>
+<header class="hd"><div><h1>每日投資組合巡檢</h1><p class="sub" id="meta"></p><p class="sub"><button type="button" class="x" id="qbtn" hidden>更新最新報價</button> <span id="qst"></span></p></div><div class="zc" role="group" aria-label="畫面縮放"><button type="button" data-z="o" aria-label="縮小" title="縮小">−</button><button type="button" data-z="r" class="zp" title="還原 100%"></button><button type="button" data-z="i" aria-label="放大" title="放大">＋</button></div></header>
 <div id="warn"></div>
 <div class="row"><span class="lbl">地區</span><span class="row" id="mk"></span></div>
 <div class="row"><span class="lbl">類型</span><span class="row" id="kd"></span></div>
 <section class="sum" id="sum" aria-label="狀態統計"></section>
 <div class="row"><span class="lbl">檢視</span><span class="row" id="vw"></span></div>
 <div class="tw" id="vTable"><table><thead><tr>
-<th data-k="name">標的</th><th data-k="state">波段狀態</th><th data-k="posture_label">配置狀態</th><th data-k="close">收盤</th><th data-k="yield_pct">殖利率</th>
+<th data-k="name">標的</th><th data-k="state">波段狀態</th><th data-k="posture_label">配置狀態</th><th data-k="close">最新報價</th><th data-k="yield_pct">殖利率</th>
 <th data-k="rsi14">RSI14</th><th data-k="pos_52w_pct">52週位置</th><th data-k="fib_label">費波那契位置</th><th>長／中／短期</th><th data-k="combo">三週期組合</th>
 <th data-k="trend_score">趨勢</th><th data-k="macd_score">動能</th><th data-k="vol_score">量能</th><th data-k="return_score">績效</th><th data-k="total_score">綜合</th><th data-k="stop_distance_pct">2×ATR停損</th>
 </tr></thead><tbody id="rows"></tbody></table></div>
@@ -83,6 +84,7 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 <div class="pnl" id="v3d" hidden></div>
 <div class="mask" id="mask"><div class="dlg" id="dlg" role="dialog" aria-modal="true"></div></div>
 <section class="notes">
+<p>最新報價：按「更新最新報價」會向證交所取台股即時價（經你的 Firecrawl 連線器，每次約扣 1 點）；未更新或港股、非台股標的顯示最近一個交易日收盤價。指標與評分以日線收盤計算，不隨報價變動；乖離、區間位置、停損距離會用最新報價重算。</p>
 <p>點任一標的會跳出日 K、均線、布林通道、費波那契、RSI 與 MACD 圖。</p>
 <p>評分矩陣與 Stock_AIStudio 的波段觀察、雷達頁同一套算法：趨勢（價格相對 60 日線的乖離）、動能（MACD 柱）、量能（5 日均量 ÷ 60 日均量）、績效（近 1 年含息報酬），皆為 0 到 100 分、50 代表持平，描述強度與位置，不是好壞評分。綜合為四項平均，僅供排序參考。</p>
 <p>狀態與組合只描述指標條件，不是買賣指示；進出由你決定，波段部位與股利再投入部位分開記帳。配置狀態與殖利率來自 ETF 卡片的每日巡檢，個股沒有此欄。</p>
@@ -104,7 +106,7 @@ function render(){
 var base=DATA.filter(function(r){return kd==="全部"||r.kind===kd}),list=DATA.filter(function(r){return (mk==="全部"||r.market===mk)&&(kd==="全部"||r.kind===kd)});
 document.getElementById("mk").innerHTML=btns(MK,mk,"market",base);
 document.getElementById("kd").innerHTML=btns(KD,kd,"kind",DATA.filter(function(r){return mk==="全部"||r.market===mk}));
-document.getElementById("meta").textContent="資料日 "+DATE+"（前一交易日收盤）　"+mk+"／"+kd+" "+list.length+" 檔";
+document.getElementById("meta").textContent="指標與評分以 "+DATE+" 日線收盤計算　"+mk+"／"+kd+" "+list.length+" 檔";
 var w=[];var al=list.filter(function(r){return r.alert});if(al.length)w.push("三週期組合變化提醒："+al.map(function(r){return esc(r.name)+"（"+esc(r.combo)+"）"}).join("、"));
 if(HEAD.stale.length)w.push("數據過期：需更新 "+esc(HEAD.stale.join("、")));
 var er=list.filter(function(r){return r.state==="ERROR"});if(er.length)w.push("抓取失敗 "+er.length+" 檔："+er.map(function(r){return esc(r.ticker)}).join("、"));
@@ -114,7 +116,7 @@ document.getElementById("sum").innerHTML=Object.keys(cnt).map(function(k){return
 list.sort(function(x,y){var a=x[sk],b=y[sk];if(a==null&&b==null)return 0;if(a==null)return 1;if(b==null)return -1;var d=typeof a==="string"?a.localeCompare(b):a-b;return asc?d:-d});
 CUR=list;
 document.getElementById("rows").innerHTML=list.length?list.map(function(r){
-return '<tr data-t="'+esc(r.ticker)+'" class="row-click '+(r.last_date&&r.last_date<DATE?"stale":"")+'"><td class="name">'+esc(r.name)+'<small>'+esc(r.ticker)+' · '+esc(r.market)+' · '+esc(r.kind)+'</small></td><td><span class="pill s-'+esc(r.state)+'" title="'+esc(r.reason)+'">'+esc(r.label)+'</span></td><td>'+esc(r.posture_label||"-")+'</td><td>'+f(r.close,2)+'</td><td>'+(r.yield_pct==null?"-":f(r.yield_pct,2)+"%")+'</td><td>'+f(r.rsi14,1)+'</td><td>'+f(r.pos_52w_pct,0)+'%</td><td>'+esc(r.fib_label||"-")+'</td><td>'+esc([r.long,r.mid,r.short].filter(Boolean).join("／")||"-")+'</td><td>'+esc(r.combo||"-")+'</td><td>'+sc(r.trend_score)+'</td><td>'+sc(r.macd_score)+'</td><td>'+sc(r.vol_score)+'</td><td>'+sc(r.return_score)+'</td><td>'+sc(r.total_score)+'</td><td>'+(r.stop_distance_pct==null?"-":"-"+f(r.stop_distance_pct,1)+"%")+'</td></tr>'}).join(""):'<tr><td colspan="16" style="text-align:center;color:var(--mute)">此條件目前沒有觀察標的。</td></tr>';}
+return '<tr data-t="'+esc(r.ticker)+'" class="row-click '+(r.last_date&&r.last_date<DATE?"stale":"")+'"><td class="name">'+esc(r.name)+'<small>'+esc(r.ticker)+' · '+esc(r.market)+' · '+esc(r.kind)+'</small></td><td><span class="pill s-'+esc(r.state)+'" title="'+esc(r.reason)+'">'+esc(r.label)+'</span></td><td>'+esc(r.posture_label||"-")+'</td><td>'+f(px(r),2)+chgH(r)+'</td><td>'+(r.yield_pct==null?"-":f(r.yield_pct,2)+"%")+'</td><td>'+f(r.rsi14,1)+'</td><td>'+f(r.pos_52w_pct,0)+'%</td><td>'+esc(r.fib_label||"-")+'</td><td>'+esc([r.long,r.mid,r.short].filter(Boolean).join("／")||"-")+'</td><td>'+esc(r.combo||"-")+'</td><td>'+sc(r.trend_score)+'</td><td>'+sc(r.macd_score)+'</td><td>'+sc(r.vol_score)+'</td><td>'+sc(r.return_score)+'</td><td>'+sc(r.total_score)+'</td><td>'+(sd(r)==null?"-":"-"+f(sd(r),1)+"%")+'</td></tr>'}).join(""):'<tr><td colspan="16" style="text-align:center;color:var(--mute)">此條件目前沒有觀察標的。</td></tr>';}
 document.addEventListener("click",function(e){var b=e.target.closest(".tab[data-k]");if(b){if(b.dataset.k==="market")mk=b.dataset.v;else kd=b.dataset.v;try{localStorage.setItem("dpMk",mk);localStorage.setItem("dpKd",kd)}catch(x){}render();return}
 var h=e.target.closest("th[data-k]");if(h){var k=h.dataset.k;if(sk===k)asc=!asc;else{sk=k;asc=k==="name"||k==="stop_distance_pct"}render()}});
 
@@ -143,7 +145,7 @@ var xs=[0,Math.floor(n/2),n-1];xs.forEach(function(k){o+='<text class="ax" x="'+
 var meta={fibs:fibs,up:up,fh:fh,fl:fl};return {svg:o+'</svg>',meta:meta}}
 function openDlg(t){curT=t;var r=pickRow(t);if(!r)return;var ch=r.chart;var d=document.getElementById("dlg");
 var head='<div class="dh"><div><h2>'+esc(r.name)+'</h2><div class="mac">'+esc(r.ticker)+' · '+esc(r.market)+' · '+esc(r.kind)+' · 資料日 '+esc(r.last_date||"-")+'</div></div><div style="display:flex;gap:8px;align-items:center">'+ZCH+'<button class="x" type="button" id="cls">關閉</button></div></div>';
-var kv='<div class="kv"><div><span>波段狀態</span><br><b>'+esc(r.label)+'</b></div><div><span>收盤</span><br><b>'+f(r.close,2)+'</b></div><div><span>RSI14</span><br><b>'+f(r.rsi14,1)+'</b></div><div><span>52 週位置</span><br><b>'+f(r.pos_52w_pct,0)+'%</b></div><div><span>20 日支撐／壓力</span><br><b>'+f(r.support_20d,2)+' / '+f(r.resistance_20d,2)+'</b></div><div><span>2×ATR 停損</span><br><b>'+f(r.stop_price,2)+(r.stop_distance_pct==null?"":"（-"+f(r.stop_distance_pct,1)+"%）")+'</b></div><div><span>長／中／短期</span><br><b>'+esc([r.long,r.mid,r.short].filter(Boolean).join("／")||"-")+'</b></div><div><span>三週期組合</span><br><b>'+esc(r.combo||"-")+'</b></div><div><span>評分 趨勢／動能／量能／績效</span><br><b>'+[r.trend_score,r.macd_score,r.vol_score,r.return_score].map(function(v){return v==null?"-":Number(v).toFixed(0)}).join(" / ")+'</b></div><div><span>近 1 年含息報酬</span><br><b>'+(r.return_1y_pct==null?"-":f(r.return_1y_pct,1)+"%")+'</b></div></div>';
+var kv='<div class="kv"><div><span>波段狀態</span><br><b>'+esc(r.label)+'</b></div><div><span>最新報價</span><br><b>'+f(px(r),2)+'</b>'+chgH(r)+'</div><div><span>RSI14</span><br><b>'+f(r.rsi14,1)+'</b></div><div><span>52 週位置</span><br><b>'+f(r.pos_52w_pct,0)+'%</b></div><div><span>20 日支撐／壓力</span><br><b>'+f(r.support_20d,2)+' / '+f(r.resistance_20d,2)+'</b></div><div><span>2×ATR 停損</span><br><b>'+f(r.stop_price,2)+(sd(r)==null?"":"（-"+f(sd(r),1)+"%）")+'</b></div><div><span>長／中／短期</span><br><b>'+esc([r.long,r.mid,r.short].filter(Boolean).join("／")||"-")+'</b></div><div><span>三週期組合</span><br><b>'+esc(r.combo||"-")+'</b></div><div><span>評分 趨勢／動能／量能／績效</span><br><b>'+[r.trend_score,r.macd_score,r.vol_score,r.return_score].map(function(v){return v==null?"-":Number(v).toFixed(0)}).join(" / ")+'</b></div><div><span>近 1 年含息報酬</span><br><b>'+(r.return_1y_pct==null?"-":f(r.return_1y_pct,1)+"%")+'</b></div></div>';
 var opts='<div class="opts"><label>費波那契回看 <select id="lb">'+LB.map(function(v){return '<option value="'+v+'"'+(v===cfg.lb?" selected":"")+'>'+v+' 日</option>'}).join("")+'</select></label><label><input type="checkbox" id="oFib"'+(cfg.fib?" checked":"")+'>費波那契</label><label><input type="checkbox" id="oBoll"'+(cfg.boll?" checked":"")+'>布林(20,2)</label><label><input type="checkbox" id="oMa"'+(cfg.ma?" checked":"")+'>20 日線</label></div>';
 var body=ch?chartSvg(ch,cfg.lb):null;var note=body&&body.meta.fibs.length?'<p class="mac">費波那契（近 '+cfg.lb+' 日，'+(body.meta.up?"先低後高，自高點量回檔":"先高後低，自低點量反彈")+'）：高 '+body.meta.fh.toFixed(2)+'、低 '+body.meta.fl.toFixed(2)+'。只描述位置，不是買賣指示。</p>':"";
 var tabs='<div class="dtabs">'+[["k","K 線"],["x","指標矩陣"],["j","軌跡 3D"]].map(function(a){return '<button type="button" class="tab" data-dt="'+a[0]+'" aria-pressed="'+(a[0]===dtab)+'">'+a[1]+'</button>'}).join("")+'</div>';
@@ -214,9 +216,9 @@ document.addEventListener("change",function(e){var a=e.target.dataset&&e.target.
 
 function mxRow(lbl,cells){return '<tr><td>'+lbl+'</td>'+cells.map(function(c){return '<td class="c" style="'+heat(c.v)+'">'+c.t+'</td>'}).join("")+'</tr>'}
 function tv(x,k){return 50+50*Math.tanh(x/k)}
-function dMatrix(r,ch){var n=ch.c.length,c=ch.c,P=[20,60,120].filter(function(w){return w<=n}),cell=function(v,t){return {v:v,t:t}};
+function dMatrix(r,ch){var n=ch.c.length,c=ch.c.slice(),P=[20,60,120].filter(function(w){return w<=n}),cell=function(v,t){return {v:v,t:t}};c[n-1]=px(r);
 var dev=P.map(function(w){var m=c.slice(n-w).reduce(function(a,b){return a+b},0)/w,x=(c[n-1]-m)/m*100;return cell(tv(x,w===20?4:w===60?8:12),(x>=0?"+":"")+x.toFixed(1)+"%")});
-var pos=P.map(function(w){var h=Math.max.apply(null,ch.h.slice(n-w)),l=Math.min.apply(null,ch.l.slice(n-w)),x=h>l?(c[n-1]-l)/(h-l)*100:50;return cell(x,x.toFixed(0)+"%")});
+var pos=P.map(function(w){var h=Math.max(c[n-1],Math.max.apply(null,ch.h.slice(n-w))),l=Math.min(c[n-1],Math.min.apply(null,ch.l.slice(n-w))),x=h>l?(c[n-1]-l)/(h-l)*100:50;return cell(x,x.toFixed(0)+"%")});
 var ret=P.map(function(w){var x=(c[n-1]/c[n-w]-1)*100;return cell(tv(x,w===20?6:w===60?12:20),(x>=0?"+":"")+x.toFixed(1)+"%")});
 var bw=ch.bu[n-1]!=null&&ch.bu[n-1]>ch.bl[n-1]?(c[n-1]-ch.bl[n-1])/(ch.bu[n-1]-ch.bl[n-1])*100:null;
 var one=[["RSI14",r.rsi14==null?null:cell(r.rsi14,f(r.rsi14,1))],["MACD 柱（動能分）",r.macd_score==null?null:cell(r.macd_score,f(r.macd_score,0))],["布林位置",bw==null?null:cell(bw,bw.toFixed(0)+"%")],["量能（5 日均量÷60 日）",r.vol_score==null?null:cell(r.vol_score,f(r.vol_score,0))],["52 週位置",r.pos_52w_pct==null?null:cell(r.pos_52w_pct,f(r.pos_52w_pct,0)+"%")],["趨勢分","trend_score"],["績效分","return_score"]].map(function(a){var v=a[1]==="trend_score"||a[1]==="return_score"?(r[a[1]]==null?null:cell(r[a[1]],f(r[a[1]],0))):a[1];return v?'<tr><td>'+a[0]+'</td><td class="c" style="'+heat(v.v)+'">'+v.t+'</td></tr>':""}).join("");
@@ -242,6 +244,29 @@ cvs.onwheel=function(e){e.preventDefault();TJ.dist=Math.max(8,Math.min(32,TJ.dis
 (function loop(){if(!document.body.contains(cvs))return;if(autoJ&&!TJ.drag)TJ.th+=.003;cam.position.set(TJ.dist*Math.sin(TJ.th)*Math.cos(TJ.ph),TJ.dist*Math.sin(TJ.ph),TJ.dist*Math.cos(TJ.th)*Math.cos(TJ.ph));cam.lookAt(0,0,0);rd.render(sc,cam);TJ.raf=requestAnimationFrame(loop)})()}
 document.addEventListener("click",function(e){var b=e.target.closest("[data-dt]");if(b){dtab=b.dataset.dt;openDlg(curT)}});
 document.addEventListener("change",function(e){if(e.target.id==="autoJ")autoJ=e.target.checked});
+
+var Q={},MCP=null;
+try{var sq=JSON.parse(localStorage.getItem("dpQ")||"null");if(sq&&sq.d>DATE&&sq.q)Q=sq.q}catch(e){}
+function px(r){var q=Q[r.ticker];return q&&q.p!=null?q.p:r.close}
+function sd(r){if(r.stop_price==null)return r.stop_distance_pct;var p=px(r);return p>0?(p-r.stop_price)/p*100:r.stop_distance_pct}
+function chg(r){var q=Q[r.ticker];if(q&&q.y>0&&q.p!=null)return (q.p-q.y)/q.y*100;var c=r.chart&&r.chart.c,n=c?c.length:0;return n>1&&c[n-2]>0?(c[n-1]/c[n-2]-1)*100:null}
+function chgH(r){var v=chg(r);return v==null?"":'<span class="chg '+(v>=0?"u":"d")+'">'+(v>=0?"+":"")+v.toFixed(2)+"%</span>"}
+function qStat(){var ks=Object.keys(Q),el=document.getElementById("qst");if(!el)return;if(!ks.length){el.textContent="價格欄目前為 "+DATE+" 收盤價"+(MCP?"，按左側按鈕取最新報價":"");return}
+var t=Q[ks[0]];el.innerHTML='<span class="live">●</span> 最新報價 '+esc(t.t)+'（證交所即時，'+ks.length+' 檔）；港股與未更新標的為收盤價'}
+function qParse(res){var pl=res&&res.payload,tx=pl&&typeof pl==="object"?(pl.rawHtml||pl.markdown||""):typeof pl==="string"?pl:"";
+if(!tx&&res&&res.content)tx=res.content.map(function(b){return b.text||""}).join("");
+var i=tx.indexOf('{"msgArray"');if(i<0)i=tx.indexOf("{");var j=tx.lastIndexOf("}");if(i<0||j<i)throw new Error("沒有取得報價資料");
+var o=JSON.parse(tx.slice(i,j+1)),n=0,dd="";(o.msgArray||[]).forEach(function(it){var z=parseFloat(it.z),y=parseFloat(it.y),tz=it.trade&&parseFloat(it.trade.z),p=isFinite(z)?z:isFinite(tz)?tz:isFinite(y)?y:null;if(p==null)return;
+var d=String(it.d||"");Q["TPE:"+it.c]={p:p,y:isFinite(y)?y:null,t:it.t||"",d:d.slice(0,4)+"-"+d.slice(4,6)+"-"+d.slice(6,8)};dd=Q["TPE:"+it.c].d;n++});
+if(!n)throw new Error("證交所沒有回傳報價（可能休市或連線器被擋）");try{localStorage.setItem("dpQ",JSON.stringify({d:dd,q:Q}))}catch(e){}return n}
+function qErr(e){var c=e&&e.code,m={not_in_manifest:"尚未允許此頁使用 Firecrawl 連線器",approval_required:"需要你的同意才能取報價",server_not_connected:"請先在 claude.ai 設定中新增 Firecrawl 連線器",needs_reauth:"Firecrawl 連線需要重新登入",selection_required:"請先選擇要用的 Firecrawl 連線器",blocked_by_policy:"組織設定封鎖了這個連線器"};return m[c]||(e&&e.message)||"更新失敗"}
+function qRefresh(){var b=document.getElementById("qbtn"),el=document.getElementById("qst");if(!MCP)return;
+var codes={};DATA.forEach(function(r){if(r.market==="台股")codes[r.ticker.replace(/^TPE:/,"")]=1});var ex=Object.keys(codes).map(function(c){return "tse_"+c+".tw|otc_"+c+".tw"}).join("|");
+b.disabled=true;el.textContent="更新中…";
+MCP.callTool("Firecrawl","firecrawl_scrape",{url:"https://mis.twse.com.tw/stock/api/getStockInfo.jsp?ex_ch="+ex+"&json=1&delay=0",formats:["rawHtml"],maxAge:0,objective:"取得台股即時報價，更新投資組合巡檢頁的最新報價"},{cache:false})
+.then(function(res){qParse(res);render();if(curT)openDlg(curT);qStat()}).catch(function(e){el.textContent="更新失敗："+qErr(e)}).then(function(){b.disabled=false})}
+document.addEventListener("click",function(e){if(e.target.id==="qbtn")qRefresh()});
+try{window.claude&&window.claude.use&&window.claude.use("mcp").then(function(m){MCP=m;if(m)document.getElementById("qbtn").hidden=false;qStat()}).catch(function(){})}catch(e){}
 applyZ();
-render();
+render();qStat();
 </script>
