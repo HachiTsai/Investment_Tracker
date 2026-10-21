@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
+import repo_health
 from dep_guard import (
     REPO_ROOT,
     SENSITIVE_PATTERNS,
@@ -259,6 +260,9 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     p.add_argument("--check", type=Path, metavar="FILE", help="只檢查訊息檔格式（commit-msg hook 用）")
     p.add_argument("--check-env", action="store_true", help="比對 pyproject.toml 與實際安裝套件（唯讀，只警告）")
     p.add_argument("--install-hook", action="store_true", help="安裝 commit-msg hook")
+    p.add_argument("--sync", action="store_true", help="安全拉取：fetch 後只 fast-forward，有未提交變更或分叉時不動並回報")
+    p.add_argument("--fetch-only", action="store_true", help="搭配 --sync：只 fetch 並回報落後，不快轉")
+    p.add_argument("--patrol", action="store_true", help="巡檢系統工具、git 狀態與 pyproject／安裝環境（沿用 --check-env 的比對）")
     return p.parse_args(argv)
 
 
@@ -278,6 +282,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         else:
             print("✅ [Env] pyproject.toml 與安裝環境一致。")
         return 0
+    if args.sync:
+        return repo_health.print_report(repo_health.sync_repo(fetch_only=args.fetch_only))
+    if args.patrol:
+        return repo_health.print_report(repo_health.patrol_repo(installed_check=find_env_issues))
     if args.auto_quick and args.message_file:
         print("   ❌ --auto-quick 與 --message-file 不可併用。", file=sys.stderr)
         return 1
@@ -313,6 +321,14 @@ def main(argv: Optional[List[str]] = None) -> int:
             print("   ❌ [Security] 暫存區含疑似敏感檔案，已中止：", *hits, sep="\n      - ", file=sys.stderr)
             print("   ➜ 確認無誤請加 --allow-sensitive；否則 `git reset HEAD -- <path>` 移出暫存。", file=sys.stderr)
             return 1
+
+    branch_issue = repo_health.protected_branch_issue(git("branch", "--show-current").stdout.decode().strip())
+    if branch_issue and (args.message_file or args.auto_quick) and not (args.dry_run or args.no_push):
+        print(f"   ❌ [Branch] {branch_issue}", file=sys.stderr)
+        return 1
+    rules_warning = repo_health.claude_without_rules_warning(staged_files)
+    if rules_warning:
+        print(f"   ⚠️ [Rules] {rules_warning}")
 
     dep_issues = [] if args.allow_missing_deps else find_dependency_issues(staged_files)
     if dep_issues and (args.message_file or args.auto_quick):

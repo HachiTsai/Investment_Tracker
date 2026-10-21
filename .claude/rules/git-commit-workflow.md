@@ -19,6 +19,9 @@
 所有 commit 均透過 `fin-commit` skill 執行：
 
 ```bash
+# 0. 開工先安全拉取（只 fast-forward；有未提交變更或分叉時不動並回報）
+python3 .claude/skills/fin-commit/scripts/committer.py --sync
+
 # 1. 暫存並取得草擬指令
 python3 .claude/skills/fin-commit/scripts/committer.py --stage-list <paths...>
 
@@ -33,4 +36,5 @@ python3 .claude/skills/fin-commit/scripts/committer.py --no-stage --message-file
 - 規格書 SSOT：`.claude/skills/fin-commit/references/spec-git-commit-protocol.md`。
 - 一個 commit 只記錄一個投資事件或一個主題。
 - 嚴禁提交券商帳號、密碼、身分證字號等敏感個資（腳本會自動以 `find_sensitive` 攔截）。
+- 要推送時若目前在 `main`，腳本會中止（`--no-push` 本機提交不受限）；變更 `.claude/` 卻沒動到 rules 或索引時會提醒。
 - 嚴禁未經記錄即引用第三方套件（腳本會自動以 AST 掃描 staged `.py` 檔案與 `pyproject.toml`，未同步時自動攔截中止，可加 `--allow-missing-deps` 略過）。
