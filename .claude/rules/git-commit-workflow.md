@@ -12,7 +12,8 @@
    - 不使用 squash、不使用 rebase，保留分支上每個 commit 的完整訊息與歷程，便於以 `git log --grep` 追溯歷史決策。
 3. **全自動持續交付（模式 B）**：
    - Agent 端到端流程：獨立分支 ➔ 本地驗證（pytest / mdlint）➔ 提交並推送 ➔ 發起 PR ➔ 監聽 CI 狀態。
-   - 確認 GitHub Actions CI 全綠通過後，Agent 自動以標準 Merge Commit（`gh pr merge <id> --merge --delete-branch`）合入 `main` 並切回 `main` 保持最新同步。
+   - GitHub Actions CI 全綠通過後，由 `ci.yml` 的 `auto-merge` job 以標準 Merge Commit（`gh pr merge <id> --merge --delete-branch`）自動合入 `main`；僅限非草稿、同 repo、`claude/` 開頭分支，使用 Secrets `AUTO_MERGE_PAT`（用 PAT 才會觸發 `main` 的 CI）。
+   - Agent 在合併後確認 `main` 的 CI 通過並切回 `main` 保持最新同步；個人帳號無法設 branch protection，故不使用內建 auto-merge。
 
 ## 2. 結構化 Commit 流程
 
