@@ -101,3 +101,10 @@ def test_daily_template_uses_latest_quote_wording_and_refresh():
     for key in ("最新報價", "qRefresh", "firecrawl_scrape", "mis.twse.com.tw", "function px(r)", "function sd(r)"):
         assert key in tpl
     assert "<th data-k=\"close\">收盤</th>" not in tpl and "<span>收盤</span>" not in tpl
+
+
+def test_render_daily_page_excludes_listed_tickers():
+    rows = [{"ticker": "TPE:1", "name": "留下", "market": "台股", "source": "ETF 卡片"},
+            {"ticker": "HKG:1919", "name": "中遠海控", "market": "港股", "source": "個股卡片"}]
+    html = sw.render_daily_page(rows, {"fleet": []}, "2026-10-20")
+    assert "留下" in html and "中遠海控" not in html
