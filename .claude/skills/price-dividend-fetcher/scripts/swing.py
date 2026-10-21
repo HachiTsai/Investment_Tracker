@@ -356,6 +356,8 @@ def scan(items: List[Dict], prev: Optional[Dict[str, Dict]] = None, now: Optiona
         from swing_levels import current_levels
         lv = current_levels(bars) or {}
         row.update({"long": lv.get("long"), "mid": lv.get("mid"), "short": lv.get("short"), "fib3": lv.get("fib3"), "combo": lv.get("combo")})
+        from swing_scores import compute_scores
+        row.update(compute_scores(bars) or {})
         row["last_date"] = last.strftime("%Y-%m-%d")
         row["fresh"] = row["last_date"] == market_today(market, now)
         if prev is not None:
@@ -393,6 +395,33 @@ def render_page(rows: List[Dict], date: str) -> str:
     return tpl.replace("__SWING_DATA__", json.dumps(data, ensure_ascii=False)).replace("__SWING_DATE__", date)
 
 
+def merge_patrol(rows: List[Dict], patrol: Dict) -> List[Dict]:
+    """把 patrol.py --json 的配置狀態、殖利率與數據時效併入掃描列（以代號尾碼對應）。"""
+    fleet = {f["ticker"]: f for f in patrol.get("fleet", [])}
+    for r in rows:
+        f = fleet.get(r["ticker"].split(":")[-1])
+        if f:
+            r.update({"posture_label": f.get("posture_label"), "yield_pct": f.get("yield_pct"),
+                      "watchdog": (f.get("watchdog") or {}).get("label")})
+    return rows
+
+
+def kind_of(source: str) -> str:
+    return "ETF" if "ETF 卡片" in source else "個股"
+
+
+def render_daily_page(rows: List[Dict], patrol: Dict, date: str) -> str:
+    """每日投資組合巡檢頁：波段觀察加評分矩陣，附配置狀態與數據時效，可依地區與類型篩選。"""
+    tpl = (Path(__file__).resolve().parents[1] / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
+    keep = ("ticker", "name", "market", "state", "label", "close", "rsi14", "pos_52w_pct", "stop_price", "stop_distance_pct",
+            "fib_label", "long", "mid", "short", "combo", "alert", "reason", "trend_score", "macd_score", "vol_score",
+            "return_score", "return_1y_pct", "total_score", "posture_label", "yield_pct", "watchdog", "last_date", "fresh")
+    data = [{**{k: r.get(k) for k in keep}, "kind": kind_of(r.get("source", ""))} for r in rows]
+    head = {"macro": patrol.get("macro_feed", ""), "stale": [f["ticker"] for f in patrol.get("fleet", []) if (f.get("watchdog") or {}).get("is_stale")]}
+    return (tpl.replace("__DAILY_DATA__", json.dumps(data, ensure_ascii=False))
+            .replace("__DAILY_HEAD__", json.dumps(head, ensure_ascii=False)).replace("__DAILY_DATE__", date))
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="個股波段指標與訊號（只讀）")
     p.add_argument("ticker", nargs="?", help="例如 TPE:2356、HKG:1919、NASDAQ:AAPL")
@@ -400,6 +429,8 @@ def main(argv=None) -> int:
     p.add_argument("--prev", metavar="JSON", help="上次狀態檔 [{\"ticker\":..,\"label\":..,\"combo\":..}]（即上次 --scan 輸出），給了 --scan 就標出狀態變化與提醒")
     p.add_argument("--sheet", metavar="OUT", help="搭配 --scan：另存 Sheet 二維表 JSON（表頭加資料列，欄位順序固定 A 到 X）")
     p.add_argument("--html", metavar="OUT", help="搭配 --scan：另存 Artifact 頁面（讀 references/swing_watch_template.html）")
+    p.add_argument("--patrol", metavar="JSON", help="搭配 --scan：patrol.py --json 輸出檔，併入配置狀態、殖利率與數據時效")
+    p.add_argument("--daily-html", metavar="OUT", help="搭配 --scan：另存每日投資組合巡檢頁（讀 references/daily_patrol_template.html）")
     p.add_argument("--batch", metavar="卡片:前N大", help="多檔彙總回測，例如 00882:15（讀 models/<卡片>/cards/constituents.jsonl）")
     p.add_argument("--fib-backtest", action="store_true", help="回測各費波那契回檔位置之後 5/10/20 日含息報酬（觀察清單全部標的，抓 5 年日線）")
     p.add_argument("--backtest", action="store_true", help="加跑超跌反彈規則回測（抓 5 年日線）")
@@ -407,6 +438,11 @@ def main(argv=None) -> int:
     if a.scan is not None:
         prev = {r["ticker"]: {"label": r.get("label"), "combo": r.get("combo")} for r in json.loads(Path(a.prev).read_text(encoding="utf-8"))} if a.prev else None
         rows = scan(watchlist(a.scan or None), prev)
+        patrol = json.loads(Path(a.patrol).read_text(encoding="utf-8")) if a.patrol else {}
+        merge_patrol(rows, patrol)
+        if a.daily_html:
+            date = max((r["last_date"] for r in rows if r.get("last_date")), default="")
+            Path(a.daily_html).write_text(render_daily_page(rows, patrol, date), encoding="utf-8")
         if a.html:
             date = max((r["last_date"] for r in rows if r.get("last_date")), default="")
             Path(a.html).write_text(render_page(rows, date), encoding="utf-8")
