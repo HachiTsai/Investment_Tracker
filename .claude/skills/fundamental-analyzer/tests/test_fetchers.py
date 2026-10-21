@@ -7,7 +7,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from fetchers import classify, eastmoney, fetch_info, sec, twse  # noqa: E402
+from fetchers import classify, eastmoney, fetch_info, finmind, sec, tw, twse, yahoo_tw  # noqa: E402
 
 
 def test_classify_symbols():
@@ -55,7 +55,7 @@ def test_cn_info_fcf():
 def test_twse_info_skips_roe():
     out = twse.twse_info({"營業收入": "100", "營業利益（損失）": "40", "淨利（淨損）歸屬於母公司業主": "30"},
                          {"負債總計": "50", "權益總計": "100"})
-    assert out == {"debtToEquity": 50.0, "operatingMargins": 0.4, "netIncomeToCommon": 30.0}
+    assert out == {"debtToEquity": 50.0, "operatingMargins": 0.4}
 
 
 def test_sec_latest_annual_picks_newest_10k():
@@ -143,3 +143,39 @@ def test_edinet_parse_rows_uses_consolidated_current_year():
     with zipfile.ZipFile(buf, "w") as z:
         z.writestr("XBRL_TO_CSV/jpcrp030000-asr-001.csv", text.encode("utf-16"))
     assert edinet.parse_rows(buf.getvalue()) == {"NetSales": 5.0}
+
+
+def test_finmind_ttm_from_cumulative():
+    s = {"2025-12-31": 400, "2025-06-30": 250, "2026-06-30": 300}
+    assert finmind.ttm_from_cumulative(s) == 300 + 400 - 250
+    assert finmind.ttm_from_cumulative({"2025-12-31": 7}) == 7
+    assert finmind.ttm_from_cumulative({"2026-06-30": 1}) is None
+
+
+def test_finmind_info_roe_and_fcf():
+    q = ["2025-06-30", "2025-09-30", "2025-12-31", "2026-03-31", "2026-06-30"]
+    cf = {"CashFlowsFromOperatingActivities": {"2025-12-31": 80, "2026-12-31": 80},
+          "PropertyAndPlantAndEquipment": {"2025-12-31": -30, "2026-12-31": -30}}
+    inc = {"EquityAttributableToOwnersOfParent": dict(zip(q, [5, 5, 5, 5, 5])),
+           "OperatingIncome": dict(zip(q, [10, 10, 10, 10, 10])), "Revenue": dict(zip(q, [50, 50, 50, 50, 50]))}
+    bs = {"EquityAttributableToOwnersOfParent": dict(zip(q, [90, 95, 100, 105, 110])),
+          "Liabilities": {"2026-06-30": 55}, "Equity": {"2026-06-30": 110}}
+    out = finmind.finmind_info(cf, inc, bs)
+    assert out["operatingCashflow"] == 80 and out["freeCashflow"] == 50
+    assert round(out["returnOnEquity"], 4) == round(20 / 100, 4)
+    assert out["debtToEquity"] == 50.0 and out["operatingMargins"] == 0.2
+
+
+def test_yahoo_requires_four_consecutive_quarters():
+    html = "".join('{"symbol":"2330.TW","date":"%s-01T00:00:00+08:00","operatingCashFlow":"%d","freeCashFlow":"%d"}' % (d, o, o // 2)
+                   for d, o in [("2026-06", 40), ("2026-03", 30), ("2025-12", 20), ("2025-09", 10)])
+    assert yahoo_tw.yahoo_info(yahoo_tw.parse(html)) == {"operatingCashflow": 100.0, "freeCashflow": 50.0}
+    assert yahoo_tw.yahoo_info([("2026-06", 1, 1), ("2025-12", 1, 1), ("2025-09", 1, 1), ("2025-06", 1, 1)]) == {}
+
+
+def test_tw_merge_first_source_wins_and_failures_skipped():
+    def boom(_):
+        raise RuntimeError
+
+    out = tw.fetch("2330", [lambda c: {"returnOnEquity": 0.4}, boom, lambda c: {"returnOnEquity": 0.1, "debtToEquity": 30}])
+    assert out == {"returnOnEquity": 0.4, "debtToEquity": 30}

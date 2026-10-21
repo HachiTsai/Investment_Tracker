@@ -1,6 +1,6 @@
 # 外部網路連線與資料來源清單
 
-本專案於本機（Antigravity / macOS）與雲端沙盒環境（Claude Code Web）經實測可通聯之 33 個外部網域及 API 服務清單。
+本專案於本機（Antigravity / macOS）與雲端沙盒環境（Claude Code Web）經實測可通聯之 35 個外部網域及 API 服務清單。
 
 ## 1. 核心證券交易所與主管機關
 
@@ -46,6 +46,9 @@
 | `data.sec.gov` | SEC EDGAR 資料 API | ✅ HTTP 200 | 美股 XBRL 財報事實（需帶含聯絡資訊的 User-Agent；2026-10-21 實測） |
 | `www.sec.gov` | SEC EDGAR 官網 | ✅ HTTP 200 | 代號對 CIK 對照表 `files/company_tickers.json`（2026-10-21 實測） |
 | `api.edinet-fsa.go.jp` | 金融廳 EDINET API v2 | ✅ HTTP 200 | 日股有價證券報告書清單與財報 CSV（`fundamental-analyzer`）；API key 由環境「網路密鑰」以標頭注入，腳本不帶 key，無 key 時回 401（2026-10-21 實測） |
+| `api.finmindtrade.com` | FinMind 開放資料 API | ✅ HTTP 200 | 台股（上市與上櫃）現金流量表、資產負債表、損益表歷年季度；匿名有頻率限制（`fundamental-analyzer` 台股主來源；2026-10-21 實測） |
+| `tw.stock.yahoo.com` | Yahoo 股市（台灣） | ✅ HTTP 200 | 台股現金流量表頁，資料嵌在網頁 JSON，非官方、改版即失效（`fundamental-analyzer` 台股備援；2026-10-21 實測） |
+| `mops.twse.com.tw` 報表端點、`goodinfo.tw` | MOPS 財報查詢、Goodinfo | ❌ 被擋 | MOPS 對非瀏覽器請求回「安全性考量無法呈現」，Goodinfo 被 Cloudflare 擋（403），不採用（2026-10-21 實測） |
 | `webb-site.com` | Webb-site | ✅ HTTP 200 | 港股 CCASS 股權集中度與股東持股變動 |
 | `www.webb-site.com` | Webb-site 完整域名 | ✅ HTTP 200 | 同上 |
 

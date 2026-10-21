@@ -105,7 +105,7 @@ scripts/                     共用計算或抓價工具
 | `hk-market-data` | 查港交所公告與 PDF 原文、港股通南向資金、港股報價、00882 產業漲跌、宏觀前饋指標；唯讀 |
 | `portfolio-patrol` | 投資組合全標的自動巡檢與每日簡報，動態遍歷 models/*/cards/ 求值，例外管理（MBE）分診 |
 | `tw-etf-fetcher` | 抓取全市場台股 ETF 股號清單、穿透完整成分股與權重、計算投資組合實質曝險（Look-through），並支援一鍵生成 DCS 建模卡片；唯讀 |
-| `fundamental-analyzer` | 個股三大財務報表量化體檢（ROE、自由現金流覆蓋、盈餘配發率）與 ETF 穿透加權聚合評分（netScore、divScore、valScore、fricScore）；多市場財報資料層（港股與 A 股東方財富、台股證交所 OpenAPI、美股 SEC EDGAR、日股 EDINET，yfinance 為備援）；唯讀 |
+| `fundamental-analyzer` | 個股三大財務報表量化體檢（ROE、自由現金流覆蓋、盈餘配發率）與 ETF 穿透加權聚合評分（netScore、divScore、valScore、fricScore）；多市場財報資料層（港股與 A 股東方財富、台股 FinMind＋Yahoo 股市＋證交所 OpenAPI、美股 SEC EDGAR、日股 EDINET，yfinance 為備援）；唯讀 |
 
 ## 思考類文件的寫法
 

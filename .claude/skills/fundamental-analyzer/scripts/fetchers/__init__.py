@@ -52,8 +52,8 @@ def fetch_info(symbol: str, fetchers: Optional[Dict[str, Callable[[str], Dict[st
     """依市場取財報 info；任何錯誤回 {}。"""
     market, code = classify(symbol)
     if fetchers is None:
-        from . import eastmoney, edinet, sec, twse
-        fetchers = {"HK": eastmoney.fetch_hk, "CN": eastmoney.fetch_cn, "TW": twse.fetch, "US": sec.fetch, "JP": edinet.fetch}
+        from . import eastmoney, edinet, sec, tw
+        fetchers = {"HK": eastmoney.fetch_hk, "CN": eastmoney.fetch_cn, "TW": tw.fetch, "US": sec.fetch, "JP": edinet.fetch}
     fn = fetchers.get(market)
     if not fn:
         return {}
