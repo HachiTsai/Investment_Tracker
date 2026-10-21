@@ -7,7 +7,7 @@
 | 網域 | 服務說明 | 連線狀態 | 實務用途與讀取方式 |
 | :--- | :--- | :---: | :--- |
 | `www.twse.com.tw` | 台灣證券交易所官網 | ✅ HTTP 200 | 台股公告、收盤行情備援 |
-| `openapi.twse.com.tw` | 證交所 OpenAPI | ✅ HTTP 200 | 自動化撈取每日收盤價與除權息資訊 |
+| `openapi.twse.com.tw` | 證交所 OpenAPI | ✅ HTTP 200 | 自動化撈取每日收盤價與除權息資訊；上市公司季度損益與資產負債（`fundamental-analyzer` 財報資料層） |
 | `mops.twse.com.tw` | 公開資訊觀測站 | ✅ HTTP 200 | 台股重大訊息、除權息公告 |
 | `www.tpex.org.tw` | 證券櫃檯買賣中心 | ✅ HTTP 200 | 上櫃證券行情與除權息備援 |
 | `www.hkex.com.hk` | 香港交易所官網 | ✅ HTTP 200 | 港股市場公告與交易規則 |
@@ -40,8 +40,11 @@
 | `xueqiu.com` | 雪球主站 | ✅ HTTP 200 | 陸港股市場調研與投資人討論 |
 | `stock.xueqiu.com` | 雪球行情 API | ✅ HTTP 403/200 | 需帶 User-Agent 與 Cookie 繞過基本防爬 |
 | `quote.eastmoney.com` | 東方財富行情 | ✅ HTTP 200 | 陸港股報價與盤面概況 |
-| `datacenter-web.eastmoney.com` | 東方財富數據中心 | ✅ HTTP 200 | 港股通南向資金每日淨買入資料源 |
+| `datacenter-web.eastmoney.com` | 東方財富數據中心 | ✅ HTTP 200 | 港股通南向資金每日淨買入資料源；A 股損益、資產負債、現金流年報（`fundamental-analyzer`） |
 | `push2.eastmoney.com` | 東方財富即時推播 | ✅ HTTP 404/200 | 即時報價推播 API（需指定完整端點） |
+| `datacenter.eastmoney.com` | 東方財富 F10 數據中心 | ✅ HTTP 200 | 港股主要財務指標年報（`RPT_HKF10_FN_MAININDICATOR`，`fundamental-analyzer`；2026-10-21 實測） |
+| `data.sec.gov` | SEC EDGAR 資料 API | ✅ HTTP 200 | 美股 XBRL 財報事實（需帶含聯絡資訊的 User-Agent；2026-10-21 實測） |
+| `www.sec.gov` | SEC EDGAR 官網 | ✅ HTTP 200 | 代號對 CIK 對照表 `files/company_tickers.json`（2026-10-21 實測） |
 | `webb-site.com` | Webb-site | ✅ HTTP 200 | 港股 CCASS 股權集中度與股東持股變動 |
 | `www.webb-site.com` | Webb-site 完整域名 | ✅ HTTP 200 | 同上 |
 
