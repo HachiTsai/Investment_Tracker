@@ -14,17 +14,6 @@
       ]
     },
     {
-      "id": "hot5",
-      "name": "台股五日熱門股",
-      "url": "https://claude.ai/artifact/9xyetsvZ5j6MdpA3UvWBuS",
-      "kind": "scheduled",
-      "trigger": "台股三市場五日熱門股_每日更新",
-      "max_age_hours": 30,
-      "files": [
-        ".claude/skills/price-dividend-fetcher/scripts/hot5.py"
-      ]
-    },
-    {
       "id": "constituents",
       "name": "00882 成分股股利明細",
       "url": "https://claude.ai/artifact/DSbfrxfywurJVo3TVwSzia",
@@ -57,7 +46,6 @@
   ],
   "triggers": [
     "00882_舊經濟風向日報",
-    "台股三市場五日熱門股_每日更新",
     "00882 成分股股利表每週五更新"
   ],
   "drive_public": [
