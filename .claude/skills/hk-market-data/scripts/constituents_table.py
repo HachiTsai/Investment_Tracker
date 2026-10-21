@@ -37,8 +37,11 @@ FX = tw / hk  # 每 1 港幣約幾台幣
 
 def render(url):
     for _ in range(2):
-        r = subprocess.run([CH, "--headless=new", "--no-sandbox", "--disable-gpu", f"--proxy-server={os.environ.get('HTTPS_PROXY','')}",
-                            "--virtual-time-budget=15000", "--dump-dom", url], capture_output=True, text=True, timeout=120)
+        try:
+            r = subprocess.run([CH, "--headless=new", "--no-sandbox", "--disable-gpu", f"--proxy-server={os.environ.get('HTTPS_PROXY','')}",
+                                "--virtual-time-budget=15000", "--dump-dom", url], capture_output=True, text=True, timeout=120)
+        except subprocess.TimeoutExpired:  # 單檔逾時不拖垮整次執行，由 fails 統計
+            continue
         if len(r.stdout) > 50000:
             t = re.sub(r"<script.*?</script>|<style.*?</style>", "", r.stdout, flags=re.S)
             t = re.sub(r"<[^>]+>", "|", t); t = re.sub(r"\|[\s|]*\|", "|", html.unescape(t))
