@@ -78,4 +78,5 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --fib-backtest   
 python3 .claude/skills/price-dividend-fetcher/scripts/swing_levels.py   # 短、中、長期分級回測：各週期 5 級、費波那契 6 級、三週期組合的後續含息報酬（正式版只採用回測站得住的部分，見下）
 python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15      # 觀察清單掃描（個股卡片＋成分股前 N 大），輸出 JSON
 python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --prev prev.json --html out.html --sheet sheet.json   # --html 另存 Artifact 頁面；--prev 給上次 --scan 輸出，標出狀態變化；--sheet 輸出 Sheet 二維表（表頭加資料列，A 到 X 欄順序固定，排程整張寫入）
+python3 .claude/skills/portfolio-patrol/scripts/patrol.py --json > patrol.json && python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --patrol patrol.json --daily-html out.html   # 每日投資組合巡檢頁：波段觀察加評分矩陣（趨勢、動能、量能、績效，`swing_scores.py`，與 APP 同算法），併入配置狀態與殖利率，可依地區與類型篩選
 ```
