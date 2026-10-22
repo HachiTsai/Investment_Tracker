@@ -1,4 +1,4 @@
-<title>00882 成分股股利明細</title>
+<title>00882 成分股股利與財報明細</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* 版面：一頁摘要加一張可排序的 49 檔表格，數字靠右、狀態用文字標籤 */
@@ -29,12 +29,41 @@ nav.tabs{display:flex;gap:8px}nav.tabs button{font:inherit;background:var(--card
 nav.tabs button[aria-pressed=true]{border-color:var(--acc);color:var(--acc);font-weight:600}
 nav.tabs button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}[hidden]{display:none!important}
 ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;max-width:72ch}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chips button{font:inherit;font-size:.82rem;background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:14px;padding:3px 11px;cursor:pointer}
+.chips button[aria-pressed=true]{border-color:var(--acc);color:var(--acc);font-weight:600}
+th.og,td.og{border-left:2px solid var(--line)}
+tbody tr.rw{cursor:pointer}tbody tr.rw:hover td{background:var(--head)}
+.sg{font-size:.76rem;padding:0 6px;margin-right:4px;border:1px solid currentColor;border-radius:9px;display:inline-block}
+.warn{color:var(--warn)}
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);padding:0;width:min(860px,94vw);max-height:90vh;overflow:auto}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.dh{position:sticky;top:0;background:var(--bg);display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line);z-index:1}
+.dh h2{margin:0;font-size:1.15rem;line-height:1.3}.dh button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:6px;padding:4px 12px;cursor:pointer}
+.db{padding:14px 18px 20px;display:flex;flex-direction:column;gap:16px}
+.db h3{margin:0 0 6px;font-size:.95rem}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.kp div{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:8px 10px}.kp b{display:block;font-size:1.05rem}.kp span{font-size:.76rem;color:var(--mut)}
+.ch{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.ch svg{width:100%;height:auto;background:var(--card);border:1px solid var(--line);border-radius:6px}
+.mini{width:100%;border-collapse:collapse;font-size:.84rem;min-width:0}.mini th,.mini td{padding:4px 8px;position:static;cursor:default;white-space:nowrap}.mini th{background:var(--head)}
+.sl{margin:0;padding-left:1.2em;max-width:none}
 </style>
 <main>
-<header><h1>00882 成分股股利明細</h1>
-<p class="mut">資料日期 __ASOF__。持股、股數、權重來自中信投信官方明細（2026-10-13）；股息來自富途牛牛；去年中期股利來自先前的搜尋摘要，可信度較低。</p></header>
-<nav class="tabs" aria-label="分頁"><button id="tb-div" aria-pressed="true">股利明細</button><button id="tb-fin" aria-pressed="false">財報資料</button></nav>
-<div id="pg-div" style="display:contents">
+<header><h1>00882 成分股股利與財報明細</h1>
+<p class="mut">資料日期 __ASOF__。持股、股數、權重來自中信投信官方明細（2026-10-13）；股息來自富途牛牛；財報來自東方財富（非官方彙整，關鍵數字需對港交所公告原文）；去年中期股利來自先前的搜尋摘要，可信度較低。</p></header>
+<nav class="tabs" aria-label="分頁"><button id="tb-fin" aria-pressed="true">財報</button><button id="tb-div" aria-pressed="false">股利明細</button></nav>
+<div id="pg-fin" style="display:contents">
+<section class="sum" id="fsum" aria-label="財報摘要"></section>
+<section><div class="chips" id="chips" aria-label="快速篩選"></div></section>
+<section><p class="mut" id="fcnt"></p><div class="wrap"><table id="ft"><thead id="fh"></thead><tbody id="fb"></tbody></table></div></section>
+<section><ul class="mut">
+<li>前面是重點指標：單季 EPS、累計 EPS、近 12 月股息、股價、ROE、配發率、經營現金流、營收、PB、PE；左側粗線之後是其餘指標與訊號。點任一檔看趨勢圖與近 8 期明細。</li>
+<li>單季 EPS 由累計數相減推算（一季報、中報、三季報、年報）；只公布中報與年報的公司，顯示的是「單期」（半年）。金額為報表幣別，不換算，單位億；股價與股息為港元。</li>
+<li>每欄下方可篩選：文字欄輸入關鍵字；數字欄可輸入 5（≥5）、&gt;5、&lt;3、1-3；營收、淨利、現金流以「億」為單位。代號與名稱欄、標題列固定。</li>
+<li>訊號是規則式判讀（營收或淨利年增減 5～10% 以上、ROE 變動 1 個百分點以上、現金流為負等），拿去年同期對比；銀行與保險不套用現金流與負債規則。這是事實彙整，不構成買賣建議。</li>
+<li>「報表期」是財報結算日，各公司不同，不能直接橫向比較累計金額；空白代表東方財富沒有該欄位；沒有財報資料的標的不列入。</li>
+</ul></section>
+</div>
+<div id="pg-div" hidden style="display:contents">
 <section class="sum" aria-label="摘要">
 <div><b>__N__ 檔</b><span>最大一檔 __TOP__</span></div>
 <div><b>約 __HAS26__ 檔</b><span>已有 2026 中期股利金額</span></div>
@@ -43,65 +72,88 @@ ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;max-wi
 </section>
 <section><p class="mut" id="cnt"></p><div class="wrap"><table id="t"><thead id="h"></thead><tbody id="b"></tbody></table></div></section>
 <section><ul class="mut">
-<li>每欄下方可篩選：文字欄輸入關鍵字；數字欄可輸入 5（≥5）、&gt;5、&lt;3、1-3；營收、淨利、現金流以「億」為單位。代號與名稱欄、標題列固定。股利明細已帶入 ROE、配發率、負債/資產、經營現金流四欄，點一檔可展開完整財報。</li>
+<li>每欄下方可篩選，寫法同財報頁。</li>
 <li>股息欄單位為港元（富途報價幣別）。近 12 月股息若含特別股息會偏高，例如 6186 飛鶴、6110 滔搏。</li>
 <li>「對去年中期」標籤：增＝金額較高；減＝金額較低；持平；幣別＝人民幣與港元混用，需換算，只能說大致持平。</li>
 <li>2026 中期欄來自公告標題，幣別沒標的照原文寫「未標」。</li>
 <li>沒有找到獨立的歷史股利表，這是用報價頁股息與公告標題拼出來的。</li>
 </ul></section>
 </div>
-<div id="pg-fin" hidden style="display:contents">
-<section><p class="mut">各成分股最近一份已公布財報（含中報、季報），來源：東方財富（非官方彙整，關鍵數字需對港交所公告原文）。金額為報表幣別，不換算，單位億；ROE 為年化滾動口徑；配發率為東方財富提供值。</p></section>
-<section><p class="mut" id="fcnt"></p><div class="wrap"><table id="ft"><thead id="fh"></thead><tbody id="fb"></tbody></table></div></section>
-<section><ul class="mut">
-<li>「報表期」是該財報的結算日，各公司不同，不能直接橫向比較累計金額（中報為半年、季報為單季累計）。</li>
-<li>空白代表東方財富沒有該欄位；沒有財報資料的標的不列入。</li>
-<li>這是事實彙整，不構成買賣建議。</li>
-</ul></section>
-</div>
 </main>
+<dialog id="dlg" aria-label="個股財報"><div class="dh"><h2 id="dt"></h2><button id="dx" type="button">關閉</button></div><div class="db" id="dbody"></div></dialog>
 <script>
 const D=__DATA__;
 const F=__FIN__;
-const cols=[['c','代號',0],['n','名稱',0],['w','權重%',1],['px','股價',1],['ttm','近12月股息',1],['lfy','上一財年',1],['chg','變化%',1],['y','殖利率%',1],['roe','ROE%',1],['payout','配發率%',1],['debt','負債/資產%',1],['ocf','經營現金流(億)',1],['i26','2026 中期股利',0],['p25','去年中期（摘要）',0],['cmp','對去年中期',0]];
-D.forEach(r=>{const x=F[r.c];if(x){r._f=x;['roe','payout','debt','ocf'].forEach(k=>r[k]=x[k])}});
-const open=new Set();
 const lab={up:'增',down:'減',flat:'持平',fx:'幣別'};
 const yi=v=>typeof v==='number'?(v/1e8).toFixed(1):'';
+const fx=(v,d)=>typeof v==='number'?v.toFixed(d):'';
+const sg=v=>typeof v==='number'?(v>0?'+':'')+v.toFixed(1):'';
+const tone=v=>v>0.5?'up':v<-0.5?'down':'flat';
 // 篩選：文字欄＝包含；數字欄＝數字（≥）、>10、<5、10-20、=3
-function mk(o){
-const st={key:o.key,dir:-1,f:{}};
-const th=document.getElementById(o.head),tb=document.getElementById(o.body);
 function test(v,q,num){q=q.trim();if(!q)return true;
 if(!num)return String(v==null?'':v).toLowerCase().includes(q.toLowerCase());
 if(typeof v!=='number')return false;let m;
 if(m=q.match(/^(-?[\d.]+)\s*[-~～]\s*(-?[\d.]+)$/))return v>=+m[1]&&v<=+m[2];
 if(m=q.match(/^(>=|<=|>|<|=|≥|≤)\s*(-?[\d.]+)$/)){const x=+m[2];return {'>=':v>=x,'≥':v>=x,'<=':v<=x,'≤':v<=x,'>':v>x,'<':v<x,'=':v===x}[m[1]]}
 if(m=q.match(/^-?[\d.]+$/))return v>=+q;return true}
-function cell(r,k){const v=r[k];return o.scale&&o.scale[k]?(typeof v==='number'?v/1e8:v):v}
+// col = [key,標題,數字?,選項]；選項 d=小數位 yi=億 sg=帶正負號並著色 og=其餘指標起點
+function mk(o){
+const st={key:o.key,dir:-1,f:{}};
+const th=document.getElementById(o.head),tb=document.getElementById(o.body);
+const sc=(k)=>(o.cols.find(c=>c[0]===k)||[])[3]||{};
+const cell=(r,k)=>{const v=r[k];return sc(k).yi&&typeof v==='number'?v/1e8:v};
+const cls=(ci,n,c)=>(n?'n':'')+(ci===0?' s1':ci===1?' s2':'')+(c.og?' og':'');
 function build(){th.innerHTML='';const r1=document.createElement('tr'),r2=document.createElement('tr');r2.className='flt';
-o.cols.forEach(([k,t,n],ci)=>{const c=ci===0?' s1':ci===1?' s2':'';
-const h=document.createElement('th');h.textContent=t;h.className=(n?'n':'')+c;h.tabIndex=0;h.dataset.k=k;
+o.cols.forEach(([k,t,n,c],ci)=>{c=c||{};const h=document.createElement('th');h.className=cls(ci,n,c);h.tabIndex=0;h.dataset.k=k;
 const go=()=>{st.dir=(k===st.key)?-st.dir:(n?-1:1);st.key=k;body();marks()};h.onclick=go;h.onkeydown=e=>{if(e.key==='Enter')go()};r1.appendChild(h);
-const f=document.createElement('th');f.className=c.trim();const inp=document.createElement('input');inp.type='search';inp.placeholder=n?'如 >5、1-3':'篩選';inp.setAttribute('aria-label',t+' 篩選');
-inp.oninput=()=>{st.f[k]=inp.value;body()};f.appendChild(inp);r2.appendChild(f)});
-th.appendChild(r1);th.appendChild(r2);marks();
-requestAnimationFrame(()=>th.style.setProperty('--h1',r1.offsetHeight+'px'))}
-function marks(){th.querySelectorAll('tr:first-child th').forEach(h=>{const k=h.dataset.k,c=o.cols.find(x=>x[0]===k);h.textContent=c[1]+(k===st.key?(st.dir>0?' ▲':' ▼'):'')})}
-function body(){const rows=o.rows.filter(r=>o.cols.every(([k,t,n])=>test(cell(r,k),st.f[k]||'',n))).sort((a,b)=>{const x=a[st.key],y=b[st.key];if(x==null)return 1;if(y==null)return -1;return (typeof x==='number'?x-y:String(x).localeCompare(String(y),'zh'))*st.dir});
-tb.innerHTML='';rows.forEach(r=>{const tr=document.createElement('tr');if(o.detail&&r._f){tr.style.cursor='pointer';tr.title='點一下展開財報';tr.onclick=()=>{open.has(r.c)?open.delete(r.c):open.add(r.c);body()}}o.cols.forEach(([k,t,n],ci)=>{const td=document.createElement('td');td.className=(n?'n':'')+(ci===0?' s1':ci===1?' s2':'');const v=r[k];
+const f=document.createElement('th');f.className=cls(ci,0,c).trim();if(k==='sigs'||o.nofilter&&o.nofilter.includes(k)){}else{const inp=document.createElement('input');inp.type='search';inp.placeholder=n?'如 >5、1-3':'篩選';inp.setAttribute('aria-label',t+' 篩選');
+inp.oninput=()=>{st.f[k]=inp.value;body()};f.appendChild(inp)}r2.appendChild(f)});
+th.appendChild(r1);th.appendChild(r2);marks();requestAnimationFrame(()=>th.style.setProperty('--h1',r1.offsetHeight+'px'))}
+function marks(){th.querySelectorAll('tr:first-child th').forEach(h=>{const c=o.cols.find(x=>x[0]===h.dataset.k);h.textContent=c[1]+(c[0]===st.key?(st.dir>0?' ▲':' ▼'):'')})}
+function rows(){return o.rows.filter(r=>(!o.pred||o.pred(r))&&o.cols.every(([k,t,n])=>test(cell(r,k),st.f[k]||'',n))).sort((a,b)=>{const x=a[st.key],y=b[st.key];if(x==null)return 1;if(y==null)return -1;return (typeof x==='number'?x-y:String(x).localeCompare(String(y),'zh'))*st.dir})}
+function body(){const rs=rows();tb.innerHTML='';rs.forEach(r=>{const tr=document.createElement('tr');
+if(o.open){tr.className='rw';tr.tabIndex=0;tr.onclick=()=>o.open(r);tr.onkeydown=e=>{if(e.key==='Enter')o.open(r)}}
+o.cols.forEach(([k,t,n,c],ci)=>{c=c||{};const td=document.createElement('td');td.className=cls(ci,n,c);const v=r[k];
 if(k==='cmp'){td.innerHTML=v?'<span class="tag '+v+'">'+lab[v]+'</span>':''}
-else if(k==='chg'){td.textContent=(v>0?'+':'')+v.toFixed(1);td.className+=' '+(v>0.5?'up':v<-0.5?'down':'flat')}
-else if(k==='rev'||k==='np'||k==='ocf')td.textContent=yi(v);else if(v==null&&o.detail&&n)td.textContent='';
-else if(typeof v==='number')td.textContent=k==='c'?v:v.toFixed(['w','y','px','eps','dps'].includes(k)?2:['roe','payout','debt','pe','pb'].includes(k)||o.fin?1:3);
-else td.textContent=v==null?'':v;tr.appendChild(td)});tb.appendChild(tr);if(o.detail&&r._f&&open.has(r.c)){const d=document.createElement('tr'),c=document.createElement('td');c.colSpan=o.cols.length;c.style.whiteSpace='normal';c.className='det';const x=r._f,g=(v,d)=>typeof v==='number'?v.toFixed(d):'';c.innerHTML='<b>財報 '+x.kind+'（'+x.period+'，'+x.cur+'）</b>　營收 '+yi(x.rev)+' 億｜股東淨利 '+yi(x.np)+' 億｜EPS '+g(x.eps,2)+'｜ROE '+g(x.roe,1)+'%｜負債/資產 '+g(x.debt,1)+'%｜經營現金流 '+yi(x.ocf)+' 億｜配發率 '+g(x.payout,1)+'%｜PE '+g(x.pe,1)+'｜PB '+g(x.pb,2)+'｜每股股息 '+g(x.dps,2);d.appendChild(c);tb.appendChild(d)}});
-if(o.count)document.getElementById(o.count).textContent='顯示 '+rows.length+' / '+o.rows.length+' 檔'}
-build();body()}
-mk({cols,rows:D,key:'w',head:'h',body:'b',count:'cnt',detail:1,scale:{ocf:1}});
-const fc=[['c','代號',0],['n','名稱',0],['w','權重%',1],['period','報表期',0],['kind','報表',0],['cur','幣別',0],['rev','營收(億)',1],['np','股東淨利(億)',1],['eps','EPS',1],['roe','ROE%',1],['debt','負債/資產%',1],['ocf','經營現金流(億)',1],['payout','配發率%',1],['pe','PE(TTM)',1],['pb','PB(TTM)',1],['dps','每股股息(港元)',1]];
-const FR=D.filter(r=>F[r.c]).map(r=>Object.assign({c:r.c,n:r.n,w:r.w},F[r.c]));
-mk({cols:fc,rows:FR,key:'w',head:'fh',body:'fb',count:'fcnt',fin:1,scale:{rev:1,np:1,ocf:1}});
+else if(k==='sigs'){(v||[]).slice(0,3).forEach(x=>{const s=document.createElement('span');s.className='sg '+x.tone;s.textContent=x.t.replace(/^(營收|股東淨利|單季 EPS|ROE|負債\/資產)[^+\-]*/,'$1 ').replace(/較去年同期 /,'');s.title=x.t;td.appendChild(s)})}
+else if(c.sg){td.textContent=typeof v==='number'?sg(v):'';if(typeof v==='number')td.className+=' '+tone(v)}
+else if(c.yi)td.textContent=yi(v);
+else if(typeof v==='number')td.textContent=k==='c'?v:v.toFixed(c.d==null?2:c.d);
+else td.textContent=v==null?'':v;tr.appendChild(td)});tb.appendChild(tr)});
+if(o.count)document.getElementById(o.count).textContent='顯示 '+rs.length+' / '+o.rows.length+' 檔'}
+build();body();return{body}}
+// ---- 股利明細 ----
+const dcols=[['c','代號',0],['n','名稱',0],['w','權重%',1],['px','股價',1],['ttm','近12月股息',1,{d:3}],['lfy','上一財年',1,{d:3}],['chg','變化%',1,{sg:1}],['y','殖利率%',1],['i26','2026 中期股利',0],['p25','去年中期（摘要）',0],['cmp','對去年中期',0]];
+mk({cols:dcols,rows:D,key:'w',head:'h',body:'b',count:'cnt'});
+// ---- 財報（主頁）----
+const FR=D.filter(r=>F[r.c]).map(r=>Object.assign({},r,F[r.c]));
+const fcols=[['c','代號',0],['n','名稱',0],['px','股價',1],['qeps','單季／單期EPS',1,{d:2}],['eps','累計EPS',1,{d:2}],['ttm','近12月股息',1,{d:3}],['roe','ROE%',1,{d:1}],['payout','配發率%',1,{d:1}],['ocf','經營現金流(億)',1,{yi:1}],['rev','營收(億)',1,{yi:1}],['pb','PB',1,{d:2}],['pe','PE',1,{d:1}],
+['period','報表期',0,{og:1}],['kind','報表',0],['cur','幣別',0],['yoy_rev','營收年增%',1,{sg:1}],['yoy_np','淨利年增%',1,{sg:1}],['yoy_q','單季EPS年增%',1,{sg:1}],['np','股東淨利(億)',1,{yi:1}],['debt','負債/資產%',1,{d:1}],['y','殖利率%',1],['w','權重%',1],['sigs','訊號',0]];
+const chipDefs=[['全部',r=>true],['營收與淨利都成長',r=>r.yoy_rev>0&&r.yoy_np>0],['淨利衰退',r=>r.yoy_np<0],['經營現金流為負',r=>r.ocf<0],['配發率超過 100%',r=>r.payout>100],['ROE 高於 15%',r=>r.roe>15],['PB 低於 0.6',r=>r.pb<0.6],['有訊號',r=>(r.sigs||[]).length>0]];
+let chip=0;let tbl;
+function drawChips(){const el=document.getElementById('chips');el.innerHTML='';chipDefs.forEach(([t,p],i)=>{const b=document.createElement('button');b.type='button';b.textContent=t+'（'+FR.filter(p).length+'）';b.setAttribute('aria-pressed',String(i===chip));b.onclick=()=>{chip=i;drawChips();tbl.body()};el.appendChild(b)})}
+// 摘要卡
+(function(){const n=FR.length,c=p=>FR.filter(p).length;const el=document.getElementById('fsum');
+[[n+' 檔','有最近一份財報（共 '+D.length+' 檔）'],[c(r=>r.yoy_np>0)+' / '+c(r=>r.yoy_np!=null),'淨利較去年同期成長（成長檔數 / 可比較檔數）'],[c(r=>r.yoy_rev>0)+' / '+c(r=>r.yoy_rev!=null),'營收較去年同期成長'],[c(r=>r.ocf<0)+' 檔','經營現金流為負（含銀行保險，請看訊號欄）'],[c(r=>r.payout>100)+' 檔','配發率超過 100%']].forEach(([b,s])=>{const d=document.createElement('div');d.innerHTML='<b>'+b+'</b><span>'+s+'</span>';el.appendChild(d)})})();
+// ---- 個股視窗 ----
+const dlg=document.getElementById('dlg');
+function bars(vals,labs,title,unit){const W=420,H=170,pl=34,pb=26,pt=32,n=vals.length;if(!n)return'';const mx=Math.max(...vals,0),mn=Math.min(...vals,0),span=(mx-mn)||1,bw=(W-pl-8)/n;const y=v=>pt+(H-pt-pb)*(mx-v)/span;let g='<text x="6" y="14" font-size="11" fill="currentColor">'+title+'</text><line x1="'+pl+'" x2="'+(W-4)+'" y1="'+y(0)+'" y2="'+y(0)+'" stroke="currentColor" opacity=".3"/>';
+vals.forEach((v,i)=>{const x=pl+i*bw+bw*.15,h=Math.abs(y(v)-y(0));g+='<rect x="'+x+'" y="'+Math.min(y(v),y(0))+'" width="'+bw*.7+'" height="'+Math.max(h,1)+'" fill="'+(v<0?'var(--down)':'var(--acc)')+'"/><text x="'+(x+bw*.35)+'" y="'+(v<0?y(v)+11:y(v)-3)+'" font-size="9" text-anchor="middle" fill="currentColor">'+v.toFixed(unit)+'</text><text x="'+(x+bw*.35)+'" y="'+(H-8)+'" font-size="9" text-anchor="middle" fill="currentColor" opacity=".7">'+labs[i]+'</text>'});
+return'<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+title+'">'+g+'</svg>'}
+const plab=h=>h.p.slice(2,7).replace('-','/');
+function open(r){const hs=(r.hist||[]).slice(0,8),rv=[...hs].reverse();const x=r;
+document.getElementById('dt').textContent=x.c+' '+x.n+'　權重 '+fx(x.w,2)+'%　'+(x.kind||'')+'（'+(x.period||'')+'，'+(x.cur||'')+'）';
+const kp=[[fx(x.qeps,2),'單季／單期 EPS'],[fx(x.eps,2),'累計 EPS'],[fx(x.ttm,3),'近12月股息（港元）'],[fx(x.px,2),'股價（港元）'],[fx(x.roe,1)+'%','ROE'],[fx(x.payout,1)+'%','配發率'],[yi(x.ocf)+' 億','經營現金流（累計）'],[yi(x.rev)+' 億','營收（累計）'],[fx(x.pb,2),'PB'],[fx(x.pe,1),'PE']];
+let h='<section><h3>重點指標</h3><div class="kp">'+kp.map(([b,s])=>'<div><b>'+b+'</b><span>'+s+'</span></div>').join('')+'</div></section>';
+h+='<section><h3>財報透露的訊號</h3>'+((x.sigs||[]).length?'<ul class="sl">'+x.sigs.map(s=>'<li class="'+s.tone+'">'+s.t+'</li>').join('')+'</ul>':'<p class="mut">與去年同期相比，沒有達到門檻的明顯變化。</p>')+'</section>';
+h+='<section class="ch">'+bars(rv.map(r=>r.qeps??0),rv.map(plab),'單季／單期 EPS',2)+bars(rv.map(r=>r.roe??0),rv.map(plab),'ROE %（年化滾動）',1)+'</section>';
+h+='<section><h3>近 8 期明細</h3><div class="wrap" style="max-height:none"><table class="mini"><thead><tr><th>報表</th><th class="n">單季EPS</th><th class="n">累計EPS</th><th class="n">營收(億)</th><th class="n">淨利(億)</th><th class="n">ROE%</th><th class="n">負債/資產%</th><th class="n">經營現金流(億)</th></tr></thead><tbody>'+hs.map(r=>'<tr><td>'+r.k+'</td><td class="n">'+fx(r.qeps,2)+'</td><td class="n">'+fx(r.eps,2)+'</td><td class="n">'+yi(r.rev)+'</td><td class="n">'+yi(r.np)+'</td><td class="n">'+fx(r.roe,1)+'</td><td class="n">'+fx(r.debt,1)+'</td><td class="n">'+yi(r.ocf)+'</td></tr>').join('')+'</tbody></table></div></section>';
+h+='<section><h3>股利</h3><p class="mut">近 12 月 '+fx(x.ttm,3)+'、上一財年 '+fx(x.lfy,3)+'（'+sg(x.chg)+'%）、殖利率 '+fx(x.y,2)+'%；2026 中期：'+(x.i26||'—')+'；去年中期：'+(x.p25||'—')+'。股息單位港元。</p></section>';
+document.getElementById('dbody').innerHTML=h;dlg.showModal()}
+document.getElementById('dx').onclick=()=>dlg.close();
+dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close()});
+tbl=mk({cols:fcols,rows:FR,key:'w',head:'fh',body:'fb',count:'fcnt',pred:r=>chipDefs[chip][1](r),open});drawChips();
 function fixh(){document.querySelectorAll('thead').forEach(t=>{const r=t.rows[0];if(r&&r.offsetHeight)t.style.setProperty('--h1',r.offsetHeight+'px')})}
-function tab(f){requestAnimationFrame(fixh);document.getElementById('pg-div').hidden=f;document.getElementById('pg-fin').hidden=!f;document.getElementById('tb-div').setAttribute('aria-pressed',String(!f));document.getElementById('tb-fin').setAttribute('aria-pressed',String(f))}
-document.getElementById('tb-div').onclick=()=>tab(false);document.getElementById('tb-fin').onclick=()=>tab(true);
+function tab(f){requestAnimationFrame(fixh);document.getElementById('pg-div').hidden=!f;document.getElementById('pg-fin').hidden=f;document.getElementById('tb-div').setAttribute('aria-pressed',String(f));document.getElementById('tb-fin').setAttribute('aria-pressed',String(!f))}
+document.getElementById('tb-div').onclick=()=>tab(true);document.getElementById('tb-fin').onclick=()=>tab(false);
 </script>

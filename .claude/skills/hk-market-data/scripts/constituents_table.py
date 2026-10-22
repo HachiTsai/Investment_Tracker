@@ -9,6 +9,8 @@ OUT = sys.argv[1]
 PREV = sys.argv[2] if len(sys.argv) > 2 else None
 JSON_OUT = sys.argv[3] if len(sys.argv) > 3 else None
 import glob
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from fin_trend import enrich  # 單季 EPS、年增與訊號
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "fundamental-analyzer", "scripts"))
 from fetchers import eastmoney  # 財報頁沿用 fundamental-analyzer 的東方財富資料層
 CH = sorted(glob.glob("/opt/pw-browsers/chromium-*/chrome-linux*/chrome"))[-1]
@@ -81,7 +83,7 @@ with ThreadPoolExecutor(6) as ex:
     rows = list(ex.map(one, stocks))
 def fin_one(x):
     try:
-        return x["code_"].split()[0], eastmoney.hk_detail(x["code_"].split()[0])
+        return x["code_"].split()[0], enrich(eastmoney.hk_detail(x["code_"].split()[0]))
     except Exception:
         return x["code_"].split()[0], {}
 
