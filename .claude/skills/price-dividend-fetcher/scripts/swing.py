@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from fetch_common import parse_ticker
+from fetch_common import TWSE_STOCK_DAY_URL, parse_ticker, roc_to_iso, to_float, twse_get
 from global_fetcher import get_yahoo, yahoo_result
 
 
@@ -25,8 +25,62 @@ def market_of(ticker: str) -> str:
     return MARKETS.get(exch, "美股")
 
 
+GAP_WINDOW_DAYS = 14
+
+
+def lagging_tickers(rows: List[Dict]) -> List[str]:
+    """同市場內最後一根日線早於該市場最新資料日的代號（證交所補缺後仍落後，如上櫃股或證交所失敗），供報告提示資料落後。"""
+    latest: Dict[str, str] = {}
+    for r in rows:
+        if r.get("last_date"):
+            latest[r["market"]] = max(latest.get(r["market"], ""), r["last_date"])
+    return [r["ticker"] for r in rows if r.get("last_date") and r["last_date"] < latest[r["market"]]]
+
+
+def fill_gaps_from_twse(bars: List[Dict], code: str, now: Optional[datetime] = None, fetch=None) -> List[Dict]:
+    """Yahoo 偶爾漏掉台股某一天的日線（實測 0050 缺 10-21、上一輪缺 10-20）：用證交所 STOCK_DAY 補回近 GAP_WINDOW_DAYS 天內缺的交易日。
+
+    只補早於台北今天的日期（避免把盤中價當收盤）；還原價沿用相鄰 K 棒的 adj/close 比；證交所失敗或查無資料（如上櫃股）就原樣回傳。
+    """
+    if not bars:
+        return bars
+    fetch = fetch or twse_get
+    tz = timedelta(hours=8)
+    now = now or datetime.now(timezone.utc)
+    today = (now + tz).strftime("%Y-%m-%d")
+    have = {(datetime.fromtimestamp(b["ts"], timezone.utc) + tz).strftime("%Y-%m-%d") for b in bars}
+    since = (now + tz - timedelta(days=GAP_WINDOW_DAYS)).strftime("%Y-%m-%d")
+    months = sorted({since[:7], today[:7]})
+    added = []
+    for ym in months:
+        try:
+            js = json.loads(fetch(TWSE_STOCK_DAY_URL.format(date=ym.replace("-", "") + "01", code=code)))
+        except (ValueError, RuntimeError, OSError):
+            continue
+        for row in js.get("data") or []:
+            try:
+                day = roc_to_iso(row[0].replace("/", "年", 1).replace("/", "月", 1) + "日")
+                o, h, l, c = (to_float(x) for x in row[3:7])
+                vol = to_float(row[1])
+            except (ValueError, IndexError, AttributeError):
+                continue
+            if None in (o, h, l, c, vol) or day in have or not (since <= day < today):
+                continue
+            ts = int(datetime.strptime(day, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp()) + 3600
+            added.append(dict(ts=ts, open=o, high=h, low=l, close=c, volume=vol, adj=c))
+    if not added:
+        return bars
+    out = sorted(bars + added, key=lambda b: b["ts"])
+    for i, b in enumerate(out):
+        if b in added:
+            ref = next((x for x in out[i + 1:] if x not in added), None) or next((x for x in reversed(out[:i]) if x not in added), None)
+            if ref and ref["close"]:
+                b["adj"] = b["close"] * ref["adj"] / ref["close"]
+    return out
+
+
 def load_ohlcv(ticker: str, rng: str = "2y") -> List[Dict]:
-    """抓日線並丟掉缺值的 K 棒。"""
+    """抓日線並丟掉缺值的 K 棒；台股再用證交所補 Yahoo 漏掉的交易日。"""
     exch, code = parse_ticker(ticker)
     r = yahoo_result(get_yahoo(exch, code, rng), exch, code)
     q = r["indicators"]["quote"][0]
@@ -37,6 +91,8 @@ def load_ohlcv(ticker: str, rng: str = "2y") -> List[Dict]:
         if None not in vals:
             a = adj[i] if adj and adj[i] is not None else vals[3]
             bars.append(dict(ts=ts, open=vals[0], high=vals[1], low=vals[2], close=vals[3], volume=vals[4], adj=a))
+    if exch == "TPE":
+        bars = fill_gaps_from_twse(bars, code)
     return bars
 
 
@@ -464,6 +520,9 @@ def main(argv=None) -> int:
         rows = scan(watchlist(a.scan or None), prev, with_chart=bool(a.daily_html))
         patrol = json.loads(Path(a.patrol).read_text(encoding="utf-8")) if a.patrol else {}
         merge_patrol(rows, patrol)
+        lag = lagging_tickers(rows)
+        if lag:
+            print("資料落後（證交所補缺後仍少一天以上）：" + "、".join(lag) + "；該列資料日落後，指標以最後一根日線計算", file=sys.stderr)
         if a.daily_html:
             date = max((r["last_date"] for r in rows if r.get("last_date")), default="")
             Path(a.daily_html).write_text(render_daily_page(rows, patrol, date), encoding="utf-8")

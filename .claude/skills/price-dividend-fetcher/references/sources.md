@@ -50,7 +50,11 @@
 | `www.aastocks.com` | 連線失敗 | 不可用 |
 | `www.hkexnews.hk`、`www1.hkexnews.hk`、`www3.hkexnews.hk`、`www.hkex.com.hk`、`www.etnet.com.hk`、`www.futunn.com`、`xueqiu.com`、東方財富（`quote`、`datacenter-web`、`push2`）、`webb-site.com`、`www.hsi.com.hk` | — | 港股專用，歸 `hk-market-data` skill，見它的 `references/sources.md` |
 
-**不在白名單（代理回 403）**：`query2.finance.yahoo.com`、`mis.twse.com.tw`、FinMind、Stooq。
+**不在白名單（代理回 403）**：`query2.finance.yahoo.com`、`mis.twse.com.tw`、Stooq。
+
+**FinMind（`api.finmindtrade.com`）**：2026-10-21 起代理可連（見 `network-connectivity.md`），但本 skill 不用它抓日線：匿名呼叫有頻率限制（2026-10-22 實測首次呼叫即回 402「Requests reach the upper limit」），免費版沒有還原股價（`TaiwanStockPriceAdj` 回 400，需付費）。財報才用 FinMind，見 `fundamental-analyzer`。
+
+**台股日線缺日補救**：Yahoo 偶爾漏掉台股某一天（2026-10-22 實測 32 檔 ETF 缺 10-21），`swing.py` 的 `fill_gaps_from_twse` 以證交所 `STOCK_DAY`（`rwd` 端點）補近 14 天內缺的交易日；上櫃股證交所查不到則不補。
 
 ### 各站的使用條件
 
