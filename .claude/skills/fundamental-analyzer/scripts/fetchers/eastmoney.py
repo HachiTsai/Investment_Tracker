@@ -85,6 +85,24 @@ def hk_detail(code: str, periods: int = 10) -> Dict[str, Any]:
     })
 
 
+def hk_cashflow(code: str) -> Dict[str, Any]:
+    """港股最近一份年報的現金流量表重點（原幣）：經營現金流、資本支出（購建固定資產）、已付股息。
+    三項要同一年都有才回傳；自由現金流與覆蓋倍數由呼叫端算。"""
+    q = urllib.parse.urlencode({
+        "reportName": "RPT_HKF10_FN_CASHFLOW_PC", "columns": "ALL", "source": "SECURITIES", "client": "PC",
+        "filter": f'(SECURITY_CODE="{code.zfill(5)}")(DATE_TYPE_CODE="001")(STD_ITEM_CODE in ("003999","005005","007004"))',
+        "pageSize": 12, "sortColumns": "REPORT_DATE", "sortTypes": "-1",
+    })
+    by: Dict[str, Dict[str, float]] = {}
+    for r in ((http_json(f"{HK_URL}?{q}").get("result") or {}).get("data")) or []:
+        by.setdefault((r.get("REPORT_DATE") or "")[:4], {})[r["STD_ITEM_CODE"]] = r.get("AMOUNT")
+    for y in sorted(by, reverse=True):
+        v = by[y]
+        if all(v.get(k) is not None for k in ("003999", "005005", "007004")):
+            return {"fy": y, "ocf": v["003999"], "capex": v["005005"], "paid": v["007004"]}
+    return {}
+
+
 _DIV_AMT = re.compile(r"每股派(人民币|港币|美元|新台币|日元)?([\d.]+)元")
 _DIV_HKD = re.compile(r"相当于港币([\d.]+)元")
 

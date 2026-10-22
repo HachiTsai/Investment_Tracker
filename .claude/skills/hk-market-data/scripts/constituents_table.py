@@ -10,7 +10,7 @@ PREV = sys.argv[2] if len(sys.argv) > 2 else None
 JSON_OUT = sys.argv[3] if len(sys.argv) > 3 else None
 import glob
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from fin_trend import enrich, add_dividends, rmb_hint  # 單季 EPS、年增與訊號
+from fin_trend import enrich, add_dividends, add_cashflow, add_valuation, rmb_hint  # 單季 EPS、年增與訊號
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "fundamental-analyzer", "scripts"))
 from fetchers import eastmoney  # 財報頁沿用 fundamental-analyzer 的東方財富資料層
 CH = sorted(glob.glob("/opt/pw-browsers/chromium-*/chrome-linux*/chrome"))[-1]
@@ -88,9 +88,13 @@ def fin_one(x):
     except Exception:
         return c, {}, []
     try:
-        return c, f, eastmoney.hk_dividends(c)
+        f = add_cashflow(f, eastmoney.hk_cashflow(c))
     except Exception:
-        return c, f, []  # 配息明細抓不到時仍保留財報本身
+        pass  # 現金流抓不到時只缺自由現金流欄
+    try:
+        return c, add_valuation(f), eastmoney.hk_dividends(c)
+    except Exception:
+        return c, add_valuation(f), []  # 配息明細抓不到時仍保留財報本身
 
 with ThreadPoolExecutor(6) as ex:
     fin_raw = list(ex.map(fin_one, stocks))
@@ -120,6 +124,7 @@ rows_out = [dict(c=r["c"], n=r["n"], w=r["w"], q=r["q"], px=r["px"], ttm=r["ttm"
                  i26=r["i26"], p25=r["p25"], cmp=r["cmp"]) for r in ok]
 tpl = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "references", "constituents_template.html"), encoding="utf-8").read()
 page = (tpl.replace("__DATA__", json.dumps(rows_out, ensure_ascii=False))
+        .replace("__MISS__", json.dumps([dict(c=r["c"], n=r["n"], w=r["w"], px=r["px"]) for r in rows if r.get("fail")], ensure_ascii=False))
         .replace("__FIN__", json.dumps({c: v for c, v in fin.items() if v}, ensure_ascii=False))
         .replace("__ASOF__", f"{date.today().isoformat()}（持股 {asof}）")
         .replace("__N__", str(len(ok))).replace("__TOP__", f'{top["n"]} {top["w"]}%')
