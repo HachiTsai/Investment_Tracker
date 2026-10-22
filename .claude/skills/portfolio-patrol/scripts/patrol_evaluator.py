@@ -8,10 +8,13 @@ import json
 import os
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from patrol_cards import check_watchdog, discover_tickers, load_cards
+
+DEFAULT_WORKERS = 8  # 抓價並行數；全標的 42 檔實測 8 條約 1 分鐘，16、32 條沒有更快也沒被限流
 
 
 def fetch_macro_telemetry(repo_root: Path) -> Dict[str, Any]:
@@ -325,8 +328,9 @@ def run_portfolio_patrol(
     filter_tickers: Optional[List[str]] = None,
     custom_models_dir: Optional[Path] = None,
     mock_macro: Optional[Dict[str, Any]] = None,
+    workers: int = DEFAULT_WORKERS,
 ) -> Dict[str, Any]:
-    """執行投資組合全標的巡檢核心主程序。"""
+    """執行投資組合全標的巡檢核心主程序。抓價階段以 workers 條執行緒並行，評估與警報維持原順序。"""
     models_root = custom_models_dir if custom_models_dir else repo_root / "models"
     tickers = discover_tickers(models_root, filter_tickers)
 
@@ -337,7 +341,7 @@ def run_portfolio_patrol(
     has_abnormal_posture = False
     has_watchdog_warning = False
 
-    for ticker in tickers:
+    def gather(ticker: str):
         cards = load_cards(models_root, ticker)
         watchdog = check_watchdog(cards)
         if cards.get("ticker", {}).get("category") == "STOCK":
@@ -347,6 +351,12 @@ def run_portfolio_patrol(
             live_data.setdefault("fx_to_twd", fx_row.get("rate") or fx_row.get("price"))
         else:
             live_data = fetch_ticker_live_data(ticker, cards, repo_root)
+        return cards, watchdog, live_data
+
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+        gathered = list(pool.map(gather, tickers))
+
+    for ticker, (cards, watchdog, live_data) in zip(tickers, gathered):
         evaluation = evaluate_ticker_posture(cards, live_data)
 
         evaluation["watchdog"] = watchdog
