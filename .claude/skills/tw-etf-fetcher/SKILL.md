@@ -41,12 +41,15 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py scaffold-model 0087
 python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets
 # 6. 產生 ETF 成分股「股利與財報明細」頁（持股、財報、配息、估值一頁看完）
 python3 .claude/skills/tw-etf-fetcher/scripts/etf_table.py 00985A out.html [table.json]
+# 7. 多檔台股 ETF 資料池：成分股去重只抓一次，輸出 index.html＋每檔 ETF 一頁＋pool.json
+python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py outdir [--etfs 0050,0056] [--models-dir models]
 ```
 
 ## 成分股股利與財報明細頁（`etf_table.py`、`etf_page.py`）
 
 - **分層**：持股取 MoneyDJ（資料日期取頁面上的「資料日期」，不是抓取日）；股價 Google Finance（`price-dividend-fetcher`，Yahoo、證交所、櫃買備援）；財報與配息 FinMind（`fundamental-analyzer/scripts/fetchers/finmind_detail.py`，輸出格式同港股版，趨勢、配息率、估值位置共用 `fundamental-analyzer/scripts/fin_trend.py`）；頁面渲染 `scripts/etf_page.py`＋`references/constituents_template.html`，與 00882 港股頁共用同一份範本，市場差異（幣別、說明文字、金融業判斷、有無中期配息）放在 `etf_page.PROFILES`。
 - **新增市場或 ETF**：台股 ETF 直接給代號；新市場在 `PROFILES` 加一份設定，再寫一個「持股＋單檔資料」模組，不必動範本。
+- **資料池（`etf_pool.py`）**：不給 `--etfs` 時掃描 `models/*/cards/constituents.jsonl`，台股個股達 5 檔的 ETF 都納入；成分股跨 ETF 去重後各抓一次（17 檔 ETF 約 214 檔個股，約 70 秒），限流失敗的個股在執行緒池之後序列重試一輪。輸出的多頁以 `files` 發佈成同一個 Artifact（`index.html` 為入口，頁首下拉切換 ETF）；`pool.json` 的個股與持股兩張表供寫入 Drive 的 All_Market/Taiwan 公開試算表（僅市場公開資料，不含個人持股）。
 - **韌性**：FinMind 請求過 `finmind_detail.get`（快取 6 小時、限流退避重試、可用環境變數 `FINMIND_TOKEN` 提高上限）；單檔任何一步失敗只讓該欄空白，並記在輸出摘要的 `errors`、`no_fin`、`no_price`。約 40 秒（50 檔、6 執行緒）。
 - **口徑**：殖利率＝近 12 月股息（最近幾次定期分配，季配取 4 次、半年配取 2 次、年配取 1 次，不含特別股息的判斷以類別為準）÷ Google Finance 股價；PE＝股價 ÷ 近四季 EPS，PB 取 FinMind 當日 PBR；配發率＝近 12 月股息 ÷ 近四季 EPS；已付股息＝該年付款的每股現金股利 × 參與股數（近似）。持股以外部位（現金、期貨）不在表內，權重加權殖利率視為 0。
 - **已知限制**：季配公司的「當期配息率」留白（只算年配與半年配）；純配股不列入股息；上櫃財報覆蓋以 FinMind 為準，缺值標「無資料」不推估；MOPS、Goodinfo 擋爬蟲不採用；主動式 ETF 持股每日變動，頁首標示持股日期。

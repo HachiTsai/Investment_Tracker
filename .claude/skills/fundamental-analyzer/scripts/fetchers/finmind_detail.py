@@ -97,7 +97,9 @@ def tw_detail(code: str, industry: Optional[str] = None, periods: int = 10) -> D
     eps_c, rev_c = _cumulative(inc["EPS"]), _cumulative(inc.get("Revenue", {}))
     ni_s, gp_c = inc.get("EquityAttributableToOwnersOfParent", {}), _cumulative(inc.get("GrossProfit", {}))
     ni_c = _cumulative(ni_s)
-    eq, liab, assets = bs.get("EquityAttributableToOwnersOfParent", {}), bs.get("Liabilities", {}), bs.get("TotalAssets", {})
+    # 金融業資產負債表沒有「歸屬母公司權益」，改用總權益（含少數股權，ROE 略偏低）
+    eq = bs.get("EquityAttributableToOwnersOfParent") or bs.get("Equity", {})
+    liab, assets = bs.get("Liabilities", {}), bs.get("TotalAssets", {})
     ca, cl = bs.get("CurrentAssets", {}), bs.get("CurrentLiabilities", {})
     eq_dates = sorted(eq)
     hist = []
