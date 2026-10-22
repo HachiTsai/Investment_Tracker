@@ -31,7 +31,7 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表，以及本機備
 | 全市場 ETF 成分股資料庫 | `1GIhbRyL-h96ACVjlSSW9YUFMiAItg_SP9Wi0o3WwG70` | ETF_Summary、ETF_Constituents | `constituentsFeedService.ts`（失敗退回 `allMarketEtfSnapshot`） | `tw-etf-fetcher` 的 `etf_fetcher.py sync-sheets`（手動） | 無排程，最後修改 2026-10-19 |
 | 持股資料庫 | `1CWLwi1tsQoWaEYm0IOK9aH7NEkENgd71sbz6Y_lpRVI` | 第一分頁 | `portfolioFeedService.ts` | 排程依 Core 唯讀重建 | 依排程 |
 | 交易明細資料庫 | `1yFr6OSW6LKWm5wdoc-QoJFXyUotYEd8_YEl_qR-24ks` | 第一分頁 | `portfolioFeedService.ts` | 排程依 Core 唯讀重建 | 依排程 |
-| 波段觀察 | `1pyGzkgaspYMYdXOPYerkLsxOMwNwa2yOKuNDrOrrhtQ` | 第一分頁 | `swingFeedService.ts` | `price-dividend-fetcher` 的 `swing.py --scan` | 依排程 |
+| 波段觀察 | `1pyGzkgaspYMYdXOPYerkLsxOMwNwa2yOKuNDrOrrhtQ` | Untitled（A 到 X 共 24 欄，欄序固定） | `swingFeedService.ts` | Claude 排程執行 `swing.py --scan 00882:15 --prev --sheet`，只寫 Sheet、不發 Artifact | 平日台北 17:00，休市的市場列不動 |
 
 ## 本機備援與非 Drive 來源
 
@@ -47,7 +47,8 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表，以及本機備
 
 - 全市場 ETF 表沒有排程，APP 讀到的是 2026-10-19 的資料；是否加排程待 Hachi 決定。
 - 整合架構文件原寫 ETF_Constituents 為 4,353 筆，實際約 5,328 列，已以實際為準。
-- 持股、交易、波段三份的實際排程名稱與頻率，下次核對時補上。
+- 持股、交易明細兩份的實際排程名稱與頻率，下次核對時補上（波段觀察已於 2026-10-22 依排程提示詞補上）。
+- 波段觀察 24 欄欄序是 APP 與排程的共同契約：A 到 X 依序為 代號,名稱,市場,來源,狀態,收盤,RSI14,20日線,60日線,量比,52週位置%,20日支撐,20日壓力,2xATR停損價,停損距離%,判定依據,更新日,費波那契位置30日,位置幅度%,長期,中期,短期,費波那契3段,三週期組合；改欄位須同步改 `swingFeedService.ts`。
 
 ## 變更紀錄
 
