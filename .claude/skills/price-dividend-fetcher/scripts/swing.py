@@ -28,6 +28,15 @@ def market_of(ticker: str) -> str:
 GAP_WINDOW_DAYS = 14
 
 
+def lagging_tickers(rows: List[Dict]) -> List[str]:
+    """同市場內最後一根日線早於該市場最新資料日的代號（證交所補缺後仍落後，如上櫃股或證交所失敗），供報告提示資料落後。"""
+    latest: Dict[str, str] = {}
+    for r in rows:
+        if r.get("last_date"):
+            latest[r["market"]] = max(latest.get(r["market"], ""), r["last_date"])
+    return [r["ticker"] for r in rows if r.get("last_date") and r["last_date"] < latest[r["market"]]]
+
+
 def fill_gaps_from_twse(bars: List[Dict], code: str, now: Optional[datetime] = None, fetch=None) -> List[Dict]:
     """Yahoo 偶爾漏掉台股某一天的日線（實測 0050 缺 10-21、上一輪缺 10-20）：用證交所 STOCK_DAY 補回近 GAP_WINDOW_DAYS 天內缺的交易日。
 
@@ -511,6 +520,9 @@ def main(argv=None) -> int:
         rows = scan(watchlist(a.scan or None), prev, with_chart=bool(a.daily_html))
         patrol = json.loads(Path(a.patrol).read_text(encoding="utf-8")) if a.patrol else {}
         merge_patrol(rows, patrol)
+        lag = lagging_tickers(rows)
+        if lag:
+            print("資料落後（證交所補缺後仍少一天以上）：" + "、".join(lag) + "；該列資料日落後，指標以最後一根日線計算", file=sys.stderr)
         if a.daily_html:
             date = max((r["last_date"] for r in rows if r.get("last_date")), default="")
             Path(a.daily_html).write_text(render_daily_page(rows, patrol, date), encoding="utf-8")

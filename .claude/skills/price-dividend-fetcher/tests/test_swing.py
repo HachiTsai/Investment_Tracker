@@ -228,3 +228,13 @@ def test_fill_gaps_from_twse_ignores_fetch_failure():
         raise RuntimeError("blocked")
     bars = [dict(ts=1, open=1, high=1, low=1, close=1, volume=1, adj=1)]
     assert sw.fill_gaps_from_twse(bars, "0050", fetch=boom) == bars
+
+
+def test_lagging_tickers_per_market():
+    rows = [
+        {"ticker": "A", "market": "台股", "last_date": "2026-10-21"},
+        {"ticker": "B", "market": "台股", "last_date": "2026-10-20"},
+        {"ticker": "C", "market": "港股", "last_date": "2026-10-20"},
+        {"ticker": "D", "market": "台股", "last_date": None},
+    ]
+    assert sw.lagging_tickers(rows) == ["B"]
