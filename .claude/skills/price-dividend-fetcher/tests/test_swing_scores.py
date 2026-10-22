@@ -60,13 +60,13 @@ def test_chart_series_lengths_and_page_embeds_chart():
     assert '"chart"' in html and "openDlg" in html
 
 
-def test_daily_template_has_matrix_quadrant_3d_views():
+def test_daily_template_has_matrix_quadrant_flow_views():
     import swing
     tpl = (swing.REF_DIR / "daily_patrol_template.html").read_text(encoding="utf-8") if hasattr(swing, "REF_DIR") else None
     if tpl is None:
         from pathlib import Path
         tpl = (Path(swing.__file__).resolve().parent.parent / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
-    for key in ("vMatrix", "vQuad", "v3d", "three.min.js", "data-vw", "drawQuad", "draw3d"):
+    for key in ("vMatrix", "vQuad", "vFlow", "data-vw", "drawQuad", "drawFlow", "data-fm", "flSl"):
         assert key in tpl
 
 
@@ -123,7 +123,7 @@ def test_daily_template_small_dots_with_hover_labels():
     from pathlib import Path
     import swing
     tpl = (Path(swing.__file__).resolve().parent.parent / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
-    for key in ("function qFit", "data-qz", ".qd .pt:hover .lb", "fit3", "貼合資料"):
+    for key in ("function qFit", "data-qz", ".qd .pt:hover .lb", "貼合資料"):
         assert key in tpl
 
 

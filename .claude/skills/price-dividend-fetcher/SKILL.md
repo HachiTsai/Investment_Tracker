@@ -69,5 +69,5 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 -
 python3 .claude/skills/portfolio-patrol/scripts/patrol.py --json > patrol.json && python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --patrol patrol.json --daily-html out.html   # 每日投資組合巡檢頁：波段觀察加評分矩陣（趨勢、動能、量能、績效，`swing_scores.py`，與 APP 同算法），併入配置狀態與殖利率，可依地區與類型篩選
 
 `--scan` 結束時若有標的最後一根日線早於同市場最新資料日（證交所補缺後仍落後），stderr 會列出代號，頁面也會標示「資料落後至 YYYY-MM-DD」。不用 Firecrawl 或 FinMind 補查：每檔一點的成本太高，且 FinMind 免費版沒有還原價。
-# 頁面含「表格｜矩陣｜象限｜3D」四種檢視（3D 用 cdnjs 的 three.js r128，離線時自動提示改用矩陣）；點標的的視窗另有 K 線、指標矩陣、近 60 日軌跡 3D 三個分頁；頁首「更新最新報價」鈕經 Firecrawl 連線器向證交所取台股即時價（Artifact 需宣告 mcp 能力，排程重發時省略 capabilities 即沿用）；標的左側星號可加「我的最愛」，「只看我的最愛」與地區、類型篩選疊加，存在 db 能力的 data/users/<id>/favs（Artifact 需宣告 db、user；無法同步時退回 localStorage）；表格與矩陣最多顯示 20 檔，其餘縱向捲動、表頭固定；象限與 3D 預設座標貼合資料範圍、圓點一律小而一致、游標移到圓點才顯示股號，象限可滾輪縮放與拖曳平移；標的視窗 K 線可在游標處滾輪縮放、拖曳平移，價格與 RSI、MACD 範圍貼合可見區間
+# 頁面含「表格｜矩陣｜象限｜動態」四種檢視（動態可播放近 60 日趨勢×動能氣泡圖與近 20／60／120 日報酬賽跑折線，純 SVG，不需外部元件）；點標的的視窗另有 K 線、指標矩陣、近 60 日軌跡動畫（2D，可播放） 三個分頁；頁首「更新最新報價」鈕經 Firecrawl 連線器向證交所取台股即時價（Artifact 需宣告 mcp 能力，排程重發時省略 capabilities 即沿用）；標的左側星號可加「我的最愛」，「只看我的最愛」與地區、類型篩選疊加，存在 db 能力的 data/users/<id>/favs（Artifact 需宣告 db、user；無法同步時退回 localStorage）；表格與矩陣最多顯示 20 檔，其餘縱向捲動、表頭固定；象限預設座標貼合資料範圍、圓點一律小而一致、游標移到圓點才顯示股號，象限可滾輪縮放與拖曳平移；標的視窗 K 線可在游標處滾輪縮放、拖曳平移，價格與 RSI、MACD 範圍貼合可見區間
 ```
