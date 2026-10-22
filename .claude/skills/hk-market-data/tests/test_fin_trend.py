@@ -34,3 +34,34 @@ def test_cash_flow_and_payout_signals_skip_financials():
 
 def test_no_history_returns_input():
     assert enrich({"eps": 1}) == {"eps": 1}
+
+
+def test_dividends_paid_ytd_and_payout_ratios():
+    from datetime import date
+    from fin_trend import add_dividends, rmb_hint
+    hist = [_h("2026-06-30", "2026年中报", 0.63), _h("2025-12-31", "2025年年报", 1.2)]
+    divs = [
+        dict(nd="2026-08-26", year="2026", kind="中期分配", pay="2026-12-22", amt=0.203, cur="人民币", hkd=0.2346),
+        dict(nd="2026-03-20", year="2025", kind="年度分配", pay="2026-07-06", amt=0.193, cur="人民币", hkd=0.2207),
+        dict(nd="2025-08-27", year="2025", kind="中期分配", pay="2025-12-29", amt=0.188, cur="人民币", hkd=0.2061),
+    ]
+    out = add_dividends({"hist": hist, "cur": "人民币"}, divs, date(2026, 10, 22))
+    assert out["ytd"] == 0.2207 and out["pending"] == 0.2346
+    assert out["dr_cur"] == 32.2 and round(out["dr_fy"], 1) == 31.8
+    assert rmb_hint([divs])["人民币"] > 1
+
+
+def test_dividends_negative_eps_and_missing_rate_blank():
+    from datetime import date
+    from fin_trend import add_dividends
+    hist = [_h("2026-06-30", "2026年中报", -0.1)]
+    divs = [dict(nd="2026-08-28", year="2026", kind="中期分配", amt=0.0, cur=None, hkd=0.0)]
+    assert "dr_cur" not in add_dividends({"hist": hist, "cur": "港元"}, divs, date(2026, 10, 22))
+
+
+def test_undeclared_latest_period_leaves_current_ratio_blank():
+    from datetime import date
+    from fin_trend import add_dividends
+    hist = [_h("2026-06-30", "2026年中报", 0.5)]
+    divs = [dict(nd="2026-08-28", year="2026", kind="中期分配", amt=0.0, cur=None, hkd=0.0)]
+    assert "dr_cur" not in add_dividends({"hist": hist, "cur": "人民币"}, divs, date(2026, 10, 22))

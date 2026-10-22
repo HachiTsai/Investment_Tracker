@@ -90,3 +90,56 @@ def enrich(fin: Dict[str, Any]) -> Dict[str, Any]:
         add(f"配發率 {fin['payout']:.0f}%，股息超過盈餘", "warn")
     return dict(fin, hist=rows, qeps=top.get("qeps"), yoy_rev=top["yoy_rev"], yoy_np=top["yoy_np"], yoy_q=yoy_q,
                 roe_chg=roe_chg, debt_chg=debt_chg, sigs=sigs)
+
+
+CUR = {"港币": "港元", "人民币": "人民币", "美元": "美元"}
+KIND_PREFIX = {"中期": "中报", "年度": "年报", "一季度": "一季报", "三季度": "三季报"}
+
+
+def _eps_of(hist, year, suffix):
+    return next((h.get("eps") for h in hist if (h.get("k") or "") == f"{year}年{suffix}"), None)
+
+
+def _ratio(amt, eps):
+    return round(amt / eps * 100, 1) if amt is not None and eps and eps > 0 else None
+
+
+def add_dividends(fin: Dict[str, Any], divs: List[Dict[str, Any]], today: date, fx_hint: Optional[Dict[str, float]] = None) -> Dict[str, Any]:
+    """加入歷次分配與配息率：ytd＝今年已付款（港元）、pending＝已宣派尚未付款；
+    dr_cur＝最近一次宣派 ÷ 對應期間累計 EPS；dr_fy＝上一個已公布年報的該財年全部現金分配 ÷ 年報 EPS。
+    股息幣別與報表幣別不同時，用同公司他筆分配的隱含匯率近似換算；同公司沒有可用的匯率時改用 fx_hint（全體成分股的中位數）；換不了就留空。EPS 為負時不算配息率。"""
+    if not divs:
+        return fin
+    hist, cur = fin.get("hist") or [], fin.get("cur")
+    ytd = sum(d["hkd"] for d in divs if d.get("pay") and d.get("hkd") and d["pay"][:4] == str(today.year) and d["pay"] <= today.isoformat())
+    pending = sum(d["hkd"] for d in divs if d.get("pay") and d.get("hkd") and d["pay"] > today.isoformat())
+    out = dict(fin, divs=divs[:8], ytd=round(ytd, 4), pending=round(pending, 4))
+    rate = 1.0 if cur == "港元" else next((d["hkd"] / d["amt"] for d in divs if CUR.get(d.get("cur"), d.get("cur")) == cur and d.get("amt") and d.get("hkd")), (fx_hint or {}).get(cur))
+
+    def conv(d):
+        """換成報表幣別；幣別不同時用同公司他筆分配的隱含匯率（近似）。"""
+        if d.get("amt") is None:
+            return None
+        if d["amt"] == 0 or CUR.get(d.get("cur"), d.get("cur")) == cur:
+            return d["amt"]
+        return d["hkd"] / rate if d.get("hkd") and rate else None
+
+    last = divs[0]
+    suffix = next((v for k, v in KIND_PREFIX.items() if k in (last.get("kind") or "")), None)
+    if suffix and last.get("amt"):  # 東方財富對尚未更新的期別也標「未派發」，0 不當成真的零配息
+        out["dr_cur"] = _ratio(conv(last), _eps_of(hist, last.get("year"), suffix))
+        out["dr_cur_lab"] = f"{last.get('year')} {last.get('kind', '')[:2]}"
+    ann = next((h for h in hist if "年报" in (h.get("k") or "")), None)
+    if ann:
+        y = ann["k"][:4]
+        rows = [conv(d) for d in divs if d.get("year") == y and d.get("amt") is not None]
+        if rows and None not in rows:
+            out["dr_fy"] = _ratio(sum(rows), ann.get("eps"))
+            out["dr_fy_lab"] = f"{y} 年度"
+    return {k: v for k, v in out.items() if v is not None}
+
+
+def rmb_hint(all_divs: List[List[Dict[str, Any]]]) -> Dict[str, float]:
+    """全體成分股人民幣分配的「港元÷人民幣」中位數，供同公司缺匯率時近似換算。"""
+    rates = sorted(d["hkd"] / d["amt"] for divs in all_divs for d in divs if d.get("cur") == "人民币" and d.get("amt") and d.get("hkd"))
+    return {"人民币": rates[len(rates) // 2]} if rates else {}

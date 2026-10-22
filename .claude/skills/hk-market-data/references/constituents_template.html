@@ -56,8 +56,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 <section><div class="chips" id="chips" aria-label="快速篩選"></div></section>
 <section><p class="mut" id="fcnt"></p><div class="wrap"><table id="ft"><thead id="fh"></thead><tbody id="fb"></tbody></table></div></section>
 <section><ul class="mut">
-<li>前面是重點指標：單季 EPS、累計 EPS、近 12 月股息、股價、ROE、配發率、經營現金流、營收、PB、PE；左側粗線之後是其餘指標與訊號。點任一檔看趨勢圖與近 8 期明細。</li>
-<li>單季 EPS 由累計數相減推算（一季報、中報、三季報、年報）；只公布中報與年報的公司，顯示的是「單期」（半年）。金額為報表幣別，不換算，單位億；股價與股息為港元。</li>
+<li>前面是重點指標：單季 EPS、累計 EPS、當年度已配發股息、當期與上年度配息率、股價、ROE、配發率、經營現金流、營收、PB、PE；左側粗線之後是其餘指標與訊號。點任一檔看趨勢圖與近 8 期明細。</li>
+<li>「當年度已配發股息」是今年已付款（付款日不晚於資料日期）的每股股息合計，港元，含去年年度股息在今年才付的部分；已宣派尚未付款的另列在個股視窗。「當期配息率」＝最近一次宣派的每股股息 ÷ 對應期間的累計 EPS（例如 2026 中期股息 ÷ 2026 上半年 EPS）；「上年度配息率」＝上一個已公布年報的財年，全年現金股息 ÷ 年報 EPS，兩者可直接比較。股息與報表幣別不同時以隱含匯率近似換算，EPS 為負或換算不了則留空。港股沒有季配，單季配息率以最近一期（中期或年度）為準。單季 EPS 由累計數相減推算（一季報、中報、三季報、年報）；只公布中報與年報的公司，顯示的是「單期」（半年）。金額為報表幣別，不換算，單位億；股價與股息為港元。</li>
 <li>每欄下方可篩選：文字欄輸入關鍵字；數字欄可輸入 5（≥5）、&gt;5、&lt;3、1-3；營收、淨利、現金流以「億」為單位。代號與名稱欄、標題列固定。</li>
 <li>訊號是規則式判讀（營收或淨利年增減 5～10% 以上、ROE 變動 1 個百分點以上、現金流為負等），拿去年同期對比；銀行與保險不套用現金流與負債規則。這是事實彙整，不構成買賣建議。</li>
 <li>「報表期」是財報結算日，各公司不同，不能直接橫向比較累計金額；空白代表東方財富沒有該欄位；沒有財報資料的標的不列入。</li>
@@ -127,7 +127,7 @@ const dcols=[['c','代號',0],['n','名稱',0],['w','權重%',1],['px','股價',
 mk({cols:dcols,rows:D,key:'w',head:'h',body:'b',count:'cnt'});
 // ---- 財報（主頁）----
 const FR=D.filter(r=>F[r.c]).map(r=>Object.assign({},r,F[r.c]));
-const fcols=[['c','代號',0],['n','名稱',0],['px','股價',1],['qeps','單季／單期EPS',1,{d:2}],['eps','累計EPS',1,{d:2}],['ttm','近12月股息',1,{d:3}],['roe','ROE%',1,{d:1}],['payout','配發率%',1,{d:1}],['ocf','經營現金流(億)',1,{yi:1}],['rev','營收(億)',1,{yi:1}],['pb','PB',1,{d:2}],['pe','PE',1,{d:1}],
+const fcols=[['c','代號',0],['n','名稱',0],['px','股價',1],['qeps','單季／單期EPS',1,{d:2}],['eps','累計EPS',1,{d:2}],['ytd','當年度已配發股息(港元)',1,{d:3}],['dr_cur','當期配息率%',1,{d:1}],['dr_fy','上年度配息率%',1,{d:1}],['roe','ROE%',1,{d:1}],['payout','配發率%',1,{d:1}],['ocf','經營現金流(億)',1,{yi:1}],['rev','營收(億)',1,{yi:1}],['pb','PB',1,{d:2}],['pe','PE',1,{d:1}],
 ['period','報表期',0,{og:1}],['kind','報表',0],['cur','幣別',0],['yoy_rev','營收年增%',1,{sg:1}],['yoy_np','淨利年增%',1,{sg:1}],['yoy_q','單季EPS年增%',1,{sg:1}],['np','股東淨利(億)',1,{yi:1}],['debt','負債/資產%',1,{d:1}],['y','殖利率%',1],['w','權重%',1],['sigs','訊號',0]];
 const chipDefs=[['全部',r=>true],['營收與淨利都成長',r=>r.yoy_rev>0&&r.yoy_np>0],['淨利衰退',r=>r.yoy_np<0],['經營現金流為負',r=>r.ocf<0],['配發率超過 100%',r=>r.payout>100],['ROE 高於 15%',r=>r.roe>15],['PB 低於 0.6',r=>r.pb<0.6],['有訊號',r=>(r.sigs||[]).length>0]];
 let chip=0;let tbl;
@@ -143,12 +143,12 @@ return'<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+title+'">'+g+'</s
 const plab=h=>h.p.slice(2,7).replace('-','/');
 function open(r){const hs=(r.hist||[]).slice(0,8),rv=[...hs].reverse();const x=r;
 document.getElementById('dt').textContent=x.c+' '+x.n+'　權重 '+fx(x.w,2)+'%　'+(x.kind||'')+'（'+(x.period||'')+'，'+(x.cur||'')+'）';
-const kp=[[fx(x.qeps,2),'單季／單期 EPS'],[fx(x.eps,2),'累計 EPS'],[fx(x.ttm,3),'近12月股息（港元）'],[fx(x.px,2),'股價（港元）'],[fx(x.roe,1)+'%','ROE'],[fx(x.payout,1)+'%','配發率'],[yi(x.ocf)+' 億','經營現金流（累計）'],[yi(x.rev)+' 億','營收（累計）'],[fx(x.pb,2),'PB'],[fx(x.pe,1),'PE']];
+const kp=[[fx(x.qeps,2),'單季／單期 EPS'],[fx(x.eps,2),'累計 EPS'],[fx(x.ytd,3),'當年度已配發股息（港元）'],[fx(x.dr_cur,1)+'%','當期配息率（'+(x.dr_cur_lab||'—')+'）'],[fx(x.dr_fy,1)+'%','上年度配息率（'+(x.dr_fy_lab||'—')+'）'],[fx(x.px,2),'股價（港元）'],[fx(x.roe,1)+'%','ROE'],[fx(x.payout,1)+'%','配發率'],[yi(x.ocf)+' 億','經營現金流（累計）'],[yi(x.rev)+' 億','營收（累計）'],[fx(x.pb,2),'PB'],[fx(x.pe,1),'PE']];
 let h='<section><h3>重點指標</h3><div class="kp">'+kp.map(([b,s])=>'<div><b>'+b+'</b><span>'+s+'</span></div>').join('')+'</div></section>';
 h+='<section><h3>財報透露的訊號</h3>'+((x.sigs||[]).length?'<ul class="sl">'+x.sigs.map(s=>'<li class="'+s.tone+'">'+s.t+'</li>').join('')+'</ul>':'<p class="mut">與去年同期相比，沒有達到門檻的明顯變化。</p>')+'</section>';
 h+='<section class="ch">'+bars(rv.map(r=>r.qeps??0),rv.map(plab),'單季／單期 EPS',2)+bars(rv.map(r=>r.roe??0),rv.map(plab),'ROE %（年化滾動）',1)+'</section>';
 h+='<section><h3>近 8 期明細</h3><div class="wrap" style="max-height:none"><table class="mini"><thead><tr><th>報表</th><th class="n">單季EPS</th><th class="n">累計EPS</th><th class="n">營收(億)</th><th class="n">淨利(億)</th><th class="n">ROE%</th><th class="n">負債/資產%</th><th class="n">經營現金流(億)</th></tr></thead><tbody>'+hs.map(r=>'<tr><td>'+r.k+'</td><td class="n">'+fx(r.qeps,2)+'</td><td class="n">'+fx(r.eps,2)+'</td><td class="n">'+yi(r.rev)+'</td><td class="n">'+yi(r.np)+'</td><td class="n">'+fx(r.roe,1)+'</td><td class="n">'+fx(r.debt,1)+'</td><td class="n">'+yi(r.ocf)+'</td></tr>').join('')+'</tbody></table></div></section>';
-h+='<section><h3>股利</h3><p class="mut">近 12 月 '+fx(x.ttm,3)+'、上一財年 '+fx(x.lfy,3)+'（'+sg(x.chg)+'%）、殖利率 '+fx(x.y,2)+'%；2026 中期：'+(x.i26||'—')+'；去年中期：'+(x.p25||'—')+'。股息單位港元。</p></section>';
+h+='<section><h3>股利</h3><p class="mut">今年已配發 '+fx(x.ytd,3)+' 港元'+(x.pending?'；已宣派尚未付款 '+fx(x.pending,3)+' 港元':'')+'。近 12 月 '+fx(x.ttm,3)+'、上一財年 '+fx(x.lfy,3)+'（'+sg(x.chg)+'%）、殖利率 '+fx(x.y,2)+'%（富途牛牛，港元）。</p>'+((x.divs||[]).length?'<div class="wrap" style="max-height:none"><table class="mini"><thead><tr><th>宣告日</th><th>類別</th><th>除息日</th><th>付款日</th><th class="n">每股</th><th class="n">約港元</th></tr></thead><tbody>'+x.divs.map(d=>'<tr><td>'+(d.nd||'')+'</td><td>'+(d.year||'')+' '+(d.kind||'')+'</td><td>'+(d.ex||'—')+'</td><td>'+(d.pay||'—')+'</td><td class="n">'+(d.amt==null?'非現金':d.amt===0?'未宣派或未更新':fx(d.amt,4)+' '+(d.cur||''))+'</td><td class="n">'+fx(d.hkd,3)+'</td></tr>').join('')+'</tbody></table></div>':'')+'</section>';
 document.getElementById('dbody').innerHTML=h;dlg.showModal()}
 document.getElementById('dx').onclick=()=>dlg.close();
 dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close()});

@@ -1,5 +1,6 @@
 """港股、A 股：東方財富公開資料中心（免登入）。非官方彙整源，關鍵數字需對公告原文。"""
 
+import re
 import urllib.parse
 from typing import Any, Dict, List
 
@@ -78,3 +79,34 @@ def hk_detail(code: str, periods: int = 10) -> Dict[str, Any]:
         "roe": latest.get("ROE_YEARLY"), "debt": latest.get("DEBT_ASSET_RATIO"), "ocf": latest.get("NETCASH_OPERATE"),
         "payout": (latest.get("DIVI_RATIO") or 0) * 100 or None, "pe": latest.get("PE_TTM"), "pb": latest.get("PB_TTM"), "dps": latest.get("DPS_HKD"),
     })
+
+
+_DIV_AMT = re.compile(r"每股派(人民币|港币|美元|新台币|日元)?([\d.]+)元")
+_DIV_HKD = re.compile(r"相当于港币([\d.]+)元")
+
+
+def hk_dividends(code: str, size: int = 12) -> List[Dict[str, Any]]:
+    """港股歷次分配（新到舊）：宣告日、類別、除息日、付款日與每股金額（原幣與港元）。
+    未派發（或東方財富尚未更新）的期別 amt 為 0；特別分配若是實物（非現金）則不含 amt。"""
+    q = urllib.parse.urlencode({
+        "reportName": "RPT_HKF10_MAIN_DIVBASIC", "columns": "ALL", "filter": f'(SECURITY_CODE="{code.zfill(5)}")',
+        "pageSize": size, "sortColumns": "NOTICE_DATE", "sortTypes": "-1",
+    })
+    out = []
+    for r in ((http_json(f"{HK_URL}?{q}").get("result") or {}).get("data")) or []:
+        text = r.get("PLAN_EXPLAIN") or ""
+        m = _DIV_AMT.search(text)
+        amt, cur, hkd = None, None, None
+        if m:
+            cur, amt = m.group(1) or "港币", float(m.group(2))
+            h = _DIV_HKD.search(text)
+            hkd = amt if cur == "港币" else (float(h.group(1)) if h else None)
+        elif "未派发" in text:
+            amt, hkd = 0.0, 0.0
+        out.append(clean({
+            "nd": (r.get("NOTICE_DATE") or "")[:10], "year": r.get("YEAR"), "kind": r.get("REPORT_TYPE"),
+            "ex": (r.get("EX_DIVIDEND_DATE") or "").replace("/", "-") or None,
+            "pay": (r.get("DIVIDEND_DATE") or "").replace("/", "-") or None,
+            "amt": amt, "cur": cur, "hkd": hkd,
+        }))
+    return out
