@@ -65,3 +65,20 @@ def test_undeclared_latest_period_leaves_current_ratio_blank():
     hist = [_h("2026-06-30", "2026年中报", 0.5)]
     divs = [dict(nd="2026-08-28", year="2026", kind="中期分配", amt=0.0, cur=None, hkd=0.0)]
     assert "dr_cur" not in add_dividends({"hist": hist, "cur": "人民币"}, divs, date(2026, 10, 22))
+
+
+def test_dividend_streak_cagr_and_cover():
+    from datetime import date
+    from fin_trend import add_dividends
+    hist = [_h("2025-12-31", "2025年年报", 1.0)]
+    divs = [dict(nd=f"{y + 1}-03-20", year=str(y), kind="年度分配", pay=f"{y + 1}-07-01", amt=0.1 * (1.1 ** (y - 2020)), cur="港币", hkd=0.1 * (1.1 ** (y - 2020))) for y in range(2025, 2019, -1)]
+    out = add_dividends({"hist": hist, "cur": "港元"}, divs, date(2026, 10, 22))
+    assert out["streak"] == 6 and out["cagr_n"] == 5 and abs(out["cagr"] - 10.0) < 0.2
+    assert out["cover"] == round(100 / out["dr_fy"], 2)
+
+
+def test_gross_margin_and_current_ratio_signals_skip_financials():
+    base = [dict(_h("2026-06-30", "2026年中报", 1.0), gpm=30.0), dict(_h("2025-06-30", "2025年中报", 0.9), gpm=35.0)]
+    out = enrich({"hist": base, "org": "一般企业", "cr": 0.8})
+    assert any("毛利率" in s["t"] for s in out["sigs"]) and any("流動比率" in s["t"] for s in out["sigs"])
+    assert not any("流動比率" in s["t"] for s in enrich({"hist": base, "org": "银行", "cr": 0.8})["sigs"])

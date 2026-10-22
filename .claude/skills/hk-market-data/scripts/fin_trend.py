@@ -64,6 +64,7 @@ def enrich(fin: Dict[str, Any]) -> Dict[str, Any]:
     yoy_q = _pct(top.get("qeps"), ya_q)
     roe_chg = round(top["roe"] - ya["roe"], 1) if ya and top.get("roe") is not None and ya.get("roe") is not None else None
     debt_chg = round(top["debt"] - ya["debt"], 1) if ya and top.get("debt") is not None and ya.get("debt") is not None else None
+    gpm_chg = round(top["gpm"] - ya["gpm"], 1) if ya and top.get("gpm") is not None and ya.get("gpm") is not None else None
     financial = fin.get("org") in ("银行", "保险", "证券")
     sigs = []
 
@@ -80,6 +81,10 @@ def enrich(fin: Dict[str, Any]) -> Dict[str, Any]:
         add(f"ROE 較去年同期 {roe_chg:+.1f} 個百分點", "up" if roe_chg > 0 else "down")
     if debt_chg is not None and abs(debt_chg) >= 3 and not financial:
         add(f"負債/資產較去年同期 {debt_chg:+.1f} 個百分點", "down" if debt_chg > 0 else "up")
+    if gpm_chg is not None and abs(gpm_chg) >= 2 and not financial:
+        add(f"毛利率較去年同期 {gpm_chg:+.1f} 個百分點", "up" if gpm_chg > 0 else "down")
+    if not financial and fin.get("cr") is not None and fin["cr"] < 1:
+        add(f"流動比率 {fin['cr']:.2f}，低於 1", "warn")
     ocf, np_ = top.get("ocf"), top.get("np")
     if not financial and ocf is not None:
         if ocf < 0:
@@ -89,7 +94,7 @@ def enrich(fin: Dict[str, Any]) -> Dict[str, Any]:
     if fin.get("payout") and fin["payout"] > 100:
         add(f"配發率 {fin['payout']:.0f}%，股息超過盈餘", "warn")
     return dict(fin, hist=rows, qeps=top.get("qeps"), yoy_rev=top["yoy_rev"], yoy_np=top["yoy_np"], yoy_q=yoy_q,
-                roe_chg=roe_chg, debt_chg=debt_chg, sigs=sigs)
+                roe_chg=roe_chg, debt_chg=debt_chg, gpm_chg=gpm_chg, sigs=sigs)
 
 
 CUR = {"港币": "港元", "人民币": "人民币", "美元": "美元"}
@@ -136,6 +141,8 @@ def add_dividends(fin: Dict[str, Any], divs: List[Dict[str, Any]], today: date, 
         rows = [conv(d) for d in divs if d.get("year") == y and d.get("amt") is not None]
         if rows and None not in rows:
             out["dr_fy"] = _ratio(sum(rows), ann.get("eps"))
+            if out["dr_fy"]:
+                out["cover"] = round(100 / out["dr_fy"], 2)  # 股息覆蓋倍數＝年報 EPS ÷ 全年股息
             out["dr_fy_lab"] = f"{y} 年度"
     return {k: v for k, v in out.items() if v is not None}
 
@@ -159,6 +166,14 @@ def _dps_summary(divs: List[Dict[str, Any]]) -> Dict[str, Any]:
         total = lambda yr: sum(d["hkd"] for d in divs if d.get("year") == str(yr) and d.get("hkd"))  # noqa: E731
         cur_, prev = total(y), total(y - 1)
         out.update(fy_lab=f"{y} 年度", fy_hkd=round(cur_, 4), fy_prev_hkd=round(prev, 4) if prev else None, fy_chg=_chg(cur_, prev))
+        streak = 0
+        while total(y - streak) > 0:
+            streak += 1
+        out["streak"] = streak  # 連續有現金股息的財年數（資料窗內最多回溯約十年）
+        years = [yr for yr in range(y - 9, y) if total(yr) > 0]
+        if years and cur_ > 0 and y - years[0] >= 3:
+            n = y - years[0]
+            out.update(cagr=round(((cur_ / total(years[0])) ** (1 / n) - 1) * 100, 1), cagr_n=n)
     h1 = next((d for d in divs if "中期" in (d.get("kind") or "")), None)
     if h1 and h1.get("year", "").isdigit():
         prev_h = next((d for d in divs if "中期" in (d.get("kind") or "") and d.get("year") == str(int(h1["year"]) - 1)), None)

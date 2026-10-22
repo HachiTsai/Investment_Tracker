@@ -71,6 +71,8 @@ def hk_detail(code: str, periods: int = 10) -> Dict[str, Any]:
         "p": (r.get("REPORT_DATE") or "")[:10], "k": r.get("REPORT_TYPE"), "eps": r.get("BASIC_EPS"),
         "rev": r.get("OPERATE_INCOME"), "np": r.get("HOLDER_PROFIT"), "roe": r.get("ROE_YEARLY"),
         "debt": r.get("DEBT_ASSET_RATIO"), "ocf": r.get("NETCASH_OPERATE"),
+        "gpm": r.get("GROSS_PROFIT_RATIO"), "npm": r.get("NET_PROFIT_RATIO"), "roa": r.get("ROA"),
+        "roic": r.get("ROIC_YEARLY"), "cr": r.get("CURRENT_RATIO"),
     }) for r in rows]
     return clean({
         "period": (latest.get("REPORT_DATE") or "")[:10], "kind": latest.get("REPORT_TYPE"), "cur": cur,
@@ -78,6 +80,8 @@ def hk_detail(code: str, periods: int = 10) -> Dict[str, Any]:
         "rev": latest.get("OPERATE_INCOME"), "np": latest.get("HOLDER_PROFIT"), "eps": latest.get("BASIC_EPS"),
         "roe": latest.get("ROE_YEARLY"), "debt": latest.get("DEBT_ASSET_RATIO"), "ocf": latest.get("NETCASH_OPERATE"),
         "payout": (latest.get("DIVI_RATIO") or 0) * 100 or None, "pe": latest.get("PE_TTM"), "pb": latest.get("PB_TTM"), "dps": latest.get("DPS_HKD"),
+        "gpm": latest.get("GROSS_PROFIT_RATIO"), "npm": latest.get("NET_PROFIT_RATIO"), "roa": latest.get("ROA"),
+        "roic": latest.get("ROIC_YEARLY"), "cr": latest.get("CURRENT_RATIO"),
     })
 
 
@@ -85,7 +89,7 @@ _DIV_AMT = re.compile(r"每股派(人民币|港币|美元|新台币|日元)?([\d
 _DIV_HKD = re.compile(r"相当于港币([\d.]+)元")
 
 
-def hk_dividends(code: str, size: int = 12) -> List[Dict[str, Any]]:
+def hk_dividends(code: str, size: int = 20) -> List[Dict[str, Any]]:
     """港股歷次分配（新到舊）：宣告日、類別、除息日、付款日與每股金額（原幣與港元）。
     未派發（或東方財富尚未更新）的期別 amt 為 0；特別分配若是實物（非現金）則不含 amt。"""
     q = urllib.parse.urlencode({
