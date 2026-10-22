@@ -193,3 +193,25 @@ def test_hk_dividends_parses_amount_currency_and_hkd(monkeypatch):
     out = eastmoney.hk_dividends("998")
     assert out[0]["amt"] == 0.203 and out[0]["cur"] == "人民币" and out[0]["hkd"] == 0.23462 and out[0]["pay"] == "2026-12-22"
     assert out[1]["hkd"] == 0.46 and out[2]["amt"] == 0.0 and "amt" not in out[3]
+
+
+def test_edinet_day_list_is_fetched_once_and_shared(monkeypatch, tmp_path):
+    import datetime
+    from fetchers import edinet
+    calls = []
+
+    def fake(day):
+        calls.append(day)
+        return [{"secCode": "72030", "docID": "S1", "docTypeCode": "120"}, {"secCode": "1", "docID": "x", "docTypeCode": "030"}]
+    monkeypatch.setattr(edinet, "list_docs", fake)
+    monkeypatch.setattr(edinet, "_days", {})
+    monkeypatch.setattr(edinet, "DAY_CACHE_FILE", tmp_path / "days.json")
+    day = datetime.date.today() - datetime.timedelta(days=3)
+    first = edinet.list_docs_cached(day)
+    second = edinet.list_docs_cached(day)
+    assert len(calls) == 1 and first[0]["docID"] == "S1" and second == [{"secCode": "72030", "docID": "S1", "docTypeCode": "120"}]
+    edinet.list_docs_cached(datetime.date.today())
+    edinet.list_docs_cached(datetime.date.today())
+    assert len(calls) == 3  # 今天不快取
+    edinet.save_days()
+    assert str(day) in (tmp_path / "days.json").read_text()
