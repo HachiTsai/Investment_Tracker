@@ -129,6 +129,7 @@ def add_dividends(fin: Dict[str, Any], divs: List[Dict[str, Any]], today: date, 
     if suffix and last.get("amt"):  # 東方財富對尚未更新的期別也標「未派發」，0 不當成真的零配息
         out["dr_cur"] = _ratio(conv(last), _eps_of(hist, last.get("year"), suffix))
         out["dr_cur_lab"] = f"{last.get('year')} {last.get('kind', '')[:2]}"
+    out.update(_dps_summary(divs))
     ann = next((h for h in hist if "年报" in (h.get("k") or "")), None)
     if ann:
         y = ann["k"][:4]
@@ -143,3 +144,25 @@ def rmb_hint(all_divs: List[List[Dict[str, Any]]]) -> Dict[str, float]:
     """全體成分股人民幣分配的「港元÷人民幣」中位數，供同公司缺匯率時近似換算。"""
     rates = sorted(d["hkd"] / d["amt"] for divs in all_divs for d in divs if d.get("cur") == "人民币" and d.get("amt") and d.get("hkd"))
     return {"人民币": rates[len(rates) // 2]} if rates else {}
+
+
+def _chg(a, b):
+    return round((a / b - 1) * 100, 1) if a is not None and b else None
+
+
+def _dps_summary(divs: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """股利明細用：上一財年全年與前一財年全年股息（港元，含特別股息）、最近一次中期與去年中期的增減。"""
+    out: Dict[str, Any] = {}
+    fy = next((d for d in divs if "年度" in (d.get("kind") or "")), None)
+    if fy and fy.get("year", "").isdigit():
+        y = int(fy["year"])
+        total = lambda yr: sum(d["hkd"] for d in divs if d.get("year") == str(yr) and d.get("hkd"))  # noqa: E731
+        cur_, prev = total(y), total(y - 1)
+        out.update(fy_lab=f"{y} 年度", fy_hkd=round(cur_, 4), fy_prev_hkd=round(prev, 4) if prev else None, fy_chg=_chg(cur_, prev))
+    h1 = next((d for d in divs if "中期" in (d.get("kind") or "")), None)
+    if h1 and h1.get("year", "").isdigit():
+        prev_h = next((d for d in divs if "中期" in (d.get("kind") or "") and d.get("year") == str(int(h1["year"]) - 1)), None)
+        out.update(h_lab=f"{h1['year']} 中期", h_hkd=h1.get("hkd"), h_pay=h1.get("pay"), h_ex=h1.get("ex"),
+                   h_prev_hkd=prev_h.get("hkd") if prev_h else None,
+                   h_chg=_chg(h1.get("hkd"), prev_h.get("hkd") if prev_h else None) if h1.get("hkd") else None)
+    return out
