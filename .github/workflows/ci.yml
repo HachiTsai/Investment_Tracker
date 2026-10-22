@@ -37,11 +37,14 @@ jobs:
     needs: [markdown-lint, skill-tests]
     if: >-
       github.event_name == 'pull_request'
-      && github.event.pull_request.draft == false
       && startsWith(github.head_ref, 'claude/')
       && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
+      - name: 草稿 PR 先轉為 Ready（雲端工作階段一律先開草稿；已是 Ready 則無動作）
+        env:
+          GH_TOKEN: ${{ secrets.AUTO_MERGE_PAT }}
+        run: gh pr ready "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}"
       - name: 以 merge commit 合併（用 PAT，合併後才會觸發 main 的 CI）
         env:
           GH_TOKEN: ${{ secrets.AUTO_MERGE_PAT }}
