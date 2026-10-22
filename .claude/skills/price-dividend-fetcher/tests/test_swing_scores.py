@@ -148,3 +148,11 @@ def test_daily_template_has_column_chooser():
     tpl = (Path(swing.__file__).resolve().parent.parent / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
     for key in ("tcdlg", "tcbtn", "function tcApply", "dpCols.v1", "選擇指標欄位"):
         assert key in tpl
+
+
+def test_daily_template_flow_has_ticker_picker():
+    from pathlib import Path
+    import swing
+    tpl = (Path(swing.__file__).resolve().parent.parent / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
+    for key in ("fpdlg", "flPick", "dpFlSel.v1", "function flBase", "選擇標的"):
+        assert key in tpl
