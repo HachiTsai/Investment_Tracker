@@ -44,7 +44,7 @@ python3 $S macro                             # 宏觀指標：LPR利率、中債
 
 ## 00882 成分股股利表（`scripts/constituents_table.py`）
 
-- 產生 49 檔成分股股利明細頁與 `table.json`：持股、股數、權重取中信投信官方 API，股息 TTM／LFY 與中期股利取富途牛牛（需無頭 Chromium），頁面範本為 `references/constituents_template.html`。頁面有兩個分頁：股利明細、財報資料（每欄可篩選，代號與名稱欄及標題列固定）（各成分股最近一份財報，取自 `fundamental-analyzer` 的東方財富資料層 `hk_detail`，金額為報表幣別不換算；`fin_fails` 列出抓不到財報的代號）。
+- 產生 49 檔成分股股利明細頁與 `table.json`：持股、股數、權重取中信投信官方 API，股息 TTM／LFY 與中期股利取富途牛牛（需無頭 Chromium），頁面範本為 `references/constituents_template.html`。頁面有兩個分頁：股利明細、財報資料（每欄可篩選，代號與名稱欄及標題列固定；股利明細帶入 ROE、配發率、負債/資產、經營現金流四欄，點一檔展開完整財報）（各成分股最近一份財報，取自 `fundamental-analyzer` 的東方財富資料層 `hk_detail`，金額為報表幣別不換算；`fin_fails` 列出抓不到財報的代號）。
 - 用法：`python3 .claude/skills/hk-market-data/scripts/constituents_table.py out.html [prev.html] [table.json]`，約 10 分鐘；`prev.html` 是上一版頁面，用來沿用去年欄位。輸出的 JSON 摘要有 `rows`、`fails`、`has26`，`fails` 超過 5 檔或連不上 futunn.com／ctbcinvestments.com.tw 就不要發佈。
 - 這支腳本只產生頁面與 JSON，不寫 Drive、不碰 Investment_Tracker_Core；寫 Sheet 由排程用 Sheets 工具做，且不得放持股張數、成本、缺口等個人部位數字。
 - 腳本載入時即連網抓資料，測試只做靜態檢查（編譯、佔位符與範本一致）。
