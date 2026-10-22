@@ -42,6 +42,7 @@ from patrol_committer import (
 from patrol_evaluator import (
     _format_macro_feed,
     evaluate_ticker_posture,
+    DEFAULT_WORKERS,
     fetch_macro_telemetry,
     fetch_ticker_live_data,
     run_portfolio_patrol as _run_patrol,
@@ -64,6 +65,7 @@ def run_portfolio_patrol(
     filter_tickers: Optional[List[str]] = None,
     custom_models_dir: Optional[Path] = None,
     mock_macro: Optional[Dict[str, Any]] = None,
+    workers: int = DEFAULT_WORKERS,
 ) -> Dict[str, Any]:
     """執行投資組合全標的巡檢核心主程序（Facade 包裝器，預設帶入 REPO_ROOT）。"""
     return _run_patrol(
@@ -71,12 +73,14 @@ def run_portfolio_patrol(
         filter_tickers=filter_tickers,
         custom_models_dir=custom_models_dir,
         mock_macro=mock_macro,
+        workers=workers,
     )
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--tickers", help="逗號分隔的標的代碼過濾（例如：00882）")
+    parser.add_argument("--workers", type=int, default=DEFAULT_WORKERS, help="抓價並行執行緒數（預設 %(default)s）")
     parser.add_argument("--json", action="store_true", help="輸出結構化 JSON 格式")
     parser.add_argument("--markdown", action="store_true", help="輸出 Google Doc 標準 Markdown 區塊")
     parser.add_argument("--sync-doc", metavar="DOC_ID", help="同步寫入特定 Google Doc ID")
@@ -124,6 +128,7 @@ def main(argv=None) -> int:
         repo_root=REPO_ROOT,
         filter_tickers=filter_tickers,
         custom_models_dir=custom_models_dir,
+        workers=args.workers,
     )
 
     if args.json:

@@ -311,3 +311,12 @@ def test_stock_without_swing_is_no_data(repo_root):
 
     key, label, *_ = ev._stock_posture(None)
     assert key == "NO_DATA" and "資料不足" in label
+
+
+def test_parallel_patrol_matches_sequential_order(repo_root, offline_live_data):
+    """抓價並行不改變結果與順序（fleet 依標的順序、內容與單執行緒一致）。"""
+    macro = {"fx": {}}
+    seq = patrol.run_portfolio_patrol(repo_root=repo_root, mock_macro=macro, workers=1)
+    par = patrol.run_portfolio_patrol(repo_root=repo_root, mock_macro=macro, workers=8)
+    assert [f["ticker"] for f in seq["fleet"]] == [f["ticker"] for f in par["fleet"]]
+    assert seq["fleet"] == par["fleet"] and seq["alerts"] == par["alerts"]

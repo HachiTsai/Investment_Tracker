@@ -22,6 +22,9 @@ python3 $S
 # 2. 指定特定標的
 python3 $S --tickers 00882
 
+# 抓價並行數（預設 8；全標的 42 檔約 1 分鐘，實測 16、32 條沒有更快也沒被限流）
+python3 $S --workers 8
+
 # 3. 輸出結構化 JSON
 python3 $S --json
 
