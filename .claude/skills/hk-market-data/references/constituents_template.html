@@ -113,6 +113,7 @@ payout:{t:"配發率",b:"<p>東方財富提供的股息分配比率（股息 ÷ 
 ocf:{t:"經營現金流",b:"<p>本業營運實際收進來的現金（累計數）。盈餘可能因會計處理而好看，現金流比較難造假。</p><p><b>怎麼看：</b>為負會出訊號。銀行、保險、券商的經營現金流含存貸款變動，沒有一般企業的意義，這幾類不判斷。</p>"},
 rev:{t:"營收",b:"<p>本財年累計到報表期的營業收入，單位為億（原幣）。年增與同一報表類型、約一年前的期別比較。</p>"},
 pb:{t:"PB（股價淨值比）",b:"<p>股價 ÷ 每股淨值。低於 1 代表股價低於帳面價值。</p><p><b>怎麼看：</b>不能單看高低，要和 ROE 一起看，見「PB 相對合理值」。</p>"},
+pe_all:{t:"00882 整體本益比",b:"<p>把 49 檔成分股的本益比，依 00882 的持股權重合成一個數字，回答「買 00882 相當於用幾倍盈餘買這籃子公司」。</p><p><b>算法：</b>調和加權＝Σ權重 ÷ Σ（權重 ÷ PE），等於把每檔的盈餘殖利率（1 ÷ PE）依權重平均再倒數。不用 PE 直接加權平均，因為 PE 極高的少數檔會把平均拉高，扭曲整體。每檔 PE 用東方財富的近四季（TTM）本益比。</p><p><b>缺值處理：</b>PE 為負（虧損）或缺值的檔不納入，卡片上列出涵蓋的檔數與權重比例；虧損檔被排除會讓整體 PE 偏低一些。</p><p><b>限制：</b>只是成分股的盈餘，不是 00882 本身的淨值報酬，也沒考慮基金費用與配息稅；銀行、保險佔比高，所以數字偏低，要與「拆開看」一起讀；週期股在獲利高點時 PE 會偏低；每檔股價與盈餘來自不同日期的資料。</p>"},
 pe:{t:"PE（本益比）",b:"<p>股價 ÷ 近四季每股盈餘（TTM）。越低代表賺同樣的錢要付的價錢越少，但週期股在獲利高點時 PE 會看起來很低。</p>"},
 yoy_rev:{t:"營收年增",b:"<p>與去年同期（同一報表類型）相比的營收變化。年增 5% 以上標為正面訊號，下降 5% 以上標為負面訊號。</p>"},
 yoy_np:{t:"淨利年增",b:"<p>股東淨利與去年同期相比的變化。年增 10% 以上為正面訊號，衰退 10% 以上為負面訊號。</p>"},
@@ -184,7 +185,10 @@ let chip=0;let tbl;
 function drawChips(){const el=document.getElementById('chips');el.innerHTML='';chipDefs.forEach(([t,p],i)=>{const b=document.createElement('button');b.type='button';b.textContent=t+'（'+FR.filter(p).length+'）';b.setAttribute('aria-pressed',String(i===chip));b.onclick=()=>{chip=i;drawChips();tbl.body()};el.appendChild(b)})}
 // 摘要卡
 (function(){const n=FR.length,c=p=>FR.filter(p).length;const el=document.getElementById('fsum');
-[[n+' 檔','有最近一份財報（共 '+(D.length+MISS.length)+' 檔）'],[c(r=>r.yoy_np>0)+' / '+c(r=>r.yoy_np!=null),'淨利較去年同期成長（成長檔數 / 可比較檔數）'],[c(r=>r.yoy_rev>0)+' / '+c(r=>r.yoy_rev!=null),'營收較去年同期成長'],[c(r=>r.ocf<0)+' 檔','經營現金流為負（含銀行保險，請看訊號欄）'],[c(r=>r.payout>100)+' 檔','配發率超過 100%']].forEach(([b,s])=>{const d=document.createElement('div');d.innerHTML='<b>'+b+'</b><span>'+s+'</span>';el.appendChild(d)})})();
+const wh=rs=>{const o=rs.filter(r=>r.pe>0&&r.w>0);if(!o.length)return null;const w=o.reduce((a,r)=>a+r.w,0);return{pe:w/o.reduce((a,r)=>a+r.w/r.pe,0),ar:o.reduce((a,r)=>a+r.w*r.pe,0)/w,w,n:o.length}};
+const FIN=['银行','保险','证券'],tw=FR.reduce((a,r)=>a+(r.w||0),0),pa=wh(FR),pf=wh(FR.filter(r=>FIN.includes(r.org))),pn=wh(FR.filter(r=>!FIN.includes(r.org)));
+const f1=v=>v?v.pe.toFixed(1):'—';
+[...(pa?[[pa.pe.toFixed(1)+' 倍','00882 整體本益比（成分股調和加權，涵蓋 '+pa.n+' 檔、權重 '+(pa.w/tw*100).toFixed(0)+'%）','pe_all'],[f1(pf)+' ／ '+f1(pn)+' 倍','拆開看：金融股（銀行、保險、券商）／其他；算術加權為 '+pa.ar.toFixed(1)+' 倍']]:[]),[n+' 檔','有最近一份財報（共 '+(D.length+MISS.length)+' 檔）'],[c(r=>r.yoy_np>0)+' / '+c(r=>r.yoy_np!=null),'淨利較去年同期成長（成長檔數 / 可比較檔數）'],[c(r=>r.yoy_rev>0)+' / '+c(r=>r.yoy_rev!=null),'營收較去年同期成長'],[c(r=>r.ocf<0)+' 檔','經營現金流為負（含銀行保險，請看訊號欄）'],[c(r=>r.payout>100)+' 檔','配發率超過 100%']].forEach(([b,s,k])=>{const d=document.createElement('div');d.innerHTML='<b>'+b+'</b><span>'+s+(k?' <span class="hi" data-help="'+k+'" role="button" aria-label="說明">ⓘ</span>':'')+'</span>';el.appendChild(d)})})();
 // ---- 個股視窗 ----
 const dlg=document.getElementById('dlg');
 function bars(vals,labs,title,unit){const W=420,H=170,pl=34,pb=26,pt=32,n=vals.length;if(!n)return'';const mx=Math.max(...vals,0),mn=Math.min(...vals,0),span=(mx-mn)||1,bw=(W-pl-8)/n;const y=v=>pt+(H-pt-pb)*(mx-v)/span;let g='<text x="6" y="14" font-size="11" fill="currentColor">'+title+'</text><line x1="'+pl+'" x2="'+(W-4)+'" y1="'+y(0)+'" y2="'+y(0)+'" stroke="currentColor" opacity=".3"/>';
