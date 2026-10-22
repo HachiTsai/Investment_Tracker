@@ -3,13 +3,13 @@
 輸出 json 供排程寫入 Drive「00882_成分股股利資料庫」Sheet。"""
 import json, re, sys, urllib.parse, urllib.request, os
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date
+from datetime import date, datetime, timezone
 
 OUT = sys.argv[1]
 PREV = sys.argv[2] if len(sys.argv) > 2 else None
 JSON_OUT = sys.argv[3] if len(sys.argv) > 3 else None
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from fin_trend import enrich, add_dividends, add_cashflow, add_valuation, rmb_hint, ttm_dividend, mid_note  # 單季 EPS、年增與訊號
+from fin_trend import enrich, add_dividends, add_cashflow, add_valuation, rmb_hint, ttm_dividend, mid_note, valuation_position  # 單季 EPS、年增與訊號
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "fundamental-analyzer", "scripts"))
 from fetchers import eastmoney  # 財報頁沿用 fundamental-analyzer 的東方財富資料層
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "price-dividend-fetcher", "scripts"))
@@ -59,6 +59,14 @@ def fetch_all(x):
         divs = eastmoney.hk_dividends(c)
     except Exception:
         divs = []  # 配息明細抓不到時仍保留財報本身
+    try:
+        ch = price_fetch.get_yahoo("HKG", c, "5y")["chart"]["result"][0]
+        closes = [(datetime.fromtimestamp(t + ch["meta"].get("gmtoffset", 0), timezone.utc).date().isoformat(), v)
+                  for t, v in zip(ch["timestamp"], ch["indicators"]["quote"][0]["close"]) if v is not None]
+        if f and divs:
+            f = dict(f, **valuation_position(closes, divs, date.today()))
+    except Exception:
+        pass  # 歷史價抓不到時只缺估值位置欄
     return d, f, divs
 
 with ThreadPoolExecutor(6) as ex:

@@ -224,3 +224,26 @@ def mid_note(fin: Dict[str, Any], year: int) -> str:
         h = fin.get("h_hkd")
         return f"派息 {h:.3f} 港元" if h else "已公告，金額未標"
     return "董事會審議/未找到"
+
+
+def valuation_position(closes: List[tuple], divs: List[Dict[str, Any]], today: date, step: int = 21) -> Dict[str, Any]:
+    """對自身近幾年歷史的位置。closes 是 (日期字串, 未還原收盤價) 由舊到新。
+    y_pct＝目前殖利率（年化股息 ÷ 股價）在歷史同口徑殖利率中的分位（0 到 100，越高代表現在比歷史上多數時候更便宜）；
+    px_pct＝目前股價在區間最低到最高之間的位置。歷史殖利率每 step 個交易日取一點，當時還沒除息的分配不算；沒有股息的時點略過。"""
+    pts = [(d, c) for d, c in closes if c]
+    if len(pts) < 120:
+        return {}
+    out: Dict[str, Any] = {}
+    lo, hi, last = min(c for _, c in pts), max(c for _, c in pts), pts[-1][1]
+    if hi > lo:
+        out["px_pct"] = round((last - lo) / (hi - lo) * 100, 0)
+    ys = []
+    for d, c in pts[::step]:
+        t = ttm_dividend(divs, date.fromisoformat(d))
+        if t > 0:
+            ys.append(t / c)
+    cur = ttm_dividend(divs, today) / last
+    if len(ys) >= 12 and cur > 0:
+        out["y_pct"] = round(sum(1 for y in ys if y <= cur) / len(ys) * 100, 0)
+        out["y_pct_n"] = len(ys)
+    return out
