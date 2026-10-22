@@ -27,7 +27,7 @@ PROFILES: Dict[str, Dict[str, Any]] = {
 
 
 def render(profile: str, etf: str, ncomp: int, data: List[dict], miss: List[dict], fin: Dict[str, Any],
-           asof: str, n: int, top: str, unit: str) -> str:
+           asof: str, n: int, top: str, unit: str, nav: str = "") -> str:
     """把資料與市場設定代入範本。佔位符皆為 __NAME__，缺任何一個會讓 assert 失敗，避免漏填。"""
     p = PROFILES[profile]
     dump = lambda o: json.dumps(o, ensure_ascii=False)  # noqa: E731
@@ -36,7 +36,7 @@ def render(profile: str, etf: str, ncomp: int, data: List[dict], miss: List[dict
         ("__DATA__", dump(data)), ("__MISS__", dump(miss)), ("__FIN__", dump(fin)),
         ("__QNOTE__", p["qnote"]), ("__FXNOTE__", p["fxnote"]), ("__YNOTE__", p["ynote"]), ("__YSRC__", p["ysrc"]),
         ("__FINORGS__", dump(p["fin_orgs"])), ("__MID__", "true" if p["mid"] else "false"), ("__SPLIT__", "true" if p["split_fin"] else "false"),
-        ("__ASOF__", asof), ("__N__", str(n)), ("__TOP__", top), ("__UNIT__", unit), ("__UNITNOTE__", p["unit_note"]),
+        ("__ASOF__", asof), ("__NAV__", nav), ("__N__", str(n)), ("__TOP__", top), ("__UNIT__", unit), ("__UNITNOTE__", p["unit_note"]),
         ("__NCOMP__", str(ncomp)), ("__ETF__", etf), ("__CUR__", p["cur"]), ("__SRC__", p["src"]),
     ]
     for k, v in pairs:

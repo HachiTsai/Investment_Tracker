@@ -8,6 +8,7 @@
 import json
 import os
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -23,29 +24,27 @@ from fetchers import finmind_detail  # noqa: E402
 from fin_trend import add_cashflow, add_dividends, add_valuation, enrich, ttm_dividend, valuation_position  # noqa: E402
 
 
-def one(c: Dict[str, Any], industry: Dict[str, str], today: date) -> Dict[str, Any]:
-    """單檔：回傳 d（表格列）、f（財報＋配息欄位）、errs（失敗步驟）。每步各自 try，互不牽連。"""
-    code = c["symbol"].split(".")[0]
-    d: Dict[str, Any] = dict(c=code, n=c["name"], w=c["weight_pct"], q=int(c.get("shares") or 0), px=None)
+def fetch_stock(code: str, name: str, industry: Optional[str], today: date) -> Dict[str, Any]:
+    """單檔個股（與 ETF 無關，可跨 ETF 共用）：股價、財報、配息、估值。每步各自 try，互不牽連。"""
     errs: List[str] = []
 
-    def step(name, fn, default=None):
+    def step(name_, fn, default=None):
         try:
             return fn()
         except Exception as e:  # noqa: BLE001
-            errs.append(f"{name}:{type(e).__name__}")
+            errs.append(f"{name_}:{type(e).__name__}")
             return default
 
-    d["px"] = step("price", lambda: float(price_fetch.get_price("TPE:" + code)["price"]))
-    f = step("financials", lambda: enrich(finmind_detail.tw_detail(code, industry.get(code))), {}) or {}
+    px = step("price", lambda: float(price_fetch.get_price("TPE:" + code)["price"]))
+    f = step("financials", lambda: enrich(finmind_detail.tw_detail(code, industry)), {}) or {}
     divs = step("dividends", lambda: finmind_detail.tw_dividends(code), []) or []
     pbr = step("pbr", lambda: finmind_detail.tw_pbr(code))
     if f:
         cf = step("cashflow", lambda: finmind_detail.tw_cashflow(code, divs), {})
         f = add_cashflow(f, cf) if cf else f
         ttm_eps = f.get("ttm_eps")
-        if d["px"] and ttm_eps and ttm_eps > 0:
-            f["pe"] = round(d["px"] / ttm_eps, 1)
+        if px and ttm_eps and ttm_eps > 0:
+            f["pe"] = round(px / ttm_eps, 1)
         if pbr:
             f["pb"] = pbr
         if ttm_eps and ttm_eps > 0 and divs:
@@ -61,42 +60,71 @@ def one(c: Dict[str, Any], industry: Dict[str, str], today: date) -> Dict[str, A
     if f and divs:
         f = dict(f, **(valuation_position(step("history", history, []), divs, today) or {}))
     ttm = round(ttm_dividend(divs, today), 4) if divs else 0.0  # 沒有配息紀錄＝不配息，殖利率 0（財報頁仍列）
-    d.update(ttm=ttm, lfy=f.get("fy_hkd") or 0.0, i26="", p25="", cmp="")
-    if d["px"]:
-        d["y"] = round(ttm / d["px"] * 100, 2)
-        d["chg"] = round((ttm / d["lfy"] - 1) * 100, 1) if d["lfy"] else 0
+    lfy = f.get("fy_hkd") or 0.0
+    out: Dict[str, Any] = dict(c=code, n=name, px=px, ttm=ttm, lfy=lfy, i26="", p25="", cmp="", errs=errs)
+    if px:
+        out["y"] = round(ttm / px * 100, 2)
+        out["chg"] = round((ttm / lfy - 1) * 100, 1) if lfy else 0
     f.pop("ttm_eps", None)
     if f:  # 計算完成後才換成台股顯示：2026 Q2；配息類別已是 Q1～Q4
         f["kind"] = finmind_detail.q_label(f.get("kind"))
         f["hist"] = [dict(h, k=finmind_detail.q_label(h.get("k"))) for h in f.get("hist", [])]
-    return dict(d=d, f=f, errs=errs)
+    out["f"] = f
+    return out
 
 
-def build(etf: str, today: Optional[date] = None, holdings: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def tw_stocks(holdings: Dict[str, Any]) -> List[Dict[str, Any]]:
+    return [c for c in holdings["constituents"] if c["symbol"].split(".")[0].isdigit()]
+
+
+def build_pool(codes: Dict[str, str], today: Optional[date] = None, workers: int = 6) -> Dict[str, Dict[str, Any]]:
+    """資料池：{代號: 名稱} → {代號: fetch_stock 結果}。每檔只抓一次，多個 ETF 共用。"""
     today = today or date.today()
-    holdings = holdings or etf_holdings_scraper.fetch_etf_holdings(etf)
-    stocks = [c for c in holdings["constituents"] if c["symbol"].split(".")[0].isdigit()]
     try:
         industry = finmind_detail.industries()
     except Exception:  # noqa: BLE001  產業別抓不到只影響金融股判斷
         industry = {}
-    with ThreadPoolExecutor(6) as ex:
-        got = list(ex.map(lambda c: one(c, industry, today), stocks))
-    rows = [g["d"] for g in got]
+    with ThreadPoolExecutor(workers) as ex:
+        got = list(ex.map(lambda kv: fetch_stock(kv[0], kv[1], industry.get(kv[0]), today), codes.items()))
+    pool = {g["c"]: g for g in got}
+    # 限流造成的失敗（FinMind 回錯誤）退避後單執行緒補抓一次；成功的請求有快取，不會重複打
+    for code in [c for c, g in pool.items() if any(e.startswith(("financials", "dividends", "pbr")) for e in g["errs"])]:
+        time.sleep(3)
+        again = fetch_stock(code, pool[code]["n"], industry.get(code), today)
+        if len(again["errs"]) < len(pool[code]["errs"]):
+            pool[code] = again
+    return pool
+
+
+def build_page(etf: str, holdings: Dict[str, Any], pool: Dict[str, Dict[str, Any]], today: date, nav: str = "") -> Dict[str, Any]:
+    """由持股與資料池組出單一 ETF 的頁面與摘要。"""
+    stocks = tw_stocks(holdings)
+    rows = []
+    for c in stocks:
+        g = pool[c["symbol"].split(".")[0]]
+        rows.append(dict({k: v for k, v in g.items() if k not in ("f", "errs")}, w=c["weight_pct"], q=int(c.get("shares") or 0)))
     ok = [r for r in rows if r["px"]]
-    fin = {g["d"]["c"]: g["f"] for g in got if g["f"]}
+    fin = {r["c"]: pool[r["c"]]["f"] for r in rows if pool[r["c"]]["f"]}
     wsum = sum(r["w"] for r in ok) or 1
     wy = sum(r["w"] * r["y"] for r in ok) / wsum if ok else 0.0
     top = max(ok, key=lambda r: r["w"])
-    rows_out = [dict(c=r["c"], n=r["n"], w=r["w"], q=r["q"], px=r["px"], ttm=r["ttm"], lfy=r["lfy"], chg=r["chg"], y=r["y"],
-                     i26=r["i26"], p25=r["p25"], cmp=r["cmp"]) for r in ok]
+    keys = ("c", "n", "w", "q", "px", "ttm", "lfy", "chg", "y", "i26", "p25", "cmp")
+    rows_out = [{k: r[k] for k in keys} for r in ok]
     miss = [dict(c=r["c"], n=r["n"], w=r["w"], px=r["px"]) for r in rows if not r["px"]]
     page = etf_page.render("tw", etf, len(stocks), rows_out, miss, fin, f"{today.isoformat()}（持股 {holdings['as_of_date']}，{holdings['source']}）",
-                           len(ok), f'{top["n"]} {top["w"]}%', f"{wy:.2f}%")
-    errors = {g["d"]["c"]: g["errs"] for g in got if g["errs"]}
+                           len(ok), f'{top["n"]} {top["w"]}%', f"{wy:.2f}%", nav=nav)
+    errors = {r["c"]: pool[r["c"]]["errs"] for r in rows if pool[r["c"]]["errs"]}
     summary = dict(etf=etf, rows=len(ok), holdings=len(stocks), weight_pct=holdings.get("total_weight_pct"), no_price=[m["c"] for m in miss],
-                   no_fin=[g["d"]["c"] for g in got if not g["f"]], errors=errors, weighted_yield_pct=round(wy, 2))
+                   no_fin=[r["c"] for r in rows if not pool[r["c"]]["f"]], errors=errors, weighted_yield_pct=round(wy, 2))
     return dict(page=page, summary=summary, rows=rows_out, fin=fin)
+
+
+def build(etf: str, today: Optional[date] = None, holdings: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """單一 ETF：抓持股、抓成分股資料池、組頁面。"""
+    today = today or date.today()
+    holdings = holdings or etf_holdings_scraper.fetch_etf_holdings(etf)
+    pool = build_pool({c["symbol"].split(".")[0]: c["name"] for c in tw_stocks(holdings)}, today)
+    return build_page(etf, holdings, pool, today)
 
 
 def main(argv: List[str]) -> int:
