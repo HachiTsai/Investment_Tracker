@@ -64,6 +64,7 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 .ax3 select{font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:4px}
 .dtabs{display:flex;gap:6px;margin:10px 0}.dtabs .tab{padding:3px 14px}.mx{width:100%;border-collapse:collapse;min-width:0;margin:8px 0}.mx th,.mx td{text-align:center;padding:6px 8px;font-size:13px}.mx td:first-child,.mx th:first-child{text-align:left}.mx td.c{font:500 13px var(--mono)}
 .cv3{position:relative;height:min(520px,72vh);touch-action:none}.cv3 canvas{width:100%;height:100%;display:block;cursor:grab}
+.fl .lb.on{display:block;fill:var(--fg)}.fl .pt:hover path{stroke-width:3.2}.fl .pt{cursor:pointer}
 .tip{position:absolute;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12px;display:none;white-space:nowrap;z-index:2}
 .hl{cursor:pointer;border-bottom:1px dotted var(--mute)}.hl:hover{color:var(--accent);border-bottom-color:var(--accent)}
 [hidden]{display:none!important}
@@ -84,13 +85,13 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 </tr></thead><tbody id="rows"></tbody></table></div>
 <div class="tw hm" id="vMatrix" hidden></div>
 <div class="pnl" id="vQuad" hidden></div>
-<div class="pnl" id="v3d" hidden></div>
+<div class="pnl" id="vFlow" hidden></div>
 <div class="mask" id="mask"><div class="dlg" id="dlg" role="dialog" aria-modal="true"></div></div>
 <section class="notes">
 <p>最新報價：按「更新最新報價」會向證交所取台股即時價；未更新或港股、非台股標的顯示最近一個交易日收盤價。指標與評分以日線收盤計算，不隨報價變動；乖離、區間位置、停損距離會用最新報價重算。</p>
 <p>點標的左側星號可加入「我的最愛」，再按「只看我的最愛」，可與地區、類型篩選疊加；最愛會同步到你的帳號，無法同步時只存在這個瀏覽器。</p>
 <p>表格與矩陣最多顯示 20 檔，其餘用縱向捲動，表頭固定在上方。</p>
-<p>象限與 3D 預設把座標貼合資料範圍，圓點一律小而一致，游標移到圓點才顯示股號；象限可滾輪縮放、拖曳平移。</p>
+<p>象限預設把座標貼合資料範圍，圓點一律小而一致，游標移到圓點才顯示股號；象限可滾輪縮放、拖曳平移。「動態」檢視可播放近 60 日的趨勢×動能氣泡圖，或報酬賽跑折線。</p>
 <p>標的視窗的 K 線圖可滾輪縮放、拖曳平移，價格與 RSI、MACD 範圍貼合可見區間；點「還原全部」回到完整區間。</p>
 <p>點任一標的會跳出日 K、均線、布林通道、費波那契、RSI 與 MACD 圖。</p>
 <p>評分矩陣與 Stock_AIStudio 的波段觀察、雷達頁同一套算法：趨勢（價格相對 60 日線的乖離）、動能（MACD 柱）、量能（5 日均量 ÷ 60 日均量）、績效（近 1 年含息報酬），皆為 0 到 100 分、50 代表持平，描述強度與位置，不是好壞評分。綜合為四項平均，僅供排序參考。</p>
@@ -103,7 +104,7 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 var DATA=__DAILY_DATA__;var HEAD=__DAILY_HEAD__;var DATE="__DAILY_DATE__";
 var MK=["全部","台股","港股","美股","日股"],KD=["全部","ETF","個股"];var mk="全部",kd="全部",sk="total_score",asc=false;
 try{var a=localStorage.getItem("dpMk"),b=localStorage.getItem("dpKd");if(MK.indexOf(a)>=0)mk=a;if(KD.indexOf(b)>=0)kd=b}catch(e){}
-var dtab="k",autoJ=true,TJ={th:.7,ph:.5,dist:17,drag:null,raf:0},CUR=[],VWS=["表格","矩陣","象限","3D"],vw="表格";
+var dtab="k",autoJ=true,TJ={th:.7,ph:.5,dist:17,drag:null,raf:0},CUR=[],VWS=["表格","矩陣","象限","動態"],vw="表格";
 try{var vv=localStorage.getItem("dpVw");if(VWS.indexOf(vv)>=0)vw=vv}catch(e){}
 var FAV={},favOnly=false,FDB=null,Q=[];
 function hit(r){if(!Q.length)return true;var h=[r.ticker,r.name,r.market,r.kind,r.label,r.posture_label,r.combo,r.fib_label,r.long,r.mid,r.short,r.reason].join(" ").toLowerCase();return Q.every(function(k){return h.indexOf(k)>=0})}
@@ -236,46 +237,69 @@ qh.addEventListener("pointerdown",function(e){if(e.button||!e.target.closest("sv
 qh.addEventListener("pointermove",function(e){var d=QZ.drag,sv=qh.querySelector("svg.qd");if(!d||!sv)return;var dx=e.clientX-d.x,dy=e.clientY-d.y;if(!QZ.moved&&Math.abs(dx)+Math.abs(dy)<4)return;QZ.moved=true;var rc=sv.getBoundingClientRect(),q=QZ,a=-dx/rc.width*640/588*(q.x1-q.x0),b=dy/rc.height*440/388*(q.y1-q.y0);q.x0+=a;q.x1+=a;q.y0+=b;q.y1+=b;d.x=e.clientX;d.y=e.clientY;drawQuad()});
 window.addEventListener("pointerup",function(){QZ.drag=null;setTimeout(function(){QZ.moved=false},0)});
 qh.addEventListener("click",function(e){if(QZ.moved){e.stopPropagation();return}var b=e.target.closest("[data-qz]");if(!b)return;e.stopPropagation();if(b.dataset.qz==="fit")QZ.set=false;else{QZ.x0=0;QZ.x1=100;QZ.y0=0;QZ.y1=100;QZ.set=true}drawQuad()},true)})();
-var T3={ready:false,ph:.55,th:.7,dist:17,drag:null,moved:false,raf:0};
 function spr(txt,col){var c=document.createElement("canvas");c.width=256;c.height=64;var g=c.getContext("2d");g.font="600 28px sans-serif";g.fillStyle=col;g.textAlign="center";g.textBaseline="middle";g.fillText(txt,128,32);var tx=new THREE.CanvasTexture(c),m=new THREE.SpriteMaterial({map:tx,transparent:true,depthTest:false}),s=new THREE.Sprite(m);s.scale.set(2.4,.6,1);return s}
-function opt3(k){return '<select data-ax="'+k+'">'+Object.keys(AXS).map(function(a){return '<option value="'+a+'"'+(ax3[k]===a?" selected":"")+'>'+AXS[a]+'</option>'}).join("")+'</select>'}
-function draw3d(){var host=document.getElementById("v3d");
-if(typeof THREE==="undefined"){host.innerHTML='<p class="mac">無法載入 3D 元件（需連到 cdnjs），請改用矩陣或象限檢視。</p>';return}
-host.innerHTML='<div class="ax3"><label>X '+opt3("x")+'</label><label>Y '+opt3("y")+'</label><label>Z '+opt3("z")+'</label><label><input type="checkbox" id="auto3"'+(auto3?" checked":"")+'> 自動旋轉</label><label><input type="checkbox" id="fit3"'+(fit3?" checked":"")+'> 貼合資料</label><span>拖曳旋轉・滾輪／雙指縮放・點球看技術指標</span></div><div class="cv3" id="cv3"><div class="tip" id="tip3"></div></div>'+legend();
-var box=document.getElementById("cv3"),L=scored().filter(function(r){return r[ax3.x]!=null&&r[ax3.y]!=null&&r[ax3.z]!=null});
-if(!L.length){box.innerHTML='<p class="mac">沒有足夠日線計算評分。</p>';return}
-if(T3.rd){T3.rd.dispose()}
-var W=box.clientWidth||600,H=box.clientHeight||420,rd=new THREE.WebGLRenderer({antialias:true,alpha:true});T3.rd=rd;rd.setPixelRatio(Math.min(devicePixelRatio||1,2));rd.setSize(W,H);box.insertBefore(rd.domElement,box.firstChild);
-var sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(45,W/H,.1,100),S=10,RG={};["x","y","z"].forEach(function(k){var v=L.map(function(r){return r[ax3[k]]}),a=Math.min.apply(null,v),b=Math.max.apply(null,v),p=Math.max(3,(b-a)*.08);RG[k]=fit3?[a-p,b+p]:[0,100]});var P=function(k,v){var g=RG[k];return ((v-g[0])/(g[1]-g[0])-.5)*S};
-var mute=cv("--mute"),line=cv("--line"),grp=new THREE.Group();sc.add(grp);
-var bx=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(S,S,S)),new THREE.LineBasicMaterial({color:line}));grp.add(bx);
-[[[-S/2,0,0],[S/2,0,0]],[[0,-S/2,0],[0,S/2,0]],[[0,0,-S/2],[0,0,S/2]]].forEach(function(a){var g=new THREE.BufferGeometry().setFromPoints(a.map(function(v){return new THREE.Vector3(v[0],v[1],v[2])}));grp.add(new THREE.Line(g,new THREE.LineBasicMaterial({color:mute,transparent:true,opacity:.5})))});
-var lab=[["x",[S/2+1.3,0,0]],["y",[0,S/2+.6,0]],["z",[0,0,S/2+1.3]]];lab.forEach(function(a){var s=spr(AXS[ax3[a[0]]]+" "+Math.max(0,Math.round(RG[a[0]][0]))+"–"+Math.min(100,Math.round(RG[a[0]][1]))+" →",mute);s.position.set(a[1][0],a[1][1],a[1][2]);grp.add(s)});
-var meshes=[],labs=[];L.forEach(function(r){var rad=FAV[r.ticker]?.2:.13,m=new THREE.Mesh(new THREE.SphereGeometry(rad,20,14),new THREE.MeshBasicMaterial({color:new THREE.Color(stc(r)),transparent:true,opacity:.88}));m.position.set(P("x",r[ax3.x]),P("y",r[ax3.y]),P("z",r[ax3.z]));m.userData.r=r;grp.add(m);meshes.push(m);
-});
-var ray=new THREE.Raycaster(),mv=new THREE.Vector2(),tip=document.getElementById("tip3");
-function place(){cam.position.set(T3.dist*Math.sin(T3.th)*Math.cos(T3.ph),T3.dist*Math.sin(T3.ph),T3.dist*Math.cos(T3.th)*Math.cos(T3.ph));cam.lookAt(0,0,0)}
-function pick(e){var b=rd.domElement.getBoundingClientRect();mv.set((e.clientX-b.left)/b.width*2-1,-((e.clientY-b.top)/b.height)*2+1);ray.setFromCamera(mv,cam);var h=ray.intersectObjects(meshes)[0];return h?h.object:null}
-var cvs=rd.domElement;
-cvs.onpointerdown=function(e){T3.drag={x:e.clientX,y:e.clientY};T3.moved=false;cvs.setPointerCapture(e.pointerId);cvs.style.cursor="grabbing"};
-cvs.onpointermove=function(e){if(T3.drag){var dx=e.clientX-T3.drag.x,dy=e.clientY-T3.drag.y;if(Math.abs(dx)+Math.abs(dy)>3)T3.moved=true;T3.th-=dx*.008;T3.ph=Math.max(-1.45,Math.min(1.45,T3.ph+dy*.008));T3.drag={x:e.clientX,y:e.clientY};return}
-var o=pick(e);if(T3.hv&&T3.hv!==o)T3.hv.scale.setScalar(1);if(o)o.scale.setScalar(1.9);T3.hv=o;if(o){var r=o.userData.r,b=box.getBoundingClientRect();tip.style.display="block";tip.innerHTML='<b>'+esc(String(r.ticker).replace(/^[A-Z]+:/,""))+'</b> '+esc(r.name)+'　'+AXS[ax3.x]+' '+f(r[ax3.x],0)+'／'+AXS[ax3.y]+' '+f(r[ax3.y],0)+'／'+AXS[ax3.z]+' '+f(r[ax3.z],0);tip.style.left=Math.min(e.clientX-b.left+12,b.width-200)+"px";tip.style.top=(e.clientY-b.top+12)+"px"}else tip.style.display="none"};
-cvs.onpointerup=function(e){T3.drag=null;cvs.style.cursor="grab";if(!T3.moved){var o=pick(e);if(o)openDlg(o.userData.r.ticker)}};
-cvs.onwheel=function(e){e.preventDefault();T3.dist=Math.max(8,Math.min(32,T3.dist*(1+Math.sign(e.deltaY)*.08)))};
-var pts={};cvs.addEventListener("pointerdown",function(e){pts[e.pointerId]=e});
-cvs.addEventListener("touchmove",function(e){if(e.touches.length===2){var d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);if(T3.pd)T3.dist=Math.max(8,Math.min(32,T3.dist*T3.pd/d));T3.pd=d;e.preventDefault()}},{passive:false});
-cvs.addEventListener("touchend",function(){T3.pd=0});
-cancelAnimationFrame(T3.raf);
-(function loop(){if(vw!=="3D"||!document.body.contains(cvs))return;if(auto3&&!T3.drag&&!document.getElementById("mask").classList.contains("on"))T3.th+=.003;place();rd.render(sc,cam);T3.raf=requestAnimationFrame(loop)})()}
+var FL={m:"b",pos:0,play:false,raf:0,last:0,sp:1,trail:true,win:60,sel:null};
+function flRows(){return scored().filter(function(r){var h=r.chart&&r.chart.hs;return h&&h.t.some(function(v){return v!=null})&&h.m.some(function(v){return v!=null})})}
+function flAt(a,p){var i=Math.floor(p),j=Math.min(a.length-1,i+1),x=a[i],y=a[j];if(x==null)return y==null?null:(p>=j?y:null);if(y==null)return x;return x+(y-x)*(p-i)}
+function flNorm(r){var c=r.chart.c.filter(function(v){return v!=null}),w=Math.min(FL.win,c.length),s=c.slice(c.length-w),b=s[0];return s.map(function(v){return v/b*100})}
+function flMax(L){return FL.m==="b"?L[0].chart.hs.t.length-1:Math.min(FL.win,Math.min.apply(null,L.map(function(r){return r.chart.c.filter(function(v){return v!=null}).length})))-1}
+function drawFlow(){var host=document.getElementById("vFlow"),L=flRows();cancelAnimationFrame(FL.raf);
+if(!L.length){host.innerHTML='<p class="mac">沒有足夠日線可播放走勢。</p>';return}
+var mx=flMax(L);if(FL.pos>mx)FL.pos=mx;
+var tabs='<div class="dtabs">'+[["b","氣泡圖（趨勢×動能）"],["r","賽跑折線（報酬）"]].map(function(a){return '<button type="button" class="tab" data-fm="'+a[0]+'" aria-pressed="'+(a[0]===FL.m)+'">'+a[1]+'</button>'}).join("")+'</div>';
+var ctl='<div class="opts"><button type="button" class="x" data-fl="play" id="flBtn"></button><input type="range" id="flSl" min="0" max="'+mx+'" step="0.01" value="'+FL.pos+'" style="flex:1;min-width:140px" aria-label="時間軸"><span class="mac" id="flDt"></span><label>速度 <select id="flSp">'+[[.5,"慢"],[1,"中"],[2,"快"]].map(function(a){return '<option value="'+a[0]+'"'+(a[0]===FL.sp?" selected":"")+'>'+a[1]+'</option>'}).join("")+'</select></label>'+(FL.m==="b"?'<label><input type="checkbox" id="flTr"'+(FL.trail?" checked":"")+'> 尾跡</label>':'<label>區間 <select id="flWin">'+[20,60,120].map(function(v){return '<option value="'+v+'"'+(v===FL.win?" selected":"")+'>近 '+v+' 日</option>'}).join("")+'</select></label>')+'</div>';
+var W=640,H=440,m=40,vx=W-m-(FL.m==="r"?64:12),vy=H-m-12,o='<svg class="qd fl" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+(FL.m==="b"?"趨勢與動能氣泡動畫":"報酬賽跑折線")+'"><rect x="'+m+'" y="12" width="'+vx+'" height="'+vy+'" fill="none" stroke="var(--line)"/>';
+var ys=[];
+if(FL.m==="b"){var X=function(v){return m+v/100*vx},Y=function(v){return H-m-v/100*vy};
+o+='<line x1="'+X(50)+'" x2="'+X(50)+'" y1="12" y2="'+(H-m)+'" stroke="var(--line)" stroke-dasharray="4 3"/><line x1="'+m+'" x2="'+(m+vx)+'" y1="'+Y(50)+'" y2="'+Y(50)+'" stroke="var(--line)" stroke-dasharray="4 3"/>';
+for(var k=0;k<=4;k++){o+='<text x="'+X(k*25).toFixed(1)+'" y="'+(H-m+12)+'" text-anchor="middle">'+k*25+'</text><text x="'+(m-4)+'" y="'+(Y(k*25)+3).toFixed(1)+'" text-anchor="end">'+k*25+'</text>'}
+o+='<text x="'+(m+vx-4)+'" y="26" text-anchor="end">趨勢強・動能強</text><text x="'+(m+6)+'" y="26">趨勢弱・動能強</text><text x="'+(m+vx-4)+'" y="'+(H-m-6)+'" text-anchor="end">趨勢強・動能弱</text><text x="'+(m+6)+'" y="'+(H-m-6)+'">趨勢弱・動能弱</text><text x="'+((W+m)/2)+'" y="'+(H-2)+'" text-anchor="middle">趨勢分數（價格相對 60 日線）→</text><text transform="translate(10 '+(H/2)+') rotate(-90)" text-anchor="middle">動能分數（MACD 柱）→</text>';
+L.forEach(function(r,i){o+='<polyline class="tr" id="flT'+i+'" fill="none" stroke="'+stc(r)+'" stroke-opacity=".35" stroke-width="1.5"/>'});
+L.forEach(function(r,i){var t=(FAV[r.ticker]?"★":"")+String(r.ticker).replace(/^[A-Z]+:/,"");o+='<g class="pt" data-pt="'+esc(r.ticker)+'" id="flP'+i+'"><circle class="dot" r="6" fill="'+stc(r)+'" fill-opacity=".8" stroke="'+(FAV[r.ticker]?"#e0a100":"var(--card)")+'"/><text class="lb" x="8" y="3">'+t+'</text><title>'+esc(r.name)+'</title></g>'})}
+else{var S=L.map(flNorm);S.forEach(function(s){ys=ys.concat(s)});var lo=Math.min.apply(null,ys),hi=Math.max.apply(null,ys),pd=Math.max(2,(hi-lo)*.06);lo-=pd;hi+=pd;
+var X=function(k){return m+k/mx*vx},Y=function(v){return H-m-(v-lo)/(hi-lo)*vy};FL.S=S;FL.X=X;FL.Y=Y;
+o+='<line x1="'+m+'" x2="'+(m+vx)+'" y1="'+Y(100).toFixed(1)+'" y2="'+Y(100).toFixed(1)+'" stroke="var(--line)" stroke-dasharray="4 3"/>';
+for(var k=0;k<=4;k++){var v=lo+(hi-lo)*k/4;o+='<text x="'+(m-4)+'" y="'+(Y(v)+3).toFixed(1)+'" text-anchor="end">'+v.toFixed(0)+'</text>'}
+o+='<text x="'+((W+m)/2)+'" y="'+(H-2)+'" text-anchor="middle">近 '+(mx+1)+' 個交易日，起點＝100 →</text>';
+L.forEach(function(r,i){var t=(FAV[r.ticker]?"★":"")+String(r.ticker).replace(/^[A-Z]+:/,"");o+='<g class="pt" data-pt="'+esc(r.ticker)+'"><path id="flL'+i+'" fill="none" stroke="'+stc(r)+'" stroke-opacity="'+(FAV[r.ticker]?1:.7)+'" stroke-width="'+(FAV[r.ticker]?2.4:1.6)+'"/><circle id="flE'+i+'" r="3.5" fill="'+stc(r)+'"/><text class="lb" id="flN'+i+'" text-anchor="start">'+t+'</text><title>'+esc(r.name)+'</title></g>'})}
+o+='</svg>';
+host.innerHTML=tabs+ctl+o+legend()+'<p class="mac">'+(FL.m==="b"?'每個圓點是一檔標的，位置＝當日趨勢與動能分數，近 60 個交易日由舊到新播放；圓點大小＝量能分數，顏色＝目前的波段狀態。右上＝趨勢與動能同步轉強，左下＝同步轉弱。':'每條線是一檔標的的累積報酬（起點＝100），線端標示當下領先與落後各 3 檔。')+'游標移到圓點或線可看股號，點一下看技術指標。以各標的自己的交易日對齊，最右邊都是最新一日。</p>';
+FL.L=L;FL.mx=mx;flUpdate();flBtn();
+if(FL.play)flLoop()}
+function flBtn(){var b=document.getElementById("flBtn");if(b)b.textContent=FL.play?"⏸ 暫停":"▶ 播放"}
+function flUpdate(){var L=FL.L,p=FL.pos,mx=FL.mx,sl=document.getElementById("flSl"),dt=document.getElementById("flDt");if(!L||!sl)return;
+sl.value=p;var back=Math.round(mx-p);dt.textContent=back<=0?"最新（"+DATE+"）":"距最新 "+back+" 個交易日";
+if(FL.m==="b"){var X=function(v){return 40+v/100*588},Y=function(v){return 428-v/100*388},ends=[];
+L.forEach(function(r,i){var h=r.chart.hs,t=flAt(h.t,p),mo=flAt(h.m,p),g=document.getElementById("flP"+i),tr=document.getElementById("flT"+i);if(!g)return;
+if(t==null||mo==null){g.style.display="none";tr.setAttribute("points","");return}
+g.style.display="";var v=flAt(h.v,p);g.firstChild.setAttribute("r",(3+(v==null?50:v)/100*5).toFixed(1));g.setAttribute("transform","translate("+X(t).toFixed(1)+" "+Y(mo).toFixed(1)+")");
+var pts=[];if(FL.trail)for(var k=Math.max(0,Math.floor(p)-10);k<=Math.floor(p);k++){if(h.t[k]!=null&&h.m[k]!=null)pts.push(X(h.t[k]).toFixed(1)+","+Y(h.m[k]).toFixed(1))}
+if(FL.trail&&pts.length)pts.push(X(t).toFixed(1)+","+Y(mo).toFixed(1));tr.setAttribute("points",FL.trail?pts.join(" "):"")})}
+else{var S=FL.S,X=FL.X,Y=FL.Y,ord=[];
+L.forEach(function(r,i){var s=S[i],n=s.length,off=mx+1-n,k0=Math.max(0,off),d="",e=Math.floor(p),last=null;
+for(var k=k0;k<=e;k++){var v=s[k-off];d+=(d?"L":"M")+X(k).toFixed(1)+" "+Y(v).toFixed(1);last=[k,v]}
+if(e<mx&&last&&p>e){var nv=s[e+1-off];if(nv!=null){var f=p-e;last=[p,last[1]+(nv-last[1])*f];d+="L"+X(last[0]).toFixed(1)+" "+Y(last[1]).toFixed(1)}}
+document.getElementById("flL"+i).setAttribute("d",d);var c=document.getElementById("flE"+i),nm=document.getElementById("flN"+i);
+if(last){c.setAttribute("cx",X(last[0]).toFixed(1));c.setAttribute("cy",Y(last[1]).toFixed(1));c.style.display="";nm.setAttribute("x",(X(last[0])+6).toFixed(1));nm.setAttribute("y",(Y(last[1])+3).toFixed(1));ord.push([i,last[1]])}else{c.style.display="none"}
+nm.classList.remove("on")});
+ord.sort(function(a,b){return b[1]-a[1]});ord.slice(0,3).concat(ord.slice(-3)).forEach(function(a){document.getElementById("flN"+a[0]).classList.add("on")})}}
+function flLoop(){cancelAnimationFrame(FL.raf);FL.last=0;(function step(ts){if(vw!=="動態"||!document.getElementById("flSl")){FL.play=false;return}
+if(FL.last){FL.pos=Math.min(FL.mx,FL.pos+(ts-FL.last)/1000*6*FL.sp);flUpdate();if(FL.pos>=FL.mx){FL.play=false;flBtn();return}}
+FL.last=ts;FL.raf=requestAnimationFrame(step)})(0)}
+document.addEventListener("click",function(e){var b=e.target.closest("[data-fl],[data-fm]");if(!b)return;
+if(b.dataset.fm){FL.m=b.dataset.fm;FL.pos=0;FL.play=false;drawFlow();return}
+FL.play=!FL.play;if(FL.play&&FL.pos>=FL.mx)FL.pos=0;flBtn();if(FL.play)flLoop()});
+document.addEventListener("input",function(e){if(e.target.id==="flSl"){FL.pos=+e.target.value;flUpdate()}});
+document.addEventListener("change",function(e){var i=e.target.id;if(i==="flSp")FL.sp=+e.target.value;else if(i==="flTr"){FL.trail=e.target.checked;flUpdate()}else if(i==="flWin"){FL.win=+e.target.value;FL.pos=0;FL.play=false;drawFlow()}});
 function showView(){document.getElementById("vw").innerHTML=VWS.map(function(v){return '<button type="button" class="tab" data-vw="'+v+'" aria-pressed="'+(v===vw)+'">'+v+'</button>'}).join("");
-document.getElementById("vTable").hidden=vw!=="表格";document.getElementById("vMatrix").hidden=vw!=="矩陣";document.getElementById("vQuad").hidden=vw!=="象限";document.getElementById("v3d").hidden=vw!=="3D";
-cancelAnimationFrame(T3.raf);if(vw==="矩陣")drawMatrix();else if(vw==="象限")drawQuad();else if(vw==="3D")draw3d();capH()}
+document.getElementById("vTable").hidden=vw!=="表格";document.getElementById("vMatrix").hidden=vw!=="矩陣";document.getElementById("vQuad").hidden=vw!=="象限";document.getElementById("vFlow").hidden=vw!=="動態";
+cancelAnimationFrame(FL.raf);if(vw==="矩陣")drawMatrix();else if(vw==="象限")drawQuad();else if(vw==="動態")drawFlow();capH()}
 var CAPN=20;
 function capH(){["vTable","vMatrix"].forEach(function(id){var el=document.getElementById(id);if(!el||el.hidden)return;el.style.maxHeight="";el.style.overflowY="auto";var rs=el.querySelectorAll("tbody tr");if(rs.length<=CAPN)return;var r=rs[CAPN-1];el.style.maxHeight=Math.ceil(r.getBoundingClientRect().bottom-el.getBoundingClientRect().top+el.scrollTop+1)+"px"})}
 window.addEventListener("resize",capH);
 var _render=render;render=function(){QZ.set=false;_render();showView()};
 document.addEventListener("click",function(e){var b=e.target.closest("[data-vw]");if(b){vw=b.dataset.vw;try{localStorage.setItem("dpVw",vw)}catch(x){}showView();return}var g=e.target.closest("[data-pt]");if(g)openDlg(g.dataset.pt)});
-document.addEventListener("change",function(e){var a=e.target.dataset&&e.target.dataset.ax;if(a){ax3[a]=e.target.value;draw3d()}else if(e.target.id==="auto3")auto3=e.target.checked;else if(e.target.id==="fit3"){fit3=e.target.checked;draw3d()}});
+document.addEventListener("change",function(e){if(e.target.id==="auto3")auto3=e.target.checked});
 
 function mxRow(lbl,cells){return '<tr><td>'+lbl+'</td>'+cells.map(function(c){return '<td class="c" style="'+heat(c.v)+'">'+c.t+'</td>'}).join("")+'</tr>'}
 function tv(x,k){return 50+50*Math.tanh(x/k)}
