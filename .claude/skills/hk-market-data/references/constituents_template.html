@@ -43,7 +43,7 @@ ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;max-wi
 </section>
 <section><p class="mut" id="cnt"></p><div class="wrap"><table id="t"><thead id="h"></thead><tbody id="b"></tbody></table></div></section>
 <section><ul class="mut">
-<li>每欄下方可篩選：文字欄輸入關鍵字；數字欄可輸入 5（≥5）、&gt;5、&lt;3、1-3；營收、淨利、現金流以「億」為單位。代號與名稱欄、標題列固定。</li>
+<li>每欄下方可篩選：文字欄輸入關鍵字；數字欄可輸入 5（≥5）、&gt;5、&lt;3、1-3；營收、淨利、現金流以「億」為單位。代號與名稱欄、標題列固定。股利明細已帶入 ROE、配發率、負債/資產、經營現金流四欄，點一檔可展開完整財報。</li>
 <li>股息欄單位為港元（富途報價幣別）。近 12 月股息若含特別股息會偏高，例如 6186 飛鶴、6110 滔搏。</li>
 <li>「對去年中期」標籤：增＝金額較高；減＝金額較低；持平；幣別＝人民幣與港元混用，需換算，只能說大致持平。</li>
 <li>2026 中期欄來自公告標題，幣別沒標的照原文寫「未標」。</li>
@@ -63,7 +63,9 @@ ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;max-wi
 <script>
 const D=__DATA__;
 const F=__FIN__;
-const cols=[['c','代號',0],['n','名稱',0],['w','權重%',1],['px','股價',1],['ttm','近12月股息',1],['lfy','上一財年',1],['chg','變化%',1],['y','殖利率%',1],['i26','2026 中期股利',0],['p25','去年中期（摘要）',0],['cmp','對去年中期',0]];
+const cols=[['c','代號',0],['n','名稱',0],['w','權重%',1],['px','股價',1],['ttm','近12月股息',1],['lfy','上一財年',1],['chg','變化%',1],['y','殖利率%',1],['roe','ROE%',1],['payout','配發率%',1],['debt','負債/資產%',1],['ocf','經營現金流(億)',1],['i26','2026 中期股利',0],['p25','去年中期（摘要）',0],['cmp','對去年中期',0]];
+D.forEach(r=>{const x=F[r.c];if(x){r._f=x;['roe','payout','debt','ocf'].forEach(k=>r[k]=x[k])}});
+const open=new Set();
 const lab={up:'增',down:'減',flat:'持平',fx:'幣別'};
 const yi=v=>typeof v==='number'?(v/1e8).toFixed(1):'';
 // 篩選：文字欄＝包含；數字欄＝數字（≥）、>10、<5、10-20、=3
@@ -87,15 +89,15 @@ th.appendChild(r1);th.appendChild(r2);marks();
 requestAnimationFrame(()=>th.style.setProperty('--h1',r1.offsetHeight+'px'))}
 function marks(){th.querySelectorAll('tr:first-child th').forEach(h=>{const k=h.dataset.k,c=o.cols.find(x=>x[0]===k);h.textContent=c[1]+(k===st.key?(st.dir>0?' ▲':' ▼'):'')})}
 function body(){const rows=o.rows.filter(r=>o.cols.every(([k,t,n])=>test(cell(r,k),st.f[k]||'',n))).sort((a,b)=>{const x=a[st.key],y=b[st.key];if(x==null)return 1;if(y==null)return -1;return (typeof x==='number'?x-y:String(x).localeCompare(String(y),'zh'))*st.dir});
-tb.innerHTML='';rows.forEach(r=>{const tr=document.createElement('tr');o.cols.forEach(([k,t,n],ci)=>{const td=document.createElement('td');td.className=(n?'n':'')+(ci===0?' s1':ci===1?' s2':'');const v=r[k];
+tb.innerHTML='';rows.forEach(r=>{const tr=document.createElement('tr');if(o.detail&&r._f){tr.style.cursor='pointer';tr.title='點一下展開財報';tr.onclick=()=>{open.has(r.c)?open.delete(r.c):open.add(r.c);body()}}o.cols.forEach(([k,t,n],ci)=>{const td=document.createElement('td');td.className=(n?'n':'')+(ci===0?' s1':ci===1?' s2':'');const v=r[k];
 if(k==='cmp'){td.innerHTML=v?'<span class="tag '+v+'">'+lab[v]+'</span>':''}
 else if(k==='chg'){td.textContent=(v>0?'+':'')+v.toFixed(1);td.className+=' '+(v>0.5?'up':v<-0.5?'down':'flat')}
-else if(k==='rev'||k==='np'||k==='ocf')td.textContent=yi(v);
-else if(typeof v==='number')td.textContent=k==='c'?v:v.toFixed(['w','y','px','eps','dps'].includes(k)?2:o.fin?1:3);
-else td.textContent=v==null?'':v;tr.appendChild(td)});tb.appendChild(tr)});
+else if(k==='rev'||k==='np'||k==='ocf')td.textContent=yi(v);else if(v==null&&o.detail&&n)td.textContent='';
+else if(typeof v==='number')td.textContent=k==='c'?v:v.toFixed(['w','y','px','eps','dps'].includes(k)?2:['roe','payout','debt','pe','pb'].includes(k)||o.fin?1:3);
+else td.textContent=v==null?'':v;tr.appendChild(td)});tb.appendChild(tr);if(o.detail&&r._f&&open.has(r.c)){const d=document.createElement('tr'),c=document.createElement('td');c.colSpan=o.cols.length;c.style.whiteSpace='normal';c.className='det';const x=r._f,g=(v,d)=>typeof v==='number'?v.toFixed(d):'';c.innerHTML='<b>財報 '+x.kind+'（'+x.period+'，'+x.cur+'）</b>　營收 '+yi(x.rev)+' 億｜股東淨利 '+yi(x.np)+' 億｜EPS '+g(x.eps,2)+'｜ROE '+g(x.roe,1)+'%｜負債/資產 '+g(x.debt,1)+'%｜經營現金流 '+yi(x.ocf)+' 億｜配發率 '+g(x.payout,1)+'%｜PE '+g(x.pe,1)+'｜PB '+g(x.pb,2)+'｜每股股息 '+g(x.dps,2);d.appendChild(c);tb.appendChild(d)}});
 if(o.count)document.getElementById(o.count).textContent='顯示 '+rows.length+' / '+o.rows.length+' 檔'}
 build();body()}
-mk({cols,rows:D,key:'w',head:'h',body:'b',count:'cnt'});
+mk({cols,rows:D,key:'w',head:'h',body:'b',count:'cnt',detail:1,scale:{ocf:1}});
 const fc=[['c','代號',0],['n','名稱',0],['w','權重%',1],['period','報表期',0],['kind','報表',0],['cur','幣別',0],['rev','營收(億)',1],['np','股東淨利(億)',1],['eps','EPS',1],['roe','ROE%',1],['debt','負債/資產%',1],['ocf','經營現金流(億)',1],['payout','配發率%',1],['pe','PE(TTM)',1],['pb','PB(TTM)',1],['dps','每股股息(港元)',1]];
 const FR=D.filter(r=>F[r.c]).map(r=>Object.assign({c:r.c,n:r.n,w:r.w},F[r.c]));
 mk({cols:fc,rows:FR,key:'w',head:'fh',body:'fb',count:'fcnt',fin:1,scale:{rev:1,np:1,ocf:1}});
