@@ -21,6 +21,12 @@ def clean_ticker(ticker: str) -> str:
     return t
 
 
+def _data_date(html: str) -> Optional[str]:
+    """MoneyDJ 頁面上的「資料日期：2026/10/21」→ 2026-10-21；找不到回 None（呼叫端退回抓取日）。"""
+    m = re.search(r"資料日期[：:]\s*(\d{4})/(\d{1,2})/(\d{1,2})", html)
+    return f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}" if m else None
+
+
 def fetch_etf_holdings(
     ticker: str,
     timeout: int = 10,
@@ -47,7 +53,7 @@ def fetch_etf_holdings(
             html = resp.read().decode("utf-8", errors="ignore")
         constituents = _parse_moneydj_html(html)
         if constituents:
-            return _build_holdings_result(code, constituents, as_of_date, "MoneyDJ")
+            return _build_holdings_result(code, constituents, _data_date(html) or as_of_date, "MoneyDJ")
     except Exception:
         pass
 

@@ -104,8 +104,8 @@ scripts/                     共用計算或抓價工具
 | `price-dividend-fetcher` | 抓台、美、日、港股最新股價（Google Finance，Yahoo、證交所、櫃買備援）與歷史配息（台股 FinLab＋證交所驗證，海外 Yahoo），算近 12 個月殖利率；另含波段觀察（`swing.py`：個股與 ETF 日線指標、狀態、費波那契位置、回測，`swing_levels.py`：短中長期分級原型，`swing_scores.py`：評分矩陣；`--patrol --daily-html` 產出每日投資組合巡檢頁）；唯讀 |
 | `hk-market-data` | 查港交所公告與 PDF 原文、港股通南向資金、港股報價、00882 產業漲跌、宏觀前饋指標；唯讀 |
 | `portfolio-patrol` | 投資組合全標的自動巡檢與每日簡報，動態遍歷 models/*/cards/ 求值，例外管理（MBE）分診 |
-| `tw-etf-fetcher` | 抓取全市場台股 ETF 股號清單、穿透完整成分股與權重、計算投資組合實質曝險（Look-through），並支援一鍵生成 DCS 建模卡片；唯讀 |
-| `fundamental-analyzer` | 個股三大財務報表量化體檢（ROE、自由現金流覆蓋、盈餘配發率）與 ETF 穿透加權聚合評分（netScore、divScore、valScore、fricScore）；多市場財報資料層（港股與 A 股東方財富、台股 FinMind＋Yahoo 股市＋證交所 OpenAPI、美股 SEC EDGAR、日股 EDINET，yfinance 為備援）；唯讀 |
+| `tw-etf-fetcher` | 抓取全市場台股 ETF 股號清單、穿透完整成分股與權重、計算投資組合實質曝險（Look-through），並支援一鍵生成 DCS 建模卡片；另含 `etf_table.py` 產生台股 ETF 成分股股利與財報明細頁（與 00882 頁共用範本）；唯讀 |
+| `fundamental-analyzer` | 個股三大財務報表量化體檢（ROE、自由現金流覆蓋、盈餘配發率）與 ETF 穿透加權聚合評分（netScore、divScore、valScore、fricScore）；多市場財報資料層（港股與 A 股東方財富、台股 FinMind＋Yahoo 股市＋證交所 OpenAPI、美股 SEC EDGAR、日股 EDINET，yfinance 為備援），並提供台股成分股明細（`finmind_detail.py`）與港台共用的財報趨勢計算（`fin_trend.py`）；唯讀 |
 
 ## 思考類文件的寫法
 

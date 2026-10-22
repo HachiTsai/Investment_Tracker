@@ -4,7 +4,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "constituents_table.py"
-TEMPLATE = ROOT / "references" / "constituents_template.html"
+TEMPLATE = ROOT.parent / "tw-etf-fetcher" / "references" / "constituents_template.html"
+PAGE = ROOT.parent / "tw-etf-fetcher" / "scripts" / "etf_page.py"
 
 
 def test_script_compiles():
@@ -13,7 +14,7 @@ def test_script_compiles():
 
 def test_every_placeholder_the_script_fills_exists_in_template():
     # 腳本載入時就會連網抓資料，所以只做靜態比對：replace("__X__") 的每個佔位符都要在範本裡
-    used = set(re.findall(r'\.replace\("(__[A-Z0-9]+__)"', SCRIPT.read_text(encoding="utf-8")))
+    used = set(re.findall(r'\("(__[A-Z0-9]+__)"', PAGE.read_text(encoding="utf-8")))
     tpl = TEMPLATE.read_text(encoding="utf-8")
     assert {"__DATA__", "__ASOF__", "__N__", "__TOP__", "__UNIT__", "__FIN__", "__MISS__"} <= used
     assert [p for p in sorted(used) if p not in tpl] == []
@@ -21,7 +22,7 @@ def test_every_placeholder_the_script_fills_exists_in_template():
 
 def test_template_is_complete_page():
     tpl = TEMPLATE.read_text(encoding="utf-8")
-    assert "<title>00882 成分股股利與財報明細</title>" in tpl
+    assert "<title>__ETF__ 成分股股利與財報明細</title>" in tpl
     assert "const D=__DATA__;\n" in tpl
 
 

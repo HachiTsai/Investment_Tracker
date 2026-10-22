@@ -1,7 +1,9 @@
-"""成分股財報趨勢：由 hk_detail 的累計數推算單季／單期 EPS、年增與規則式訊號（事實彙整，非買賣建議）。"""
+"""成分股財報趨勢（港股、台股共用）：由 hk_detail／tw_detail 的累計數推算單季／單期 EPS、年增與規則式訊號（事實彙整，非買賣建議）。"""
+import re
 from datetime import date
 from typing import Any, Dict, List, Optional
 
+FIN_ORGS = ("银行", "保险", "证券", "金融保險", "金融保险")
 RANK = {"一季报": 1, "中报": 2, "三季报": 3, "年报": 4}
 
 
@@ -37,6 +39,16 @@ def _pct(a, b):
     return round((a / b - 1) * 100, 1) if a is not None and b not in (None, 0) and b > 0 else None
 
 
+def is_quarterly(kind: Optional[str]) -> bool:
+    """台股季配的類別：Q1～Q4；港股用「季度」字樣。"""
+    return bool(re.fullmatch(r"Q[1-4]", kind or "")) or "季度" in (kind or "")
+
+
+def is_financial(org: Optional[str]) -> bool:
+    """金融業（銀行、保險、券商）不套用現金流與負債規則；東方財富用簡體機構類型，台股用產業別。"""
+    return any(o in (org or "") for o in FIN_ORGS)
+
+
 def enrich(fin: Dict[str, Any]) -> Dict[str, Any]:
     """回傳加上 qeps（單季或單期 EPS）、yoy 年增與 sigs 訊號的新字典；無歷史時原樣回傳。"""
     hist = fin.get("hist") or []
@@ -65,7 +77,7 @@ def enrich(fin: Dict[str, Any]) -> Dict[str, Any]:
     roe_chg = round(top["roe"] - ya["roe"], 1) if ya and top.get("roe") is not None and ya.get("roe") is not None else None
     debt_chg = round(top["debt"] - ya["debt"], 1) if ya and top.get("debt") is not None and ya.get("debt") is not None else None
     gpm_chg = round(top["gpm"] - ya["gpm"], 1) if ya and top.get("gpm") is not None and ya.get("gpm") is not None else None
-    financial = fin.get("org") in ("银行", "保险", "证券")
+    financial = is_financial(fin.get("org"))
     sigs = []
 
     def add(text, tone):
@@ -160,7 +172,7 @@ def _chg(a, b):
 def _dps_summary(divs: List[Dict[str, Any]]) -> Dict[str, Any]:
     """股利明細用：上一財年全年與前一財年全年股息（港元，含特別股息）、最近一次中期與去年中期的增減。"""
     out: Dict[str, Any] = {}
-    fy = next((d for d in divs if "年度" in (d.get("kind") or "")), None)
+    fy = next((d for d in divs if "年度" in (d.get("kind") or "") or d.get("kind") == "Q4"), None)  # 台股季配以 Q4 收尾該財年
     if fy and fy.get("year", "").isdigit():
         y = int(fy["year"])
         total = lambda yr: sum(d["hkd"] for d in divs if d.get("year") == str(yr) and d.get("hkd"))  # noqa: E731
@@ -183,13 +195,10 @@ def _dps_summary(divs: List[Dict[str, Any]]) -> Dict[str, Any]:
     return out
 
 
-FIN_ORGS = ("银行", "保险", "证券")
-
-
 def add_cashflow(fin: Dict[str, Any], cf: Dict[str, Any]) -> Dict[str, Any]:
     """加入自由現金流（經營現金流減資本支出）與其對全年已付股息的覆蓋倍數（fcf_cover）。
     金融業的經營現金流含存貸款變動，沒有意義，不算。已付股息為零時不算倍數。"""
-    if not fin or not cf or any(o in (fin.get("org") or "") for o in FIN_ORGS):
+    if not fin or not cf or is_financial(fin.get("org")):
         return fin
     fcf = cf["ocf"] - cf["capex"]
     out = dict(fin, fcf_fy=cf["fy"], fcf=fcf)
@@ -214,7 +223,7 @@ def ttm_dividend(divs: List[Dict[str, Any]], today: date) -> float:
     regs = sorted((d for d in divs if d.get("ex") and d["ex"] <= today.isoformat() and d.get("hkd")
                    and "特别" not in (d.get("kind") or "")), key=lambda d: d["ex"], reverse=True)
     kinds = [d.get("kind") or "" for d in regs[:4]]
-    n = 4 if any("季度" in k for k in kinds) else 2 if any("中期" in k for k in kinds[:3]) else 1
+    n = 4 if any(is_quarterly(k) for k in kinds) else 2 if any("中期" in k for k in kinds[:3]) else 1
     return sum(d["hkd"] for d in regs[:n])
 
 

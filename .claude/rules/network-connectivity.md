@@ -30,7 +30,7 @@
 | 網域 | 服務說明 | 連線狀態 | 實務用途與讀取方式 |
 | :--- | :--- | :---: | :--- |
 | `finlab.finance` | FinLab 財經 | ✅ HTTP 200 | 00882 歷史配息對帳源（`price-dividend-fetcher` 引用） |
-| `www.moneydj.com` | MoneyDJ 理財網 | ✅ HTTP 200 | 00882 總管理費用率、持股比例查證 |
+| `www.moneydj.com` | MoneyDJ 理財網 | ✅ HTTP 200 | 00882 總管理費用率、持股比例查證；台股 ETF 持股明細與資料日期（`tw-etf-fetcher`，2026-10-22 實測 00985A） |
 | `finance.yahoo.com` | Yahoo Finance 網頁 | ✅ HTTP 200 | 港股、美股歷史配息與行情抓取 |
 | `query1.finance.yahoo.com` | Yahoo Finance API | ✅ HTTP 429/200 | 需帶正確 Ticker 與 Cookie/Crumb 參數發送請求 |
 | `www.investing.com` | Investing.com | ✅ HTTP 200 | 總體經濟指標、全球殖利率走勢 |
@@ -46,7 +46,7 @@
 | `data.sec.gov` | SEC EDGAR 資料 API | ✅ HTTP 200 | 美股 XBRL 財報事實（需帶含聯絡資訊的 User-Agent；2026-10-21 實測） |
 | `www.sec.gov` | SEC EDGAR 官網 | ✅ HTTP 200 | 代號對 CIK 對照表 `files/company_tickers.json`（2026-10-21 實測） |
 | `api.edinet-fsa.go.jp` | 金融廳 EDINET API v2 | ✅ HTTP 200 | 日股有價證券報告書清單與財報 CSV（`fundamental-analyzer`）；API key 由環境「網路密鑰」以標頭注入，腳本不帶 key，無 key 時回 401（2026-10-21 實測） |
-| `api.finmindtrade.com` | FinMind 開放資料 API | ✅ HTTP 200 | 台股（上市與上櫃）現金流量表、資產負債表、損益表歷年季度；匿名有頻率限制（`fundamental-analyzer` 台股主來源；2026-10-21 實測） |
+| `api.finmindtrade.com` | FinMind 開放資料 API | ✅ HTTP 200 | 台股（上市與上櫃）現金流量表、資產負債表、損益表歷年季度，另有現金股利歷次分配（`TaiwanStockDividend`）、股價淨值比（`TaiwanStockPER`）、產業別（`TaiwanStockInfo`）；匿名有頻率限制（`fundamental-analyzer` 台股主來源，成分股明細頁快取 6 小時並可用 `FINMIND_TOKEN` 提高上限；2026-10-21 實測） |
 | `tw.stock.yahoo.com` | Yahoo 股市（台灣） | ✅ HTTP 200 | 台股現金流量表頁，資料嵌在網頁 JSON，非官方、改版即失效（`fundamental-analyzer` 台股備援；2026-10-21 實測） |
 | `mops.twse.com.tw` 報表端點、`goodinfo.tw` | MOPS 財報查詢、Goodinfo | ❌ 被擋 | MOPS 對非瀏覽器請求回「安全性考量無法呈現」，Goodinfo 被 Cloudflare 擋（403），不採用（2026-10-21 實測） |
 | `webb-site.com` | Webb-site | ✅ HTTP 200 | 港股 CCASS 股權集中度與股東持股變動 |
