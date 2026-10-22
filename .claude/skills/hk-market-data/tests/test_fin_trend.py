@@ -99,12 +99,19 @@ def test_pb_fair_value_uses_assumed_required_return():
     assert "pb_fair" not in add_valuation({"roe": 12.0})
 
 
-def test_ttm_dividend_counts_ex_dates_in_last_year():
+def test_ttm_dividend_uses_latest_regular_distributions_by_frequency():
     from datetime import date
-    divs = [dict(ex="2026-09-02", hkd=0.2), dict(ex="2026-03-10", hkd=0.5), dict(ex="2025-10-20", hkd=0.1),
-            dict(ex="2025-10-22", hkd=0.9), dict(ex="2026-11-01", hkd=0.7), dict(ex=None, hkd=0.3), dict(ex="2026-04-01")]
-    assert round(ttm_dividend(divs, date(2026, 10, 22)), 4) == 0.7
-    assert ttm_dividend([], date(2026, 10, 22)) == 0
+    today = date(2026, 10, 22)
+    semi = [dict(kind="中期分配", ex="2026-10-09", hkd=0.17), dict(kind="年度分配", ex="2026-05-04", hkd=0.19),
+            dict(kind="中期分配", ex="2025-12-04", hkd=0.15), dict(kind="特别分配", ex="2026-10-13", hkd=0.29),
+            dict(kind="年度分配", ex="2026-11-30", hkd=0.9), dict(kind="年度分配", ex=None, hkd=0.5)]
+    assert round(ttm_dividend(semi, today), 4) == 0.36  # 3 次落在 12 個月內也只取最近兩次，特別與未除息不算
+    annual = [dict(kind="年度分配", ex="2026-06-01", hkd=0.4), dict(kind="年度分配", ex="2025-06-01", hkd=0.3)]
+    assert ttm_dividend(annual, today) == 0.4
+    quarter = [dict(kind=k, ex=e, hkd=1.0) for k, e in [("三季度分配", "2026-09-01"), ("中期分配", "2026-06-01"),
+               ("一季度分配", "2026-03-01"), ("年度分配", "2025-12-01"), ("三季度分配", "2025-09-01")]]
+    assert ttm_dividend(quarter, today) == 4.0
+    assert ttm_dividend([], today) == 0
 
 
 def test_mid_note_states():

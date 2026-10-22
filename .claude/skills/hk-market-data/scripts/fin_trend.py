@@ -208,9 +208,14 @@ def add_valuation(fin: Dict[str, Any], required_roe: float = 10.0) -> Dict[str, 
 
 
 def ttm_dividend(divs: List[Dict[str, Any]], today: date) -> float:
-    """近 12 個月股息（港元）：除息日在 today 往前一年內的現金股息合計。"""
-    lo = date(today.year - 1, today.month, min(today.day, 28)).isoformat()
-    return sum(d["hkd"] for d in divs if d.get("ex") and lo < d["ex"] <= today.isoformat() and d.get("hkd"))
+    """年化股息（港元）：已除息的最近幾次「定期」分配合計，不含特別分配。
+    次數隨派息頻率：近幾次有季度分配的取 4 次；有中期分配的取 2 次（中期加年度）；只有年度分配的取 1 次。
+    不用「除息日在最近 12 個月內」，因為中期除息日提早時同一個窗口會含到 3 次而高估。"""
+    regs = sorted((d for d in divs if d.get("ex") and d["ex"] <= today.isoformat() and d.get("hkd")
+                   and "特别" not in (d.get("kind") or "")), key=lambda d: d["ex"], reverse=True)
+    kinds = [d.get("kind") or "" for d in regs[:4]]
+    n = 4 if any("季度" in k for k in kinds) else 2 if any("中期" in k for k in kinds[:3]) else 1
+    return sum(d["hkd"] for d in regs[:n])
 
 
 def mid_note(fin: Dict[str, Any], year: int) -> str:
