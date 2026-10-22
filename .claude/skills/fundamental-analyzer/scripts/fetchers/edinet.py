@@ -7,6 +7,7 @@ HTTP 200 仍要查 body 的 metadata.status；IFRS 與日本會計準則的要�
 import datetime
 import io
 import json
+import threading
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -17,6 +18,9 @@ from . import clean, http_bytes, http_json, ratio
 BASE = "https://api.edinet-fsa.go.jp/api/v2"
 CACHE_FILE = Path.home() / ".cache" / "investment_tracker" / "edinet_docs.json"
 CACHE_MAX_DAYS = 300
+DAY_CACHE_FILE = Path.home() / ".cache" / "investment_tracker" / "edinet_days.json"
+_days: Optional[Dict[str, List[List[str]]]] = None
+_days_lock = threading.Lock()
 
 REVENUE = ("TotalNetRevenuesIFRS", "SalesRevenuesIFRS", "OperatingRevenuesIFRSKeyFinancialData", "NetSalesIFRS",
            "SalesAndFinancialServicesRevenueIFRSKeyFinancialData", "RevenueIFRS", "NetSales",
@@ -45,6 +49,42 @@ def list_docs(day: datetime.date) -> List[Dict[str, Any]]:
     return data.get("results") or []
 
 
+def _load_days() -> Dict[str, List[List[str]]]:
+    global _days
+    if _days is None:
+        try:
+            _days = json.loads(DAY_CACHE_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            _days = {}
+    return _days
+
+
+def save_days() -> None:
+    """把已查過的日期寫回磁碟（排程環境每次是新容器，同一次執行內的記憶體快取才是主力）。"""
+    try:
+        with _days_lock:
+            DAY_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+            DAY_CACHE_FILE.write_text(json.dumps(_load_days()), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def list_docs_cached(day: datetime.date) -> List[Dict[str, Any]]:
+    """list_docs 的日期快取：只留有價證券報告書（120）的 secCode 與 docID。過去的日期內容不會變，所以一個日期整個
+    程序只查一次，掃描給多檔股票共用；今天的清單還會增加，不快取。"""
+    key = day.isoformat()
+    with _days_lock:
+        hit = _load_days().get(key)
+    if hit is not None:
+        return [{"secCode": a, "docID": b, "docTypeCode": "120"} for a, b in hit]
+    docs = list_docs(day)
+    if day < datetime.date.today():
+        rows = [[r.get("secCode"), r.get("docID")] for r in docs if r.get("docTypeCode") == "120"]
+        with _days_lock:
+            _load_days()[key] = rows
+    return docs
+
+
 def scan_order(today: datetime.date, days: int = 366) -> List[datetime.date]:
     """3、6 月下旬申報最密集，先掃；其餘由近到遠。"""
     def rank(d: datetime.date) -> int:
@@ -57,7 +97,7 @@ def scan_order(today: datetime.date, days: int = 366) -> List[datetime.date]:
 
 
 def find_doc(sec_code: str, today: Optional[datetime.date] = None,
-             lister: Callable[[datetime.date], List[Dict[str, Any]]] = list_docs) -> Optional[Dict[str, str]]:
+             lister: Callable[[datetime.date], List[Dict[str, Any]]] = list_docs_cached) -> Optional[Dict[str, str]]:
     """掃日期找該證券代碼最新的有價證券報告書（docTypeCode 120）。
 
     每次並行查 8 天；3、6 月下旬先掃，這兩段掃完且已有命中就收手，沒命中才繼續掃其他日期。
@@ -74,6 +114,8 @@ def find_doc(sec_code: str, today: Optional[datetime.date] = None,
                 hit = next((r for r in docs if r.get("secCode") == sec_code and r.get("docTypeCode") == "120"), None)
                 if hit and (best is None or d.isoformat() > best["date"]):
                     best = {"docID": hit["docID"], "date": d.isoformat()}
+    if lister is list_docs_cached:
+        save_days()
     return best
 
 
