@@ -179,3 +179,17 @@ def test_tw_merge_first_source_wins_and_failures_skipped():
 
     out = tw.fetch("2330", [lambda c: {"returnOnEquity": 0.4}, boom, lambda c: {"returnOnEquity": 0.1, "debtToEquity": 30}])
     assert out == {"returnOnEquity": 0.4, "debtToEquity": 30}
+
+
+def test_hk_dividends_parses_amount_currency_and_hkd(monkeypatch):
+    rows = [
+        {"NOTICE_DATE": "2026-08-26 00:00:00", "YEAR": "2026", "REPORT_TYPE": "中期分配", "EX_DIVIDEND_DATE": "2026/11/02",
+         "DIVIDEND_DATE": "2026/12/22", "PLAN_EXPLAIN": "每股派人民币0.203元(相当于港币0.23462元(计算值))"},
+        {"NOTICE_DATE": "2026-03-26", "YEAR": "2025", "REPORT_TYPE": "年度分配", "PLAN_EXPLAIN": "每股派港币0.46元(可选择以股代息)"},
+        {"NOTICE_DATE": "2025-08-27", "YEAR": "2025", "REPORT_TYPE": "中期分配", "PLAN_EXPLAIN": "未派发或宣派股息"},
+        {"NOTICE_DATE": "2024-08-29", "YEAR": "2024", "REPORT_TYPE": "特别分配", "PLAN_EXPLAIN": "每持有1000股获分派193股"},
+    ]
+    monkeypatch.setattr(eastmoney, "http_json", lambda url: {"result": {"data": rows}})
+    out = eastmoney.hk_dividends("998")
+    assert out[0]["amt"] == 0.203 and out[0]["cur"] == "人民币" and out[0]["hkd"] == 0.23462 and out[0]["pay"] == "2026-12-22"
+    assert out[1]["hkd"] == 0.46 and out[2]["amt"] == 0.0 and "amt" not in out[3]

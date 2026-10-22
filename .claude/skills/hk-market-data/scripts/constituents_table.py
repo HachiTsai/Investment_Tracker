@@ -10,7 +10,7 @@ PREV = sys.argv[2] if len(sys.argv) > 2 else None
 JSON_OUT = sys.argv[3] if len(sys.argv) > 3 else None
 import glob
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from fin_trend import enrich  # 單季 EPS、年增與訊號
+from fin_trend import enrich, add_dividends, rmb_hint  # 單季 EPS、年增與訊號
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "fundamental-analyzer", "scripts"))
 from fetchers import eastmoney  # 財報頁沿用 fundamental-analyzer 的東方財富資料層
 CH = sorted(glob.glob("/opt/pw-browsers/chromium-*/chrome-linux*/chrome"))[-1]
@@ -82,13 +82,20 @@ def one(x):
 with ThreadPoolExecutor(6) as ex:
     rows = list(ex.map(one, stocks))
 def fin_one(x):
+    c = x["code_"].split()[0]
     try:
-        return x["code_"].split()[0], enrich(eastmoney.hk_detail(x["code_"].split()[0]))
+        f = enrich(eastmoney.hk_detail(c))
     except Exception:
-        return x["code_"].split()[0], {}
+        return c, {}, []
+    try:
+        return c, f, eastmoney.hk_dividends(c)
+    except Exception:
+        return c, f, []  # 配息明細抓不到時仍保留財報本身
 
 with ThreadPoolExecutor(6) as ex:
-    fin = dict(ex.map(fin_one, stocks))
+    fin_raw = list(ex.map(fin_one, stocks))
+_hint = rmb_hint([d for _, _, d in fin_raw])
+fin = {c: (add_dividends(f, d, date.today(), _hint) if f else f) for c, f, d in fin_raw}
 fin_fails = [c for c, v in fin.items() if not v]
 fails = [r["c"] for r in rows if r.get("fail")]
 ok = [r for r in rows if not r.get("fail")]
