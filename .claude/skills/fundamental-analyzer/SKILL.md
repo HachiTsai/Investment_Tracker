@@ -68,3 +68,8 @@ python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py scaffold-sto
 | 日股 | `edinet.fetch` | EDINET API v2 有價證券報告書（官方；key 由環境代理以標頭注入，腳本不帶 key） | 取合併當期，IFRS 與日本會計準則兩套要素都對照；依證券代碼掃申報日（3、6 月下旬先掃，結果快取 `~/.cache/investment_tracker/edinet_docs.json`），3、12 月以外決算的公司首次查詢較慢 |
 
 抓不到的欄位省略，不用估值補；整檔失敗回空 dict。測試離線：`tests/test_fetchers.py`。
+
+## 成分股明細（`finmind_detail.py`、`fin_trend.py`）
+
+- `fetchers/finmind_detail.py`：台股成分股的近 10 期累計財報（`tw_detail`）、現金股利歷次分配（`tw_dividends`）、PBR、現金流與已付股息近似（`tw_cashflow`），輸出格式同港股 `eastmoney.hk_detail`／`hk_dividends`，由 `tw-etf-fetcher/scripts/etf_table.py` 呼叫。請求有快取、退避重試與 `FINMIND_TOKEN` 支援。
+- `scripts/fin_trend.py`（原在 `hk-market-data`，港股與台股共用）：單季 EPS、年增、規則式訊號、配息率、PB 相對合理值、殖利率歷史分位；金融業判斷用 `is_financial`。

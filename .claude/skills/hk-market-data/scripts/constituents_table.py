@@ -8,9 +8,10 @@ from datetime import date, datetime, timezone
 OUT = sys.argv[1]
 PREV = sys.argv[2] if len(sys.argv) > 2 else None
 JSON_OUT = sys.argv[3] if len(sys.argv) > 3 else None
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from fin_trend import enrich, add_dividends, add_cashflow, add_valuation, rmb_hint, ttm_dividend, mid_note, valuation_position  # 單季 EPS、年增與訊號
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "fundamental-analyzer", "scripts"))
+from fin_trend import enrich, add_dividends, add_cashflow, add_valuation, rmb_hint, ttm_dividend, mid_note, valuation_position  # 單季 EPS、年增與訊號（與台股共用）
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tw-etf-fetcher", "scripts"))
+import etf_page  # 頁面渲染與市場設定與台股 ETF 共用
 from fetchers import eastmoney  # 財報頁沿用 fundamental-analyzer 的東方財富資料層
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "price-dividend-fetcher", "scripts"))
 import fetch as price_fetch  # 股價沿用 price-dividend-fetcher（Google Finance，Yahoo 備援）
@@ -107,13 +108,9 @@ has26 = sum(1 for r in ok if r["i26"].startswith(("派息", "股息")))
 top = max(ok, key=lambda r: r["w"])
 rows_out = [dict(c=r["c"], n=r["n"], w=r["w"], q=r["q"], px=r["px"], ttm=r["ttm"], lfy=r["lfy"], chg=r["chg"], y=r["y"],
                  i26=r["i26"], p25=r["p25"], cmp=r["cmp"]) for r in ok]
-tpl = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "references", "constituents_template.html"), encoding="utf-8").read()
-page = (tpl.replace("__DATA__", json.dumps(rows_out, ensure_ascii=False))
-        .replace("__MISS__", json.dumps([dict(c=r["c"], n=r["n"], w=r["w"], px=r["px"]) for r in rows if r.get("fail")], ensure_ascii=False))
-        .replace("__FIN__", json.dumps({c: v for c, v in fin.items() if v}, ensure_ascii=False))
-        .replace("__ASOF__", f"{date.today().isoformat()}（持股 {asof}）")
-        .replace("__N__", str(len(ok))).replace("__TOP__", f'{top["n"]} {top["w"]}%')
-        .replace("__UNIT__", f"{lfy_unit:.2f}～{ttm_unit:.2f}"))
+page = etf_page.render("hk", "00882", 49, rows_out, [dict(c=r["c"], n=r["n"], w=r["w"], px=r["px"]) for r in rows if r.get("fail")],
+                       {c: v for c, v in fin.items() if v}, f"{date.today().isoformat()}（持股 {asof}）", len(ok),
+                       f'{top["n"]} {top["w"]}%', f"{lfy_unit:.2f}～{ttm_unit:.2f}")
 open(OUT, "w", encoding="utf-8").write(page)
 print(json.dumps(dict(rows=len(ok), fails=fails, fin_fails=fin_fails, fx=round(FX, 4), nav=nav, units=units, ttm_unit=round(ttm_unit, 3), lfy_unit=round(lfy_unit, 3), has26=has26, chg=round(net / base * 100, 1))))
 if JSON_OUT:
