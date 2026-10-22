@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
-from fin_trend import enrich, add_cashflow, add_valuation, ttm_dividend, mid_note  # noqa: E402
+from fin_trend import enrich, add_cashflow, add_valuation, ttm_dividend, mid_note, valuation_position  # noqa: E402
 
 
 def _h(p, k, eps, rev=100.0, np=10.0, **kw):
@@ -119,3 +119,16 @@ def test_mid_note_states():
     assert mid_note({"h_lab": "2026 中期", "h_hkd": 0}, 2026) == "已公告，金額未標"
     assert mid_note({"h_lab": "2025 中期", "h_hkd": 0.2}, 2026) == "董事會審議/未找到"
     assert mid_note({}, 2026) == "董事會審議/未找到"
+
+
+def test_valuation_position_percentiles():
+    from datetime import date, timedelta
+    d0 = date(2021, 1, 1)
+    closes = [((d0 + timedelta(days=i)).isoformat(), 10.0 + (i % 50) * 0.1) for i in range(1500)]
+    divs = [dict(kind="年度分配", ex="2020-06-01", hkd=0.5)]
+    out = valuation_position(closes, divs, date(2025, 2, 10))
+    assert 0 <= out["px_pct"] <= 100 and out["y_pct_n"] >= 12
+    cheap = valuation_position(closes[:-1] + [(closes[-1][0], 5.0)], divs, date(2025, 2, 10))
+    assert cheap["y_pct"] == 100 and cheap["px_pct"] == 0
+    assert valuation_position(closes[:50], divs, date(2025, 2, 10)) == {}
+    assert "y_pct" not in valuation_position(closes, [], date(2025, 2, 10))
