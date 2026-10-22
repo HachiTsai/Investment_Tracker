@@ -14,6 +14,7 @@
    - Agent 端到端流程：獨立分支 ➔ 本地驗證（pytest / mdlint）➔ 提交並推送 ➔ 發起 PR ➔ 監聽 CI 狀態。
    - GitHub Actions CI 全綠通過後，由 `ci.yml` 的 `auto-merge` job 以標準 Merge Commit（`gh pr merge <id> --merge --delete-branch`）自動合入 `main`；僅限非草稿、同 repo、`claude/` 開頭分支，使用 Secrets `AUTO_MERGE_PAT`（用 PAT 才會觸發 `main` 的 CI）。
    - Agent 在合併後確認 `main` 的 CI 通過並切回 `main` 保持最新同步；個人帳號無法設 branch protection，故不使用內建 auto-merge。
+   - **草稿 PR 的現況**：雲端工作階段的系統指令要求 PR 先開為草稿，`auto-merge` 的條件含 `draft == false`，草稿 PR 會被跳過。CI 全綠後由 Agent 回報，Hachi 在 GitHub 以 Create a merge commit 手動合併。`ci.yml` 的 `pull_request` 預設事件不含 `ready_for_review`，轉為 Ready 不會觸發 `auto-merge`；待 `ci.yml` 補上該事件，才改為「轉 Ready 即自動合併」。
 
 ## 2. 結構化 Commit 流程
 
