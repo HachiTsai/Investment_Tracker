@@ -21,10 +21,15 @@ def test_every_placeholder_the_script_fills_exists_in_template():
 
 def test_template_is_complete_page():
     tpl = TEMPLATE.read_text(encoding="utf-8")
-    assert "<title>00882 成分股股利明細</title>" in tpl
+    assert "<title>00882 成分股股利與財報明細</title>" in tpl
     assert "const D=__DATA__;\n" in tpl
 
 
 def test_template_has_financials_tab():
     tpl = TEMPLATE.read_text(encoding="utf-8")
     assert "const F=__FIN__;\n" in tpl and 'id="tb-fin"' in tpl and 'id="pg-fin"' in tpl
+
+
+def test_template_has_dialog_and_financial_main_page():
+    tpl = TEMPLATE.read_text(encoding="utf-8")
+    assert '<dialog id="dlg"' in tpl and "const fcols=" in tpl and "'qeps'" in tpl
