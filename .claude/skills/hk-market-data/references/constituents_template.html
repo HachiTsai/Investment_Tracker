@@ -49,7 +49,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 </style>
 <main>
 <header><h1>00882 成分股股利與財報明細</h1>
-<p class="mut">資料日期 __ASOF__。持股、股數、權重來自中信投信官方明細（2026-10-13）；股息來自富途牛牛；財報來自東方財富（非官方彙整，關鍵數字需對港交所公告原文）；去年中期股利來自先前的搜尋摘要，可信度較低。</p></header>
+<p class="mut">資料日期 __ASOF__。持股、股數、權重來自中信投信官方明細（2026-10-13）；殖利率來自富途牛牛；財報與歷次分配來自東方財富（非官方彙整，關鍵數字需對港交所公告原文）。</p></header>
 <nav class="tabs" aria-label="分頁"><button id="tb-fin" aria-pressed="true">財報</button><button id="tb-div" aria-pressed="false">股利明細</button></nav>
 <div id="pg-fin" style="display:contents">
 <section class="sum" id="fsum" aria-label="財報摘要"></section>
@@ -64,19 +64,17 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 </ul></section>
 </div>
 <div id="pg-div" hidden style="display:contents">
-<section class="sum" aria-label="摘要">
+<section class="sum" aria-label="摘要" id="dsum">
 <div><b>__N__ 檔</b><span>最大一檔 __TOP__</span></div>
-<div><b>約 __HAS26__ 檔</b><span>已有 2026 中期股利金額</span></div>
-<div><b>__CHG__</b><span>近 12 月股息對上一財年（__UPDN__）</span></div>
 <div><b>__UNIT__</b><span>以今日持股推算的每單位年股利（台幣，毛額）</span></div>
 </section>
 <section><p class="mut" id="cnt"></p><div class="wrap"><table id="t"><thead id="h"></thead><tbody id="b"></tbody></table></div></section>
 <section><ul class="mut">
 <li>每欄下方可篩選，寫法同財報頁。</li>
-<li>股息欄單位為港元（富途報價幣別）。近 12 月股息若含特別股息會偏高，例如 6186 飛鶴、6110 滔搏。</li>
-<li>「對去年中期」標籤：增＝金額較高；減＝金額較低；持平；幣別＝人民幣與港元混用，需換算，只能說大致持平。</li>
-<li>2026 中期欄來自公告標題，幣別沒標的照原文寫「未標」。</li>
-<li>沒有找到獨立的歷史股利表，這是用報價頁股息與公告標題拼出來的。</li>
+<li>股息欄單位為港元，來源為東方財富歷次分配紀錄（含特別股息），原幣不是港元的以紀錄中的港元換算值計算。</li>
+<li>「上財年全年」＝最近一次年度分配所屬財年的中期加年度（含特別）股息；「變化%」與前一財年比。「中期增減」＝最近一次中期股息對去年中期。</li>
+<li>2026 中期欄為「未宣派或未更新」時，可能是公司真的不派，也可能是東方財富還沒更新，請對照公告。</li>
+<li>殖利率來自富途牛牛，以近 12 月股息除以股價；若含特別股息會偏高，例如 6186 飛鶴、6110 滔搏。</li>
 </ul></section>
 </div>
 </main>
@@ -123,8 +121,10 @@ else td.textContent=v==null?'':v;tr.appendChild(td)});tb.appendChild(tr)});
 if(o.count)document.getElementById(o.count).textContent='顯示 '+rs.length+' / '+o.rows.length+' 檔'}
 build();body();return{body}}
 // ---- 股利明細 ----
-const dcols=[['c','代號',0],['n','名稱',0],['w','權重%',1],['px','股價',1],['ttm','近12月股息',1,{d:3}],['lfy','上一財年',1,{d:3}],['chg','變化%',1,{sg:1}],['y','殖利率%',1],['i26','2026 中期股利',0],['p25','去年中期（摘要）',0],['cmp','對去年中期',0]];
-mk({cols:dcols,rows:D,key:'w',head:'h',body:'b',count:'cnt'});
+const dcols=[['c','代號',0],['n','名稱',0],['w','權重%',1],['px','股價',1],['fy_lab','財年',0],['fy_hkd','上財年全年股息',1,{d:3}],['fy_prev_hkd','前一財年全年',1,{d:3}],['fy_chg','變化%',1,{sg:1}],['y','殖利率%（近12月）',1],['h_state','2026 中期股利',0],['h_hkd','中期每股(港元)',1,{d:3}],['h_prev_hkd','去年中期',1,{d:3}],['h_chg','中期增減%',1,{sg:1}]];
+const DR=D.filter(r=>F[r.c]).map(r=>{const x=Object.assign({},r,F[r.c]);x.h_state=x.h_lab?(x.h_hkd?'已宣派，'+(x.h_pay?x.h_pay+' 付':'付款日未定'):'未宣派或未更新'):'';return x});
+mk({cols:dcols,rows:DR,key:'w',head:'h',body:'b',count:'cnt'});
+(function(){const el=document.getElementById('dsum'),c=p=>DR.filter(p).length;[[c(r=>r.fy_chg>0.5)+' / '+c(r=>r.fy_chg<-0.5)+' / '+c(r=>r.fy_chg!=null&&Math.abs(r.fy_chg)<=0.5),'上財年全年股息較前一財年：增 / 減 / 持平（檔）'],[c(r=>r.h_hkd>0)+' 檔','已宣派 2026 中期股息（其中增 '+c(r=>r.h_chg>0.5)+'、減 '+c(r=>r.h_chg<-0.5)+'）']].forEach(([b,t])=>{const d=document.createElement('div');d.innerHTML='<b>'+b+'</b><span>'+t+'</span>';el.appendChild(d)})})();
 // ---- 財報（主頁）----
 const FR=D.filter(r=>F[r.c]).map(r=>Object.assign({},r,F[r.c]));
 const fcols=[['c','代號',0],['n','名稱',0],['px','股價',1],['qeps','單季／單期EPS',1,{d:2}],['eps','累計EPS',1,{d:2}],['ytd','當年度已配發股息(港元)',1,{d:3}],['dr_cur','當期配息率%',1,{d:1}],['dr_fy','上年度配息率%',1,{d:1}],['roe','ROE%',1,{d:1}],['payout','配發率%',1,{d:1}],['ocf','經營現金流(億)',1,{yi:1}],['rev','營收(億)',1,{yi:1}],['pb','PB',1,{d:2}],['pe','PE',1,{d:1}],
