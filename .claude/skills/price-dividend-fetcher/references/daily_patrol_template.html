@@ -64,7 +64,7 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 .fl .lb.on{display:block;fill:var(--fg)}.fl .pt:hover path{stroke-width:3.2}.fl .pt{cursor:pointer}
 .tip{position:absolute;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12px;display:none;white-space:nowrap;z-index:2}
 .hl{cursor:pointer;border-bottom:1px dotted var(--mute)}.hl:hover{color:var(--accent);border-bottom-color:var(--accent)}
-#tcdlg{max-width:560px;width:calc(100% - 32px);background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:16px 18px;max-height:85vh}#tcdlg::backdrop{background:rgba(0,0,0,.45)}#tcdlg h4{margin:12px 0 4px;font-size:13px;color:var(--mute)}#tcdlg label{display:inline-flex;gap:4px;align-items:center;margin:2px 14px 2px 0;font-size:14px;cursor:pointer}
+#fpdlg,#tcdlg{max-width:560px;width:calc(100% - 32px);background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:16px 18px;max-height:85vh}#fpdlg::backdrop,#tcdlg::backdrop{background:rgba(0,0,0,.45)}#fpdlg h4,#tcdlg h4{margin:12px 0 4px;font-size:13px;color:var(--mute)}#fpdlg label,#tcdlg label{display:inline-flex;gap:4px;align-items:center;margin:2px 14px 2px 0;font-size:14px;cursor:pointer}
 [hidden]{display:none!important}
 </style>
 <main>
@@ -85,6 +85,7 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 <div class="tw hm" id="vMatrix" hidden></div>
 <div class="pnl" id="vQuad" hidden></div>
 <div class="pnl" id="vFlow" hidden></div>
+<dialog id="fpdlg" aria-label="選擇標的"><div class="hd"><h2 style="margin:0;font-size:18px">選擇標的</h2><button type="button" class="x" id="fpx">完成</button></div><p class="mac">動態檢視只播放選到的標的，設定記在這個瀏覽器。按組合可一次選取，也可以逐檔勾選。<span id="fpn"></span></p><div class="row" id="fpg"></div><p class="row"><button type="button" class="x" id="fpall">全選</button><button type="button" class="x" id="fpnone">全部取消</button><input type="search" id="fpq" placeholder="搜尋名稱或股號" autocomplete="off" style="flex:1;min-width:140px;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:99px;padding:3px 12px"></p><div id="fpl"></div></dialog>
 <dialog id="tcdlg" aria-label="選擇指標欄位"><div class="hd"><h2 style="margin:0;font-size:18px">選擇指標欄位</h2><button type="button" class="x" id="tcx">完成</button></div><p class="mac">標的名稱固定顯示。按群組可一次加入或移除，也可以逐欄勾選。</p><p class="row"><button type="button" class="x" id="tcall">全部欄位</button><button type="button" class="x" id="tcnone">全部取消</button></p><div class="row" id="tcg"></div><div id="tcl"></div></dialog>
 <div class="mask" id="mask"><div class="dlg" id="dlg" role="dialog" aria-modal="true"></div></div>
 <section class="notes">
@@ -236,12 +237,16 @@ qh.addEventListener("pointermove",function(e){var d=QZ.drag,sv=qh.querySelector(
 window.addEventListener("pointerup",function(){QZ.drag=null;setTimeout(function(){QZ.moved=false},0)});
 qh.addEventListener("click",function(e){if(QZ.moved){e.stopPropagation();return}var b=e.target.closest("[data-qz]");if(!b)return;e.stopPropagation();if(b.dataset.qz==="fit")QZ.set=false;else{QZ.x0=0;QZ.x1=100;QZ.y0=0;QZ.y1=100;QZ.set=true}drawQuad()},true)})();
 var FL={m:"b",pos:0,play:false,raf:0,last:0,sp:1,trail:true,win:60,sel:null};
-function flRows(){return scored().filter(function(r){var h=r.chart&&r.chart.hs;return h&&h.t.some(function(v){return v!=null})&&h.m.some(function(v){return v!=null})})}
+var FS=null;try{var fss=JSON.parse(localStorage.getItem("dpFlSel.v1")||"null");if(Array.isArray(fss))FS=fss}catch(e){}
+function flSave(){try{localStorage.setItem("dpFlSel.v1",JSON.stringify(FS))}catch(e){}}
+function flRows(){var b=flBase();return FS?b.filter(function(r){return FS.indexOf(r.ticker)>=0}):b}
+function flBase(){return scored().filter(function(r){var h=r.chart&&r.chart.hs;return h&&h.t.some(function(v){return v!=null})&&h.m.some(function(v){return v!=null})})}
 function flAt(a,p){var i=Math.floor(p),j=Math.min(a.length-1,i+1),x=a[i],y=a[j];if(x==null)return y==null?null:(p>=j?y:null);if(y==null)return x;return x+(y-x)*(p-i)}
 function flNorm(r){var c=r.chart.c.filter(function(v){return v!=null}),w=Math.min(FL.win,c.length),s=c.slice(c.length-w),b=s[0];return s.map(function(v){return v/b*100})}
 function flMax(L){return FL.m==="b"?L[0].chart.hs.t.length-1:Math.min(FL.win,Math.min.apply(null,L.map(function(r){return r.chart.c.filter(function(v){return v!=null}).length})))-1}
+function flBar(n){return '<div class="opts"><button type="button" class="x" id="flPick">選擇標的</button><span class="mac">播放 '+n+' / '+flBase().length+' 檔</span></div>'}
 function drawFlow(){var host=document.getElementById("vFlow"),L=flRows();cancelAnimationFrame(FL.raf);
-if(!L.length){host.innerHTML='<p class="mac">沒有足夠日線可播放走勢。</p>';return}
+if(!L.length){host.innerHTML=flBar(0)+'<p class="mac">沒有可播放的標的，請按「選擇標的」。</p>';return}
 var mx=flMax(L);if(FL.pos>mx)FL.pos=mx;
 var tabs='<div class="dtabs">'+[["b","氣泡圖（趨勢×動能）"],["r","賽跑折線（報酬）"]].map(function(a){return '<button type="button" class="tab" data-fm="'+a[0]+'" aria-pressed="'+(a[0]===FL.m)+'">'+a[1]+'</button>'}).join("")+'</div>';
 var ctl='<div class="opts"><button type="button" class="x" data-fl="play" id="flBtn"></button><input type="range" id="flSl" min="0" max="'+mx+'" step="0.01" value="'+FL.pos+'" style="flex:1;min-width:140px" aria-label="時間軸"><span class="mac" id="flDt"></span><label>速度 <select id="flSp">'+[[.5,"慢"],[1,"中"],[2,"快"]].map(function(a){return '<option value="'+a[0]+'"'+(a[0]===FL.sp?" selected":"")+'>'+a[1]+'</option>'}).join("")+'</select></label>'+(FL.m==="b"?'<label><input type="checkbox" id="flTr"'+(FL.trail?" checked":"")+'> 尾跡</label>':'<label>區間 <select id="flWin">'+[20,60,120].map(function(v){return '<option value="'+v+'"'+(v===FL.win?" selected":"")+'>近 '+v+' 日</option>'}).join("")+'</select></label>')+'</div>';
@@ -260,7 +265,7 @@ for(var k=0;k<=4;k++){var v=lo+(hi-lo)*k/4;o+='<text x="'+(m-4)+'" y="'+(Y(v)+3)
 o+='<text x="'+((W+m)/2)+'" y="'+(H-2)+'" text-anchor="middle">近 '+(mx+1)+' 個交易日，起點＝100 →</text>';
 L.forEach(function(r,i){var t=(FAV[r.ticker]?"★":"")+String(r.ticker).replace(/^[A-Z]+:/,"");o+='<g class="pt" data-pt="'+esc(r.ticker)+'"><path id="flL'+i+'" fill="none" stroke="'+stc(r)+'" stroke-opacity="'+(FAV[r.ticker]?1:.7)+'" stroke-width="'+(FAV[r.ticker]?2.4:1.6)+'"/><circle id="flE'+i+'" r="3.5" fill="'+stc(r)+'"/><text class="lb" id="flN'+i+'" text-anchor="start">'+t+'</text><title>'+esc(r.name)+'</title></g>'})}
 o+='</svg>';
-host.innerHTML=tabs+ctl+o+legend()+'<p class="mac">'+(FL.m==="b"?'每個圓點是一檔標的，位置＝當日趨勢與動能分數，近 60 個交易日由舊到新播放；圓點大小＝量能分數，顏色＝目前的波段狀態。右上＝趨勢與動能同步轉強，左下＝同步轉弱。':'每條線是一檔標的的累積報酬（起點＝100），線端標示當下領先與落後各 3 檔。')+'游標移到圓點或線可看股號，點一下看技術指標。以各標的自己的交易日對齊，最右邊都是最新一日。</p>';
+host.innerHTML=flBar(L.length)+tabs+ctl+o+legend()+'<p class="mac">'+(FL.m==="b"?'每個圓點是一檔標的，位置＝當日趨勢與動能分數，近 60 個交易日由舊到新播放；圓點大小＝量能分數，顏色＝目前的波段狀態。右上＝趨勢與動能同步轉強，左下＝同步轉弱。':'每條線是一檔標的的累積報酬（起點＝100），線端標示當下領先與落後各 3 檔。')+'游標移到圓點或線可看股號，點一下看技術指標。以各標的自己的交易日對齊，最右邊都是最新一日。</p>';
 FL.L=L;FL.mx=mx;flUpdate();flBtn();
 if(FL.play)flLoop()}
 function flBtn(){var b=document.getElementById("flBtn");if(b)b.textContent=FL.play?"⏸ 暫停":"▶ 播放"}
@@ -372,4 +377,13 @@ document.getElementById("tcx").onclick=function(){document.getElementById("tcdlg
 document.getElementById("tcall").onclick=function(){tshown={};TALL.forEach(function(k){tshown[k]=true});tcApply();tcDraw()};
 document.getElementById("tcnone").onclick=function(){tshown={};tcApply();tcDraw()};
 tcApply();
+var FPS=[["全部",function(r){return true}],["我的最愛",function(r){return !!FAV[r.ticker]}],["綜合分前 10",null],["ETF",function(r){return r.kind==="ETF"}],["個股",function(r){return r.kind==="個股"}],["台股",function(r){return r.market==="台股"}],["港股",function(r){return r.market==="港股"}]];
+function fpSet(a){FS=a;flSave();fpDraw()}
+function fpDraw(){var base=flBase(),on=FS||base.map(function(r){return r.ticker}),q=(document.getElementById("fpq").value||"").trim().toLowerCase(),g=document.getElementById("fpg"),l=document.getElementById("fpl");g.innerHTML="";l.innerHTML="";
+var top=base.slice().sort(function(x,y){return y.total_score-x.total_score}).slice(0,10);
+FPS.forEach(function(p){var rs=p[1]?base.filter(p[1]):top;if(!rs.length)return;var ts=rs.map(function(r){return r.ticker}),same=ts.length===on.length&&ts.every(function(k){return on.indexOf(k)>=0}),b=document.createElement("button");b.type="button";b.className="tab";b.textContent=p[0]+"（"+ts.length+"）";b.setAttribute("aria-pressed",String(same));b.onclick=function(){fpSet(ts)};g.appendChild(b)});
+base.forEach(function(r){var s=(r.name+" "+r.ticker).toLowerCase();if(q&&s.indexOf(q)<0)return;var lb=document.createElement("label"),cb=document.createElement("input");cb.type="checkbox";cb.checked=on.indexOf(r.ticker)>=0;cb.onchange=function(){var cur=(FS||base.map(function(x){return x.ticker})).slice(),i=cur.indexOf(r.ticker);if(cb.checked&&i<0)cur.push(r.ticker);else if(!cb.checked&&i>=0)cur.splice(i,1);FS=cur;flSave();document.getElementById("fpn").textContent="已選 "+cur.length+" / "+base.length+" 檔"};lb.appendChild(cb);lb.append(" "+(FAV[r.ticker]?"★":"")+r.name+" "+String(r.ticker).replace(/^[A-Z]+:/,""));l.appendChild(lb)});
+document.getElementById("fpn").textContent="已選 "+on.length+" / "+base.length+" 檔"}
+document.addEventListener("click",function(e){if(e.target.id==="flPick"){document.getElementById("fpq").value="";fpDraw();document.getElementById("fpdlg").showModal()}else if(e.target.id==="fpx"){document.getElementById("fpdlg").close();FL.pos=0;FL.play=false;drawFlow()}else if(e.target.id==="fpall")fpSet(flBase().map(function(r){return r.ticker}));else if(e.target.id==="fpnone")fpSet([])});
+document.addEventListener("input",function(e){if(e.target.id==="fpq")fpDraw()});
 </script>
