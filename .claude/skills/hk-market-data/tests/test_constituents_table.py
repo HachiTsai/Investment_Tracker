@@ -45,3 +45,8 @@ def test_template_has_help_dialog_and_new_metrics():
 def test_template_has_column_picker():
     tpl = TEMPLATE.read_text(encoding="utf-8")
     assert '<dialog id="cdlg"' in tpl and "const GRP=" in tpl and "fincols.v1" in tpl and "setShown" in tpl
+
+
+def test_template_has_index_weighted_pe():
+    tpl = TEMPLATE.read_text(encoding="utf-8")
+    assert "pe_all" in tpl and "w/o.reduce((a,r)=>a+r.w/r.pe,0)" in tpl
