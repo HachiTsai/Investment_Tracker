@@ -64,6 +64,7 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 .fl .lb.on{display:block;fill:var(--fg)}.fl .pt:hover path{stroke-width:3.2}.fl .pt{cursor:pointer}
 .tip{position:absolute;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12px;display:none;white-space:nowrap;z-index:2}
 .hl{cursor:pointer;border-bottom:1px dotted var(--mute)}.hl:hover{color:var(--accent);border-bottom-color:var(--accent)}
+#tcdlg{max-width:560px;width:calc(100% - 32px);background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:16px 18px;max-height:85vh}#tcdlg::backdrop{background:rgba(0,0,0,.45)}#tcdlg h4{margin:12px 0 4px;font-size:13px;color:var(--mute)}#tcdlg label{display:inline-flex;gap:4px;align-items:center;margin:2px 14px 2px 0;font-size:14px;cursor:pointer}
 [hidden]{display:none!important}
 </style>
 <main>
@@ -75,6 +76,7 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 <div class="row"><span class="lbl">搜尋</span><input type="search" id="q" placeholder="股號、名稱或關鍵字（如 0056、高股息、偏多，空白分隔為且）" autocomplete="off" style="flex:1;min-width:200px;font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:99px;padding:5px 16px"></div>
 <section class="sum" id="sum" aria-label="狀態統計"></section>
 <div class="row"><span class="lbl">檢視</span><span class="row" id="vw"></span></div>
+<div class="row" id="tcrow"><button type="button" class="x" id="tcbtn">選擇指標欄位</button><span class="mac" id="tcinfo"></span><span class="mac">表格檢視可用，設定記在這個瀏覽器</span></div>
 <div class="tw" id="vTable"><table><thead><tr>
 <th data-k="name">標的</th><th data-k="state">波段狀態</th><th data-k="posture_label">配置狀態</th><th data-k="close">最新報價</th><th data-k="yield_pct">殖利率</th>
 <th data-k="rsi14">RSI14</th><th data-k="pos_52w_pct">52週位置</th><th data-k="fib_label">費波那契位置</th><th>長／中／短期</th><th data-k="combo">三週期組合</th>
@@ -83,6 +85,7 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 <div class="tw hm" id="vMatrix" hidden></div>
 <div class="pnl" id="vQuad" hidden></div>
 <div class="pnl" id="vFlow" hidden></div>
+<dialog id="tcdlg" aria-label="選擇指標欄位"><div class="hd"><h2 style="margin:0;font-size:18px">選擇指標欄位</h2><button type="button" class="x" id="tcx">完成</button></div><p class="mac">標的名稱固定顯示。按群組可一次加入或移除，也可以逐欄勾選。</p><p class="row"><button type="button" class="x" id="tcall">全部欄位</button><button type="button" class="x" id="tcnone">全部取消</button></p><div class="row" id="tcg"></div><div id="tcl"></div></dialog>
 <div class="mask" id="mask"><div class="dlg" id="dlg" role="dialog" aria-modal="true"></div></div>
 <section class="notes">
 <p>最新報價：按「更新最新報價」會向證交所取台股即時價；未更新或港股、非台股標的顯示最近一個交易日收盤價。指標與評分以日線收盤計算，不隨報價變動；乖離、區間位置、停損距離會用最新報價重算。</p>
@@ -286,7 +289,7 @@ FL.play=!FL.play;if(FL.play&&FL.pos>=FL.mx)FL.pos=0;flBtn();if(FL.play)flLoop()}
 document.addEventListener("input",function(e){if(e.target.id==="flSl"){FL.pos=+e.target.value;flUpdate()}});
 document.addEventListener("change",function(e){var i=e.target.id;if(i==="flSp")FL.sp=+e.target.value;else if(i==="flTr"){FL.trail=e.target.checked;flUpdate()}else if(i==="flWin"){FL.win=+e.target.value;FL.pos=0;FL.play=false;drawFlow()}});
 function showView(){document.getElementById("vw").innerHTML=VWS.map(function(v){return '<button type="button" class="tab" data-vw="'+v+'" aria-pressed="'+(v===vw)+'">'+v+'</button>'}).join("");
-document.getElementById("vTable").hidden=vw!=="表格";document.getElementById("vMatrix").hidden=vw!=="矩陣";document.getElementById("vQuad").hidden=vw!=="象限";document.getElementById("vFlow").hidden=vw!=="動態";
+document.getElementById("vTable").hidden=vw!=="表格";document.getElementById("vMatrix").hidden=vw!=="矩陣";document.getElementById("vQuad").hidden=vw!=="象限";document.getElementById("vFlow").hidden=vw!=="動態";document.getElementById("tcrow").hidden=vw!=="表格";
 cancelAnimationFrame(FL.raf);if(vw==="矩陣")drawMatrix();else if(vw==="象限")drawQuad();else if(vw==="動態")drawFlow();capH()}
 var CAPN=20;
 function capH(){["vTable","vMatrix"].forEach(function(id){var el=document.getElementById(id);if(!el||el.hidden)return;el.style.maxHeight="";el.style.overflowY="auto";var rs=el.querySelectorAll("tbody tr");if(rs.length<=CAPN)return;var r=rs[CAPN-1];el.style.maxHeight=Math.ceil(r.getBoundingClientRect().bottom-el.getBoundingClientRect().top+el.scrollTop+1)+"px"})}
@@ -353,4 +356,20 @@ try{window.claude&&window.claude.use&&window.claude.use("mcp").then(function(m){
 try{if(window.claude&&window.claude.use)Promise.all([window.claude.use("db"),window.claude.use("user")]).then(function(a){var db=a[0],us=a[1];if(!db||!us||!us.id)return;return us.id().then(function(id){if(!id)return;var ref=db.collection("data/users/"+id).doc("favs");return ref.get().then(function(sn){var d=sn.exists&&sn.data(),t=d&&Array.isArray(d.t)?d.t:[];var m={};t.forEach(function(x){m[x]=1});favList().forEach(function(x){m[x]=1});FAV=m;FDB=ref;saveFav();render()})})}).catch(function(){})}catch(e){}
 applyZ();
 render();qStat();
+var TCOL=[["state","波段狀態",2],["posture","配置狀態",3],["close","最新報價",4],["yield","殖利率",5],["rsi","RSI14",6],["p52","52週位置",7],["fib","費波那契位置",8],["lms","長／中／短期",9],["combo","三週期組合",10],["trend","趨勢",11],["macd","動能",12],["vol","量能",13],["ret","績效",14],["total","綜合",15],["stop","2×ATR停損",16]],
+TGRP=[["波段判定",["state","rsi","p52","fib","lms","combo","stop"]],["評分",["trend","macd","vol","ret","total"]],["配置與估值",["posture","close","yield"]]],
+TALL=TCOL.map(function(c){return c[0]}),TCK="dpCols.v1",tshown={};TALL.forEach(function(k){tshown[k]=true});
+try{var tsv=JSON.parse(localStorage.getItem(TCK)||"null");if(Array.isArray(tsv)&&tsv.every(function(k){return TALL.indexOf(k)>=0})){tshown={};tsv.forEach(function(k){tshown[k]=true})}}catch(e){}
+function tcApply(){var st=document.getElementById("tcs");if(!st){st=document.createElement("style");st.id="tcs";document.head.appendChild(st)}
+st.textContent=TCOL.filter(function(c){return !tshown[c[0]]}).map(function(c){return "#vTable th:nth-child("+c[2]+"),#vTable td:nth-child("+c[2]+"){display:none}"}).join("");
+var n=TALL.filter(function(k){return tshown[k]}).length;document.getElementById("tcinfo").textContent="顯示 "+n+" / "+TALL.length+" 個指標欄";
+try{localStorage.setItem(TCK,JSON.stringify(TALL.filter(function(k){return tshown[k]})))}catch(e){}if(typeof capH==="function")capH()}
+function tcDraw(){var g=document.getElementById("tcg"),l=document.getElementById("tcl"),lab={};TCOL.forEach(function(c){lab[c[0]]=c[1]});g.innerHTML="";l.innerHTML="";
+TGRP.forEach(function(a){var on=a[1].every(function(k){return tshown[k]}),b=document.createElement("button");b.type="button";b.className="tab";b.textContent=a[0];b.setAttribute("aria-pressed",String(on));b.onclick=function(){a[1].forEach(function(k){if(on)delete tshown[k];else tshown[k]=true});tcApply();tcDraw()};g.appendChild(b)});
+TGRP.forEach(function(a){var h=document.createElement("h4");h.textContent=a[0];l.appendChild(h);a[1].forEach(function(k){var lb=document.createElement("label"),cb=document.createElement("input");cb.type="checkbox";cb.checked=!!tshown[k];cb.onchange=function(){if(cb.checked)tshown[k]=true;else delete tshown[k];tcApply();tcDraw()};lb.appendChild(cb);lb.append(" "+lab[k]);l.appendChild(lb)})})}
+document.getElementById("tcbtn").onclick=function(){tcDraw();document.getElementById("tcdlg").showModal()};
+document.getElementById("tcx").onclick=function(){document.getElementById("tcdlg").close()};
+document.getElementById("tcall").onclick=function(){tshown={};TALL.forEach(function(k){tshown[k]=true});tcApply();tcDraw()};
+document.getElementById("tcnone").onclick=function(){tshown={};tcApply();tcDraw()};
+tcApply();
 </script>

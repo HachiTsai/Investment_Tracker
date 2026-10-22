@@ -140,3 +140,11 @@ def test_render_daily_page_excludes_listed_tickers():
             {"ticker": "HKG:1919", "name": "中遠海控", "market": "港股", "source": "個股卡片"}]
     html = sw.render_daily_page(rows, {"fleet": []}, "2026-10-20")
     assert "留下" in html and "中遠海控" not in html
+
+
+def test_daily_template_has_column_chooser():
+    from pathlib import Path
+    import swing
+    tpl = (Path(swing.__file__).resolve().parent.parent / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
+    for key in ("tcdlg", "tcbtn", "function tcApply", "dpCols.v1", "選擇指標欄位"):
+        assert key in tpl
