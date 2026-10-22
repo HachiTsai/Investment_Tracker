@@ -205,3 +205,17 @@ def add_valuation(fin: Dict[str, Any], required_roe: float = 10.0) -> Dict[str, 
     if not fin or not roe or not pb or roe <= 0:
         return fin
     return dict(fin, pb_fair=round(pb / (roe / required_roe), 2))
+
+
+def ttm_dividend(divs: List[Dict[str, Any]], today: date) -> float:
+    """近 12 個月股息（港元）：除息日在 today 往前一年內的現金股息合計。"""
+    lo = date(today.year - 1, today.month, min(today.day, 28)).isoformat()
+    return sum(d["hkd"] for d in divs if d.get("ex") and lo < d["ex"] <= today.isoformat() and d.get("hkd"))
+
+
+def mid_note(fin: Dict[str, Any], year: int) -> str:
+    """今年中期股利的一行說明；宣派了才有金額。"""
+    if str(fin.get("h_lab", "")).startswith(str(year)):
+        h = fin.get("h_hkd")
+        return f"派息 {h:.3f} 港元" if h else "已公告，金額未標"
+    return "董事會審議/未找到"
