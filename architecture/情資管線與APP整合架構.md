@@ -5,7 +5,7 @@ domain: 資料系統
 status: 生效
 version: 1
 created: 2026-10-18
-updated: 2026-10-18
+updated: 2026-10-22
 tags: [資料系統, ETF, 港股]
 tickers: [00882]
 related: ["[[00882_股利目標模型]]"]
@@ -22,6 +22,7 @@ related: ["[[00882_股利目標模型]]"]
    - 前端 APP 永遠作為唯讀消費者，不反向寫入情資庫，亦不依賴即時爬蟲腳本。
 
 2. **核心試算表權責契約（Permission & Ownership Matrix）**：
+   - APP 實際讀取的全部 Sheet 與備援來源見 [[APP讀取清單-Stock_AIStudio]]（以該清單為準）。
    - **【情報資料庫】**（Drive ID `1BF2xvF0cmyODdN0nXR8QHbOTC3ikqswvSwBboY1cGQo`）：
      - **擁有者與寫入者**：由 Claude 雲端任務與 Antigravity 負責維護。負責寫入 `Untitled` 訊號列（`sig-YYYY-MM-DD-XX`）並依規則刷新 `評分歷史` 分頁。
      - **消費者**：Stock_AIStudio 的「客觀趨勢情報中心」（`src/services/signalsFeedService.ts`）以 gviz CSV 免登入讀取。
@@ -29,7 +30,7 @@ related: ["[[00882_股利目標模型]]"]
      - **擁有者與寫入者**：由 AI 檢索港交所披露易公告後回填 00882 專屬成分股派息紀錄（如 `interim2026` 欄位）。
      - **消費者**：Stock_AIStudio 用於 00882 成分股加權股利預估與透視。
    - **【全市場_ETF成分股資料庫】**（Drive ID `1GIhbRyL-h96ACVjlSSW9YUFMiAItg_SP9Wi0o3WwG70`，在 `Project_財商工程/All_Market`）：
-     - **擁有者與寫入者**：由 `tw-etf-fetcher` 技能（`etf_sheets_sync.py`）維護，包含 `ETF_Summary`（27 檔跨市場 ETF 摘要）與 `ETF_Constituents`（4,353 筆全底層持股明細）。
+     - **擁有者與寫入者**：由 `tw-etf-fetcher` 技能（`etf_sheets_sync.py`）維護，包含 `ETF_Summary`（27 檔跨市場 ETF 摘要）與 `ETF_Constituents`（約 5,328 列全底層持股明細（2026-10-22 核對））。
      - **消費者**：Stock_AIStudio 前端應用程式，提供免登入 gviz CSV 讀取。
    - **【Investment_Tracker_Core】**（Drive ID `1QBEgUi-kTOuLgj2yGHmP-0g_ug-Sl_M21SN0g93b6xI`）：
      - **擁有者**：Hachi 與 Stock_AIStudio 前端記帳核心。
@@ -60,3 +61,8 @@ related: ["[[00882_股利目標模型]]"]
 
 - 變更：建立財商架構筆記，正式明訂 Investment_Tracker 與 Stock_AIStudio 之間的整合契約與資料匯流排權限。
 - 原因：落實防孤兒架構，消弭跨專案與跨 Agent 記憶斷層，確保後台 AI 提煉與前端 APP 讀取維持單一真實來源。
+
+### 更新（2026-10-22）
+
+- 變更：權責表補連結至 APP 讀取清單，ETF_Constituents 筆數改為實際約 5,328 列。
+- 原因：原表漏登持股、交易明細、波段觀察三份來源。
