@@ -12,10 +12,15 @@ p{margin:0;max-width:68ch}.mut{color:var(--mut);font-size:.88rem}
 .sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
 .sum div{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 14px;min-width:0}
 .sum b{display:block;font-size:1.25rem;font-variant-numeric:tabular-nums}.sum span{font-size:.82rem;color:var(--mut)}
-.wrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--card)}
+.wrap{overflow:auto;max-height:78vh;border:1px solid var(--line);border-radius:6px;background:var(--card)}
 table{border-collapse:collapse;width:100%;min-width:900px;font-size:.88rem;font-variant-numeric:tabular-nums}
 th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
-th{background:var(--head);position:sticky;top:0;cursor:pointer;font-weight:600;user-select:none}
+th{background:var(--head);position:sticky;top:0;z-index:2;cursor:pointer;font-weight:600;user-select:none}
+thead tr.flt th{top:var(--h1,34px);cursor:default;padding:4px 6px;font-weight:400}
+thead input{width:100%;min-width:56px;box-sizing:border-box;font:inherit;font-size:.82rem;padding:3px 5px;border:1px solid var(--line);border-radius:4px;background:var(--card);color:var(--fg)}
+td.s1,th.s1{position:sticky;left:0;z-index:1;background:var(--card);min-width:64px;max-width:64px;box-sizing:border-box}
+td.s2,th.s2{position:sticky;left:64px;z-index:1;background:var(--card);box-shadow:1px 0 0 var(--line)}
+th.s1,th.s2{background:var(--head);z-index:3}
 th:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
 td.n,th.n{text-align:right}tr:last-child td{border-bottom:0}
 .up{color:var(--up)}.down{color:var(--down)}.flat{color:var(--flat)}.fx{color:var(--warn)}
@@ -36,8 +41,9 @@ ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;max-wi
 <div><b>__CHG__</b><span>近 12 月股息對上一財年（__UPDN__）</span></div>
 <div><b>__UNIT__</b><span>以今日持股推算的每單位年股利（台幣，毛額）</span></div>
 </section>
-<section><div class="wrap"><table id="t"><thead><tr id="h"></tr></thead><tbody id="b"></tbody></table></div></section>
+<section><p class="mut" id="cnt"></p><div class="wrap"><table id="t"><thead id="h"></thead><tbody id="b"></tbody></table></div></section>
 <section><ul class="mut">
+<li>每欄下方可篩選：文字欄輸入關鍵字；數字欄可輸入 5（≥5）、&gt;5、&lt;3、1-3；營收、淨利、現金流以「億」為單位。代號與名稱欄、標題列固定。</li>
 <li>股息欄單位為港元（富途報價幣別）。近 12 月股息若含特別股息會偏高，例如 6186 飛鶴、6110 滔搏。</li>
 <li>「對去年中期」標籤：增＝金額較高；減＝金額較低；持平；幣別＝人民幣與港元混用，需換算，只能說大致持平。</li>
 <li>2026 中期欄來自公告標題，幣別沒標的照原文寫「未標」。</li>
@@ -46,7 +52,7 @@ ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;max-wi
 </div>
 <div id="pg-fin" hidden style="display:contents">
 <section><p class="mut">各成分股最近一份已公布財報（含中報、季報），來源：東方財富（非官方彙整，關鍵數字需對港交所公告原文）。金額為報表幣別，不換算，單位億；ROE 為年化滾動口徑；配發率為東方財富提供值。</p></section>
-<section><div class="wrap"><table id="ft"><thead><tr id="fh"></tr></thead><tbody id="fb"></tbody></table></div></section>
+<section><p class="mut" id="fcnt"></p><div class="wrap"><table id="ft"><thead id="fh"></thead><tbody id="fb"></tbody></table></div></section>
 <section><ul class="mut">
 <li>「報表期」是該財報的結算日，各公司不同，不能直接橫向比較累計金額（中報為半年、季報為單季累計）。</li>
 <li>空白代表東方財富沒有該欄位；沒有財報資料的標的不列入。</li>
@@ -58,25 +64,42 @@ ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;max-wi
 const D=__DATA__;
 const F=__FIN__;
 const cols=[['c','代號',0],['n','名稱',0],['w','權重%',1],['px','股價',1],['ttm','近12月股息',1],['lfy','上一財年',1],['chg','變化%',1],['y','殖利率%',1],['i26','2026 中期股利',0],['p25','去年中期（摘要）',0],['cmp','對去年中期',0]];
-let key='w',dir=-1;
 const lab={up:'增',down:'減',flat:'持平',fx:'幣別'};
-function head(){const h=document.getElementById('h');h.innerHTML='';cols.forEach(([k,t,n])=>{const th=document.createElement('th');th.textContent=t+(k===key?(dir>0?' ▲':' ▼'):'');if(n)th.className='n';th.tabIndex=0;const go=()=>{dir=(k===key)?-dir:(n?-1:1);key=k;draw()};th.onclick=go;th.onkeydown=e=>{if(e.key==='Enter')go()};h.appendChild(th)})}
-function draw(){head();const rows=[...D].sort((a,b)=>{const x=a[key],y=b[key];return (typeof x==='number'?x-y:String(x).localeCompare(String(y),'zh'))*dir});
-const b=document.getElementById('b');b.innerHTML='';rows.forEach(r=>{const tr=document.createElement('tr');cols.forEach(([k,t,n])=>{const td=document.createElement('td');if(n)td.className='n';let v=r[k];
-if(k==='cmp'){td.innerHTML=v?'<span class="tag '+v+'">'+lab[v]+'</span>':'';}
+const yi=v=>typeof v==='number'?(v/1e8).toFixed(1):'';
+// 篩選：文字欄＝包含；數字欄＝數字（≥）、>10、<5、10-20、=3
+function mk(o){
+const st={key:o.key,dir:-1,f:{}};
+const th=document.getElementById(o.head),tb=document.getElementById(o.body);
+function test(v,q,num){q=q.trim();if(!q)return true;
+if(!num)return String(v==null?'':v).toLowerCase().includes(q.toLowerCase());
+if(typeof v!=='number')return false;let m;
+if(m=q.match(/^(-?[\d.]+)\s*[-~～]\s*(-?[\d.]+)$/))return v>=+m[1]&&v<=+m[2];
+if(m=q.match(/^(>=|<=|>|<|=|≥|≤)\s*(-?[\d.]+)$/)){const x=+m[2];return {'>=':v>=x,'≥':v>=x,'<=':v<=x,'≤':v<=x,'>':v>x,'<':v<x,'=':v===x}[m[1]]}
+if(m=q.match(/^-?[\d.]+$/))return v>=+q;return true}
+function cell(r,k){const v=r[k];return o.scale&&o.scale[k]?(typeof v==='number'?v/1e8:v):v}
+function build(){th.innerHTML='';const r1=document.createElement('tr'),r2=document.createElement('tr');r2.className='flt';
+o.cols.forEach(([k,t,n],ci)=>{const c=ci===0?' s1':ci===1?' s2':'';
+const h=document.createElement('th');h.textContent=t;h.className=(n?'n':'')+c;h.tabIndex=0;h.dataset.k=k;
+const go=()=>{st.dir=(k===st.key)?-st.dir:(n?-1:1);st.key=k;body();marks()};h.onclick=go;h.onkeydown=e=>{if(e.key==='Enter')go()};r1.appendChild(h);
+const f=document.createElement('th');f.className=c.trim();const inp=document.createElement('input');inp.type='search';inp.placeholder=n?'如 >5、1-3':'篩選';inp.setAttribute('aria-label',t+' 篩選');
+inp.oninput=()=>{st.f[k]=inp.value;body()};f.appendChild(inp);r2.appendChild(f)});
+th.appendChild(r1);th.appendChild(r2);marks();
+requestAnimationFrame(()=>th.style.setProperty('--h1',r1.offsetHeight+'px'))}
+function marks(){th.querySelectorAll('tr:first-child th').forEach(h=>{const k=h.dataset.k,c=o.cols.find(x=>x[0]===k);h.textContent=c[1]+(k===st.key?(st.dir>0?' ▲':' ▼'):'')})}
+function body(){const rows=o.rows.filter(r=>o.cols.every(([k,t,n])=>test(cell(r,k),st.f[k]||'',n))).sort((a,b)=>{const x=a[st.key],y=b[st.key];if(x==null)return 1;if(y==null)return -1;return (typeof x==='number'?x-y:String(x).localeCompare(String(y),'zh'))*st.dir});
+tb.innerHTML='';rows.forEach(r=>{const tr=document.createElement('tr');o.cols.forEach(([k,t,n],ci)=>{const td=document.createElement('td');td.className=(n?'n':'')+(ci===0?' s1':ci===1?' s2':'');const v=r[k];
+if(k==='cmp'){td.innerHTML=v?'<span class="tag '+v+'">'+lab[v]+'</span>':''}
 else if(k==='chg'){td.textContent=(v>0?'+':'')+v.toFixed(1);td.className+=' '+(v>0.5?'up':v<-0.5?'down':'flat')}
-else if(typeof v==='number'){td.textContent=k==='c'?v:v.toFixed(k==='w'||k==='y'?2:k==='px'?2:3)}
-else td.textContent=v;tr.appendChild(td)});b.appendChild(tr)})}
-draw();
+else if(k==='rev'||k==='np'||k==='ocf')td.textContent=yi(v);
+else if(typeof v==='number')td.textContent=k==='c'?v:v.toFixed(['w','y','px','eps','dps'].includes(k)?2:o.fin?1:3);
+else td.textContent=v==null?'':v;tr.appendChild(td)});tb.appendChild(tr)});
+if(o.count)document.getElementById(o.count).textContent='顯示 '+rows.length+' / '+o.rows.length+' 檔'}
+build();body()}
+mk({cols,rows:D,key:'w',head:'h',body:'b',count:'cnt'});
 const fc=[['c','代號',0],['n','名稱',0],['w','權重%',1],['period','報表期',0],['kind','報表',0],['cur','幣別',0],['rev','營收(億)',1],['np','股東淨利(億)',1],['eps','EPS',1],['roe','ROE%',1],['debt','負債/資產%',1],['ocf','經營現金流(億)',1],['payout','配發率%',1],['pe','PE(TTM)',1],['pb','PB(TTM)',1],['dps','每股股息(港元)',1]];
 const FR=D.filter(r=>F[r.c]).map(r=>Object.assign({c:r.c,n:r.n,w:r.w},F[r.c]));
-let fk='w',fd=-1;
-const yi=v=>typeof v==='number'?(v/1e8).toFixed(1):'';
-function fdraw(){const h=document.getElementById('fh');h.innerHTML='';fc.forEach(([k,t,n])=>{const th=document.createElement('th');th.textContent=t+(k===fk?(fd>0?' ▲':' ▼'):'');if(n)th.className='n';th.tabIndex=0;const go=()=>{fd=(k===fk)?-fd:(n?-1:1);fk=k;fdraw()};th.onclick=go;th.onkeydown=e=>{if(e.key==='Enter')go()};h.appendChild(th)});
-const rows=[...FR].sort((a,b)=>{const x=a[fk],y=b[fk];if(x==null)return 1;if(y==null)return -1;return (typeof x==='number'?x-y:String(x).localeCompare(String(y),'zh'))*fd});
-const b=document.getElementById('fb');b.innerHTML='';rows.forEach(r=>{const tr=document.createElement('tr');fc.forEach(([k,t,n])=>{const td=document.createElement('td');if(n)td.className='n';const v=r[k];
-td.textContent=(k==='rev'||k==='np'||k==='ocf')?yi(v):(typeof v==='number'?v.toFixed(k==='w'||k==='eps'||k==='dps'?2:1):(v==null?'':v));tr.appendChild(td)});b.appendChild(tr)})}
-fdraw();
-function tab(f){document.getElementById('pg-div').hidden=f;document.getElementById('pg-fin').hidden=!f;document.getElementById('tb-div').setAttribute('aria-pressed',String(!f));document.getElementById('tb-fin').setAttribute('aria-pressed',String(f))}
+mk({cols:fc,rows:FR,key:'w',head:'fh',body:'fb',count:'fcnt',fin:1,scale:{rev:1,np:1,ocf:1}});
+function fixh(){document.querySelectorAll('thead').forEach(t=>{const r=t.rows[0];if(r&&r.offsetHeight)t.style.setProperty('--h1',r.offsetHeight+'px')})}
+function tab(f){requestAnimationFrame(fixh);document.getElementById('pg-div').hidden=f;document.getElementById('pg-fin').hidden=!f;document.getElementById('tb-div').setAttribute('aria-pressed',String(!f));document.getElementById('tb-fin').setAttribute('aria-pressed',String(f))}
 document.getElementById('tb-div').onclick=()=>tab(false);document.getElementById('tb-fin').onclick=()=>tab(true);
 </script>
