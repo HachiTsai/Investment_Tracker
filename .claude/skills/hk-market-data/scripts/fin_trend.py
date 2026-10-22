@@ -181,3 +181,41 @@ def _dps_summary(divs: List[Dict[str, Any]]) -> Dict[str, Any]:
                    h_prev_hkd=prev_h.get("hkd") if prev_h else None,
                    h_chg=_chg(h1.get("hkd"), prev_h.get("hkd") if prev_h else None) if h1.get("hkd") else None)
     return out
+
+
+FIN_ORGS = ("银行", "保险", "证券")
+
+
+def add_cashflow(fin: Dict[str, Any], cf: Dict[str, Any]) -> Dict[str, Any]:
+    """加入自由現金流（經營現金流減資本支出）與其對全年已付股息的覆蓋倍數（fcf_cover）。
+    金融業的經營現金流含存貸款變動，沒有意義，不算。已付股息為零時不算倍數。"""
+    if not fin or not cf or any(o in (fin.get("org") or "") for o in FIN_ORGS):
+        return fin
+    fcf = cf["ocf"] - cf["capex"]
+    out = dict(fin, fcf_fy=cf["fy"], fcf=fcf)
+    if cf["paid"] > 0:
+        out["fcf_cover"] = round(fcf / cf["paid"], 2)
+    return out
+
+
+def add_valuation(fin: Dict[str, Any], required_roe: float = 10.0) -> Dict[str, Any]:
+    """PB 相對合理值：合理 PB＝ROE ÷ 要求報酬率（預設 10%，假設）；pb_fair＝實際 PB ÷ 合理 PB，
+    低於 1 代表相對 ROE 偏便宜。ROE 或 PB 缺或 ROE 非正時不算。"""
+    roe, pb = fin.get("roe"), fin.get("pb")
+    if not fin or not roe or not pb or roe <= 0:
+        return fin
+    return dict(fin, pb_fair=round(pb / (roe / required_roe), 2))
+
+
+def ttm_dividend(divs: List[Dict[str, Any]], today: date) -> float:
+    """近 12 個月股息（港元）：除息日在 today 往前一年內的現金股息合計。"""
+    lo = date(today.year - 1, today.month, min(today.day, 28)).isoformat()
+    return sum(d["hkd"] for d in divs if d.get("ex") and lo < d["ex"] <= today.isoformat() and d.get("hkd"))
+
+
+def mid_note(fin: Dict[str, Any], year: int) -> str:
+    """今年中期股利的一行說明；宣派了才有金額。"""
+    if str(fin.get("h_lab", "")).startswith(str(year)):
+        h = fin.get("h_hkd")
+        return f"派息 {h:.3f} 港元" if h else "已公告，金額未標"
+    return "董事會審議/未找到"

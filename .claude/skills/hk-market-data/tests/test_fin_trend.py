@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
-from fin_trend import enrich  # noqa: E402
+from fin_trend import enrich, add_cashflow, add_valuation, ttm_dividend, mid_note  # noqa: E402
 
 
 def _h(p, k, eps, rev=100.0, np=10.0, **kw):
@@ -82,3 +82,33 @@ def test_gross_margin_and_current_ratio_signals_skip_financials():
     out = enrich({"hist": base, "org": "一般企业", "cr": 0.8})
     assert any("毛利率" in s["t"] for s in out["sigs"]) and any("流動比率" in s["t"] for s in out["sigs"])
     assert not any("流動比率" in s["t"] for s in enrich({"hist": base, "org": "银行", "cr": 0.8})["sigs"])
+
+
+def test_free_cash_flow_cover_skips_financials_and_zero_dividend():
+    cf = {"fy": "2025", "ocf": 300.0, "capex": 100.0, "paid": 100.0}
+    out = add_cashflow({"org": "一般企业"}, cf)
+    assert out["fcf"] == 200.0 and out["fcf_cover"] == 2.0 and out["fcf_fy"] == "2025"
+    assert "fcf_cover" not in add_cashflow({"org": "一般企业"}, dict(cf, paid=0))
+    assert "fcf" not in add_cashflow({"org": "银行"}, cf)
+    assert add_cashflow({"org": "一般企业"}, {}) == {"org": "一般企业"}
+
+
+def test_pb_fair_value_uses_assumed_required_return():
+    assert add_valuation({"roe": 12.0, "pb": 0.6})["pb_fair"] == 0.5
+    assert "pb_fair" not in add_valuation({"roe": -3.0, "pb": 0.6})
+    assert "pb_fair" not in add_valuation({"roe": 12.0})
+
+
+def test_ttm_dividend_counts_ex_dates_in_last_year():
+    from datetime import date
+    divs = [dict(ex="2026-09-02", hkd=0.2), dict(ex="2026-03-10", hkd=0.5), dict(ex="2025-10-20", hkd=0.1),
+            dict(ex="2025-10-22", hkd=0.9), dict(ex="2026-11-01", hkd=0.7), dict(ex=None, hkd=0.3), dict(ex="2026-04-01")]
+    assert round(ttm_dividend(divs, date(2026, 10, 22)), 4) == 0.7
+    assert ttm_dividend([], date(2026, 10, 22)) == 0
+
+
+def test_mid_note_states():
+    assert mid_note({"h_lab": "2026 中期", "h_hkd": 0.1234}, 2026) == "派息 0.123 港元"
+    assert mid_note({"h_lab": "2026 中期", "h_hkd": 0}, 2026) == "已公告，金額未標"
+    assert mid_note({"h_lab": "2025 中期", "h_hkd": 0.2}, 2026) == "董事會審議/未找到"
+    assert mid_note({}, 2026) == "董事會審議/未找到"

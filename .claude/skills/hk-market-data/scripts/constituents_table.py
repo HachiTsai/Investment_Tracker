@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """更新 00882 成分股股利明細頁。用法：python3 constituents_table.py <輸出html> [前一版頁面html] [輸出json]
 輸出 json 供排程寫入 Drive「00882_成分股股利資料庫」Sheet。"""
-import json, re, html, subprocess, sys, urllib.parse, urllib.request, os, tempfile
+import json, re, sys, urllib.parse, urllib.request, os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 
 OUT = sys.argv[1]
 PREV = sys.argv[2] if len(sys.argv) > 2 else None
 JSON_OUT = sys.argv[3] if len(sys.argv) > 3 else None
-import glob
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from fin_trend import enrich, add_dividends, rmb_hint  # 單季 EPS、年增與訊號
+from fin_trend import enrich, add_dividends, add_cashflow, add_valuation, rmb_hint, ttm_dividend, mid_note  # 單季 EPS、年增與訊號
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "fundamental-analyzer", "scripts"))
 from fetchers import eastmoney  # 財報頁沿用 fundamental-analyzer 的東方財富資料層
-CH = sorted(glob.glob("/opt/pw-browsers/chromium-*/chrome-linux*/chrome"))[-1]
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "price-dividend-fetcher", "scripts"))
+import fetch as price_fetch  # 股價沿用 price-dividend-fetcher（Google Finance，Yahoo 備援）
 B = "https://www.ctbcinvestments.com.tw/API/"
 HDR = {"content-type": "application/json; charset=utf-8", "User-Agent": "Mozilla/5.0", "Referer": "https://www.ctbcinvestments.com.tw/"}
 
@@ -37,66 +37,47 @@ hk = float(next(x for x in trace if x["CurType"] == 1)["CUR_INDEX"].replace(",",
 tw = float(next(x for x in trace if x["CurType"] == 2)["CUR_INDEX"].replace(",", ""))
 FX = tw / hk  # 每 1 港幣約幾台幣
 
-def render(url):
-    for _ in range(2):
-        try:
-            r = subprocess.run([CH, "--headless=new", "--no-sandbox", "--disable-gpu", f"--proxy-server={os.environ.get('HTTPS_PROXY','')}",
-                                "--virtual-time-budget=15000", "--dump-dom", url], capture_output=True, text=True, timeout=120)
-        except subprocess.TimeoutExpired:  # 單檔逾時不拖垮整次執行，由 fails 統計
-            continue
-        if len(r.stdout) > 50000:
-            t = re.sub(r"<script.*?</script>|<style.*?</style>", "", r.stdout, flags=re.S)
-            t = re.sub(r"<[^>]+>", "|", t); t = re.sub(r"\|[\s|]*\|", "|", html.unescape(t))
-            return re.sub(r"\s+", " ", t)
-    return ""
-
-def one(x):
-    c = x["code_"].split()[0]; n = c.zfill(5)
-    t = render(f"https://www.futunn.com/stock/{n}-HK")
-    g = lambda lab: (re.search(r"([\d.,]+%?|--)\s*\|\s*" + lab, t) or [None, None])[1]
-    px = re.search(r"\(%s\)\s*\|[^|]*\|\s*([\d.]+)" % n, t)
-    d = dict(c=c, n=x["name_"], q=int(float(x["qty_"].replace(",", ""))), w=float(x["weights_"]),
-             px=float(px.group(1)) if px else None)
-    try:
-        d.update(ttm=float(g("股息TTM")), lfy=float(g("股息LFY")), y=float(g("股息率TTM").strip("%")))
-    except (TypeError, ValueError):
-        d["fail"] = True
-        return d
-    e = render(f"https://www.futunn.com/stock/{n}-HK/earnings")
-    i = e.find("财务报表"); seg = e[i:i + 1500] if i >= 0 else ""
-    hit = [h for h in seg.split("|") if re.search("中期|派息|股息", h)]
-    AMT = re.compile(r"(?:派息|股息)(?:每\d*股)?(?:人民币|港币|港元)?\s*\d+(?:\.\d+)?(?![\d%年月])\s*(?:港元|港仙|仙|元|港币|人民币)?")
-    found = None
-    for h in sorted(hit, key=lambda h: "中期" not in h):
-        m = AMT.search(h.replace("比率", "@"))
-        if m and "年度" not in h[:m.start()][-4:]:
-            found = m.group(0); break
-    if found:
-        d["i26"] = found
-    elif any("中期" in h for h in hit):
-        d["i26"] = "已公告，金額未標"
-    else:
-        d["i26"] = "董事會審議/未找到"
-    return d
-
-with ThreadPoolExecutor(6) as ex:
-    rows = list(ex.map(one, stocks))
-def fin_one(x):
+def fetch_all(x):
+    """單檔：股價取 Google Finance（price-dividend-fetcher），財報、現金流與歷次分配取東方財富。
+    近 12 月股息＝除息日在最近一年內的現金股息合計，上財年股息＝上一個年報財年全年合計。"""
     c = x["code_"].split()[0]
+    d = dict(c=c, n=x["name_"], q=int(float(x["qty_"].replace(",", ""))), w=float(x["weights_"]), px=None)
+    try:
+        d["px"] = float(price_fetch.get_price("HKG:" + c.zfill(4))["price"])
+    except Exception:
+        pass
     try:
         f = enrich(eastmoney.hk_detail(c))
     except Exception:
-        return c, {}, []
+        f = {}
     try:
-        return c, f, eastmoney.hk_dividends(c)
+        f = add_cashflow(f, eastmoney.hk_cashflow(c))
     except Exception:
-        return c, f, []  # 配息明細抓不到時仍保留財報本身
+        pass  # 現金流抓不到時只缺自由現金流欄
+    f = add_valuation(f)
+    try:
+        divs = eastmoney.hk_dividends(c)
+    except Exception:
+        divs = []  # 配息明細抓不到時仍保留財報本身
+    return d, f, divs
 
 with ThreadPoolExecutor(6) as ex:
-    fin_raw = list(ex.map(fin_one, stocks))
+    got = list(ex.map(fetch_all, stocks))
+rows = [g[0] for g in got]
+fin_raw = [(g[0]["c"], g[1], g[2]) for g in got]
 _hint = rmb_hint([d for _, _, d in fin_raw])
 fin = {c: (add_dividends(f, d, date.today(), _hint) if f else f) for c, f, d in fin_raw}
 fin_fails = [c for c, v in fin.items() if not v]
+_divs = {c: d for c, _, d in fin_raw}
+for r in rows:
+    d, f = _divs.get(r["c"]) or [], fin.get(r["c"]) or {}
+    if not d or not r["px"]:
+        r["fail"] = True  # 缺股價或歷次分配就算不出殖利率，仍列入財報頁
+        continue
+    r["ttm"] = round(ttm_dividend(d, date.today()), 4)
+    r["lfy"] = f.get("fy_hkd") or 0.0
+    r["y"] = round(r["ttm"] / r["px"] * 100, 2)
+    r["i26"] = mid_note(f, date.today().year)
 fails = [r["c"] for r in rows if r.get("fail")]
 ok = [r for r in rows if not r.get("fail")]
 
@@ -120,6 +101,7 @@ rows_out = [dict(c=r["c"], n=r["n"], w=r["w"], q=r["q"], px=r["px"], ttm=r["ttm"
                  i26=r["i26"], p25=r["p25"], cmp=r["cmp"]) for r in ok]
 tpl = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "references", "constituents_template.html"), encoding="utf-8").read()
 page = (tpl.replace("__DATA__", json.dumps(rows_out, ensure_ascii=False))
+        .replace("__MISS__", json.dumps([dict(c=r["c"], n=r["n"], w=r["w"], px=r["px"]) for r in rows if r.get("fail")], ensure_ascii=False))
         .replace("__FIN__", json.dumps({c: v for c, v in fin.items() if v}, ensure_ascii=False))
         .replace("__ASOF__", f"{date.today().isoformat()}（持股 {asof}）")
         .replace("__N__", str(len(ok))).replace("__TOP__", f'{top["n"]} {top["w"]}%')
