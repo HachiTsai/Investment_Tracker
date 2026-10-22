@@ -40,3 +40,8 @@ def test_template_has_help_dialog_and_new_metrics():
     assert '<dialog id="hdlg"' in tpl and "const HELP=" in tpl
     assert "'fcf_cover'" in tpl and "'pb_fair'" in tpl
     assert "非官方彙整" not in tpl
+
+
+def test_template_has_column_picker():
+    tpl = TEMPLATE.read_text(encoding="utf-8")
+    assert '<dialog id="cdlg"' in tpl and "const GRP=" in tpl and "fincols.v1" in tpl and "setShown" in tpl
