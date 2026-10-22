@@ -60,10 +60,7 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 .chg{display:block;font:11px var(--mono)}.chg.u{color:var(--down)}.chg.d{color:var(--accent)}.live{color:var(--accent)}
 .qd{width:100%;height:auto;display:block}.qd text{fill:var(--mute);font:10px var(--mono);pointer-events:none}.qd .pt{cursor:pointer}.qd .lb{display:none}.qd .pt:hover .lb{display:block;fill:var(--fg);font-weight:600}.qd .pt:hover circle.dot{stroke:var(--fg)}.qd .pt:hover{stroke:var(--fg);stroke-width:2}
 .lg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--mute);margin:8px 0 0}.lg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
-.ax3{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13px;color:var(--mute);margin-bottom:8px}
-.ax3 select{font:inherit;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:4px}
 .dtabs{display:flex;gap:6px;margin:10px 0}.dtabs .tab{padding:3px 14px}.mx{width:100%;border-collapse:collapse;min-width:0;margin:8px 0}.mx th,.mx td{text-align:center;padding:6px 8px;font-size:13px}.mx td:first-child,.mx th:first-child{text-align:left}.mx td.c{font:500 13px var(--mono)}
-.cv3{position:relative;height:min(520px,72vh);touch-action:none}.cv3 canvas{width:100%;height:100%;display:block;cursor:grab}
 .fl .lb.on{display:block;fill:var(--fg)}.fl .pt:hover path{stroke-width:3.2}.fl .pt{cursor:pointer}
 .tip{position:absolute;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12px;display:none;white-space:nowrap;z-index:2}
 .hl{cursor:pointer;border-bottom:1px dotted var(--mute)}.hl:hover{color:var(--accent);border-bottom-color:var(--accent)}
@@ -99,12 +96,11 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 <p>資料來源為 Yahoo Finance 日線（還原收盤價計算分數）。目前觀察清單只有台股與港股，美股、日股加入標的後會自動出現。</p>
 </section>
 </main>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 var DATA=__DAILY_DATA__;var HEAD=__DAILY_HEAD__;var DATE="__DAILY_DATE__";
 var MK=["全部","台股","港股","美股","日股"],KD=["全部","ETF","個股"];var mk="全部",kd="全部",sk="total_score",asc=false;
 try{var a=localStorage.getItem("dpMk"),b=localStorage.getItem("dpKd");if(MK.indexOf(a)>=0)mk=a;if(KD.indexOf(b)>=0)kd=b}catch(e){}
-var dtab="k",autoJ=true,TJ={th:.7,ph:.5,dist:17,drag:null,raf:0},CUR=[],VWS=["表格","矩陣","象限","動態"],vw="表格";
+var dtab="k",TJ={pos:null,play:false,raf:0},CUR=[],VWS=["表格","矩陣","象限","動態"],vw="表格";
 try{var vv=localStorage.getItem("dpVw");if(VWS.indexOf(vv)>=0)vw=vv}catch(e){}
 var FAV={},favOnly=false,FDB=null,Q=[];
 function hit(r){if(!Q.length)return true;var h=[r.ticker,r.name,r.market,r.kind,r.label,r.posture_label,r.combo,r.fib_label,r.long,r.mid,r.short,r.reason].join(" ").toLowerCase();return Q.every(function(k){return h.indexOf(k)>=0})}
@@ -172,8 +168,8 @@ var head='<div class="dh"><div><h2>'+esc(r.name)+'</h2><div class="mac">'+esc(r.
 var kv='<div class="kv"><div><span class="hl" data-help="state">波段狀態</span><br><b>'+esc(r.label)+'</b></div><div><span class="hl" data-help="px">最新報價</span><br><b>'+f(px(r),2)+'</b>'+chgH(r)+'</div><div><span class="hl" data-help="rsi">RSI14</span><br><b>'+f(r.rsi14,1)+'</b></div><div><span class="hl" data-help="pos52">52 週位置</span><br><b>'+f(r.pos_52w_pct,0)+'%</b></div><div><span class="hl" data-help="sr">20 日支撐／壓力</span><br><b>'+f(r.support_20d,2)+' / '+f(r.resistance_20d,2)+'</b></div><div><span class="hl" data-help="atr">2×ATR 停損</span><br><b>'+f(r.stop_price,2)+(sd(r)==null?"":"（-"+f(sd(r),1)+"%）")+'</b></div><div><span class="hl" data-help="tf">長／中／短期</span><br><b>'+esc([r.long,r.mid,r.short].filter(Boolean).join("／")||"-")+'</b></div><div><span class="hl" data-help="combo">三週期組合</span><br><b>'+esc(r.combo||"-")+'</b></div><div><span class="hl" data-help="score">評分 趨勢／動能／量能／績效</span><br><b>'+[r.trend_score,r.macd_score,r.vol_score,r.return_score].map(function(v){return v==null?"-":Number(v).toFixed(0)}).join(" / ")+'</b></div><div><span class="hl" data-help="ret1y">近 1 年含息報酬</span><br><b>'+(r.return_1y_pct==null?"-":f(r.return_1y_pct,1)+"%")+'</b></div></div>';
 var opts='<div class="opts"><label>費波那契回看 <select id="lb">'+LB.map(function(v){return '<option value="'+v+'"'+(v===cfg.lb?" selected":"")+'>'+v+' 日</option>'}).join("")+'</select></label><button type="button" class="x" data-cz="reset">還原全部</button><span class="mac">滾輪縮放時間軸，拖曳平移；價格、RSI、MACD 範圍隨可見區間貼合</span><label><input type="checkbox" id="oFib"'+(cfg.fib?" checked":"")+'><span class="hl" data-help="fib">費波那契</span></label><label><input type="checkbox" id="oBoll"'+(cfg.boll?" checked":"")+'><span class="hl" data-help="boll">布林(20,2)</span></label><label><input type="checkbox" id="oMa"'+(cfg.ma?" checked":"")+'><span class="hl" data-help="ma20">20 日線</span></label></div>';
 var body=ch?chartSvg(ch,cfg.lb):null;var note=body&&body.meta.fibs.length?'<p class="mac">費波那契（近 '+cfg.lb+' 日，'+(body.meta.up?"先低後高，自高點量回檔":"先高後低，自低點量反彈")+'）：高 '+body.meta.fh.toFixed(2)+'、低 '+body.meta.fl.toFixed(2)+'。只描述位置，不是買賣指示。</p>':"";
-var tabs='<div class="dtabs">'+[["k","K 線"],["x","指標矩陣"],["j","軌跡 3D"]].map(function(a){return '<button type="button" class="tab" data-dt="'+a[0]+'" aria-pressed="'+(a[0]===dtab)+'">'+a[1]+'</button>'}).join("")+'</div>';
-var main=dtab==="x"?(ch?dMatrix(r,ch):'<p class="mac">此檔沒有足夠日線可畫圖。</p>'):dtab==="j"?(ch&&ch.hs?'<div class="ax3"><label><input type="checkbox" id="autoJ"'+(autoJ?" checked":"")+'> 自動旋轉</label><span>近 60 個交易日在 趨勢×動能×時間 的軌跡，大點是最新一天；拖曳旋轉、滾輪縮放</span></div><div class="cv3" id="cvJ"></div>':'<p class="mac">此檔沒有足夠日線畫軌跡。</p>'):(ch?opts+body.svg+note:'<p class="mac">此檔沒有足夠日線可畫圖。</p>');
+var tabs='<div class="dtabs">'+[["k","K 線"],["x","指標矩陣"],["j","軌跡動畫"]].map(function(a){return '<button type="button" class="tab" data-dt="'+a[0]+'" aria-pressed="'+(a[0]===dtab)+'">'+a[1]+'</button>'}).join("")+'</div>';
+var main=dtab==="x"?(ch?dMatrix(r,ch):'<p class="mac">此檔沒有足夠日線可畫圖。</p>'):dtab==="j"?(ch&&ch.hs?'<div class="opts"><button type="button" class="x" id="jBtn"></button><input type="range" id="jSl" min="0" max="'+(ch.hs.t.length-1)+'" step="0.01" style="flex:1;min-width:140px" aria-label="時間軸"><span class="mac" id="jDt"></span></div><div id="cvJ"></div><p class="mac">近 60 個交易日，這檔標的在趨勢×動能平面上的移動軌跡；亮點是播放位置，線越舊越淡。右上＝趨勢與動能同步轉強。</p>':'<p class="mac">此檔沒有足夠日線畫軌跡。</p>'):(ch?opts+body.svg+note:'<p class="mac">此檔沒有足夠日線可畫圖。</p>');
 d.innerHTML=head+kv+tabs+main+'<p class="mac">'+esc(r.reason||"")+'</p>';document.getElementById("mask").classList.add("on");applyZ();if(dtab==="j"&&ch&&ch.hs)trajInit(r)}
 function closeDlg(){document.getElementById("mask").classList.remove("on");curT=null;dtab="k";cancelAnimationFrame(TJ.raf)}
 var downIn=false;document.addEventListener("pointerdown",function(e){downIn=!!e.target.closest("#dlg")},true);
@@ -211,7 +207,6 @@ document.addEventListener("click",function(e){var b=e.target.closest("[data-z]")
 
 var STC={OVERHEATED:"--over",DOWNTREND:"--down",UPTREND:"--up",OVERSOLD_WATCH:"--accent"};
 var AXS={trend_score:"趨勢",macd_score:"動能",vol_score:"量能",return_score:"績效",total_score:"綜合"};
-var ax3={x:"trend_score",y:"macd_score",z:"return_score"},auto3=true,fit3=true;
 function cv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()||"#888"}
 function stc(r){return cv(STC[r.state]||"--mute")}
 function scored(){return CUR.filter(function(r){return r.total_score!=null})}
@@ -237,7 +232,6 @@ qh.addEventListener("pointerdown",function(e){if(e.button||!e.target.closest("sv
 qh.addEventListener("pointermove",function(e){var d=QZ.drag,sv=qh.querySelector("svg.qd");if(!d||!sv)return;var dx=e.clientX-d.x,dy=e.clientY-d.y;if(!QZ.moved&&Math.abs(dx)+Math.abs(dy)<4)return;QZ.moved=true;var rc=sv.getBoundingClientRect(),q=QZ,a=-dx/rc.width*640/588*(q.x1-q.x0),b=dy/rc.height*440/388*(q.y1-q.y0);q.x0+=a;q.x1+=a;q.y0+=b;q.y1+=b;d.x=e.clientX;d.y=e.clientY;drawQuad()});
 window.addEventListener("pointerup",function(){QZ.drag=null;setTimeout(function(){QZ.moved=false},0)});
 qh.addEventListener("click",function(e){if(QZ.moved){e.stopPropagation();return}var b=e.target.closest("[data-qz]");if(!b)return;e.stopPropagation();if(b.dataset.qz==="fit")QZ.set=false;else{QZ.x0=0;QZ.x1=100;QZ.y0=0;QZ.y1=100;QZ.set=true}drawQuad()},true)})();
-function spr(txt,col){var c=document.createElement("canvas");c.width=256;c.height=64;var g=c.getContext("2d");g.font="600 28px sans-serif";g.fillStyle=col;g.textAlign="center";g.textBaseline="middle";g.fillText(txt,128,32);var tx=new THREE.CanvasTexture(c),m=new THREE.SpriteMaterial({map:tx,transparent:true,depthTest:false}),s=new THREE.Sprite(m);s.scale.set(2.4,.6,1);return s}
 var FL={m:"b",pos:0,play:false,raf:0,last:0,sp:1,trail:true,win:60,sel:null};
 function flRows(){return scored().filter(function(r){var h=r.chart&&r.chart.hs;return h&&h.t.some(function(v){return v!=null})&&h.m.some(function(v){return v!=null})})}
 function flAt(a,p){var i=Math.floor(p),j=Math.min(a.length-1,i+1),x=a[i],y=a[j];if(x==null)return y==null?null:(p>=j?y:null);if(y==null)return x;return x+(y-x)*(p-i)}
@@ -299,7 +293,6 @@ function capH(){["vTable","vMatrix"].forEach(function(id){var el=document.getEle
 window.addEventListener("resize",capH);
 var _render=render;render=function(){QZ.set=false;_render();showView()};
 document.addEventListener("click",function(e){var b=e.target.closest("[data-vw]");if(b){vw=b.dataset.vw;try{localStorage.setItem("dpVw",vw)}catch(x){}showView();return}var g=e.target.closest("[data-pt]");if(g)openDlg(g.dataset.pt)});
-document.addEventListener("change",function(e){if(e.target.id==="auto3")auto3=e.target.checked});
 
 function mxRow(lbl,cells){return '<tr><td>'+lbl+'</td>'+cells.map(function(c){return '<td class="c" style="'+heat(c.v)+'">'+c.t+'</td>'}).join("")+'</tr>'}
 function tv(x,k){return 50+50*Math.tanh(x/k)}
@@ -310,27 +303,30 @@ var ret=P.map(function(w){var x=(c[n-1]/c[n-w]-1)*100;return cell(tv(x,w===20?6:
 var bw=ch.bu[n-1]!=null&&ch.bu[n-1]>ch.bl[n-1]?(c[n-1]-ch.bl[n-1])/(ch.bu[n-1]-ch.bl[n-1])*100:null;
 var one=[["RSI14",r.rsi14==null?null:cell(r.rsi14,f(r.rsi14,1))],["MACD 柱（動能分）",r.macd_score==null?null:cell(r.macd_score,f(r.macd_score,0))],["布林位置",bw==null?null:cell(bw,bw.toFixed(0)+"%")],["量能（5 日均量÷60 日）",r.vol_score==null?null:cell(r.vol_score,f(r.vol_score,0))],["52 週位置",r.pos_52w_pct==null?null:cell(r.pos_52w_pct,f(r.pos_52w_pct,0)+"%")],["趨勢分","trend_score"],["績效分","return_score"]].map(function(a){var v=a[1]==="trend_score"||a[1]==="return_score"?(r[a[1]]==null?null:cell(r[a[1]],f(r[a[1]],0))):a[1];return v?'<tr><td>'+a[0]+'</td><td class="c" style="'+heat(v.v)+'">'+v.t+'</td></tr>':""}).join("");
 return '<table class="mx"><thead><tr><th>週期指標</th>'+P.map(function(w){return '<th>'+w+' 日</th>'}).join("")+'</tr></thead><tbody>'+mxRow("價格相對均線乖離",dev)+mxRow("區間位置（低 0％到高 100％）",pos)+mxRow("區間漲跌",ret)+'</tbody></table><table class="mx"><thead><tr><th>單一指標</th><th>現況</th></tr></thead><tbody>'+one+'</tbody></table><p class="mac">顏色以 50 為中性，藍色偏強、紅色偏弱，只描述強度與位置，不是買賣指示。</p>'}
-function trajInit(r){var box=document.getElementById("cvJ");cancelAnimationFrame(TJ.raf);if(!box)return;
-if(typeof THREE==="undefined"){box.innerHTML='<p class="mac">無法載入 3D 元件（需連到 cdnjs）。</p>';return}
-var hs=r.chart.hs,pts=[],i;for(i=0;i<hs.t.length;i++)if(hs.t[i]!=null&&hs.m[i]!=null)pts.push({i:i,t:hs.t[i],m:hs.m[i],d:r.chart.d[r.chart.d.length-hs.t.length+i]});
+function trajInit(r){var box=document.getElementById("cvJ");cancelAnimationFrame(TJ.raf);TJ.play=false;if(!box)return;
+var hs=r.chart.hs,pts=[],i;for(i=0;i<hs.t.length;i++)if(hs.t[i]!=null&&hs.m[i]!=null)pts.push({t:hs.t[i],m:hs.m[i],d:r.chart.d[r.chart.d.length-hs.t.length+i]});
 if(pts.length<2){box.innerHTML='<p class="mac">分數歷史不足。</p>';return}
-var W=box.clientWidth||600,H=box.clientHeight||400,rd=new THREE.WebGLRenderer({antialias:true,alpha:true});rd.setPixelRatio(Math.min(devicePixelRatio||1,2));rd.setSize(W,H);box.appendChild(rd.domElement);
-var sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(45,W/H,.1,100),S=10,P=function(v){return (v/100-.5)*S},mute=cv("--mute"),line=cv("--line"),grp=new THREE.Group();sc.add(grp);
-grp.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(S,S,S)),new THREE.LineBasicMaterial({color:line})));
-var N=pts.length,Z=function(k){return (k/(N-1)-.5)*S};
-[["趨勢 →",[S/2+1.3,0,0]],["動能 →",[0,S/2+.6,0]],["時間（舊→新） →",[0,0,S/2+1.6]]].forEach(function(a){var s=spr(a[0],mute);s.position.set(a[1][0],a[1][1],a[1][2]);grp.add(s)});
-var c0=new THREE.Color(mute),c1=new THREE.Color(cv("--accent")),vs=[],cs=[];
-pts.forEach(function(p,k){var q=new THREE.Vector3(P(p.t),P(p.m),Z(k)),col=c0.clone().lerp(c1,k/(N-1));vs.push(q);cs.push(col.r,col.g,col.b);
-var last=k===N-1,m=new THREE.Mesh(new THREE.SphereGeometry(last?.36:.14,16,12),new THREE.MeshBasicMaterial({color:last?new THREE.Color(stc(r)):col}));m.position.copy(q);grp.add(m)});
-var g=new THREE.BufferGeometry().setFromPoints(vs);g.setAttribute("color",new THREE.Float32BufferAttribute(cs,3));grp.add(new THREE.Line(g,new THREE.LineBasicMaterial({vertexColors:true})));
-var cvs=rd.domElement;cvs.style.cursor="grab";
-cvs.onpointerdown=function(e){TJ.drag={x:e.clientX,y:e.clientY};cvs.setPointerCapture(e.pointerId)};
-cvs.onpointermove=function(e){if(!TJ.drag)return;TJ.th-=(e.clientX-TJ.drag.x)*.008;TJ.ph=Math.max(-1.45,Math.min(1.45,TJ.ph+(e.clientY-TJ.drag.y)*.008));TJ.drag={x:e.clientX,y:e.clientY}};
-cvs.onpointerup=function(){TJ.drag=null};
-cvs.onwheel=function(e){e.preventDefault();TJ.dist=Math.max(8,Math.min(32,TJ.dist*(1+Math.sign(e.deltaY)*.08)))};
-(function loop(){if(!document.body.contains(cvs))return;if(autoJ&&!TJ.drag)TJ.th+=.003;cam.position.set(TJ.dist*Math.sin(TJ.th)*Math.cos(TJ.ph),TJ.dist*Math.sin(TJ.ph),TJ.dist*Math.cos(TJ.th)*Math.cos(TJ.ph));cam.lookAt(0,0,0);rd.render(sc,cam);TJ.raf=requestAnimationFrame(loop)})()}
-document.addEventListener("click",function(e){var b=e.target.closest("[data-dt]");if(b){dtab=b.dataset.dt;openDlg(curT)}});
-document.addEventListener("change",function(e){if(e.target.id==="autoJ")autoJ=e.target.checked});
+var W=560,H=380,m=36,vx=W-m-12,vy=H-m-12,ts=pts.map(function(p){return p.t}),ms=pts.map(function(p){return p.m}),
+lo=function(a){return Math.max(0,Math.min.apply(null,a)-6)},hi=function(a){return Math.min(100,Math.max.apply(null,a)+6)},x0=lo(ts),x1=hi(ts),y0=lo(ms),y1=hi(ms),
+X=function(v){return m+(v-x0)/(x1-x0)*vx},Y=function(v){return H-m-(v-y0)/(y1-y0)*vy},n=pts.length,o='<svg class="qd" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="趨勢與動能軌跡動畫"><rect x="'+m+'" y="12" width="'+vx+'" height="'+vy+'" fill="none" stroke="var(--line)"/>';
+if(x0<50&&x1>50)o+='<line x1="'+X(50)+'" x2="'+X(50)+'" y1="12" y2="'+(H-m)+'" stroke="var(--line)" stroke-dasharray="4 3"/>';
+if(y0<50&&y1>50)o+='<line x1="'+m+'" x2="'+(m+vx)+'" y1="'+Y(50)+'" y2="'+Y(50)+'" stroke="var(--line)" stroke-dasharray="4 3"/>';
+for(i=0;i<=4;i++){o+='<text x="'+X(x0+(x1-x0)*i/4).toFixed(1)+'" y="'+(H-m+12)+'" text-anchor="middle">'+(x0+(x1-x0)*i/4).toFixed(0)+'</text><text x="'+(m-4)+'" y="'+(Y(y0+(y1-y0)*i/4)+3).toFixed(1)+'" text-anchor="end">'+(y0+(y1-y0)*i/4).toFixed(0)+'</text>'}
+o+='<text x="'+((W+m)/2)+'" y="'+(H-2)+'" text-anchor="middle">趨勢分數 →</text><text transform="translate(10 '+(H/2)+') rotate(-90)" text-anchor="middle">動能分數 →</text>';
+for(i=1;i<n;i++)o+='<line class="js" data-i="'+i+'" x1="'+X(pts[i-1].t).toFixed(1)+'" y1="'+Y(pts[i-1].m).toFixed(1)+'" x2="'+X(pts[i].t).toFixed(1)+'" y2="'+Y(pts[i].m).toFixed(1)+'" stroke="'+stc(r)+'" stroke-width="2" stroke-linecap="round"/>';
+o+='<circle id="jDot" r="7" fill="'+stc(r)+'" stroke="var(--card)" stroke-width="2"/></svg>';
+box.innerHTML=o;TJ.pts=pts;TJ.n=n;TJ.X=X;TJ.Y=Y;if(TJ.pos==null||TJ.pos>n-1)TJ.pos=0;TJ.pos=n-1;trajUpdate();trajBtn()}
+function trajBtn(){var b=document.getElementById("jBtn");if(b)b.textContent=TJ.play?"⏸ 暫停":"▶ 播放"}
+function trajUpdate(){var p=TJ.pos,k=Math.floor(p),pts=TJ.pts,sl=document.getElementById("jSl"),dt=document.getElementById("jDt"),dot=document.getElementById("jDot");if(!pts||!dot)return;
+var a=pts[k],b=pts[Math.min(pts.length-1,k+1)],f=p-k;dot.setAttribute("cx",TJ.X(a.t+(b.t-a.t)*f).toFixed(1));dot.setAttribute("cy",TJ.Y(a.m+(b.m-a.m)*f).toFixed(1));
+document.querySelectorAll("#cvJ .js").forEach(function(l){var i=+l.dataset.i,age=k-i;l.setAttribute("stroke-opacity",i>p?0:Math.max(.12,1-age/18).toFixed(2))});
+if(sl)sl.value=p;if(dt)dt.textContent=(pts[k].d||"")+(k===pts.length-1?"（最新）":"")}
+function trajLoop(){cancelAnimationFrame(TJ.raf);TJ.last=0;(function step(ts){if(!document.getElementById("jDot")){TJ.play=false;return}
+if(TJ.last){TJ.pos=Math.min(TJ.n-1,TJ.pos+(ts-TJ.last)/1000*8);trajUpdate();if(TJ.pos>=TJ.n-1){TJ.play=false;trajBtn();return}}
+TJ.last=ts;TJ.raf=requestAnimationFrame(step)})(0)}
+document.addEventListener("click",function(e){var b=e.target.closest("[data-dt]");if(b){dtab=b.dataset.dt;openDlg(curT);return}
+if(e.target.id==="jBtn"){TJ.play=!TJ.play;if(TJ.play&&TJ.pos>=TJ.n-1)TJ.pos=0;trajBtn();if(TJ.play)trajLoop()}});
+document.addEventListener("input",function(e){if(e.target.id==="jSl"){TJ.pos=+e.target.value;trajUpdate()}});
 
 var Q={},MCP=null;
 try{var sq=JSON.parse(localStorage.getItem("dpQ")||"null");if(sq&&sq.d>DATE&&sq.q)Q=sq.q}catch(e){}

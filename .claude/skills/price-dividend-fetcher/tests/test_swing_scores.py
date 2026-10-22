@@ -66,7 +66,7 @@ def test_daily_template_has_matrix_quadrant_flow_views():
     if tpl is None:
         from pathlib import Path
         tpl = (Path(swing.__file__).resolve().parent.parent / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
-    for key in ("vMatrix", "vQuad", "vFlow", "three.min.js", "data-vw", "drawQuad", "drawFlow", "data-fm", "flSl"):
+    for key in ("vMatrix", "vQuad", "vFlow", "data-vw", "drawQuad", "drawFlow", "data-fm", "flSl"):
         assert key in tpl
 
 
@@ -123,7 +123,7 @@ def test_daily_template_small_dots_with_hover_labels():
     from pathlib import Path
     import swing
     tpl = (Path(swing.__file__).resolve().parent.parent / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
-    for key in ("function qFit", "data-qz", ".qd .pt:hover .lb", "fit3", "貼合資料"):
+    for key in ("function qFit", "data-qz", ".qd .pt:hover .lb", "貼合資料"):
         assert key in tpl
 
 
