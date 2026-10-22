@@ -1,4 +1,6 @@
+import json
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -198,3 +200,31 @@ def test_current_levels_and_fib3():
     assert lv["fib3"] in ("近前高", "回檔中段", "深度回檔", "近波段低點", "反彈中段", "反彈近前高")
     assert sl.current_levels(make_bars([100.0] * 30)) is None
     assert sl.mid_label(2) == "偏多" and sl.mid_label(0) == "中性" and sl.mid_label(-1) == "偏空"
+
+
+def test_fill_gaps_from_twse_adds_missing_day_only_before_today():
+    tz8 = timedelta(hours=8)
+    now = datetime(2026, 10, 22, 1, 40, tzinfo=timezone.utc)
+
+    def bar(day, close):
+        ts = int(datetime.strptime(day, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp()) + 3600
+        return dict(ts=ts, open=close, high=close, low=close, close=close, volume=1.0, adj=close)
+
+    bars = [bar("2026-10-19", 108.15), bar("2026-10-20", 107.25), bar("2026-10-22", 108.65)]
+    js = {"data": [
+        ["115/10/20", "1", "1", "107", "108", "106", "107.25", "0", "1"],
+        ["115/10/21", "1,000", "1", "107.5", "108.5", "107", "108.15", "0", "1"],
+        ["115/10/22", "1", "1", "1", "1", "1", "1", "0", "1"],
+    ]}
+    out = sw.fill_gaps_from_twse(bars, "0050", now=now, fetch=lambda url: json.dumps(js))
+    days = [(datetime.fromtimestamp(b["ts"], timezone.utc) + tz8).strftime("%Y-%m-%d") for b in out]
+    assert days == ["2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22"]
+    assert out[2]["close"] == 108.15 and out[2]["volume"] == 1000.0
+    assert out[3]["close"] == 108.65
+
+
+def test_fill_gaps_from_twse_ignores_fetch_failure():
+    def boom(url):
+        raise RuntimeError("blocked")
+    bars = [dict(ts=1, open=1, high=1, low=1, close=1, volume=1, adj=1)]
+    assert sw.fill_gaps_from_twse(bars, "0050", fetch=boom) == bars
