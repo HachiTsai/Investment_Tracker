@@ -107,4 +107,19 @@ def test_check_handoff_detects_draft_note_and_session_sync(tmp_path):
     rows = rh.check_handoff(b)
     assert any(k == "待辦筆記" and "test_spec.md [草稿]" in d for _, k, d in rows)
     assert any(k == "交接下一步" and "Antigravity" in d and "swing_scores" in d for _, k, d in rows)
+    # 模擬 PR 以 Merge Commit 合入後，仍能穿透 Merge Commit 讀到最新 Session-Sync
+    _git(b, "checkout", "-q", "-b", "tmp-br")
+    (b / "m.txt").write_text("m", encoding="utf-8")
+    _git(b, "add", ".")
+    _git(
+        b,
+        "commit",
+        "-qm",
+        "tool(x): 子分支提交\n\n## Session-Sync\n\n- **執行者**: Claude\n- **類別**: IT\n- **狀態**: 半成品\n- **下一步**: 請 Antigravity 接手完成後端測試\n- **阻塞**: 雲端額度耗盡\n",
+    )
+    _git(b, "checkout", "-q", "main")
+    _git(b, "merge", "-q", "--no-ff", "tmp-br", "-m", "Merge pull request #99 from tmp-br")
+    rows2 = rh.check_handoff(b)
+    assert any(k == "交接下一步" and "接手完成後端測試" in d and "雲端額度耗盡" in d for _, k, d in rows2)
+
 
