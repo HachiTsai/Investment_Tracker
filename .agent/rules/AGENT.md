@@ -39,3 +39,8 @@
 - **基本面財務指標評分 Skill**：@[.claude/skills/fundamental-analyzer/SKILL.md](../../.claude/skills/fundamental-analyzer/SKILL.md)
 - **00882 成分股股利調查工作流**：@[.claude/workflows/component-dividend-investigation.md](../../.claude/workflows/component-dividend-investigation.md)
 - **投資組合全標的巡檢工作流**：@[.claude/workflows/portfolio-patrol.md](../../.claude/workflows/portfolio-patrol.md)
+- **台股 ETF 成分股明細工作流**：@[.claude/workflows/tw-etf-pool.md](../../.claude/workflows/tw-etf-pool.md)
+- **00882 成分股股利表排程工作流**：@[.claude/workflows/hk-00882-dividend.md](../../.claude/workflows/hk-00882-dividend.md)
+- **全市場 ETF 資料庫排程工作流**：@[.claude/workflows/market-etf-pool.md](../../.claude/workflows/market-etf-pool.md)
+- **波段觀察資料庫排程工作流**：@[.claude/workflows/swing-patrol-sheets.md](../../.claude/workflows/swing-patrol-sheets.md)
+- **每日波段巡檢戰報排程工作流**：@[.claude/workflows/daily-portfolio-patrol.md](../../.claude/workflows/daily-portfolio-patrol.md)

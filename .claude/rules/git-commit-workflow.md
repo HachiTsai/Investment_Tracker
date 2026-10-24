@@ -18,6 +18,7 @@
 4. **雙 Agent 協同交接機制**：
    - Claude 雲端（前端 Artifact 渲染＋排程）與 Antigravity（本機重度後端＋回測）透過 Git 分支與 commit 之 `## Session-Sync` 區塊無縫接力。
    - 額度受限或未完成工作可提交至 `claude/*` 分支並在 `下一步` 標註接手項目；任一方開工執行 `--sync`、`--patrol` 或啟動時自動透過 `check_handoff` 偵測草稿筆記、最新交接事項與近期未合併分支。
+   - **排程即程式碼與試算表契約**：所有定時排程規格集中於 `.claude/workflows/*.md` 為單一真實來源（SSOT）；試算表 Schema 統一收斂於 `architecture/APP讀取清單-Stock_AIStudio.md`。Artifact 100% 由 Claude 雲端專屬發布（本機代班僅產出 HTML 推送分支）；純資料表（全市場 ETF、波段觀察）支援本機直寫代班；雙棲表（00882、台股 ETF）固定由雲端統籌發布與寫入。排程互鎖比對資料日期，並支援 `--force` 手動強制補跑。
 
 ## 2. 結構化 Commit 流程
 
