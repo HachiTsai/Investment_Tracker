@@ -7,8 +7,9 @@
 ## 1. 觸發時機與排程
 
 - **排程頻率**：每週五 17:10（台北時間）。
-- **觸發平台**：Claude 雲端排程（亦支援 Antigravity 本機直接代班執行）。
-- **雲端排程 Prompt（單行呼叫）**：
+- **觸發平台**：GitHub Actions 自動排程（亦支援 Claude 雲端排程或 Antigravity 本機手動執行）。
+- **自動排程工作流**：`.github/workflows/market-etf.yml`
+- **雲端排程 Prompt（單行呼叫，備用）**：
 
   ```text
   git pull origin main，讀取並執行 .claude/workflows/market-etf-pool.md，完成後依規格回報。
@@ -95,5 +96,5 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --expor
 
 ## 5. 雙 Agent 協同分工與代班邊界
 
-- **日常運作**：本任務為「純 Sheet 任務」，日常固定由 **Claude 雲端排程** 週五 17:10 自動執行。
-- **本機代班邊界**：本任務無關聯之 Artifact，屬標準資料表。若遇 Claude 雲端逾時（超過 10 分鐘）或額度耗盡，**Antigravity 本機可直接代班執行**（使用本機 Python 環境產出並透過 `gsheets` CLI 或腳本直接推入試算表），無資料脫節風險。
+- **日常運作**：本任務為「純 Sheet 任務」，日常優先由 **GitHub Actions 自動排程**（`.github/workflows/market-etf.yml`）週五 17:10 自動執行並透過 Google Sheets API 回寫試算表，免除 Claude 雲端 10 分鐘沙盒逾時風險並節省 Token；亦支援 Claude 雲端排程單行呼叫。
+- **本機代班邊界**：本任務無關聯之 Artifact。若遇需手動補跑，可透過 GitHub Actions 一鍵重跑或由 **Antigravity 本機直接執行 `etf_fetcher.py sync-sheets --gate`** 進行同步。

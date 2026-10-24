@@ -63,6 +63,8 @@ dependencies = [
     "mplfinance>=0.12.10b0",
     # 設定檔與卡片建模解析
     "pyyaml>=6.0.0",
+    # Google API 認證與雲端試算表排程整合
+    "google-auth>=2.0.0",
 ]
 
 

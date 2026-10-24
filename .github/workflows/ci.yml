@@ -28,7 +28,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: "22"
-      - run: python -m pip install pytest beautifulsoup4 requests pyyaml yfinance
+      - run: python -m pip install pytest beautifulsoup4 requests pyyaml yfinance google-auth
       - name: pytest（.claude/skills/*/tests）
         run: python -m pytest -q --durations=15 .claude/skills
 

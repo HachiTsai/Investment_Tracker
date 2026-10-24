@@ -318,16 +318,69 @@ def find_gsheets_bin() -> Optional[str]:
     return None
 
 
+def sync_via_google_api(
+    sheet_id: str,
+    summary_csv: Path,
+    constituents_csv: Path,
+) -> Tuple[bool, str]:
+    """使用輕量 Google Sheets API 客戶端將 CSV 批次同步至 Google Sheets。"""
+    try:
+        sys.path.insert(0, str(REPO_ROOT / ".claude/skills/price-dividend-fetcher/scripts"))
+        from google_sheets import GoogleSheetsClient
+        client = GoogleSheetsClient()
+    except Exception as e:
+        return False, f"無法初始化 Google Sheets API 客戶端：{e}"
+
+    try:
+        # 1. 寫入 ETF_Summary
+        with open(summary_csv, "r", encoding="utf-8") as f:
+            summary_rows = list(csv.reader(f))
+        if summary_rows:
+            client.update_values(
+                sheet_id,
+                f"ETF_Summary!A1:P{len(summary_rows)}",
+                summary_rows,
+                value_input_option="USER_ENTERED",
+            )
+
+        # 2. 寫入 ETF_Constituents (每批 1,500 列)
+        with open(constituents_csv, "r", encoding="utf-8") as f:
+            constituents_rows = list(csv.reader(f))
+        if constituents_rows:
+            chunk_size = 1500
+            total_len = len(constituents_rows)
+            for idx in range(0, total_len, chunk_size):
+                chunk = constituents_rows[idx : idx + chunk_size]
+                start_row = idx + 1
+                end_row = idx + len(chunk)
+                range_str = f"ETF_Constituents!A{start_row}:G{end_row}"
+                client.update_values(
+                    sheet_id,
+                    range_str,
+                    chunk,
+                    value_input_option="USER_ENTERED",
+                )
+
+        return True, f"成功透過 Google API 批次同步至 Google Sheets (ID: {sheet_id})"
+    except Exception as e:
+        return False, f"Google API 同步失敗：{e}"
+
+
 def sync_to_google_sheets(
     sheet_id: str,
     summary_csv: Path,
     constituents_csv: Path,
     gsheets_bin: Optional[str] = None,
 ) -> Tuple[bool, str]:
-    """透過 gsheets CLI 將 CSV 回填至 Google Sheets 雲端試算表。"""
+    """透過 Google API 或 gsheets CLI 將 CSV 回填至 Google Sheets 雲端試算表。"""
+    if os.environ.get("GCP_SA_KEY") or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
+        ok, msg = sync_via_google_api(sheet_id, summary_csv, constituents_csv)
+        if ok:
+            return ok, msg
+
     bin_cmd = gsheets_bin or find_gsheets_bin()
     if not bin_cmd:
-        return False, "找不到 gsheets CLI 工具，無法執行雲端同步。"
+        return False, "未提供 GCP_SA_KEY 且找不到 gsheets CLI 工具，無法執行雲端同步。"
 
     # 1. 匯入 ETF_Summary
     cmd_summary = [bin_cmd, "mutate", "import-csv", sheet_id, str(summary_csv), "--sheet", "ETF_Summary"]
