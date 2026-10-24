@@ -49,7 +49,7 @@ flowchart TD
 在 REPO 根目錄執行：
 
 ```bash
-python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --prev /tmp/prev.json --sheet /tmp/sheet.json > /tmp/scan.json
+python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --prev /tmp/prev.json --sheet /tmp/sheet.json --gate > /tmp/scan.json
 ```
 
 *若指令執行失敗即停止，不寫入任何資料，於回報中貼出錯誤原因。*

@@ -288,3 +288,14 @@ def test_etf_sheets_sync_functions(tmp_path):
     assert Path(res["summary_csv"]).exists()
     assert Path(res["constituents_csv"]).exists()
 
+
+def test_check_gate():
+    ok, reasons = facade.check_gate(42, 5300)
+    assert ok and len(reasons) == 0
+
+    ok, reasons = facade.check_gate(35, 5300)
+    assert not ok and any("ETF_Summary 列數不足" in r for r in reasons)
+
+    ok, reasons = facade.check_gate(42, 4800)
+    assert not ok and any("ETF_Constituents 列數不足" in r for r in reasons)
+

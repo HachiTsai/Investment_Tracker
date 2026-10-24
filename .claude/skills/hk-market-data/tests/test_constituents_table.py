@@ -1,11 +1,15 @@
 import py_compile
 import re
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = ROOT / "scripts" / "constituents_table.py"
 TEMPLATE = ROOT.parent / "tw-etf-fetcher" / "references" / "constituents_template.html"
 PAGE = ROOT.parent / "tw-etf-fetcher" / "scripts" / "etf_page.py"
+
+sys.path.insert(0, str(SCRIPT.parent))
+from constituents_table import check_gate
 
 
 def test_script_compiles():
@@ -51,3 +55,20 @@ def test_template_has_column_picker():
 def test_template_has_index_weighted_pe():
     tpl = TEMPLATE.read_text(encoding="utf-8")
     assert "pe_all" in tpl and "w/o.reduce((a,r)=>a+r.w/r.pe,0)" in tpl
+
+
+def test_check_gate():
+    ok, reasons = check_gate(49, [], 25, [])
+    assert ok and len(reasons) == 0
+
+    ok, reasons = check_gate(40, [], 25, [])
+    assert not ok and any("成分股檔數不足" in r for r in reasons)
+
+    ok, reasons = check_gate(49, ["0939", "1398", "1919", "1088", "1288", "3988"], 25, [])
+    assert not ok and any("缺股價或歷次分配檔數超標" in r for r in reasons)
+
+    ok, reasons = check_gate(49, [], 10, [])
+    assert not ok and any("2026分紅公告檔數不足" in r for r in reasons)
+
+    ok, reasons = check_gate(49, [], 25, ["1", "2", "3", "4", "5", "6"])
+    assert not ok and any("財報失敗檔數超標" in r for r in reasons)

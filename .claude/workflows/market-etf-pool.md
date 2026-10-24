@@ -42,7 +42,7 @@ flowchart TD
 在 REPO 根目錄執行：
 
 ```bash
-python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --export-only --output-dir out
+python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --export-only --gate --output-dir out
 ```
 
 *注意：雲端無 gsheets CLI，必須帶 `--export-only`。日股 ETF 會查 EDINET，冷啟動約 1 分鐘；超過 10 分鐘即視為超時中斷，不寫入任何東西。*

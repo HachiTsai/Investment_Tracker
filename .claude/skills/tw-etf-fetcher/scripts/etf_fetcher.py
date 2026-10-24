@@ -22,6 +22,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import List, Tuple
 
 # 將當前腳本目錄加入 sys.path 確保模組載入正常
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -144,6 +145,21 @@ def cmd_scaffold(args) -> int:
     return 0
 
 
+def check_gate(
+    etf_count: int,
+    constituents_count: int,
+    min_etfs: int = 40,
+    min_constituents: int = 5000,
+) -> Tuple[bool, List[str]]:
+    """排程健康門檻檢核：ETF_Summary >= 40 檔、ETF_Constituents >= 5000 筆。"""
+    reasons = []
+    if etf_count < min_etfs:
+        reasons.append(f"ETF_Summary 列數不足：{etf_count} < {min_etfs}")
+    if constituents_count < min_constituents:
+        reasons.append(f"ETF_Constituents 列數不足：{constituents_count} < {min_constituents}")
+    return len(reasons) == 0, reasons
+
+
 def cmd_sync_sheets(args) -> int:
     """處理 sync-sheets 子命令。"""
     print("🚀 啟動全市場 ETF 成分股與摘要 Google Sheets 雲端同步...")
@@ -164,6 +180,11 @@ def cmd_sync_sheets(args) -> int:
             print(f"   ☁️ 雲端同步成功：試算表 ID [{res['sheet_id']}]")
         else:
             print(f"   ℹ️ {res.get('message', '')}")
+        if getattr(args, "gate", False):
+            ok, reasons = check_gate(res.get("etf_count", 0), res.get("constituents_count", 0))
+            if not ok:
+                print(f"❌ [Gate Failed] {'; '.join(reasons)}", file=sys.stderr)
+                return 1
         return 0
     else:
         print(f"❌ 同步失敗：{res.get('message', '未知錯誤')}", file=sys.stderr)
@@ -215,6 +236,7 @@ def main(argv=None) -> int:
     p_sync.add_argument("--output-dir", help="指定 CSV 輸出目錄（預設 REPO/reports）")
     p_sync.add_argument("--export-only", action="store_true", help="僅產出本機 CSV，不上傳雲端")
     p_sync.add_argument("--dry-run", action="store_true", help="模擬執行，不變更雲端試算表")
+    p_sync.add_argument("--gate", action="store_true", help="啟用排程健康檢查門檻判定（ETF_Summary >= 40 且 ETF_Constituents >= 5000）")
     p_sync.set_defaults(func=cmd_sync_sheets)
 
     args = parser.parse_args(argv)

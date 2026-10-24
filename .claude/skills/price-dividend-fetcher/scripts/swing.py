@@ -10,7 +10,7 @@ import json
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from fetch_common import TWSE_STOCK_DAY_URL, parse_ticker, roc_to_iso, to_float, twse_get
 from global_fetcher import get_yahoo, yahoo_result
@@ -502,6 +502,21 @@ def render_daily_page(rows: List[Dict], patrol: Dict, date: str) -> str:
             .replace("__DAILY_HEAD__", json.dumps(head, ensure_ascii=False)).replace("__DAILY_DATE__", date))
 
 
+def check_gate(
+    rows: List[Dict],
+    max_errors: int = 5,
+    require_fresh: bool = False,
+) -> Tuple[bool, List[str]]:
+    """排程健康門檻檢核：ERROR 狀態標的 <= 5 檔；若指定 require_fresh 則至少需有 1 檔 fresh 標的。"""
+    reasons = []
+    errors = [r.get("ticker", "未知") for r in rows if r.get("state") == "ERROR"]
+    if len(errors) > max_errors:
+        reasons.append(f"ERROR 狀態標的超標：{len(errors)} > {max_errors} ({errors[:5]}...)")
+    if require_fresh and not any(r.get("fresh") for r in rows):
+        reasons.append("今日所有市場休市或未開盤（無任何 fresh 標的）")
+    return len(reasons) == 0, reasons
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="個股波段指標與訊號（只讀）")
     p.add_argument("ticker", nargs="?", help="例如 TPE:2356、HKG:1919、NASDAQ:AAPL")
@@ -514,6 +529,7 @@ def main(argv=None) -> int:
     p.add_argument("--batch", metavar="卡片:前N大", help="多檔彙總回測，例如 00882:15（讀 models/<卡片>/cards/constituents.jsonl）")
     p.add_argument("--fib-backtest", action="store_true", help="回測各費波那契回檔位置之後 5/10/20 日含息報酬（觀察清單全部標的，抓 5 年日線）")
     p.add_argument("--backtest", action="store_true", help="加跑超跌反彈規則回測（抓 5 年日線）")
+    p.add_argument("--gate", action="store_true", help="啟用排程健康檢查門檻判定（--scan 模式下 ERROR <= 5 檔）")
     a = p.parse_args(argv)
     if a.scan is not None:
         prev = {r["ticker"]: {"label": r.get("label"), "combo": r.get("combo")} for r in json.loads(Path(a.prev).read_text(encoding="utf-8"))} if a.prev else None
@@ -531,8 +547,14 @@ def main(argv=None) -> int:
             Path(a.html).write_text(render_page(rows, date), encoding="utf-8")
         if a.sheet:
             Path(a.sheet).write_text(json.dumps(sheet_table(rows), ensure_ascii=False), encoding="utf-8")
-        rows = [{k: v for k, v in r.items() if k != "chart"} for r in rows]
-        print(json.dumps(rows, ensure_ascii=False, indent=1))
+        rows_out = [{k: v for k, v in r.items() if k != "chart"} for r in rows]
+        print(json.dumps(rows_out, ensure_ascii=False, indent=1))
+        if getattr(a, "gate", False):
+            require_fresh = bool(a.sheet and not a.daily_html)
+            ok, reasons = check_gate(rows, max_errors=5, require_fresh=require_fresh)
+            if not ok:
+                print(f"❌ [Gate Failed] {'; '.join(reasons)}", file=sys.stderr)
+                return 1
         return 0
     if a.fib_backtest:
         data = {}
