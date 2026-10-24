@@ -87,6 +87,7 @@ portfolio/snapshots/         持股快照，檔名 YYYY-MM-DD.md
 portfolio/transactions/      交易紀錄
 scripts/                     共用計算或抓價工具
 .claude/skills/<skill>/      投資管理 skill
+.claude/workflows/*.md       定時排程與自動化工作流規格（單一真實來源）
 .github/workflows/ci.yml     CI：markdown-lint 與 skill 測試
 .markdownlint-cli2.jsonc     Markdown lint 設定（SSOT）
 ```
