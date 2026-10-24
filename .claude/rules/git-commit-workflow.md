@@ -15,6 +15,9 @@
    - GitHub Actions CI 全綠通過後，由 `ci.yml` 的 `auto-merge` job 以標準 Merge Commit（`gh pr merge <id> --merge --delete-branch`）自動合入 `main`；僅限同 repo、`claude/` 開頭分支（草稿會先自動轉正式），使用 Secrets `AUTO_MERGE_PAT`（用 PAT 才會觸發 `main` 的 CI）。
    - Agent 在合併後確認 `main` 的 CI 通過並切回 `main` 保持最新同步；個人帳號無法設 branch protection，故不使用內建 auto-merge。
    - **草稿 PR 全自動**：雲端工作階段的系統指令要求 PR 先開為草稿。`auto-merge` job 不分草稿與否，CI 全綠後先以 `gh pr ready` 轉為正式 PR，再 Merge Commit 合併，全程免人工。
+4. **雙 Agent 協同交接機制**：
+   - Claude 雲端（前端 Artifact 渲染＋排程）與 Antigravity（本機重度後端＋回測）透過 Git 分支與 commit 之 `## Session-Sync` 區塊無縫接力。
+   - 額度受限或未完成工作可提交至 `claude/*` 分支並在 `下一步` 標註接手項目；任一方開工執行 `--sync`、`--patrol` 或啟動時自動透過 `check_handoff` 偵測草稿筆記、最新交接事項與近期未合併分支。
 
 ## 2. 結構化 Commit 流程
 
