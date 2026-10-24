@@ -506,15 +506,22 @@ def check_gate(
     rows: List[Dict],
     max_errors: int = 5,
     require_fresh: bool = False,
-) -> Tuple[bool, List[str]]:
-    """排程健康門檻檢核：ERROR 狀態標的 <= 5 檔；若指定 require_fresh 則至少需有 1 檔 fresh 標的。"""
+) -> Tuple[bool, bool, List[str]]:
+    """排程健康門檻檢核。
+    回傳：(is_healthy, is_market_closed, reasons)
+    - is_healthy: 是否健康（ERROR <= 5 檔）
+    - is_market_closed: 是否為休市狀態（所有市場無 fresh）
+    - reasons: 說明訊息
+    """
     reasons = []
     errors = [r.get("ticker", "未知") for r in rows if r.get("state") == "ERROR"]
-    if len(errors) > max_errors:
+    is_healthy = len(errors) <= max_errors
+    if not is_healthy:
         reasons.append(f"ERROR 狀態標的超標：{len(errors)} > {max_errors} ({errors[:5]}...)")
-    if require_fresh and not any(r.get("fresh") for r in rows):
-        reasons.append("今日所有市場休市或未開盤（無任何 fresh 標的）")
-    return len(reasons) == 0, reasons
+    is_market_closed = require_fresh and not any(r.get("fresh") for r in rows)
+    if is_market_closed:
+        reasons.append("今日所有市場休市或未開盤（無任何 fresh 標的，正常略過）")
+    return is_healthy, is_market_closed, reasons
 
 
 def main(argv=None) -> int:
@@ -551,10 +558,13 @@ def main(argv=None) -> int:
         print(json.dumps(rows_out, ensure_ascii=False, indent=1))
         if getattr(a, "gate", False):
             require_fresh = bool(a.sheet and not a.daily_html)
-            ok, reasons = check_gate(rows, max_errors=5, require_fresh=require_fresh)
-            if not ok:
+            is_healthy, is_market_closed, reasons = check_gate(rows, max_errors=5, require_fresh=require_fresh)
+            if not is_healthy:
                 print(f"❌ [Gate Failed] {'; '.join(reasons)}", file=sys.stderr)
                 return 1
+            if is_market_closed:
+                print(f"ℹ️ [Market Closed] {'; '.join(reasons)}", file=sys.stderr)
+                return 0
         return 0
     if a.fib_backtest:
         data = {}
