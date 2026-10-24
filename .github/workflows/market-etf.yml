@@ -1,0 +1,25 @@
+name: Market ETF Sheets Sync
+
+on:
+  schedule:
+    # 每週五台北 17:10 (UTC 09:10, Fri)
+    - cron: '10 9 * * 5'
+  workflow_dispatch:
+
+jobs:
+  sync-market-etf-sheets:
+    name: Sync Market ETF to Google Sheets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install pytest beautifulsoup4 requests pyyaml yfinance google-auth
+      - name: Run Market ETF Sync Pipeline
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --gate --sheet-id 1GIhbRyL-h96ACVjlSSW9YUFMiAItg_SP9Wi0o3WwG70

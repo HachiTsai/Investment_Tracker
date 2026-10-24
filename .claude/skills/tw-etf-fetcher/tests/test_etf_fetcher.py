@@ -299,3 +299,21 @@ def test_check_gate():
     ok, reasons = facade.check_gate(42, 4800)
     assert not ok and any("ETF_Constituents 列數不足" in r for r in reasons)
 
+
+def test_sync_via_google_api(tmp_path):
+    from unittest.mock import MagicMock, patch
+    from etf_sheets_sync import sync_via_google_api
+
+    summary_csv = tmp_path / "summary.csv"
+    summary_csv.write_text("etf_id,name\n00878,國泰永續高股息\n", encoding="utf-8")
+    constituents_csv = tmp_path / "constituents.csv"
+    constituents_csv.write_text("etf_id,ticker,weight\n00878,2891.TW,10.0\n", encoding="utf-8")
+
+    mock_client = MagicMock()
+    with patch("google_sheets.GoogleSheetsClient", return_value=mock_client):
+        ok, msg = sync_via_google_api("fake_sheet_id", summary_csv, constituents_csv)
+        assert ok
+        assert "成功透過 Google API 批次同步" in msg
+        assert mock_client.update_values.call_count == 2
+
+
