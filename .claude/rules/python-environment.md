@@ -24,7 +24,7 @@
 - **規則檔與設定檔必須完全一致**：下方第 3 節收錄了標準 `pyproject.toml` 完整內容。當透過 `uv add <pkg>` 或手動更新 `pyproject.toml` 時，**必須同步更新本檔案下方區塊**，確保兩者 100% 一致。`committer.py` 提交時會自動進行 AST 掃描與雙向比對攔截。
 - **檢查機制（`fin-commit/scripts/dep_guard.py`）**：
   - **提交時**：`committer.py` 暫存／提交會執行 `find_dependency_issues`，比對 ① `pyproject.toml` 與本檔第 3 節 toml 區塊、② 暫存 `.py` 的 import 是否已登記，以及規則檔是否列入 `CLAUDE.md` 與 `.agent/rules/AGENT.md`；`--message-file`／`--auto-quick` 時有問題即中止，可用 `--allow-missing-deps` 略過。直接 `git commit` 不會觸發此檢查。
-  - **工作階段開始時**：`.claude/settings.json` 的 SessionStart hook 執行 `committer.py --check-env`（`find_env_issues`），比對 `pyproject.toml` 宣告的套件與 `.venv`（無 `.venv` 則用目前直譯器）實際安裝的套件與版本下限；不一致只警告、不中止，請用 `uv sync` 或 `uv add <pkg>` 對齊。
+  - **工作階段開始時**：`.claude/settings.json` 的 SessionStart hook 執行 `committer.py --check-env`（`find_env_issues`），比對 `pyproject.toml` 宣告的套件與 `.venv`（無 `.venv` 則用目前直譯器）實際安裝的套件與版本下限；不一致只警告、不中止，請用 `uv sync` 或 `uv add <pkg>` 對齊。同時執行 `repo_health.check_handoff` 掃描 `architecture/` 下 `status: 草稿／修訂中` 之待試作筆記、最新 `Session-Sync` 交接下一步與未合併之近期雲端分支，於啟動時自動提醒。
 - **依賴分層原則（頂層直接依賴 vs 下游間接依賴）**：
   - **僅鎖定直接依賴**：專案的 `pyproject.toml` 僅記錄並鎖定專案核心程式碼直接 `import` 或直接呼叫的「頂層直接依賴（Direct Dependencies）」。
   - **下游相依項由解析器管理**：由核心套件自動引入之「下游間接依賴（Transitive / Sub-dependencies，例如 `scikit-learn`、`cvxpy`、`seaborn`、`curl_cffi`、`aiohttp` 等）」由套件管理工具（如 `uv` / `pip`）自動解析與相依性求解，**不需亦不應手動攤平登記至 `pyproject.toml`**，避免依賴過度耦合與版本釘死衝突。

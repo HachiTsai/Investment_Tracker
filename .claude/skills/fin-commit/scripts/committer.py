@@ -281,6 +281,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             print("   ➜ 請用 `uv sync` 或 `uv add <pkg>` 對齊（此檢查只警告，不中止）。")
         else:
             print("✅ [Env] pyproject.toml 與安裝環境一致。")
+        handoffs = repo_health.check_handoff(REPO_ROOT)
+        if handoffs:
+            print("📬 [Handoff] 跨 Agent 待試作筆記／交接提醒：", *(f"{label}：{msg}" for _, label, msg in handoffs), sep="\n   - ")
         return 0
     if args.sync:
         return repo_health.print_report(repo_health.sync_repo(fetch_only=args.fetch_only))

@@ -80,7 +80,79 @@ def sync_repo(repo: Path = Path("."), default: str = "main", fetch_only: bool = 
             _, n = _run(["git", "rev-list", "--count", f"HEAD..origin/{default}"], repo)
             if n != "0":
                 rows.append((WARN, "落後 main", f"落後 origin/{default} {n} 個 commit：開 PR 前先 merge origin/{default}（不用 rebase）"))
+    return rows + check_handoff(repo, default=default)
+
+
+_IDLE_VALUES = {"", "無", "無（已完成）", "none", "n/a", "-", "（l1 快速提交未指定）"}
+
+
+def _note_handoff_rows(repo: Path):
+    """掃描 architecture/*.md 中標記為『草稿』或『修訂中』的待試作筆記。"""
+    arch_dir = repo / "architecture"
+    if not arch_dir.is_dir():
+        return []
+    rows = []
+    for md in sorted(arch_dir.glob("*.md")):
+        try:
+            txt = md.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if not txt.startswith("---\n"):
+            continue
+        end = txt.find("\n---\n", 4)
+        if end == -1:
+            continue
+        fm = txt[4:end]
+        m_st = re.search(r"^status:\s*(.+)$", fm, re.MULTILINE)
+        status = m_st.group(1).strip() if m_st else ""
+        if status not in ("草稿", "修訂中"):
+            continue
+        body = txt[end + 5:]
+        m_sum = re.search(r"^##\s+摘要\s*\n+([^\n#]+)", body, re.MULTILINE)
+        summary = m_sum.group(1).strip() if m_sum else ""
+        if len(summary) > 65:
+            summary = summary[:65] + "…"
+        rel = f"architecture/{md.name}"
+        rows.append((WARN, "待辦筆記", f"{rel} [{status}]" + (f"：{summary}" if summary else "")))
     return rows
+
+
+def _session_sync_handoff_rows(repo: Path, default: str = "main"):
+    """檢查最新 commit 的 Session-Sync 下一步／阻塞，以及遠端尚未合併的 origin/claude/* 分支。"""
+    rows = []
+    code, msg = _run(["git", "log", "-1", "--format=%B"], repo)
+    if code == 0 and "## Session-Sync" in msg:
+        sec = msg.split("## Session-Sync", 1)[1]
+        field = lambda k: (re.search(rf"-\s*\*\*{k}\*\*:\s*(.+)", sec) or [None, ""])[1].strip()
+        agent = field("執行者") or "未知"
+        nxt = field("下一步")
+        blk = field("阻塞")
+        has_nxt = nxt.lower() not in _IDLE_VALUES and "未指定" not in nxt
+        has_blk = blk.lower() not in _IDLE_VALUES and "未指定" not in blk
+        if has_nxt or has_blk:
+            detail = f"[{agent}] {nxt}" if has_nxt else f"[{agent}]"
+            if has_blk:
+                detail += f"（阻塞：{blk}）"
+            rows.append((WARN, "交接下一步", detail))
+    _, cur_br = _run(["git", "branch", "--show-current"], repo)
+    code, refs = _run(["git", "for-each-ref", "--format=%(refname:short)", "refs/remotes/origin/claude/"], repo)
+    c_main, main_ts = _run(["git", "log", "-1", "--format=%ct", f"origin/{default}"], repo)
+    if code == 0 and refs and c_main == 0 and main_ts.isdigit():
+        for ref in refs.splitlines():
+            short_br = ref.removeprefix("origin/")
+            if short_br == cur_br:
+                continue
+            c2, cnt = _run(["git", "rev-list", "--count", f"origin/{default}..{ref}"], repo)
+            c3, br_ts = _run(["git", "log", "-1", "--format=%ct", ref], repo)
+            if c2 == 0 and cnt.isdigit() and int(cnt) > 0 and c3 == 0 and br_ts.isdigit() and int(br_ts) >= int(main_ts):
+                _, subj = _run(["git", "log", "-1", "--format=%s", ref], repo)
+                rows.append((WARN, "未合併分支", f"{ref}（領先 {default} {cnt} 個 commit：{subj[:50]}）"))
+    return rows
+
+
+def check_handoff(repo: Path = Path("."), default: str = "main"):
+    """跨 Agent（Claude 雲端 ⇄ Antigravity）雙向交接雷達：掃描草稿／修訂中筆記、最新 Session-Sync 下一步與未合併雲端分支。"""
+    return _note_handoff_rows(repo) + _session_sync_handoff_rows(repo, default=default)
 
 
 def patrol_tools():
@@ -143,10 +215,10 @@ def patrol_repo(repo: Path = Path("."), installed_check=None):
         nm = (repo / "node_modules").exists()
         rows.append((OK if nm else WARN, "node_modules", "已安裝" if nm else "未安裝（bun/npm install）"))
     if installed_check is None:
-        return patrol_tools() + rows + check_installed(repo)
+        return patrol_tools() + rows + check_installed(repo) + check_handoff(repo)
     issues = installed_check()
     env = [(WARN, "環境比對", i) for i in issues] if issues else [(OK, "環境比對", "pyproject.toml 與安裝環境一致")]
-    return patrol_tools() + rows + env
+    return patrol_tools() + rows + env + check_handoff(repo)
 
 
 def protected_branch_issue(branch: str, protected=("main",)):

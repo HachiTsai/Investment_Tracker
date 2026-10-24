@@ -86,3 +86,25 @@ def test_patrol_uses_repo_own_env_check(tmp_path):
     assert any(k == "環境比對" and "foo" in d for _, k, d in rows)
     rows = rh.patrol_repo(tmp_path, installed_check=lambda: [])
     assert any(s == rh.OK and k == "環境比對" for s, k, _ in rows)
+
+
+def test_check_handoff_detects_draft_note_and_session_sync(tmp_path):
+    a, b = _make_pair(tmp_path)
+    arch = b / "architecture"
+    arch.mkdir()
+    (arch / "test_spec.md").write_text(
+        "---\ntype: arch\ntitle: test_spec\nstatus: 草稿\n---\n\n## 摘要\n\n測試跨 Agent 交接草稿摘要內容。\n",
+        encoding="utf-8",
+    )
+    (b / "f.txt").write_text("2", encoding="utf-8")
+    _git(b, "add", ".")
+    _git(
+        b,
+        "commit",
+        "-qm",
+        "arch(test): 新增規格\n\n## Session-Sync\n\n- **執行者**: Antigravity\n- **類別**: 財商架構\n- **狀態**: 草稿已建\n- **下一步**: 請於雲端試作 swing_scores 斜率與回測\n- **阻塞**: 無\n",
+    )
+    rows = rh.check_handoff(b)
+    assert any(k == "待辦筆記" and "test_spec.md [草稿]" in d for _, k, d in rows)
+    assert any(k == "交接下一步" and "Antigravity" in d and "swing_scores" in d for _, k, d in rows)
+
