@@ -242,16 +242,16 @@ def test_lagging_tickers_per_market():
 
 def test_check_gate():
     rows_ok = [{"ticker": "2330", "state": "UPTREND", "fresh": True}] * 10
-    ok, reasons = sw.check_gate(rows_ok, max_errors=5, require_fresh=True)
-    assert ok and len(reasons) == 0
+    is_healthy, is_closed, reasons = sw.check_gate(rows_ok, max_errors=5, require_fresh=True)
+    assert is_healthy and not is_closed and len(reasons) == 0
 
     rows_err = [{"ticker": f"ERR_{i}", "state": "ERROR", "fresh": False} for i in range(6)]
-    ok, reasons = sw.check_gate(rows_err, max_errors=5, require_fresh=False)
-    assert not ok and any("ERROR 狀態標的超標" in r for r in reasons)
+    is_healthy, is_closed, reasons = sw.check_gate(rows_err, max_errors=5, require_fresh=False)
+    assert not is_healthy and any("ERROR 狀態標的超標" in r for r in reasons)
 
     rows_closed = [{"ticker": "2330", "state": "NEUTRAL", "fresh": False}] * 5
-    ok, reasons = sw.check_gate(rows_closed, max_errors=5, require_fresh=True)
-    assert not ok and any("今日所有市場休市" in r for r in reasons)
+    is_healthy, is_closed, reasons = sw.check_gate(rows_closed, max_errors=5, require_fresh=True)
+    assert is_healthy and is_closed and any("今日所有市場休市" in r for r in reasons)
 
-    ok, reasons = sw.check_gate(rows_closed, max_errors=5, require_fresh=False)
-    assert ok and len(reasons) == 0
+    is_healthy, is_closed, reasons = sw.check_gate(rows_closed, max_errors=5, require_fresh=False)
+    assert is_healthy and not is_closed and len(reasons) == 0
