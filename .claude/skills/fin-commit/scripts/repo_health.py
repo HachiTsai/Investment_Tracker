@@ -118,9 +118,13 @@ def _note_handoff_rows(repo: Path):
 
 
 def _session_sync_handoff_rows(repo: Path, default: str = "main"):
-    """檢查最新 commit 的 Session-Sync 下一步／阻塞，以及遠端尚未合併的 origin/claude/* 分支。"""
+    """檢查最新 commit（若 HEAD 為 Merge Commit 則穿透讀 HEAD^2）的 Session-Sync 下一步／阻塞，以及未合併的 origin/claude/* 分支。"""
     rows = []
-    code, msg = _run(["git", "log", "-1", "--format=%B"], repo)
+    code, msg = _run(["git", "log", "-1", "--format=%B", "HEAD"], repo)
+    if code == 0 and "## Session-Sync" not in msg:
+        c2, msg2 = _run(["git", "log", "-1", "--format=%B", "HEAD^2"], repo)
+        if c2 == 0:
+            msg = msg2
     if code == 0 and "## Session-Sync" in msg:
         sec = msg.split("## Session-Sync", 1)[1]
         field = lambda k: (re.search(rf"-\s*\*\*{k}\*\*:\s*(.+)", sec) or [None, ""])[1].strip()
