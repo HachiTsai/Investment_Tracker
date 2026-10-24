@@ -6,7 +6,7 @@
 
 ## 1. 觸發時機與排程
 
-- **排程頻率**：每個平日例行執行（建議盤後或晚間定時觸發）。
+- **排程頻率**：每個平日台北 08:30。
 - **觸發平台**：Claude 雲端排程。
 - **雲端排程 Prompt（單行呼叫）**：
 
@@ -54,7 +54,7 @@ python3 .claude/skills/portfolio-patrol/scripts/patrol.py --json > /tmp/patrol.j
 在 REPO 根目錄執行：
 
 ```bash
-python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --patrol /tmp/patrol.json --daily-html /tmp/daily.html > /tmp/scan.json
+python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --patrol /tmp/patrol.json --daily-html /tmp/daily.html --gate > /tmp/scan.json
 ```
 
 *現場結合技術面指標、動能斜率與巡檢姿態，渲染出完整互動式單檔 HTML。*
@@ -71,6 +71,7 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 -
 
 - **固定目標 URL**：`https://claude.ai/artifact/WLXXvrX7BzLemm9TxqZ6di`
 - **發布模式**：先 read 該 artifact 再以 `/tmp/daily.html` 原地更新，**嚴禁建立新的 Artifact**。
+- **Capabilities 鐵律**：發布時**必須省略 capabilities**（沿用既有 capabilities：Firecrawl、db、user；若覆蓋或帶入 capabilities 會導致即時報價與我的最愛等互動功能損壞）。
 
 ---
 

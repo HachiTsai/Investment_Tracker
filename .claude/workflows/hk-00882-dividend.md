@@ -45,7 +45,7 @@ flowchart TD
 在 REPO 根目錄執行：
 
 ```bash
-python3 .claude/skills/hk-market-data/scripts/constituents_table.py out.html prev.html table.json
+python3 .claude/skills/hk-market-data/scripts/constituents_table.py out.html prev.html table.json --gate
 ```
 
 *耗時約 1 分鐘，不需背景執行，不依賴無頭瀏覽器。*

@@ -41,3 +41,17 @@ def test_index_page_links_each_etf():
     s = [dict(etf="0050", holdings=50, rows=50, weighted_yield_pct=1.234, holdings_asof="2026-10-21", source="MoneyDJ", no_fin=[])]
     out = etf_pool.index_page(s, "2026-10-22", 214)
     assert 'href="0050.html"' in out and "214" in out and "1.23" in out
+
+
+def test_check_gate():
+    ok, reasons = etf_pool.check_gate(17, ["2330"], ["2330"], {})
+    assert ok and len(reasons) == 0
+
+    ok, reasons = etf_pool.check_gate(10, [], [], {})
+    assert not ok and any("ETF 數量不足" in r for r in reasons)
+
+    ok, reasons = etf_pool.check_gate(17, [str(i) for i in range(8)], [str(i) for i in range(5)], {})
+    assert not ok and any("缺價格與財報檔數超標" in r for r in reasons)
+
+    ok, reasons = etf_pool.check_gate(17, [], [], {"0050": 1})
+    assert not ok and any("存在異常 ETF" in r for r in reasons)

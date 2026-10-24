@@ -13,7 +13,7 @@ import re
 import sys
 import time
 from datetime import date
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -89,11 +89,33 @@ th{{background:var(--head)}} .n{{text-align:right;font-variant-numeric:tabular-n
 """
 
 
+def check_gate(
+    etf_count: int,
+    no_price: List[str],
+    no_fin: List[str],
+    bad: Dict[str, int],
+    min_etfs: int = 15,
+    max_missing: int = 10,
+    max_errors: int = 0,
+) -> Tuple[bool, List[str]]:
+    """排程健康門檻檢核：etfs 約 17 檔（>=15）、缺價與財報合計不超過 10 檔、無異常 ETF。"""
+    reasons = []
+    if etf_count < min_etfs:
+        reasons.append(f"ETF 數量不足：{etf_count} < {min_etfs}")
+    total_missing = len(no_price) + len(no_fin)
+    if total_missing > max_missing:
+        reasons.append(f"缺價格與財報檔數超標：{total_missing} > {max_missing}")
+    if len(bad) > max_errors:
+        reasons.append(f"存在異常 ETF：{bad}")
+    return len(reasons) == 0, reasons
+
+
 def main(argv: List[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("outdir")
     ap.add_argument("--etfs", default="")
     ap.add_argument("--models-dir", default="models")
+    ap.add_argument("--gate", action="store_true", help="啟用排程健康檢查門檻判定，未達門檻回傳退出碼 1")
     a = ap.parse_args(argv[1:])
     t0 = time.time()
     etfs = [e.strip().upper() for e in a.etfs.split(",") if e.strip()] or discover(a.models_dir)
@@ -118,8 +140,15 @@ def main(argv: List[str]) -> int:
     holdings = [dict(etf=e, code=c["symbol"].split(".")[0], weightPct=c["weight_pct"], shares=c.get("shares"))
                 for e in etfs for c in etf_table.tw_stocks(holds[e])]
     json.dump(dict(asof=today.isoformat(), stocks=stocks, holdings=holdings, summaries=summaries), open(os.path.join(a.outdir, "pool.json"), "w", encoding="utf-8"), ensure_ascii=False)
-    print(json.dumps(dict(etfs=len(etfs), stocks=len(pool), seconds=round(time.time() - t0), no_price=sorted({c for s in summaries for c in s["no_price"]}),
-                          no_fin=sorted({c for s in summaries for c in s["no_fin"]}), etfs_with_errors=bad), ensure_ascii=False))
+    no_price = sorted({c for s in summaries for c in s["no_price"]})
+    no_fin = sorted({c for s in summaries for c in s["no_fin"]})
+    print(json.dumps(dict(etfs=len(etfs), stocks=len(pool), seconds=round(time.time() - t0), no_price=no_price,
+                          no_fin=no_fin, etfs_with_errors=bad), ensure_ascii=False))
+    if a.gate:
+        ok, reasons = check_gate(len(etfs), no_price, no_fin, bad)
+        if not ok:
+            print(f"❌ [Gate Failed] {'; '.join(reasons)}", file=sys.stderr)
+            return 1
     return 0
 
 

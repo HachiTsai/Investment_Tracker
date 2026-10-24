@@ -43,7 +43,7 @@ flowchart TD
 在 REPO 根目錄執行：
 
 ```bash
-python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py out
+python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py out --gate
 ```
 
 *耗時約 1～2 分鐘，無需背景執行。輸出包含 `out/index.html`、`out/<代號>.html`、`out/pool.json` 與標準輸出之狀態 JSON。*
