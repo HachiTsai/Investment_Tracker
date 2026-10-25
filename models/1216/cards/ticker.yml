@@ -1,0 +1,40 @@
+id: card:ticker:1216
+type: ticker
+schema_version: 1.1.0
+ticker: "1216"
+symbol: "TPE:1216"            # price-dividend-fetcher 格式（交易所:代號）
+yf_symbol: "1216.TW"      # fundamental-analyzer / Yahoo 格式
+title: "1216 統一"
+currency: TWD
+exchange: TWSE
+category: STOCK
+strategy_type: STOCK
+tier: core
+sector: "食品"
+nature_tag: "民生消費龍頭"
+related_etfs: ["0050", "0056", "00878", "00713"]
+last_model_update: "2026-10-25"
+
+# 股利輪廓：近 12 個月配息由 price-dividend-fetcher 現場抓取；annual_dps_baseline 僅在抓不到時降級使用
+dividend:
+  currency: "TWD"
+  frequency: "年配"
+  annual_dps_baseline: null
+  last_declared:
+    dps: null
+    ex_date: null
+    source: null
+
+# 對年股利 50 萬目標的貢獻：以每 lot_shares 股為單位，不記個人持股；稅後留存率未查證前留 null（視為 1.0）
+contribution:
+  lot_shares: 1000
+  tax_retention_rate: null
+
+# 觀點欄位（人工維護；事實須附出處，推論明確標示為觀點）
+thesis:
+  summary: null
+  risks: null
+  tracking: []
+
+fail_safe:
+  max_stale_days: 5

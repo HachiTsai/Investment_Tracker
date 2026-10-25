@@ -1,0 +1,51 @@
+{"ticker": "ETN.US", "name": "Eaton", "weight_pct": 10.75, "shares": 76407}
+{"ticker": "GEV.US", "name": "GE Vernova", "weight_pct": 10.52, "shares": 31796}
+{"ticker": "PWR.US", "name": "Quanta Services", "weight_pct": 7.62, "shares": 35505}
+{"ticker": "VRT.US", "name": "Vertiv", "weight_pct": 6.9, "shares": 91075}
+{"ticker": "NEE.US", "name": "NextEra Energy", "weight_pct": 5.51, "shares": 196956}
+{"ticker": "DUK.US", "name": "Duke Energy", "weight_pct": 4.51, "shares": 104691}
+{"ticker": "BE.US", "name": "Bloom Energy", "weight_pct": 4.19, "shares": 49195}
+{"ticker": "SO.US", "name": "Southern", "weight_pct": 3.66, "shares": 113366}
+{"ticker": "HUBB.US", "name": "Hubbell", "weight_pct": 3.2, "shares": 19429}
+{"ticker": "NVT.US", "name": "nVent Electric", "weight_pct": 3.1, "shares": 59359}
+{"ticker": "D.US", "name": "Dominion Energy", "weight_pct": 2.63, "shares": 117983}
+{"ticker": "AEP.US", "name": "American Electric Power", "weight_pct": 2.48, "shares": 54527}
+{"ticker": "CEG.US", "name": "Constellation", "weight_pct": 2.18, "shares": 22531}
+{"ticker": "EXC.US", "name": "Exelon", "weight_pct": 2.12, "shares": 137701}
+{"ticker": "XEL.US", "name": "Xcel Energy", "weight_pct": 1.72, "shares": 62703}
+{"ticker": "FSLR.US", "name": "First Solar", "weight_pct": 1.52, "shares": 24304}
+{"ticker": "ED.US", "name": "Consolidated Edison", "weight_pct": 1.47, "shares": 36880}
+{"ticker": "PEG.US", "name": "Public Service Enterprise", "weight_pct": 1.27, "shares": 50036}
+{"ticker": "WEC.US", "name": "WEC Energy", "weight_pct": 1.27, "shares": 32710}
+{"ticker": "FE.US", "name": "FirstEnergy", "weight_pct": 1.26, "shares": 77501}
+{"ticker": "VST.US", "name": "Vistra", "weight_pct": 1.24, "shares": 22258}
+{"ticker": "TTEK.US", "name": "Tetra Tech", "weight_pct": 1.2, "shares": 95863}
+{"ticker": "ES.US", "name": "Eversource Energy", "weight_pct": 1.18, "shares": 50460}
+{"ticker": "ETR.US", "name": "Entergy", "weight_pct": 1.16, "shares": 30545}
+{"ticker": "EIX.US", "name": "Edison International", "weight_pct": 1.05, "shares": 51610}
+{"ticker": "AEE.US", "name": "Ameren Corporation", "weight_pct": 1.05, "shares": 27669}
+{"ticker": "ACM.US", "name": "AECOM", "weight_pct": 1.01, "shares": 47327}
+{"ticker": "DTE.US", "name": "DTE Energy", "weight_pct": 0.96, "shares": 20709}
+{"ticker": "PPL.US", "name": "PPL", "weight_pct": 0.94, "shares": 75774}
+{"ticker": "EVRG.US", "name": "Evergy", "weight_pct": 0.9, "shares": 30414}
+{"ticker": "小型S＆P 500股價指數202612", "name": "小型S＆P 500股價指數202612", "weight_pct": 0.84, "shares": 6}
+{"ticker": "ENS.US", "name": "EnerSys", "weight_pct": 0.83, "shares": 13152}
+{"ticker": "AEIS.US", "name": "Advanced Energy", "weight_pct": 0.79, "shares": 8904}
+{"ticker": "GNRC.US", "name": "Generac", "weight_pct": 0.77, "shares": 10546}
+{"ticker": "CMS.US", "name": "CMS Energy", "weight_pct": 0.75, "shares": 30891}
+{"ticker": "MTZ.US", "name": "MasTec", "weight_pct": 0.73, "shares": 11237}
+{"ticker": "PCG.US", "name": "PG&E", "weight_pct": 0.69, "shares": 147345}
+{"ticker": "LNT.US", "name": "Alliant Energy", "weight_pct": 0.63, "shares": 25881}
+{"ticker": "CNP.US", "name": "CenterPoint Energy", "weight_pct": 0.63, "shares": 43783}
+{"ticker": "PNW.US", "name": "Pinnacle West", "weight_pct": 0.6, "shares": 16127}
+{"ticker": "AGX.US", "name": "Argan", "weight_pct": 0.58, "shares": 4721}
+{"ticker": "AES.US", "name": "The AES Corporation", "weight_pct": 0.51, "shares": 95402}
+{"ticker": "NRG.US", "name": "NRG Energy", "weight_pct": 0.48, "shares": 13324}
+{"ticker": "VICR.US", "name": "Vicor Corporation", "weight_pct": 0.43, "shares": 5678}
+{"ticker": "POWL.US", "name": "Powell Industries, Inc.", "weight_pct": 0.4, "shares": 6627}
+{"ticker": "MYRG.US", "name": "MYR Group, Inc.", "weight_pct": 0.34, "shares": 3451}
+{"ticker": "ENPH.US", "name": "Enphase Energy", "weight_pct": 0.27, "shares": 23619}
+{"ticker": "ITRI.US", "name": "Itron", "weight_pct": 0.24, "shares": 7921}
+{"ticker": "BELFB.US", "name": "Bel Fuse - Class B Common Stock", "weight_pct": 0.21, "shares": 2639}
+{"ticker": "FLNC.US", "name": "Fluence Energy", "weight_pct": 0.04, "shares": 18453}
+{"ticker": "MVST.US", "name": "Microvast", "weight_pct": 0.01, "shares": 38561}
