@@ -193,10 +193,10 @@ def cmd_set_tier(args) -> int:
 def check_gate(
     etf_count: int,
     constituents_count: int,
-    min_etfs: int = 40,
-    min_constituents: int = 5000,
+    min_etfs: int = 200,
+    min_constituents: int = 10000,
 ) -> Tuple[bool, List[str]]:
-    """排程健康門檻檢核：ETF_Summary >= 40 檔、ETF_Constituents >= 5000 筆。"""
+    """排程健康門檻檢核：全市場 ETF_Summary >= 200 檔、ETF_Constituents >= 10000 筆。"""
     reasons = []
     if etf_count < min_etfs:
         reasons.append(f"ETF_Summary 列數不足：{etf_count} < {min_etfs}")
@@ -210,13 +210,24 @@ def cmd_sync_sheets(args) -> int:
     print("🚀 啟動全市場 ETF 成分股與摘要 Google Sheets 雲端同步...")
     models_dir = Path(args.models_dir) if args.models_dir else REPO_ROOT / "models"
     output_dir = Path(args.output_dir) if args.output_dir else REPO_ROOT / "reports"
+    include_pool = not getattr(args, "no_pool", False)
+    delay = getattr(args, "delay", 0.1)
+
+    def _prog(code, idx, total):
+        print(f"   [{idx}/{total}] 正在聚合全市場資料池成分股：{code}...", end="\r", flush=True)
+
     res = run_sync_pipeline(
         models_dir=models_dir,
         output_dir=output_dir,
         sheet_id=args.sheet_id,
         export_only=args.export_only,
         dry_run=args.dry_run,
+        include_market_pool=include_pool,
+        delay=delay,
+        progress_callback=_prog if include_pool else None,
     )
+    if include_pool:
+        print()
     if res["status"] == "success":
         print(f"✅ 成功處理 {res['etf_count']} 檔 ETF，共 {res['constituents_count']} 筆底層成分股紀錄。")
         print(f"   📁 摘要 CSV：{res['summary_csv']}")
@@ -226,7 +237,18 @@ def cmd_sync_sheets(args) -> int:
         else:
             print(f"   ℹ️ {res.get('message', '')}")
         if getattr(args, "gate", False):
-            ok, reasons = check_gate(res.get("etf_count", 0), res.get("constituents_count", 0))
+            min_e = getattr(args, "min_etfs", None)
+            min_c = getattr(args, "min_constituents", None)
+            gate_args = {}
+            if min_e is not None:
+                gate_args["min_etfs"] = min_e
+            elif getattr(args, "no_pool", False):
+                gate_args["min_etfs"] = 40
+            if min_c is not None:
+                gate_args["min_constituents"] = min_c
+            elif getattr(args, "no_pool", False):
+                gate_args["min_constituents"] = 5000
+            ok, reasons = check_gate(res.get("etf_count", 0), res.get("constituents_count", 0), **gate_args)
             if not ok:
                 print(f"❌ [Gate Failed] {'; '.join(reasons)}", file=sys.stderr)
                 return 1
@@ -294,7 +316,11 @@ def main(argv=None) -> int:
     p_sync.add_argument("--output-dir", help="指定 CSV 輸出目錄（預設 REPO/reports）")
     p_sync.add_argument("--export-only", action="store_true", help="僅產出本機 CSV，不上傳雲端")
     p_sync.add_argument("--dry-run", action="store_true", help="模擬執行，不變更雲端試算表")
-    p_sync.add_argument("--gate", action="store_true", help="啟用排程健康檢查門檻判定（ETF_Summary >= 40 且 ETF_Constituents >= 5000）")
+    p_sync.add_argument("--no-pool", action="store_true", help="僅同步 models/ 核心卡片，不包含全市場資料池")
+    p_sync.add_argument("--delay", type=float, default=0.1, help="爬取全市場資料池時的延遲秒數（預設 0.1 秒）")
+    p_sync.add_argument("--min-etfs", type=int, help="自訂 Gate 門檻最低 ETF 檔數")
+    p_sync.add_argument("--min-constituents", type=int, help="自訂 Gate 門檻最低成分股筆數")
+    p_sync.add_argument("--gate", action="store_true", help="啟用排程健康檢查門檻判定（全市場：ETF_Summary >= 200 且 ETF_Constituents >= 10000）")
     p_sync.set_defaults(func=cmd_sync_sheets)
 
     args = parser.parse_args(argv)

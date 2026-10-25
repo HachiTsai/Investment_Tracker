@@ -258,6 +258,7 @@ def test_cli_subcommands(tmp_path, monkeypatch, capsys):
         "--models-dir", str(tmp_path / "models"),
         "--output-dir", str(tmp_path / "reports"),
         "--dry-run",
+        "--no-pool",
     ])
     assert rc_sync == 0
     assert (tmp_path / "reports" / "etf_summary.csv").exists()
@@ -318,6 +319,7 @@ def test_etf_sheets_sync_functions(tmp_path):
         output_dir=out_dir,
         sheet_id="test_sheet_id",
         export_only=True,
+        include_market_pool=False,
     )
     assert res["status"] == "success"
     assert res["etf_count"] == 1
@@ -326,15 +328,70 @@ def test_etf_sheets_sync_functions(tmp_path):
     assert Path(res["constituents_csv"]).exists()
 
 
+def test_load_all_market_etfs_combines_core_and_pool(tmp_path):
+    from etf_sheets_sync import load_all_market_etfs
+
+    # 1. 建立核心 model 00878
+    m_dir = tmp_path / "models"
+    etf_dir = m_dir / "00878" / "cards"
+    etf_dir.mkdir(parents=True)
+    (etf_dir / "ticker.yml").write_text(
+        "ticker: \"00878\"\ntitle: \"國泰永續高股息\"\ncategory: ETF\nlast_model_update: \"2026-10-18\"\n",
+        encoding="utf-8",
+    )
+    (etf_dir / "constituents.jsonl").write_text(
+        '{"ticker": "2891.TW", "name": "中信金", "weight_pct": 10.16, "shares": 1000}\n',
+        encoding="utf-8",
+    )
+
+    # 2. Mock 證交所包含 00878 (core) 與 0050 (pool)
+    mock_twse = [
+        {"ticker": "00878", "name": "國泰永續高股息", "category": "ETF"},
+        {"ticker": "0050", "name": "元大台灣50", "category": "ETF", "manager": "元大投信", "benchmark": "臺灣50指數"},
+    ]
+
+    # 3. Mock 0050 的 MoneyDJ 持股
+    def mock_holdings(code):
+        if code == "0050":
+            return {
+                "ticker": "0050",
+                "as_of_date": "2026-10-25",
+                "total_count": 1,
+                "constituents": [{"symbol": "2330.TW", "name": "台積電", "weight_pct": 56.6, "shares": 5000}],
+            }
+        return {}
+
+    all_models = load_all_market_etfs(
+        models_dir=m_dir,
+        include_market_pool=True,
+        delay=0,
+        holdings_fetcher=mock_holdings,
+        twse_list_fetcher=lambda: mock_twse,
+    )
+
+    assert len(all_models) == 2
+    tickers = [m["ticker"] for m in all_models]
+    assert "0050" in tickers
+    assert "00878" in tickers
+    m_0050 = next(m for m in all_models if m["ticker"] == "0050")
+    assert m_0050["title"] == "元大台灣50"
+    assert len(m_0050["constituents"]) == 1
+    assert m_0050["constituents"][0]["ticker"] == "2330.TW"
+
+
 def test_check_gate():
-    ok, reasons = facade.check_gate(42, 5300)
+    ok, reasons = facade.check_gate(240, 15000)
     assert ok and len(reasons) == 0
 
-    ok, reasons = facade.check_gate(35, 5300)
+    ok, reasons = facade.check_gate(180, 15000)
     assert not ok and any("ETF_Summary 列數不足" in r for r in reasons)
 
-    ok, reasons = facade.check_gate(42, 4800)
+    ok, reasons = facade.check_gate(240, 8000)
     assert not ok and any("ETF_Constituents 列數不足" in r for r in reasons)
+
+    # 支援自訂門檻（如核心卡片測試）
+    ok_custom, _ = facade.check_gate(42, 5300, min_etfs=40, min_constituents=5000)
+    assert ok_custom
 
 
 def test_sync_via_google_api(tmp_path):

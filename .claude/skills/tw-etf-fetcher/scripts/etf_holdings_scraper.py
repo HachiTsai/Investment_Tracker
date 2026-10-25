@@ -7,10 +7,12 @@ import datetime
 import json
 import re
 import urllib.request
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from bs4 import BeautifulSoup
 
 MONEYDJ_HOLDINGS_URL = "https://www.moneydj.com/ETF/X/Basic/Basic0007B.xdjhtm?etfid={ticker}.TW"
+HOLDINGS_CACHE_DIR = Path.home() / ".cache" / "investment_tracker" / "holdings"
 
 
 def clean_ticker(ticker: str) -> str:
@@ -32,8 +34,10 @@ def fetch_etf_holdings(
     timeout: int = 10,
     mock_html: Optional[str] = None,
     mock_yfinance_holdings: Optional[List[Dict[str, Any]]] = None,
+    use_cache: bool = True,
+    cache_dir: Optional[Path] = None,
 ) -> Dict[str, Any]:
-    """抓取指定 ETF 之完整成分股、權重與股數。"""
+    """抓取指定 ETF 之完整成分股、權重與股數（支援本地 24h 快取）。"""
     code = clean_ticker(ticker)
     as_of_date = datetime.date.today().isoformat()
 
@@ -41,6 +45,21 @@ def fetch_etf_holdings(
     if mock_html is not None:
         constituents = _parse_moneydj_html(mock_html)
         return _build_holdings_result(code, constituents, as_of_date, "Mock")
+
+    # 檢查本地快取（24 小時內有效）
+    target_cache_dir = cache_dir or HOLDINGS_CACHE_DIR
+    cache_file = target_cache_dir / f"{code}.json"
+    if use_cache and mock_html is None and mock_yfinance_holdings is None:
+        if cache_file.exists():
+            try:
+                mtime = datetime.datetime.fromtimestamp(cache_file.stat().st_mtime)
+                if datetime.datetime.now() - mtime < datetime.timedelta(hours=24):
+                    with open(cache_file, "r", encoding="utf-8") as f:
+                        cached = json.load(f)
+                        if isinstance(cached, dict) and cached.get("total_count", 0) > 0:
+                            return cached
+            except Exception:
+                pass
 
     # 2. 主要來源：MoneyDJ
     try:
@@ -53,7 +72,15 @@ def fetch_etf_holdings(
             html = resp.read().decode("utf-8", errors="ignore")
         constituents = _parse_moneydj_html(html)
         if constituents:
-            return _build_holdings_result(code, constituents, _data_date(html) or as_of_date, "MoneyDJ")
+            res = _build_holdings_result(code, constituents, _data_date(html) or as_of_date, "MoneyDJ")
+            if use_cache:
+                try:
+                    target_cache_dir.mkdir(parents=True, exist_ok=True)
+                    with open(cache_file, "w", encoding="utf-8") as f:
+                        json.dump(res, f, ensure_ascii=False, indent=2)
+                except Exception:
+                    pass
+            return res
     except Exception:
         pass
 
@@ -63,7 +90,15 @@ def fetch_etf_holdings(
 
     yf_constituents = _fetch_yfinance_top_holdings(code)
     if yf_constituents:
-        return _build_holdings_result(code, yf_constituents, as_of_date, "yfinance (Top10)")
+        res = _build_holdings_result(code, yf_constituents, as_of_date, "yfinance (Top10)")
+        if use_cache:
+            try:
+                target_cache_dir.mkdir(parents=True, exist_ok=True)
+                with open(cache_file, "w", encoding="utf-8") as f:
+                    json.dump(res, f, ensure_ascii=False, indent=2)
+            except Exception:
+                pass
+        return res
 
     return _build_holdings_result(code, [], as_of_date, "None")
 
