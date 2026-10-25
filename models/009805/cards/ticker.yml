@@ -1,0 +1,14 @@
+id: card:ticker:009805
+type: ticker
+schema_version: 1.0.0
+ticker: "009805"
+title: "台新美國電力基建"
+full_name: "台新美國電力基建息收ETF證券投資信託基金"
+tier: core
+currency: TWD
+exchange: TWSE
+category: ETF
+strategy_type: DIVIDEND_INCOME
+manager: "賴昭吟"
+benchmark: "NYSE FactSet美國電力基建息收指數"
+last_model_update: "2026-10-21"
