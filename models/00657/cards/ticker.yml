@@ -7,6 +7,7 @@ full_name: "國泰日本ETF傘型證券投資信託基金之日經225證券投�
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: CAPITAL_GROWTH
 manager: "李偉正"
 benchmark: "日經平均股價指數"
 last_model_update: "2026-10-18"

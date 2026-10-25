@@ -7,6 +7,7 @@ full_name: "元大標普500傘型證券投資信託基金之標普500證券投�
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: CAPITAL_GROWTH
 manager: "劉宗聖"
 benchmark: "標普500指數"
 last_model_update: "2026-10-18"

@@ -7,6 +7,7 @@ full_name: "元大臺灣價值高息ETF證券投資信託基金"
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: DIVIDEND_INCOME
 manager: "劉宗聖"
 benchmark: "臺灣指數公司特選臺灣價值高息指數"
 last_model_update: "2026-10-18"

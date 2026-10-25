@@ -7,6 +7,7 @@ full_name: "中國信託臺灣ESG永續關鍵半導體ETF證券投資信託基�
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: CAPITAL_GROWTH
 manager: "陳金榮"
 benchmark: "NYSE FactSet 臺灣ESG永續關鍵半導體指數"
 last_model_update: "2026-10-19"

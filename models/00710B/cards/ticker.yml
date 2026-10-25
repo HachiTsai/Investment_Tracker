@@ -7,6 +7,7 @@ full_name: "復華全球收益ETF傘型證券投資信託基金之復華1至5年
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: BOND_DEFENSE
 manager: "杜俊雄"
 benchmark: "彭博1至5年期美元高收益債券(不含中國)發行量五億美元產業10%上限指數"
 last_model_update: "2026-10-18"

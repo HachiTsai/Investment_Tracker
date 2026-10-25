@@ -7,6 +7,7 @@ full_name: "富邦臺灣公司治理100證券投資信託基金"
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: CAPITAL_GROWTH
 manager: "黃昭棠"
 benchmark: "臺灣證券交易所公司治理100指數"
 last_model_update: "2026-10-18"

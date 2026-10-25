@@ -7,6 +7,7 @@ full_name: "元大美國政府20年期(以上)債券基金"
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: BOND_DEFENSE
 manager: "元大投信"
 benchmark: "ICE美國政府20+年期債券指數"
 last_model_update: "2026-10-18"

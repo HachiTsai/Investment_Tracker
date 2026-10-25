@@ -1,7 +1,0 @@
-id: card:loop:passive_income_500k
-type: control_loop
-schema_version: 1.0.0
-target_ticker: "00757"
-description: "50 萬被動股利目標收斂迴路"
-setpoint_dividend_twd: 500000
-control_strategy: "reinvest_and_dca"

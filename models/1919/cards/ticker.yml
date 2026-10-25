@@ -8,6 +8,7 @@ title: "1919 中遠海控"
 currency: HKD
 exchange: HKEX
 category: STOCK
+strategy_type: STOCK
 sector: "海運／貨櫃航運"
 nature_tag: "央企控股"
 related_etfs: ["00882"]

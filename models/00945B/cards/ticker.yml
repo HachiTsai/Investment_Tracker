@@ -7,6 +7,7 @@ full_name: "凱基美國優選收益非投資等級債券ETF證券投資信託�
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: BOND_DEFENSE
 manager: "丁紹曾"
 benchmark: "彭博美國企業非投資等級1-5年Ba至B債券指數"
 last_model_update: "2026-10-18"

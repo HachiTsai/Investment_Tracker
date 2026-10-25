@@ -7,6 +7,7 @@ full_name: "野村臺灣增強50主動式ETF證券投資信託基金"
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: CAPITAL_GROWTH
 manager: "毛昱文"
 benchmark: "不適用"
 last_model_update: "2026-10-19"

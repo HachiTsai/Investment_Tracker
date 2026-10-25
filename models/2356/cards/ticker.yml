@@ -8,6 +8,7 @@ title: "2356 英業達"
 currency: TWD
 exchange: TWSE
 category: STOCK
+strategy_type: STOCK
 sector: "電子代工／伺服器"
 nature_tag: ""
 related_etfs: ["0056"]
