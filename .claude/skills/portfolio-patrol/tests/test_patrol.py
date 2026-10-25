@@ -53,6 +53,31 @@ def test_discover_tickers(repo_root):
     assert empty_filtered == []
 
 
+def test_discover_tickers_tier_filtering(tmp_path):
+    models = tmp_path / "models"
+    core_cards = models / "0050" / "cards"
+    core_cards.mkdir(parents=True)
+    (core_cards / "ticker.yml").write_text("ticker: '0050'\ntier: core\n", encoding="utf-8")
+
+    legacy_cards = models / "0056" / "cards"
+    legacy_cards.mkdir(parents=True)
+    (legacy_cards / "ticker.yml").write_text("ticker: '0056'\n", encoding="utf-8")
+
+    pool_cards = models / "00922" / "cards"
+    pool_cards.mkdir(parents=True)
+    (pool_cards / "ticker.yml").write_text("ticker: '00922'\ntier: pool\n", encoding="utf-8")
+
+    core_res = patrol.discover_tickers(models)
+    assert "0050" in core_res and "0056" in core_res
+    assert "00922" not in core_res
+
+    pool_res = patrol.discover_tickers(models, filter_tier="pool")
+    assert pool_res == ["00922"]
+
+    all_res = patrol.discover_tickers(models, filter_tier="all")
+    assert sorted(all_res) == ["0050", "0056", "00922"]
+
+
 def test_load_cards(repo_root):
     models_dir = repo_root / "models"
     cards = patrol.load_cards(models_dir, "00882")

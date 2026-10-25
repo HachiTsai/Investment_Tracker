@@ -355,13 +355,16 @@ def stock_profile(ticker: str) -> Dict:
             "returns_total": rets["total"], "returns_price": rets["price"]}
 
 
-def watchlist(universe: Optional[str] = None) -> List[Dict]:
-    """觀察清單：models 內所有 category: STOCK 與 ETF 卡片，加上選填的 ETF 成分股前 N 大（卡片:N）。"""
+def watchlist(universe: Optional[str] = None, filter_tier: Optional[str] = "core") -> List[Dict]:
+    """觀察清單：models 內指定分級（預設 core: 核心團隊）的 category: STOCK 與 ETF 卡片，加上選填的 ETF 成分股前 N 大（卡片:N）。"""
     root = Path(__file__).resolve().parents[4] / "models"
     items = []
     for card in sorted(root.glob("*/cards/ticker.yml")):
         txt = card.read_text(encoding="utf-8")
-        field = lambda k: next((ln.split(":", 1)[1].split("#")[0].strip().strip('"') for ln in txt.splitlines() if ln.startswith(k + ":")), "")
+        field = lambda k: next((ln.split(":", 1)[1].split("#")[0].strip().strip('"').strip("'") for ln in txt.splitlines() if ln.startswith(k + ":")), "")
+        tier = (field("tier") or "core").lower()
+        if filter_tier and filter_tier.lower() != "all" and tier != filter_tier.lower():
+            continue
         if "category: STOCK" in txt:
             items.append({"ticker": field("symbol"), "name": field("title"), "source": "個股卡片"})
         else:
@@ -537,10 +540,11 @@ def main(argv=None) -> int:
     p.add_argument("--fib-backtest", action="store_true", help="回測各費波那契回檔位置之後 5/10/20 日含息報酬（觀察清單全部標的，抓 5 年日線）")
     p.add_argument("--backtest", action="store_true", help="加跑超跌反彈規則回測（抓 5 年日線）")
     p.add_argument("--gate", action="store_true", help="啟用排程健康檢查門檻判定（--scan 模式下 ERROR <= 5 檔）")
+    p.add_argument("--tier", choices=["core", "pool", "all"], default="core", help="波段掃描標的分級（預設 core: 核心團隊）")
     a = p.parse_args(argv)
     if a.scan is not None:
         prev = {r["ticker"]: {"label": r.get("label"), "combo": r.get("combo")} for r in json.loads(Path(a.prev).read_text(encoding="utf-8"))} if a.prev else None
-        rows = scan(watchlist(a.scan or None), prev, with_chart=bool(a.daily_html))
+        rows = scan(watchlist(a.scan or None, filter_tier=a.tier), prev, with_chart=bool(a.daily_html))
         patrol = json.loads(Path(a.patrol).read_text(encoding="utf-8")) if a.patrol else {}
         merge_patrol(rows, patrol)
         lag = lagging_tickers(rows)
@@ -568,7 +572,7 @@ def main(argv=None) -> int:
         return 0
     if a.fib_backtest:
         data = {}
-        for it in watchlist(a.scan or None):
+        for it in watchlist(a.scan or None, filter_tier=a.tier):
             try:
                 data[it["ticker"]] = load_ohlcv(it["ticker"], "5y")
             except (ValueError, RuntimeError, KeyError, IndexError):

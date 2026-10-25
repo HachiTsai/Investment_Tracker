@@ -82,6 +82,29 @@ def test_watchlist_includes_etf_cards():
     assert by["TPE:2356"]["source"] == "個股卡片"
 
 
+def test_watchlist_tier_filtering(tmp_path, monkeypatch):
+    c1 = tmp_path / "0050" / "cards" / "ticker.yml"
+    c1.parent.mkdir(parents=True)
+    c1.write_text("ticker: '0050'\ntitle: '台灣50'\ntier: core\n", encoding="utf-8")
+
+    c2 = tmp_path / "00922" / "cards" / "ticker.yml"
+    c2.parent.mkdir(parents=True)
+    c2.write_text("ticker: '00922'\ntitle: '領袖50'\ntier: pool\n", encoding="utf-8")
+
+    monkeypatch.setattr("pathlib.Path.glob", lambda self, pattern: [c1, c2])
+
+    core_items = [i["ticker"] for i in sw.watchlist()]
+    assert "TPE:0050" in core_items
+    assert "TPE:00922" not in core_items
+
+    pool_items = [i["ticker"] for i in sw.watchlist(filter_tier="pool")]
+    assert "TPE:00922" in pool_items
+    assert "TPE:0050" not in pool_items
+
+    all_items = [i["ticker"] for i in sw.watchlist(filter_tier="all")]
+    assert "TPE:0050" in all_items and "TPE:00922" in all_items
+
+
 def test_market_of():
     assert sw.market_of("TPE:2356") == "台股" and sw.market_of("HKG:1919") == "港股"
     assert sw.market_of("TYO:7203") == "日股" and sw.market_of("NASDAQ:AAPL") == "美股"

@@ -14,6 +14,7 @@ def scaffold_etf_model(
     holdings_data: Dict[str, Any],
     etf_info: Optional[Dict[str, Any]] = None,
     custom_models_dir: Optional[Path] = None,
+    tier: str = "pool",
 ) -> Path:
     """自動為 ETF 建立或更新 models/<ticker>/cards/ 標準卡片庫。"""
     code = ticker.strip().upper()
@@ -34,6 +35,7 @@ schema_version: 1.0.0
 ticker: "{code}"
 title: "{name}"
 full_name: "{full_name}"
+tier: {tier}
 currency: TWD
 exchange: TWSE
 category: ETF

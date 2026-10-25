@@ -129,6 +129,7 @@ def cmd_scaffold(args) -> int:
     if not holdings.get("constituents"):
         print(f"⚠️ 未能解析到 {code} 的成分股名單，仍建立空卡片範本。", file=sys.stderr)
 
+    tier = getattr(args, "tier", "pool")
     models_dir = Path(args.models_dir) if args.models_dir else None
     target_dir = scaffold_etf_model(
         ticker=code,
@@ -136,12 +137,56 @@ def cmd_scaffold(args) -> int:
         holdings_data=holdings,
         etf_info=etf_info,
         custom_models_dir=models_dir,
+        tier=tier,
     )
 
     print(f"✅ 成功為 {code} 建立 DCS 建模卡片：")
     print(f"   📂 目錄：{target_dir}")
     print("   📄 生成卡片：ticker.yml, constituents.jsonl, loop_dividend_500k.yml, interlock_yield_trap.yml")
-    print("   🚀 提示：該標的已自動納入 portfolio-patrol 巡檢範圍！")
+    if tier == "core":
+        print("   🚀 提示：該標的已納入「核心團隊」，將參與 portfolio-patrol 與每日戰報巡檢！")
+    else:
+        print("   📦 提示：該標的已納入「資料池」（預設不參與每日巡檢）。若欲納入核心團隊，請執行：")
+        print(f"      python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py set-tier {code} core")
+    return 0
+
+
+def cmd_set_tier(args) -> int:
+    """處理 set-tier 子命令：調整標的分級 (core: 核心團隊 / pool: 資料池)。"""
+    code = clean_ticker(args.ticker)
+    new_tier = args.tier.lower()
+    if new_tier not in ("core", "pool"):
+        print(f"❌ 無效的分級 '{args.tier}'，僅支援 'core'（核心團隊）或 'pool'（資料池）。", file=sys.stderr)
+        return 1
+
+    models_dir = Path(args.models_dir) if getattr(args, "models_dir", None) else (REPO_ROOT / "models")
+    ticker_file = models_dir / code / "cards" / "ticker.yml"
+    if not ticker_file.exists():
+        print(f"❌ 找不到標的卡片：{ticker_file}", file=sys.stderr)
+        return 1
+
+    content = ticker_file.read_text(encoding="utf-8")
+    lines = content.splitlines()
+    has_tier = False
+    new_lines = []
+    for line in lines:
+        if line.strip().startswith("tier:"):
+            new_lines.append(f"tier: {new_tier}")
+            has_tier = True
+        else:
+            new_lines.append(line)
+
+    if not has_tier:
+        idx_to_insert = len(new_lines)
+        for i, line in enumerate(new_lines):
+            if line.strip().startswith("full_name:") or line.strip().startswith("title:"):
+                idx_to_insert = i + 1
+                break
+        new_lines.insert(idx_to_insert, f"tier: {new_tier}")
+
+    ticker_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+    label = "核心團隊（將參與每日巡檢與戰報）" if new_tier == "core" else "資料池（僅供穿透分析，不參與每日巡檢）"
+    print(f"✅ 已成功將 {code} 的分級調整為：{new_tier}（{label}）")
     return 0
 
 
@@ -226,8 +271,21 @@ def main(argv=None) -> int:
     # scaffold-model
     p_scaffold = subparsers.add_parser("scaffold-model", help="為指定 ETF 自動建立 DCS 建模卡片")
     p_scaffold.add_argument("ticker", help="目標 ETF 代號（例如 00878）")
+    p_scaffold.add_argument(
+        "--tier",
+        choices=["core", "pool"],
+        default="pool",
+        help="標的分級（core: 核心團隊 / pool: 資料池，預設 pool）",
+    )
     p_scaffold.add_argument("--models-dir", help="指定 models 目錄（測試用）")
     p_scaffold.set_defaults(func=cmd_scaffold)
+
+    # set-tier
+    p_settier = subparsers.add_parser("set-tier", help="調整標的分級（core: 核心團隊 / pool: 資料池）")
+    p_settier.add_argument("ticker", help="目標標的代號（例如 00878）")
+    p_settier.add_argument("tier", choices=["core", "pool"], help="目標分級（core: 核心團隊 / pool: 資料池）")
+    p_settier.add_argument("--models-dir", help="指定 models 目錄（測試用）")
+    p_settier.set_defaults(func=cmd_set_tier)
 
     # sync-sheets
     p_sync = subparsers.add_parser("sync-sheets", help="將全市場 ETF 成分股與摘要同步至 Google Sheets")

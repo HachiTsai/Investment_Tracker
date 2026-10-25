@@ -65,8 +65,18 @@ def load_yaml_simple(path: Path) -> Dict[str, Any]:
     return result
 
 
-def discover_tickers(models_root: Path, filter_tickers: Optional[List[str]] = None) -> List[str]:
-    """動態掃描 models/*/ 目錄，獲取包含 cards/ 或 ticker.yml 的標的列表。"""
+def discover_tickers(
+    models_root: Path,
+    filter_tickers: Optional[List[str]] = None,
+    filter_tier: Optional[str] = "core",
+) -> List[str]:
+    """動態掃描 models/*/ 目錄，獲取包含 cards/ 或 ticker.yml 的標的列表。
+
+    支援依標的分級 (filter_tier) 過濾：
+    - 'core' (預設): 僅包含核心團隊標的（若 card 無 tier 欄位，向後相容預設為 core）
+    - 'pool': 僅包含資料池標的
+    - 'all' 或 None: 包含所有標的
+    """
     tickers = []
     if not models_root.exists():
         return tickers
@@ -74,9 +84,18 @@ def discover_tickers(models_root: Path, filter_tickers: Optional[List[str]] = No
     for entry in sorted(models_root.iterdir()):
         if entry.is_dir() and not entry.name.startswith("."):
             cards_dir = entry / "cards"
-            if (cards_dir / "ticker.yml").exists() or cards_dir.exists():
-                if not filter_tickers or entry.name in filter_tickers:
-                    tickers.append(entry.name)
+            ticker_file = cards_dir / "ticker.yml"
+            if ticker_file.exists() or cards_dir.exists():
+                if filter_tickers and entry.name not in filter_tickers:
+                    continue
+
+                if filter_tier and filter_tier.lower() != "all" and ticker_file.exists():
+                    t_info = load_yaml_simple(ticker_file)
+                    t_tier = str(t_info.get("tier", "core")).lower()
+                    if t_tier != filter_tier.lower():
+                        continue
+
+                tickers.append(entry.name)
     return tickers
 
 

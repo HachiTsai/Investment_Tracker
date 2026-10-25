@@ -34,8 +34,13 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py holdings 00878 0091
 # 例如持有 10 張 00878 與 5 張 00919
 python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py lookthrough --portfolio "00878:10,00919:5"
 
-# 4. 為指定 ETF 一鍵建置 DCS 建模卡片（自動放入 models/<ticker>/cards/）
-python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py scaffold-model 00878
+# 4. 為指定 ETF 一鍵建置 DCS 建模卡片（預設為 pool 資料池，可指定 --tier core 納入核心團隊）
+python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py scaffold-model 00922
+python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py scaffold-model 00922 --tier core
+
+# 4.1 調整標的分級（core: 核心團隊，參與每日巡檢 / pool: 資料池，僅供穿透分析）
+python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py set-tier 00922 core
+python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py set-tier 00922 pool
 
 # 5. 一鍵同步全市場 ETF 成分股與摘要至 Google Sheets 雲端匯流排
 python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets
