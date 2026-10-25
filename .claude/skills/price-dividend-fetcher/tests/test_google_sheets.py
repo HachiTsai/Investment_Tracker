@@ -186,3 +186,56 @@ def test_run_swing_pipeline_market_closed():
         assert args[2][0][0] == "最後巡檢時間"
         assert args[2][1][0] == "狀態"
 
+
+def test_ensure_sheet_capacity_needed():
+    client = GoogleSheetsClient(token="fake-token")
+    mock_meta = {
+        "sheets": [
+            {
+                "properties": {
+                    "sheetId": 1048345883,
+                    "gridProperties": {"rowCount": 6000},
+                }
+            }
+        ]
+    }
+    with patch.object(client, "get_spreadsheet", return_value=mock_meta), \
+         patch.object(client, "batch_update", return_value={}) as mock_batch:
+        expanded = client.ensure_sheet_capacity("fake-sheet", 1048345883, required_rows=15000)
+        assert expanded is True
+        mock_batch.assert_called_once()
+        req = mock_batch.call_args[0][1][0]
+        assert req["updateSheetProperties"]["properties"]["gridProperties"]["rowCount"] >= 15000
+
+
+def test_ensure_sheet_capacity_not_needed():
+    client = GoogleSheetsClient(token="fake-token")
+    mock_meta = {
+        "sheets": [
+            {
+                "properties": {
+                    "sheetId": 1048345883,
+                    "gridProperties": {"rowCount": 20000},
+                }
+            }
+        ]
+    }
+    with patch.object(client, "get_spreadsheet", return_value=mock_meta), \
+         patch.object(client, "batch_update") as mock_batch:
+        expanded = client.ensure_sheet_capacity("fake-sheet", 1048345883, required_rows=15000)
+        assert expanded is False
+        mock_batch.assert_not_called()
+
+
+def test_format_columns_as_text():
+    client = GoogleSheetsClient(token="fake-token")
+    with patch.object(client, "batch_update", return_value={}) as mock_batch:
+        client.format_columns_as_text("fake-sheet", sheet_tab_id=0, column_indices=[0, 2])
+        mock_batch.assert_called_once()
+        reqs = mock_batch.call_args[0][1]
+        assert len(reqs) == 2
+        assert reqs[0]["repeatCell"]["cell"]["userEnteredFormat"]["numberFormat"]["type"] == "TEXT"
+        assert reqs[0]["repeatCell"]["range"]["startColumnIndex"] == 0
+        assert reqs[1]["repeatCell"]["range"]["startColumnIndex"] == 2
+
+

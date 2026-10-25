@@ -396,7 +396,12 @@ def test_check_gate():
 
 def test_sync_via_google_api(tmp_path):
     from unittest.mock import MagicMock, patch
+    sheet_scripts = Path(__file__).resolve().parents[2] / "price-dividend-fetcher" / "scripts"
+    if str(sheet_scripts) not in sys.path:
+        sys.path.insert(0, str(sheet_scripts))
     from etf_sheets_sync import sync_via_google_api
+    from google_sheets import GoogleSheetsClient
+
 
     summary_csv = tmp_path / "summary.csv"
     summary_csv.write_text("etf_id,name\n00878,國泰永續高股息\n", encoding="utf-8")
@@ -419,6 +424,9 @@ def test_sync_via_google_api(tmp_path):
         # 驗證超連結樣式清除被調用
         mock_client.clear_hyperlinks.assert_called_once()
         assert mock_client.clear_hyperlinks.call_args[1]["sheet_tab_id"] == 1048345883
+        # 驗證自動確保網格容量與代號格式純文字化
+        assert mock_client.ensure_sheet_capacity.call_count == 2
+        assert mock_client.format_columns_as_text.call_count == 2
         # 驗證 ETF_Constituents!I1:J2 與 ETF_Summary!R1:S2 寫入
         update_ranges = [call[0][1] for call in mock_client.update_values.call_args_list]
         assert "ETF_Summary!R1:S2" in update_ranges

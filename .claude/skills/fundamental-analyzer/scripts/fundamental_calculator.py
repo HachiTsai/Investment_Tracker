@@ -244,6 +244,15 @@ def normalize_ticker_for_yf(symbol: Optional[str]) -> str:
     if not symbol or not isinstance(symbol, str):
         return ""
     sym = symbol.strip().upper()
+
+    # 排除非標準股票代碼（如指數期貨、合約代號、交易所簡稱、純中文名稱等）
+    if any(char in sym for char in ("*", "(", ")", ".TF", ".TX", "期貨", "指數")):
+        return ""
+    if any(ord(c) > 127 for c in sym):  # 含非 ASCII 字元（如中文名）
+        return ""
+    if sym in ("SGX", "TWSE", "TPEX", "TAIFEX", "TAIEX", "INDEX", "CASH"):
+        return ""
+
     if sym.endswith(".US"):
         return sym[:-3]
     elif sym.endswith(".JP"):
@@ -254,6 +263,7 @@ def normalize_ticker_for_yf(symbol: Optional[str]) -> str:
     elif sym.isdigit():
         return f"{sym}.TW"
     return sym
+
 
 
 def calculate_stock_fundamentals(
@@ -324,15 +334,19 @@ def calculate_stock_fundamentals(
         except Exception:
             data = {}
     if data is None or (mock_data is None and not data):
-        try:
-            import yfinance as yf
-            yf_sym = normalize_ticker_for_yf(symbol)
-            if yf_sym:
-                ticker = yf.Ticker(yf_sym)
-                data = ticker.info or {}
-            else:
+        yf_sym = normalize_ticker_for_yf(symbol)
+        if yf_sym:
+            try:
+                import contextlib
+                import os
+                import yfinance as yf
+                with open(os.devnull, "w") as devnull:
+                    with contextlib.redirect_stderr(devnull):
+                        ticker = yf.Ticker(yf_sym)
+                        data = ticker.info or {}
+            except Exception:
                 data = {}
-        except Exception:
+        else:
             data = {}
 
     roe = data.get("returnOnEquity")

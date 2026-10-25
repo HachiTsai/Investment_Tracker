@@ -155,3 +155,73 @@ class GoogleSheetsClient:
             }
         ]
         return self.batch_update(sheet_id, request_body)
+
+    def ensure_sheet_capacity(
+        self,
+        sheet_id: str,
+        sheet_tab_id: int,
+        required_rows: int,
+    ) -> bool:
+        """確保工作表列數足夠，若不足則自動調大網格容量（rowCount），避免寫入時超出網格上限。"""
+        meta = self.get_spreadsheet(sheet_id)
+        current_rows = 1000
+        for s in meta.get("sheets", []):
+            p = s.get("properties", {})
+            if p.get("sheetId") == sheet_tab_id:
+                current_rows = p.get("gridProperties", {}).get("rowCount", 1000)
+                break
+
+        if current_rows < required_rows:
+            target_rows = max(required_rows + 500, current_rows + 1000)
+            req = [
+                {
+                    "updateSheetProperties": {
+                        "properties": {
+                            "sheetId": sheet_tab_id,
+                            "gridProperties": {
+                                "rowCount": target_rows,
+                            },
+                        },
+                        "fields": "gridProperties.rowCount",
+                    }
+                }
+            ]
+            self.batch_update(sheet_id, req)
+            return True
+        return False
+
+    def format_columns_as_text(
+        self,
+        sheet_id: str,
+        sheet_tab_id: int,
+        column_indices: List[int],
+        start_row_index: int = 1,
+        end_row_index: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """將指定欄位格式設為純文字（TEXT），確保代號前導 0（如 0050、0056）不被轉為整數。"""
+        requests_list = []
+        for col_idx in column_indices:
+            cell_range: Dict[str, Any] = {
+                "sheetId": sheet_tab_id,
+                "startRowIndex": start_row_index,
+                "startColumnIndex": col_idx,
+                "endColumnIndex": col_idx + 1,
+            }
+            if end_row_index is not None:
+                cell_range["endRowIndex"] = end_row_index
+
+            requests_list.append({
+                "repeatCell": {
+                    "range": cell_range,
+                    "cell": {
+                        "userEnteredFormat": {
+                            "numberFormat": {
+                                "type": "TEXT",
+                            }
+                        }
+                    },
+                    "fields": "userEnteredFormat.numberFormat",
+                }
+            })
+        return self.batch_update(sheet_id, requests_list)
+

@@ -223,3 +223,18 @@ def test_scaffold_stock_card(tmp_path):
         assert False, "應拒絕覆蓋既有卡片"
     except FileExistsError:
         pass
+
+
+def test_normalize_ticker_for_yf_filtering():
+    from fundamental_calculator import normalize_ticker_for_yf
+
+    assert normalize_ticker_for_yf("2330") == "2330.TW"
+    assert normalize_ticker_for_yf("AAPL.US") == "AAPL"
+    assert normalize_ticker_for_yf("700.HK") == "0700.HK"
+    # 非股票代碼應被過濾為空字串，防止 yfinance 404
+    assert normalize_ticker_for_yf("台灣證交所加權股價指數(FITXN*1.TF)") == ""
+    assert normalize_ticker_for_yf("SGX") == ""
+    assert normalize_ticker_for_yf("聯發科") == ""
+    assert normalize_ticker_for_yf("INDEX") == ""
+    assert normalize_ticker_for_yf(None) == ""
+
