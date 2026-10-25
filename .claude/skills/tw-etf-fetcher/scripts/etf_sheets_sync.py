@@ -18,9 +18,11 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 # 預設 SSOT 試算表 ID（Project_財商工程/All_Market/全市場_ETF成分股資料庫）
 DEFAULT_SHEET_ID = os.environ.get(
@@ -30,6 +32,12 @@ DEFAULT_SHEET_ID = os.environ.get(
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parents[3]
+
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from etf_list_scraper import fetch_twse_etf_list
+from etf_holdings_scraper import fetch_etf_holdings
 
 ETF_PRICE_SNAPSHOTS: Dict[str, float] = {
     "0050": 109.0,
@@ -194,6 +202,99 @@ def load_all_etf_models(models_dir: Path) -> List[Dict[str, Any]]:
     return models
 
 
+def load_all_market_etfs(
+    models_dir: Path,
+    include_market_pool: bool = True,
+    delay: float = 0.1,
+    holdings_fetcher: Optional[Callable[[str], Dict[str, Any]]] = None,
+    twse_list_fetcher: Optional[Callable[[], List[Dict[str, Any]]]] = None,
+    progress_callback: Optional[Callable[[str, int, int], None]] = None,
+) -> List[Dict[str, Any]]:
+    """聚合全市場 ETF 資料：包含 models/ 既有核心模型與證交所+MoneyDJ之全市場資料池。"""
+    # 1. 先讀取 models/ 既有核心模型
+    models = load_all_etf_models(models_dir)
+    existing_tickers = {m["ticker"].upper() for m in models}
+
+    # 2. 若不包含資料池，直接回傳既有 models
+    if not include_market_pool:
+        return models
+
+    # 3. 讀取證交所全市場 ETF 清單
+    fetch_list_fn = twse_list_fetcher or fetch_twse_etf_list
+    fetch_holdings_fn = holdings_fetcher or fetch_etf_holdings
+
+    try:
+        twse_list = fetch_list_fn()
+    except Exception as e:
+        print(f"⚠️ 獲取證交所全市場 ETF 清單失敗，僅回傳既有 models: {e}", file=sys.stderr)
+        return models
+
+    pool_candidates = [
+        item for item in twse_list
+        if str(item.get("ticker", "")).strip().upper() and str(item.get("ticker", "")).strip().upper() not in existing_tickers
+    ]
+
+    total_pool = len(pool_candidates)
+    today_iso = datetime.now().strftime("%Y-%m-%d")
+
+    for idx, item in enumerate(pool_candidates, 1):
+        code = str(item.get("ticker", "")).strip().upper()
+        name = str(item.get("name", code)).replace("&amp;", "&")
+        full_name = str(item.get("full_name", name)).replace("&amp;", "&")
+        manager = str(item.get("manager", ""))
+        benchmark = str(item.get("benchmark", ""))
+        category = str(item.get("category", "ETF"))
+
+        if progress_callback:
+            progress_callback(code, idx, total_pool)
+
+        try:
+            h_data = fetch_holdings_fn(code)
+        except Exception:
+            h_data = {}
+
+        raw_cons = h_data.get("constituents", [])
+        as_of = h_data.get("as_of_date") or today_iso
+
+        constituents: List[Dict[str, Any]] = []
+        for c in raw_cons:
+            sym = c.get("symbol") or c.get("ticker") or ""
+            w = c.get("weight_pct")
+            if w is None:
+                raw_w = float(c.get("weight", 0.0))
+                w = raw_w * 100 if raw_w < 1.0 else raw_w
+            w_float = float(w)
+            constituents.append({
+                "ticker": sym,
+                "name": c.get("name", ""),
+                "weight_pct": w_float,
+                "shares": c.get("shares", 0),
+            })
+
+        # 排序權重高者在前
+        constituents.sort(key=lambda x: x["weight_pct"], reverse=True)
+
+        models.append({
+            "ticker": code,
+            "title": name,
+            "full_name": full_name,
+            "currency": "TWD",
+            "exchange": "TWSE",
+            "category": "ETF",
+            "manager": manager,
+            "benchmark": benchmark,
+            "last_model_update": as_of,
+            "constituents": constituents,
+        })
+
+        if delay > 0 and idx < total_pool:
+            time.sleep(delay)
+
+    # 依代號排序全市場清單
+    models.sort(key=lambda x: x["ticker"])
+    return models
+
+
 def generate_flattened_constituents(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """產生符合架構規範的扁平化成分股清單。
     
@@ -239,6 +340,18 @@ def generate_summary_rows(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     except ImportError:
         pass
 
+    # 批次並行抓取現價（大幅縮短 240+ 檔標的之抓價耗時）
+    tickers = [m["ticker"] for m in models]
+    price_map: Dict[str, Optional[float]] = {}
+    try:
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            fetched_prices = list(executor.map(fetch_live_etf_price, tickers))
+            for t, p in zip(tickers, fetched_prices):
+                price_map[t] = p
+    except Exception:
+        for t in tickers:
+            price_map[t] = fetch_live_etf_price(t)
+
     rows: List[Dict[str, Any]] = []
     for m in models:
         ticker = m["ticker"]
@@ -275,7 +388,7 @@ def generate_summary_rows(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             except Exception:
                 pass
 
-        price_val = fetch_live_etf_price(ticker)
+        price_val = price_map.get(ticker)
         price_str = f"{price_val:.2f}" if price_val is not None else "-"
 
         rows.append({
@@ -458,9 +571,21 @@ def run_sync_pipeline(
     sheet_id: str,
     export_only: bool = False,
     dry_run: bool = False,
+    include_market_pool: bool = True,
+    delay: float = 0.1,
+    holdings_fetcher: Optional[Callable[[str], Dict[str, Any]]] = None,
+    twse_list_fetcher: Optional[Callable[[], List[Dict[str, Any]]]] = None,
+    progress_callback: Optional[Callable[[str, int, int], None]] = None,
 ) -> Dict[str, Any]:
     """執行全套同步管線流程。"""
-    models = load_all_etf_models(models_dir)
+    models = load_all_market_etfs(
+        models_dir=models_dir,
+        include_market_pool=include_market_pool,
+        delay=delay,
+        holdings_fetcher=holdings_fetcher,
+        twse_list_fetcher=twse_list_fetcher,
+        progress_callback=progress_callback,
+    )
     if not models:
         return {"status": "error", "message": f"在 {models_dir} 未發現任何 ETF 模型。"}
 

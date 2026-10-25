@@ -4,6 +4,44 @@
 
 ---
 
+## 雙軌分流架構（Hybrid Architecture）
+
+本系統採「Git 核心團隊決策庫」與「Google Drive 全市場資料池」雙軌解耦架構：
+
+```mermaid
+flowchart TD
+    GHA["GitHub Actions 定期排程"] -->|每週爬取 TWSE + MoneyDJ| Sheet
+
+    subgraph GDrive ["Google Drive 雲端資料湖 [Google Drive SSOT Lakehouse]"]
+        Pool["全市場資料池 (Pool, 244 檔)"]
+        Sheet["全市場_ETF成份股資料庫 (Google Sheet)"]
+        Const["ETF_Constituents 頁籤 (全市場 15,000+ 筆持股)"]
+        Summ["ETF_Summary 頁籤 (244 檔基本面/評分)"]
+
+        Pool --> Sheet
+        Sheet --> Const
+        Sheet --> Summ
+    end
+
+    Sheet -.->|選中新標的想納入決策| Promo["執行 scaffold-model 晉升至核心團隊"]
+    Promo -.-> Core
+
+    subgraph GitRepo ["Git 倉庫 [Git Repo: Investment_Tracker]"]
+        Core["核心團隊 (Core Team, 44 檔)"]
+        Models["models/ 實體卡片庫"]
+        Patrol["每日巡檢引擎 (patrol.py)"]
+        Loop["DCS 迴路控制 (50萬股利)"]
+        Interlock["高息陷阱互鎖 (Interlock)"]
+
+        Core --> Models
+        Models --> Patrol
+        Models --> Loop
+        Models --> Interlock
+    end
+```
+
+---
+
 ## 1. 觸發時機與排程
 
 - **排程頻率**：每週五 17:10（台北時間）。
@@ -52,8 +90,8 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --expor
 
 檢查產出的 `out/etf_summary.csv` 與 `out/etf_constituents.csv`：
 
-- `ETF_Summary`：必須達 **40 列以上**。
-- `ETF_Constituents`：必須達 **5,000 列以上**。
+- `ETF_Summary`：必須達 **200 列以上**（涵蓋全市場台股 ETF 雲端資料池）。
+- `ETF_Constituents`：必須達 **10,000 列以上**（涵蓋全市場穿透底層持股明細）。
 
 🚨 **異常處置**：若任一檔案列數未達門檻，**立即停止，不寫入 Sheet**，並回報不足列數與錯誤。
 
