@@ -310,11 +310,24 @@ def test_sync_via_google_api(tmp_path):
     constituents_csv.write_text("etf_id,ticker,weight\n00878,2891.TW,10.0\n", encoding="utf-8")
 
     mock_client = MagicMock()
+    mock_client.get_spreadsheet.return_value = {
+        "sheets": [
+            {"properties": {"sheetId": 0, "title": "ETF_Summary"}},
+            {"properties": {"sheetId": 1048345883, "title": "ETF_Constituents"}},
+        ]
+    }
     with patch("google_sheets.GoogleSheetsClient", return_value=mock_client):
         ok, msg = sync_via_google_api("fake_sheet_id", summary_csv, constituents_csv)
         assert ok
         assert "成功透過 Google API 批次同步" in msg
-        # summary, constituents, metadata 各更新一次
-        assert mock_client.update_values.call_count == 3
+        # summary, constituents, ETF_Summary 元資訊, ETF_Constituents 元資訊共 4 次更新
+        assert mock_client.update_values.call_count == 4
+        # 驗證超連結樣式清除被調用
+        mock_client.clear_hyperlinks.assert_called_once()
+        assert mock_client.clear_hyperlinks.call_args[1]["sheet_tab_id"] == 1048345883
+        # 驗證 ETF_Constituents!I1:J2 與 ETF_Summary!R1:S2 寫入
+        update_ranges = [call[0][1] for call in mock_client.update_values.call_args_list]
+        assert "ETF_Summary!R1:S2" in update_ranges
+        assert "ETF_Constituents!I1:J2" in update_ranges
 
 

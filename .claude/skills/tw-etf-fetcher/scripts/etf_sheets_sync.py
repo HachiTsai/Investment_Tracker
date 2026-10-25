@@ -362,7 +362,30 @@ def sync_via_google_api(
                     value_input_option="USER_ENTERED",
                 )
 
-        # 3. 寫入同步元資訊至 ETF_Summary!R1:S2（A:P 範圍外，不干擾 APP 讀取）
+        # 3. 清除 ETF_Constituents 超連結，防止代號（如 2330.TW、NVDA.US）被 Google 誤判為可疑連結
+        try:
+            meta = client.get_spreadsheet(sheet_id)
+            constituents_sheet_id = next(
+                (
+                    s["properties"]["sheetId"]
+                    for s in meta.get("sheets", [])
+                    if s.get("properties", {}).get("title") == "ETF_Constituents"
+                ),
+                1048345883,
+            )
+            client.clear_hyperlinks(
+                sheet_id=sheet_id,
+                sheet_tab_id=constituents_sheet_id,
+                start_row_index=1,
+                end_row_index=len(constituents_rows) + 1,
+                start_column_index=0,
+                end_column_index=7,
+            )
+            print(f"   🧹 已清除 ETF_Constituents 超連結樣式，防範 Google Drive 安全警報")
+        except Exception as e:
+            print(f"   ℹ️ 清除 ETF_Constituents 超連結提示：{e}")
+
+        # 4. 寫入同步元資訊至 ETF_Summary!R1:S2 與 ETF_Constituents!I1:J2（資料欄位外側）
         now_tpe = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S (TPE)")
         meta_values = [
             ["最後同步時間", now_tpe],
@@ -377,6 +400,16 @@ def sync_via_google_api(
             )
         except Exception as e:
             print(f"   ℹ️ 寫入 ETF_Summary 元資訊欄位提示：{e}")
+
+        try:
+            client.update_values(
+                sheet_id,
+                "ETF_Constituents!I1:J2",
+                meta_values,
+                value_input_option="USER_ENTERED",
+            )
+        except Exception as e:
+            print(f"   ℹ️ 寫入 ETF_Constituents 元資訊欄位提示：{e}")
 
         return True, f"成功透過 Google API 批次同步至 Google Sheets (ID: {sheet_id})"
     except Exception as e:

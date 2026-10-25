@@ -59,6 +59,41 @@ def test_sheets_client_clear_values():
         mock_post.assert_called_once()
 
 
+def test_sheets_client_get_spreadsheet():
+    client = GoogleSheetsClient(token="fake-token")
+    mock_resp = MagicMock()
+    mock_resp.json.return_value = {
+        "sheets": [
+            {"properties": {"sheetId": 0, "title": "ETF_Summary"}},
+            {"properties": {"sheetId": 1048345883, "title": "ETF_Constituents"}},
+        ]
+    }
+    mock_resp.raise_for_status = MagicMock()
+
+    with patch("requests.get", return_value=mock_resp) as mock_get:
+        meta = client.get_spreadsheet("fake-sheet-id")
+        assert len(meta["sheets"]) == 2
+        mock_get.assert_called_once()
+
+
+def test_sheets_client_clear_hyperlinks():
+    client = GoogleSheetsClient(token="fake-token")
+    mock_resp = MagicMock()
+    mock_resp.json.return_value = {"replies": [{}]}
+    mock_resp.raise_for_status = MagicMock()
+
+    with patch("requests.post", return_value=mock_resp) as mock_post:
+        res = client.clear_hyperlinks("fake-sheet-id", sheet_tab_id=1048345883, start_row_index=1, end_row_index=5000)
+        assert "replies" in res
+        mock_post.assert_called_once()
+        url = mock_post.call_args[0][0]
+        assert url.endswith(":batchUpdate")
+        body = mock_post.call_args[1]["json"]
+        assert "repeatCell" in body["requests"][0]
+        assert body["requests"][0]["repeatCell"]["range"]["sheetId"] == 1048345883
+        assert body["requests"][0]["repeatCell"]["fields"] == "userEnteredFormat.textFormat.link"
+
+
 def test_extract_prev_from_sheet():
     raw_sheet = [
         ["代號", "名稱", "市場", "來源", "狀態", "收盤", "...", "三週期組合"],
