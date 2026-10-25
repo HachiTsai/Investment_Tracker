@@ -62,6 +62,8 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 - **分頁「ETF_Constituents」**：
   - 欄位以 CSV 表頭為準；超過 5,000 列時採分批寫入（每批不超過 1,500 列）。
   - 防呆：`constituent_ticker` 加 `'` 前綴。
+  - 元數據隔離：最後同步時間與執行者放置於 I1:J2（A:G 以外儲存格），保障 APP 讀取 A:G 零干擾。
+  - 連結防護：同步後自動清除全表超連結樣式，防範 Google Drive 將代號誤判為惡意/釣魚連結。
 
 ### 3. 波段觀察 (`1pyGzkgaspYMYdXOPYerkLsxOMwNwa2yOKuNDrOrrhtQ`)
 

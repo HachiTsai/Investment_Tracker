@@ -105,3 +105,53 @@ class GoogleSheetsClient:
         resp = requests.post(url, headers=self.headers, json={}, timeout=30)
         resp.raise_for_status()
         return resp.json()
+
+    def get_spreadsheet(self, sheet_id: str) -> Dict[str, Any]:
+        """讀取試算表整體元資料（包含各分頁名稱與 sheetId）。"""
+        url = f"{SHEETS_API_BASE}/{sheet_id}?fields=sheets.properties"
+        resp = requests.get(url, headers=self.headers, timeout=30)
+        resp.raise_for_status()
+        return resp.json()
+
+    def batch_update(self, sheet_id: str, requests_list: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """執行 BatchUpdateSpreadsheetRequest（樣式變更、清除連結、結構調整等）。"""
+        url = f"{SHEETS_API_BASE}/{sheet_id}:batchUpdate"
+        resp = requests.post(url, headers=self.headers, json={"requests": requests_list}, timeout=60)
+        resp.raise_for_status()
+        return resp.json()
+
+    def clear_hyperlinks(
+        self,
+        sheet_id: str,
+        sheet_tab_id: int,
+        start_row_index: int = 1,
+        end_row_index: Optional[int] = None,
+        start_column_index: int = 0,
+        end_column_index: int = 10,
+    ) -> Dict[str, Any]:
+        """清除指定範圍的超連結樣式，保留純文字，防範 Google Drive 安全機制誤判。"""
+        cell_range: Dict[str, Any] = {
+            "sheetId": sheet_tab_id,
+            "startRowIndex": start_row_index,
+            "startColumnIndex": start_column_index,
+            "endColumnIndex": end_column_index,
+        }
+        if end_row_index is not None:
+            cell_range["endRowIndex"] = end_row_index
+
+        request_body = [
+            {
+                "repeatCell": {
+                    "range": cell_range,
+                    "cell": {
+                        "userEnteredFormat": {
+                            "textFormat": {
+                                "link": None,
+                            }
+                        }
+                    },
+                    "fields": "userEnteredFormat.textFormat.link",
+                }
+            }
+        ]
+        return self.batch_update(sheet_id, request_body)
