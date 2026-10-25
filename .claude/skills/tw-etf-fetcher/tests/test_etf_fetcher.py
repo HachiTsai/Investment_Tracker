@@ -304,7 +304,7 @@ def test_etf_sheets_sync_functions(tmp_path):
     flat = generate_flattened_constituents(models)
     assert len(flat) == 2
     assert flat[0]["etf_id"] == "00878"
-    assert flat[0]["constituent_ticker"] == "2891.TW"
+    assert flat[0]["constituent_ticker"] == "2891"
     assert flat[0]["weight_pct"] == "10.16"
 
     summary = generate_summary_rows(models)
@@ -431,5 +431,20 @@ def test_sync_via_google_api(tmp_path):
         update_ranges = [call[0][1] for call in mock_client.update_values.call_args_list]
         assert "ETF_Summary!R1:S2" in update_ranges
         assert "ETF_Constituents!I1:J2" in update_ranges
+
+
+def test_clean_constituent_ticker():
+    from etf_sheets_sync import clean_constituent_ticker
+
+    assert clean_constituent_ticker("2330.TW") == "2330"
+    assert clean_constituent_ticker("6944.TWO") == "6944"
+    assert clean_constituent_ticker("NVDA.US") == "NVDA"
+    assert clean_constituent_ticker("0700.HK") == "0700"
+    assert clean_constituent_ticker("TPE:2330") == "2330"
+    assert clean_constituent_ticker("TWO:6944") == "6944"
+    assert clean_constituent_ticker("0050") == "0050"
+    assert clean_constituent_ticker("FITXN*1.TF") == "FITXN*1"
+    assert clean_constituent_ticker("") == ""
+
 
 

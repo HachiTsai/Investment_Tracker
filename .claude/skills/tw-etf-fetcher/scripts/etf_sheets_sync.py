@@ -295,6 +295,16 @@ def load_all_market_etfs(
     return models
 
 
+def clean_constituent_ticker(ticker: str) -> str:
+    """純化成分股代號，剝除 .TW, .TWO, .US, .HK, .JP, .TF 等國別網域名稱後綴，防範 Google Drive 安全機制誤判釣魚。"""
+    if not ticker:
+        return ""
+    t = str(ticker).strip()
+    t = re.sub(r"^(TPE:|TWO:|HKG:)", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"\.(TW|TWO|US|HK|JP|TF|TX)$", "", t, flags=re.IGNORECASE)
+    return t.strip()
+
+
 def generate_flattened_constituents(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """產生符合架構規範的扁平化成分股清單。
     
@@ -302,29 +312,33 @@ def generate_flattened_constituents(models: List[Dict[str, Any]]) -> List[Dict[s
     """
     rows: List[Dict[str, Any]] = []
     for m in models:
-        etf_id = m["ticker"]
+        etf_id = clean_constituent_ticker(m["ticker"])
         etf_name = m["title"]
         update_date = m["last_model_update"]
 
         for c in m["constituents"]:
-            ticker_val = c.get("ticker") or c.get("symbol") or c.get("code") or ""
+            raw_ticker = c.get("ticker") or c.get("symbol") or c.get("code") or ""
+            ticker_val = clean_constituent_ticker(raw_ticker)
             weight_val = c.get("weight_pct")
             if weight_val is None:
                 raw_w = float(c.get("weight", 0.0))
                 weight_val = raw_w * 100 if raw_w < 1.0 else raw_w
             weight_val = float(weight_val)
 
+            name_val = re.sub(r"\.(TW|TWO|US|HK|JP|TF|TX)\b", "", c.get("name", ""), flags=re.IGNORECASE)
+
             rows.append({
                 "etf_id": etf_id,
                 "etf_name": etf_name,
                 "constituent_ticker": ticker_val,
-                "constituent_name": c.get("name", ""),
+                "constituent_name": name_val,
                 "weight_pct": f"{weight_val:.2f}",
                 "shares": c.get("shares", ""),
                 "update_date": update_date,
             })
 
     return rows
+
 
 
 def generate_summary_rows(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -367,7 +381,9 @@ def generate_summary_rows(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             if w is None:
                 raw_w = float(c.get('weight', 0.0))
                 w = raw_w * 100 if raw_w < 1.0 else raw_w
-            return f"{c.get('name', '')} ({float(w):.2f}%)"
+            name = c.get('name', '')
+            name = re.sub(r"\.(TW|TWO|US|HK|JP|TF|TX)\b", "", name, flags=re.IGNORECASE)
+            return f"{name} ({float(w):.2f}%)"
 
         w_roe = "-"
         net_s = 70.0
@@ -485,6 +501,7 @@ def sync_via_google_api(
 
         # 3. 寫入 ETF_Summary
         if summary_rows:
+            print(f"   📤 正在寫入 ETF_Summary：共 {len(summary_rows)} 筆標的摘要...", flush=True)
             client.update_values(
                 sheet_id,
                 f"ETF_Summary!A1:P{len(summary_rows)}",
@@ -501,6 +518,7 @@ def sync_via_google_api(
                 start_row = idx + 1
                 end_row = idx + len(chunk)
                 range_str = f"ETF_Constituents!A{start_row}:G{end_row}"
+                print(f"   📤 正在寫入 ETF_Constituents：第 {start_row} 至 {end_row} 列（共 {total_len} 筆）...", flush=True)
                 client.update_values(
                     sheet_id,
                     range_str,
