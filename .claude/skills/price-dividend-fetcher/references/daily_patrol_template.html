@@ -41,6 +41,18 @@ th[data-k]{cursor:pointer}th[data-k]:hover{color:var(--fg)}
 .warn{border:1px solid var(--over);background:var(--over-bg);color:var(--over);border-radius:6px;padding:8px 14px;font-size:14px}
 .mac{color:var(--mute);font-size:13px}.stale{opacity:.8}.lag{color:var(--over);font-size:11px;margin-left:6px}
 .star{font:inherit;background:none;border:0;padding:0 4px 0 0;cursor:pointer;color:var(--mute);line-height:1}.star.on{color:#e0a100}.star:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.row-click{cursor:pointer}.row-click:hover td{background:var(--none-bg)}
+.ih{font:inherit;background:none;border:1px solid var(--line);color:var(--mute);border-radius:99px;width:15px;height:15px;padding:0;font-size:10px;line-height:13px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;margin-left:4px;vertical-align:middle;transition:border-color .15s,color .15s}
+.ih:hover{border-color:var(--accent);color:var(--accent);background:var(--none-bg)}
+.ih:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.h-box{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:10px;max-width:500px;width:100%;max-height:85vh;overflow:auto;padding:18px 22px;font-size:14px;line-height:1.75;box-shadow:0 12px 32px rgba(0,0,0,.35)}
+.h-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.h-head b{font-size:17px;color:var(--fg);letter-spacing:.02em}
+.h-sec{margin-bottom:14px}
+.h-sec:last-child{margin-bottom:0}
+.h-tit{font-weight:600;color:var(--accent);font-size:13.5px;margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.h-sec p{margin:0 0 6px 0;color:var(--fg);font-size:13.5px}
+.h-sec ul{margin:4px 0 0 0;padding-left:18px;color:var(--fg);font-size:13px}
+.h-sec li{margin-bottom:4px}
 .mask{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px;z-index:9}
 .mask.on{display:flex}.dlg{background:var(--card);border:1px solid var(--line);border-radius:8px;width:min(820px,100%);padding:16px 18px}
 .dh{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.dh h2{margin:0;font-size:20px}
@@ -78,9 +90,9 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 <div class="row"><span class="lbl">檢視</span><span class="row" id="vw"></span></div>
 <div class="row" id="tcrow"><button type="button" class="x" id="tcbtn">選擇指標欄位</button><span class="mac" id="tcinfo"></span><span class="mac">表格檢視可用，設定記在這個瀏覽器</span></div>
 <div class="tw" id="vTable"><table><thead><tr>
-<th data-k="name">標的</th><th data-k="state">波段狀態</th><th data-k="posture_label">配置狀態</th><th data-k="close">最新報價</th><th data-k="yield_pct">殖利率</th>
-<th data-k="rsi14">RSI14</th><th data-k="pos_52w_pct">52週位置</th><th data-k="fib_label">費波那契位置</th><th>長／中／短期</th><th data-k="combo">三週期組合</th>
-<th data-k="trend_score">趨勢</th><th data-k="macd_score">動能</th><th data-k="vol_score">量能</th><th data-k="return_score">績效</th><th data-k="total_score">綜合</th><th data-k="stop_distance_pct">2×ATR停損</th>
+<th data-k="name">標的 <button type="button" class="ih" data-help="name" title="標的說明" aria-label="標的說明">?</button></th><th data-k="state">波段狀態 <button type="button" class="ih" data-help="state" title="波段狀態 指標說明" aria-label="波段狀態 指標說明">?</button></th><th data-k="posture_label">配置狀態 <button type="button" class="ih" data-help="posture" title="配置狀態 指標說明" aria-label="配置狀態 指標說明">?</button></th><th data-k="close">最新報價 <button type="button" class="ih" data-help="close" title="最新報價 指標說明" aria-label="最新報價 指標說明">?</button></th><th data-k="yield_pct">殖利率 <button type="button" class="ih" data-help="yield" title="殖利率 指標說明" aria-label="殖利率 指標說明">?</button></th>
+<th data-k="rsi14">RSI14 <button type="button" class="ih" data-help="rsi" title="RSI14 指標說明" aria-label="RSI14 指標說明">?</button></th><th data-k="pos_52w_pct">52週位置 <button type="button" class="ih" data-help="p52" title="52週位置 指標說明" aria-label="52週位置 指標說明">?</button></th><th data-k="fib_label">費波那契位置 <button type="button" class="ih" data-help="fib" title="費波那契位置 指標說明" aria-label="費波那契位置 指標說明">?</button></th><th>長／中／短期 <button type="button" class="ih" data-help="lms" title="長／中／短期 指標說明" aria-label="長／中／短期 指標說明">?</button></th><th data-k="combo">三週期組合 <button type="button" class="ih" data-help="combo" title="三週期組合 指標說明" aria-label="三週期組合 指標說明">?</button></th>
+<th data-k="trend_score">趨勢 <button type="button" class="ih" data-help="trend" title="趨勢評分 指標說明" aria-label="趨勢評分 指標說明">?</button></th><th data-k="macd_score">動能 <button type="button" class="ih" data-help="macd" title="動能評分 指標說明" aria-label="動能評分 指標說明">?</button></th><th data-k="vol_score">量能 <button type="button" class="ih" data-help="vol" title="量能評分 指標說明" aria-label="量能評分 指標說明">?</button></th><th data-k="return_score">績效 <button type="button" class="ih" data-help="ret" title="績效評分 指標說明" aria-label="績效評分 指標說明">?</button></th><th data-k="total_score">綜合 <button type="button" class="ih" data-help="total" title="綜合評分 指標說明" aria-label="綜合評分 指標說明">?</button></th><th data-k="stop_distance_pct">2×ATR停損 <button type="button" class="ih" data-help="stop" title="2×ATR停損 指標說明" aria-label="2×ATR停損 指標說明">?</button></th>
 </tr></thead><tbody id="rows"></tbody></table></div>
 <div class="tw hm" id="vMatrix" hidden></div>
 <div class="pnl" id="vQuad" hidden></div>
@@ -134,7 +146,7 @@ CUR=list;
 document.getElementById("rows").innerHTML=list.length?list.map(function(r){
 return '<tr data-t="'+esc(r.ticker)+'" class="row-click '+(r.last_date&&r.last_date<DATE?"stale":"")+'"><td class="name">'+starB(r.ticker)+esc(r.name)+'<small>'+esc(r.ticker)+' · '+esc(r.market)+' · '+esc(r.kind)+(r.last_date&&r.last_date<DATE?'<span class="lag">資料落後至 '+esc(r.last_date)+'</span>':'')+'</small></td><td><span class="pill s-'+esc(r.state)+'" title="'+esc(r.reason)+'">'+esc(r.label)+'</span></td><td>'+esc(r.posture_label||"-")+'</td><td>'+f(px(r),2)+chgH(r)+'</td><td>'+(r.yield_pct==null?"-":f(r.yield_pct,2)+"%")+'</td><td>'+f(r.rsi14,1)+'</td><td>'+f(r.pos_52w_pct,0)+'%</td><td>'+esc(r.fib_label||"-")+'</td><td>'+esc([r.long,r.mid,r.short].filter(Boolean).join("／")||"-")+'</td><td>'+esc(r.combo||"-")+'</td><td>'+sc(r.trend_score)+'</td><td>'+sc(r.macd_score)+'</td><td>'+sc(r.vol_score)+'</td><td>'+sc(r.return_score)+'</td><td>'+sc(r.total_score)+'</td><td>'+(sd(r)==null?"-":"-"+f(sd(r),1)+"%")+'</td></tr>'}).join(""):'<tr><td colspan="16" style="text-align:center;color:var(--mute)">此條件目前沒有觀察標的。</td></tr>';}
 document.addEventListener("click",function(e){var b=e.target.closest(".tab[data-k]");if(b){if(b.dataset.k==="market")mk=b.dataset.v;else kd=b.dataset.v;try{localStorage.setItem("dpMk",mk);localStorage.setItem("dpKd",kd)}catch(x){}render();return}
-var h=e.target.closest("th[data-k]");if(h){var k=h.dataset.k;if(sk===k)asc=!asc;else{sk=k;asc=k==="name"||k==="stop_distance_pct"}render()}});
+var h=e.target.closest("th[data-k]");if(h && !e.target.closest("[data-help]")){var k=h.dataset.k;if(sk===k)asc=!asc;else{sk=k;asc=k==="name"||k==="stop_distance_pct"}render()}});
 
 document.addEventListener("click",function(e){var s=e.target.closest("[data-fav]");if(s){e.stopPropagation();var t=s.dataset.fav;if(FAV[t])delete FAV[t];else FAV[t]=1;saveFav();if(curT)document.querySelectorAll("#dlg [data-fav]").forEach(function(b){b.outerHTML=starB(b.dataset.fav)});render();return}var o=e.target.closest("[data-fvo]");if(o){e.stopPropagation();favOnly=!favOnly;saveFav();render()}},true);
 var ZCH='<div class="zc" role="group" aria-label="畫面縮放"><button type="button" data-z="o" aria-label="縮小" title="縮小">−</button><button type="button" data-z="r" class="zp" title="還原 100%"></button><button type="button" data-z="i" aria-label="放大" title="放大">＋</button></div>';var LB=[5,10,15,30,45,60,90,120],cfg={lb:60,boll:true,ma:true,fib:true};var curT=null;
@@ -179,27 +191,109 @@ function closeDlg(){document.getElementById("mask").classList.remove("on");curT=
 var downIn=false;document.addEventListener("pointerdown",function(e){downIn=!!e.target.closest("#dlg")},true);
 document.addEventListener("click",function(e){if(e.target.id==="cls"||(e.target.id==="mask"&&!downIn)){closeDlg();return}var tr=e.target.closest("tr.row-click");if(tr&&!e.target.closest("#mask"))openDlg(tr.dataset.t)});
 document.addEventListener("change",function(e){var i=e.target.id;if(i==="lb")cfg.lb=+e.target.value;else if(i==="oFib")cfg.fib=e.target.checked;else if(i==="oBoll")cfg.boll=e.target.checked;else if(i==="oMa")cfg.ma=e.target.checked;else return;openDlg(curT)});
-document.addEventListener("keydown",function(e){if(e.key==="Escape")closeDlg()});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"){var m=document.getElementById("helpmask");if(m&&m.style.display!=="none"){m.style.display="none";e.stopPropagation();return}closeDlg()}});
 (function(){var dl=document.getElementById("dlg"),dr=null,mv=false;
 function redo(){var r=pickRow(curT),sv=dl.querySelector("svg.ch");if(!r||!r.chart||!sv)return;sv.outerHTML=chartSvg(r.chart,cfg.lb).svg}
 dl.addEventListener("wheel",function(e){var sv=e.target.closest("svg.ch");if(!sv||dtab!=="k")return;var r=pickRow(curT);if(!r||!r.chart)return;e.preventDefault();var V=cView(r.chart),rc=sv.getBoundingClientRect(),f=Math.max(0,Math.min(1,((e.clientX-rc.left)/rc.width*780-8)/720)),c=V.va+f*V.vn,nn=Math.max(10,Math.min(V.n,Math.round(V.vn*(e.deltaY<0?.8:1.25)))),na=Math.max(0,Math.min(V.n-nn,Math.round(c-f*nn)));cfg.vn=nn;cfg.ve=na+nn;redo()},{passive:false});
 dl.addEventListener("pointerdown",function(e){if(e.button||!e.target.closest("svg.ch")||dtab!=="k")return;dr={x:e.clientX,ve:cView(pickRow(curT).chart).vb};mv=false});
 dl.addEventListener("pointermove",function(e){if(!dr)return;var r=pickRow(curT),sv=dl.querySelector("svg.ch");if(!r||!r.chart||!sv)return;var dx=e.clientX-dr.x;if(!mv&&Math.abs(dx)<4)return;mv=true;var V=cView(r.chart),rc=sv.getBoundingClientRect(),bars=dx/rc.width*780/(720/V.vn);cfg.vn=V.vn;cfg.ve=Math.max(V.vn,Math.min(V.n,dr.ve-bars));redo()});
 window.addEventListener("pointerup",function(){dr=null});
-var HELP={fib:{t:"費波那契回檔",b:"<p>用近一段時間（預設 30 日，可在視窗改 30、60、120 日）的最高價與最低價畫出一個區間，再看現價落在區間的哪個比例。常用比例有 23.6%、38.2%、50%、61.8%、78.6%。</p><p><b>方向：</b>0% 一律是這一波走完的終點，100% 是起點。上升波（低點在前、高點在後）0% 在高點、100% 在低點，數字越大代表回檔越深；下跌波（高點在前、低點在後）0% 在低點、100% 在高點，數字越大代表反彈越多。標籤會對應顯示「回檔」或「反彈」。</p><p><b>怎麼看：</b>回檔 23.6% 以內為淺，38.2% 到 61.8% 為中度，超過 78.6% 接近整段吐回。圖上橘色虛線是各比例的價位，只描述現價相對位置，不是買賣指示；高低點換手時位置會跳動。</p>"},
-rsi:{t:"RSI14",b:"<p>14 日相對強弱指標，0 到 100。70 以上代表短線偏熱，30 以下代表偏冷，只描述漲跌力道，不是買賣指示。</p>"},
-pos52:{t:"52 週位置",b:"<p>現價在近 52 週最低到最高之間的位置，0% 為最低、100% 為最高。越接近 100% 代表越靠近一年高點。</p>"},
-atr:{t:"2×ATR 停損",b:"<p>ATR14 是近 14 個交易日平均每天的價格波動幅度。參考停損價 ＝ 最新收盤 − 2 倍 ATR14，括號內是現價到停損價的距離。波動大的標的距離較寬。</p><p>這是波段部位的風控參考，不是買賣指示；股利再投入的長期部位不適用。</p>"},
-tf:{t:"長／中／短期",b:"<p>長期看半年線與一年報酬，中期看 60 日線，短期看 20 日線，各分強弱等級，用來判斷三個時間尺度是否同方向。</p>"},
-combo:{t:"三週期組合",b:"<p>把長、中、短期的強弱組合成一句話，例如「長多短回檔」代表長期偏多、短期暫時回檔；「共振偏多」代表三個週期都偏多。只描述指標條件。</p>"},
-score:{t:"評分 趨勢／動能／量能／績效",b:"<p>四項都是 0 到 100 分，50 代表持平：</p><p>趨勢＝價格相對 60 日線的乖離；動能＝MACD 柱強弱；量能＝5 日均量 ÷ 60 日均量；績效＝近 1 年含息報酬。描述強度與位置，不是好壞評分；綜合分為四項平均，僅供排序。</p>"},
-ret1y:{t:"近 1 年含息報酬",b:"<p>最近一年的總報酬率，含配息再投入。</p>"},
-boll:{t:"布林通道(20,2)",b:"<p>以 20 日均線為中線，上下各加減 2 倍標準差畫出通道。價格觸及上緣代表短線偏熱，觸及下緣代表偏冷，通道變窄代表波動縮小。</p>"},
-ma20:{t:"20 日線",b:"<p>最近 20 個交易日收盤價的平均，常當短期趨勢的參考；收盤在其上代表短期偏強，跌破代表短期轉弱。</p>"},
-state:{t:"波段狀態",b:"<p>依 RSI、布林通道與 20／60 日線判定的短線狀態，例如短線偏熱、超跌觀察、趨勢偏多、偏空迴避。只描述指標條件，不是買賣指示。</p>"},
-sr:{t:"20 日支撐／壓力",b:"<p>近 20 個交易日的最低價（支撐）與最高價（壓力）。</p>"},
-px:{t:"最新報價",b:"<p>最近一次報價；按頁首「更新最新報價」可取台股即時價，否則為最近交易日收盤價。</p>"}};
-document.addEventListener("click",function(e){var h=e.target.closest("[data-help]");if(h){var d=HELP[h.dataset.help];var m=document.getElementById("helpmask");if(!m){m=document.createElement("div");m.id="helpmask";m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100000;padding:16px";document.body.appendChild(m)}m.innerHTML='<div style="background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:8px;max-width:460px;width:100%;max-height:80vh;overflow:auto;padding:16px 18px;font-size:14px;line-height:1.7"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center"><b style="font-size:16px">'+d.t+'</b><button type="button" class="x" data-helpx="1">關閉</button></div>'+d.b+'</div>';m.style.display="flex";e.preventDefault();e.stopPropagation();return}var x=e.target.closest("[data-helpx]")||(e.target.id==="helpmask"?e.target:null);if(x){document.getElementById("helpmask").style.display="none";e.stopPropagation()}},true);
+var HELP={
+name:{
+  t:"標的資訊 (Ticker & Asset Info)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>標的中文名稱、市場代碼（如 TPE:0050、NASDAQ:AAPL）、交易市場（台股／美股／港股／日股）與資產分類（ETF 或個股）。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>點擊表格中任意標的列，可立即開啟深度互動視窗，檢視日 K 線、均線系統、布林通道與 MACD／RSI 等完整指標圖表。</p></div>'
+},
+state:{
+  t:"波段狀態 (Swing State)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>結合 RSI14 相對強弱指標、布林通道 (20, 2) 軌道位階，以及 20 日線（月線）與 60 日線（季線）的均線排列與 MACD 柱體方向，綜合判定的短線市場技術面狀態。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>掌握短線價格動能與位階，避免追高並在超跌時捕捉機會：</p><ul><li><b>🟠 短線偏熱</b>（RSI≥70 或觸及布林上緣）：短線漲幅偏大，已持有者留意減碼條件，不追高。</li><li><b>🟢 超跌觀察</b>（RSI≤30 或觸及布林下緣且半年線有撐）：短線恐慌殺盤尋找反彈契機，進場前先設停損。</li><li><b>🔵 趨勢偏多</b>（站上 20／60 日線且 MACD 柱為正）：多頭波段結構完好，順勢續抱。</li><li><b>🔴 偏空迴避</b>（落於 20／60 日線下且 MACD 柱為負）：順勢方向向下，暫不單筆加碼。</li><li><b>⚪ 未觸發條件</b>：指標處於常態震盪區間，持續觀察。</li></ul></div>'
+},
+posture:{
+  t:"配置狀態 (Allocation Posture)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>投資組合戰略姿態（Multi-Track BLS 互鎖判定）。依標的策略類型（收息型 ETF、成長型 ETF、債券防禦型 ETF、個股）結合即時殖利率、基本面評分或長線趨勢進行動態分流裁定。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>回答「目前資產部位與現金該執行什麼配置動作？」：</p><ul><li><b>收息型 ETF</b>：指引「🔵 穩健複利」（常態再投入）、「🟢 積極進攻」（高息加碼滾動張數）、「🚨 陷阱警戒」（基本面破底停止進水）、「🟡 防禦觀望」（估值過熱留存現金）。</li><li><b>成長型 ETF</b>：指引「🔵 常態配置」（定期定額累積）、「🔵 趨勢續抱」（多頭核心持有）、「🟢 回檔加碼」（超跌擴大扣款）、「🟠 乖離防禦」（暫停單筆追高）、「⚪ 定額微笑」（空頭紀律扣款）。</li><li><b>債券防禦型 ETF</b>：指引「🟢 積極佈建」（高息具防禦吸引力）、「🔵 穩健配置」（常態穩定器）、「🟡 防禦觀望」（低殖利率暫緩）。</li></ul></div>'
+},
+close:{
+  t:"最新報價 (Latest Price)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>標的最近一個交易日的收盤價，或盤中按頁首「更新最新報價」時向證交所取得之台股盤中即時成交價。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>掌握最新市價水位與今日即時漲跌幅，作為重新計算均線乖離率、52 週區間相對位置、動態 ATR 停損價與最新殖利率之核心基礎。</p></div>'
+},
+yield:{
+  t:"殖利率 (TTM Dividend Yield)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>標的最近 12 個月實際宣告並發放之每股現金股利總和（TTM），除以最新市價計算所得之年化現金殖利率。成長型 ETF 或零配息標的顯示「-」。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>評估收息型資產的實質現金流回報吸引力。協助判斷當前估值是否處於高息便宜區（適合積極滾動雪球）或過熱壓低區（應放緩加碼節奏），避免陷入單純看高殖利率卻忽略基本面惡化的高息陷阱。</p></div>'
+},
+rsi:{
+  t:"RSI14 相對強弱指標 (Relative Strength Index)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>以過去 14 個交易日內收盤「漲幅平均值」與「跌幅平均值」計算出之買賣雙方動能相對強弱比率，數值介於 0 到 100 之間。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>識別短線群眾極端情緒與動能轉折點：</p><ul><li><b>≥ 70（超買過熱區）</b>：短線多方買盤力道強弩之末，容易遭遇短線獲利了結賣壓回檔。</li><li><b>≤ 30（超賣恐慌區）</b>：短線非理性殺盤過度，容易吸引逢低買盤帶動技術性反彈。</li><li><b>30 ~ 70</b>：常態多空拉鋸震盪區間。</li></ul></div>'
+},
+p52:{
+  t:"52 週位置 (52-Week Range Position)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>現價在過去 52 週（約一年）歷史最低價與最高價之間的百分比位置（0% 為 52 週最低價，100% 為 52 週最高價）。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>衡量中長期價格位階：</p><ul><li><b>> 80%（高檔區）</b>：價格逼近一年高點強勢區，但也意味著上檔可能面臨歷史獲利解套壓力，不宜過度追高。</li><li><b>< 20%（低檔區）</b>：價格處於一年底部低檔區，若基本面維持穩健，常為中長線左側佈局或價值投資的低風險好球帶。</li></ul></div>'
+},
+fib:{
+  t:"費波那契位置 (Fibonacci Retracement)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>以近期波段（預設 30 日，可切換 60、120 日）高低點為極值區間，依黃金分割率計算 23.6%、38.2%、50%、61.8%、78.6% 的價格回檔或反彈關卡位置。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>尋找波段拉回時的關鍵支撐防線與多空分水嶺：</p><ul><li><b>回檔 23.6% ~ 38.2%</b>：屬於強勢多頭淺層換手整理，續攻力道最強。</li><li><b>回檔 50% ~ 61.8%</b>：波段多空防守核心中軸，常為絕佳低接切入點。</li><li><b>跌破 78.6%</b>：幾乎整段漲幅吐回，代表原先多頭波段結構可能破壞，應轉為防守。</li></ul></div>'
+},
+lms:{
+  t:"長／中／短期均線 (Multi-Timeframe Trend)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>跨多週期趨勢對齊檢驗：長期（半年線 120MA 與近 1 年報酬率）、中期（季線 60MA）、短期（月線 20MA）各自獨立標定多空強弱等級。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>判斷不同時間尺度的趨勢共振性：</p><ul><li><b>長中短同向（如全強）</b>：大中小週期共振向上，順勢交易勝率最高。</li><li><b>長多短回檔</b>：中長線多頭架構完好，短線震盪拉回反而是優質進場良機。</li><li><b>長空短強</b>：僅屬中長線跌勢中的短線弱勢反彈，不宜重倉追高。</li></ul></div>'
+},
+combo:{
+  t:"三週期組合 (Trend Combination Summary)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>將長、中、短期三週期的排列狀態與強弱等級，組合成一句精煉直觀的白話結構結論（如「共振偏多」、「長多短回檔」、「共振偏空」）。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>提供一眼定調的快速策略結論。協助投資人在數秒內篩選出「大趨勢向上、小回檔找買點」的好球帶標的，或直接過濾掉趨勢向下渙散的弱勢品種。</p></div>'
+},
+trend:{
+  t:"趨勢評分 (Trend Score)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>現價相對於 60 日均線（季線）的乖離率強度換算為 0 到 100 分（50 分為基準線，代表價格恰在季線）。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>評估波段生命線的順勢力道：</p><ul><li><b>> 65 分</b>：中長期多頭趨勢明朗且推升力道強勁。</li><li><b>< 35 分</b>：季線下彎蓋頭，價格處於均線下方，中線空頭壓力沉重。</li></ul></div>'
+},
+macd:{
+  t:"動能評分 (Momentum Score)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>MACD 柱狀體（DIF 快線減去 MACD 慢線）的大小與增減斜率換算為 0 到 100 分（50 分代表柱狀體為零的多空平衡點）。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>捕捉價格推升或殺盤的加速度變化：</p><ul><li>分數自 50 以下向上翻揚代表買盤動能重新點火，適合順勢切入。</li><li>分數自 75 以上高檔下彎代表推升力道已開始放緩，提醒慎防短線震盪。</li></ul></div>'
+},
+vol:{
+  t:"量能評分 (Volume Score)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>短期 5 日均量相對長期 60 日均量的成交量增減比率換算為 0 到 100 分（50 分為常態均量）。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>確認價量配合度與資金參與熱度：</p><ul><li><b>> 70 分</b>：出量攻擊或爆量換手，確認波段突破訊號的真實有效性。</li><li><b>< 30 分</b>：市場量縮觀望、流動性降溫，通常處於無量盤整階段。</li></ul></div>'
+},
+ret:{
+  t:"績效評分 (Return Score)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>近 1 年含息總報酬率（Total Return）在全市場觀察標的池中的相對強度換算為 0 到 100 分。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>實質獲利強弱分水嶺。評估標的過去一年是否具備優異的真賺錢能力，協助投資人嚴格執行「汰弱留強」，避開長期大幅跑輸大盤的停滯資產。</p></div>'
+},
+total:{
+  t:"綜合評分 (Total Composite Score)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>趨勢、動能、量能、績效四項指標評分的等權重平均值（0 到 100 分，50 分為中位持平基準）。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>提供全清單標的「技術面全方位健康度」的客觀排序依據。協助投資人一眼按總分高低排定觀察先後次序，快速挑選出四項維度皆表現優異的前段班標的。</p></div>'
+},
+stop:{
+  t:"2×ATR 停損 (Dynamic Stop Loss)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>近 14 日平均真實波動幅度（ATR14）乘以 2 所計算的動態防守停損價（最新收盤價 − 2×ATR），以及現價到停損點的距離百分比。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>波段操作的客觀風控防線。依照標的自身波動度給予動態呼吸空間，波動大距離寬、波動小距離緊，避免被日常雜訊洗出場；跌破時提醒紀律停損或減碼（長線複利部位不適用）。</p></div>'
+},
+sr:{
+  t:"20 日支撐／壓力 (20-Day Support / Resistance)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>近 20 個交易日的最低成交價（支撐關卡）與最高成交價（壓力關卡）。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>掌握近一個月的箱型整理區間邊界，跌破支撐代表短線破底轉弱，突破壓力代表突破箱型轉強。</p></div>'
+},
+boll:{
+  t:"布林通道 (Bollinger Bands 20, 2)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>以 20 日均線為中線，上下各加減 2 個標準差（涵蓋約 95% 統計機率區間）畫出的動態價格通道。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>價格觸及上緣代表短線極端偏熱，觸及下緣代表極端偏冷，通道變窄代表波動縮小進入壓縮蓄勢。</p></div>'
+},
+ma20:{
+  t:"20 日均線 (20-Day Moving Average / 月線)",
+  b:'<div class="h-sec"><div class="h-tit">🔍 這個指標在看什麼？</div><p>最近 20 個交易日收盤價的平均值。</p></div><div class="h-sec"><div class="h-tit">🎯 協助什麼判斷？</div><p>短期趨勢重要參考分水嶺；收盤在月線之上代表短期多方控盤，跌破月線代表短期動能轉弱。</p></div>'
+}
+};
+HELP["px"]=HELP["close"];
+HELP["posture_label"]=HELP["posture"];
+HELP["pos52"]=HELP["p52"];
+HELP["pos_52w_pct"]=HELP["p52"];
+HELP["fib_label"]=HELP["fib"];
+HELP["tf"]=HELP["lms"];
+HELP["rsi14"]=HELP["rsi"];
+HELP["yield_pct"]=HELP["yield"];
+HELP["trend_score"]=HELP["trend"];
+HELP["macd_score"]=HELP["macd"];
+HELP["vol_score"]=HELP["vol"];
+HELP["return_score"]=HELP["ret"];
+HELP["ret1y"]=HELP["ret"];
+HELP["total_score"]=HELP["total"];
+HELP["score"]=HELP["total"];
+HELP["atr"]=HELP["stop"];
+HELP["stop_distance_pct"]=HELP["stop"];
+document.addEventListener("click",function(e){var h=e.target.closest("[data-help]");if(h){var d=HELP[h.dataset.help];if(!d)return;var m=document.getElementById("helpmask");if(!m){m=document.createElement("div");m.id="helpmask";m.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:100000;padding:16px";document.body.appendChild(m)}m.innerHTML='<div class="h-box"><div class="h-head"><b>'+d.t+'</b><button type="button" class="x" data-helpx="1">關閉</button></div>'+d.b+'</div>';m.style.display="flex";e.preventDefault();e.stopPropagation();return}var x=e.target.closest("[data-helpx]")||(e.target.id==="helpmask"?e.target:null);if(x){document.getElementById("helpmask").style.display="none";e.stopPropagation()}},true);
 var ctip=document.createElement("div");ctip.className="tip";ctip.style.cssText="position:fixed;z-index:99999;background:transparent;color:#fff;font-weight:700;border:0;padding:6px 10px;font-size:13px;line-height:1.5;text-shadow:0 0 3px #000,0 0 3px #000,0 1px 4px #000,1px 1px 2px #000,-1px -1px 2px #000";document.body.appendChild(ctip);
 dl.addEventListener("pointermove",function(e){var sv=e.target.closest&&e.target.closest("svg.ch"),r=pickRow(curT);if(!sv||dtab!=="k"||dr||!r||!r.chart){ctip.style.display="none";return}var ch=r.chart,V=cView(ch),rc=sv.getBoundingClientRect(),sx=(e.clientX-rc.left)/rc.width*780,st=(780-52-8)/V.vn,k=V.va+Math.floor((sx-8)/st);if(k<V.va||k>=V.vb){ctip.style.display="none";return}var pc=k>0?ch.c[k-1]:null,chg=pc?(ch.c[k]/pc-1)*100:null;ctip.innerHTML='<b>'+esc(ch.d[k])+'</b>　開 '+f(ch.o[k],2)+'　高 '+f(ch.h[k],2)+'　低 '+f(ch.l[k],2)+'　收 '+f(ch.c[k],2)+(chg==null?"":'（'+(chg>=0?"+":"")+f(chg,2)+'%）')+'<br>RSI14 '+f(ch.rsi[k],1)+'　MACD 柱 '+f(ch.hist[k],3);ctip.style.display="block";var w=ctip.offsetWidth,x=e.clientX+14;if(x+w>innerWidth-8)x=e.clientX-w-14;ctip.style.left=Math.max(4,x)+"px";ctip.style.top=Math.max(4,e.clientY-48)+"px"});
 dl.addEventListener("pointerleave",function(){ctip.style.display="none"});
@@ -216,7 +310,7 @@ function stc(r){return cv(STC[r.state]||"--mute")}
 function scored(){return CUR.filter(function(r){return r.total_score!=null})}
 function heat(v){if(v==null)return "";var d=Math.abs(v-50)/50*70;return 'background:color-mix(in srgb,'+(v>=50?'var(--up)':'var(--down)')+' '+d.toFixed(0)+'%,transparent)'}
 function drawMatrix(){var L=scored(),c=["trend_score","macd_score","vol_score","return_score","total_score"];
-document.getElementById("vMatrix").innerHTML=L.length?'<table><thead><tr><th>標的</th>'+c.map(function(k){return '<th>'+AXS[k]+'</th>'}).join("")+'</tr></thead><tbody>'+L.map(function(r){
+document.getElementById("vMatrix").innerHTML=L.length?'<table><thead><tr><th>標的 <button type="button" class="ih" data-help="name" title="標的說明" aria-label="標的說明">?</button></th>'+c.map(function(k){return '<th>'+AXS[k]+' <button type="button" class="ih" data-help="'+k+'" title="'+AXS[k]+' 指標說明" aria-label="'+AXS[k]+' 指標說明">?</button></th>'}).join("")+'</tr></thead><tbody>'+L.map(function(r){
 return '<tr class="row-click" data-t="'+esc(r.ticker)+'"><td class="name">'+starB(r.ticker)+esc(r.name)+'<small>'+esc(r.ticker)+'</small></td>'+c.map(function(k){return '<td class="c" style="'+heat(r[k])+'">'+(r[k]==null?"-":Number(r[k]).toFixed(0))+'</td>'}).join("")+'</tr>'}).join("")+'</tbody></table>':'<p class="mac" style="padding:12px">沒有足夠日線計算評分。</p>'}
 function legend(){return '<div class="lg">'+[["UPTREND","上升趨勢"],["OVERHEATED","短線偏熱"],["OVERSOLD_WATCH","超跌觀察"],["DOWNTREND","下降趨勢"],["NEUTRAL","中性"]].map(function(a){return '<span><i style="background:'+cv(STC[a[0]]||"--mute")+'"></i>'+a[1]+'</span>'}).join("")+'<span>圓點顏色＝波段狀態，游標移到圓點顯示股號</span></div>'}
 var QZ={set:false,x0:0,x1:100,y0:0,y1:100,drag:null,moved:false};
@@ -371,7 +465,7 @@ var n=TALL.filter(function(k){return tshown[k]}).length;document.getElementById(
 try{localStorage.setItem(TCK,JSON.stringify(TALL.filter(function(k){return tshown[k]})))}catch(e){}if(typeof capH==="function")capH()}
 function tcDraw(){var g=document.getElementById("tcg"),l=document.getElementById("tcl"),lab={};TCOL.forEach(function(c){lab[c[0]]=c[1]});g.innerHTML="";l.innerHTML="";
 TGRP.forEach(function(a){var on=a[1].every(function(k){return tshown[k]}),b=document.createElement("button");b.type="button";b.className="tab";b.textContent=a[0];b.setAttribute("aria-pressed",String(on));b.onclick=function(){a[1].forEach(function(k){if(on)delete tshown[k];else tshown[k]=true});tcApply();tcDraw()};g.appendChild(b)});
-TGRP.forEach(function(a){var h=document.createElement("h4");h.textContent=a[0];l.appendChild(h);a[1].forEach(function(k){var lb=document.createElement("label"),cb=document.createElement("input");cb.type="checkbox";cb.checked=!!tshown[k];cb.onchange=function(){if(cb.checked)tshown[k]=true;else delete tshown[k];tcApply();tcDraw()};lb.appendChild(cb);lb.append(" "+lab[k]);l.appendChild(lb)})})}
+TGRP.forEach(function(a){var h=document.createElement("h4");h.textContent=a[0];l.appendChild(h);a[1].forEach(function(k){var lb=document.createElement("label"),cb=document.createElement("input");cb.type="checkbox";cb.checked=!!tshown[k];cb.onchange=function(){if(cb.checked)tshown[k]=true;else delete tshown[k];tcApply();tcDraw()};lb.appendChild(cb);lb.append(" "+lab[k]);if(HELP[k]){var hb=document.createElement("button");hb.type="button";hb.className="ih";hb.dataset.help=k;hb.title=lab[k]+" 指標說明";hb.setAttribute("aria-label",lab[k]+" 指標說明");hb.textContent="?";lb.appendChild(hb)}l.appendChild(lb)})})}
 document.getElementById("tcbtn").onclick=function(){tcDraw();document.getElementById("tcdlg").showModal()};
 document.getElementById("tcx").onclick=function(){document.getElementById("tcdlg").close()};
 document.getElementById("tcall").onclick=function(){tshown={};TALL.forEach(function(k){tshown[k]=true});tcApply();tcDraw()};
