@@ -57,12 +57,13 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
     calib = ticker_info.get("calibration", {})
     fail_safe = ticker_info.get("fail_safe", {})
 
-    default_price = 15.20 if ticker == "00882" else 10.00
+    fallback_price = fail_safe.get("fallback_price", 15.20 if ticker == "00882" else 10.00)
     # 僅 00882 或有在卡片明確定義 fallback_annual_dividend 的標的才保留 fallback
     fallback_div = fail_safe.get("fallback_annual_dividend", 0.86 if ticker == "00882" else 0.0)
     tax_retention = calib.get("tax_retention_rate", 0.9923 if ticker == "00882" else 1.0)
 
-    price = default_price
+    price = fallback_price
+    default_price = fallback_price
     annual_div = fallback_div
     source_notes = "基準校準值"
 
@@ -74,7 +75,7 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
                 [sys.executable, str(fetch_script), "both", ticker],
                 capture_output=True,
                 text=True,
-                timeout=8,
+                timeout=15,
             )
             if out.returncode == 0:
                 res = json.loads(out.stdout)
@@ -87,6 +88,27 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
                     annual_div = float(d_info["ttm_total"] or 0.0)
         except Exception:
             pass
+
+        # 降級階梯：若 both 失敗/逾時或未能取得現價，改以快速純價格模式 (price) 單獨獲取
+        if price is None or price == default_price:
+            try:
+                out_p = subprocess.run(
+                    [sys.executable, str(fetch_script), "price", ticker],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
+                if out_p.returncode == 0:
+                    res_p = json.loads(out_p.stdout)
+                    item_p = res_p[0] if isinstance(res_p, list) and res_p else res_p
+                    if isinstance(item_p, dict) and item_p.get("price"):
+                        price = float(item_p["price"])
+                        source_notes = f"live-price-fallback ({item_p.get('source', 'web')})"
+            except Exception:
+                pass
+
+    if price == 10.00 and ticker != "00882" and not fail_safe.get("fallback_price"):
+        source_notes = "⚠️ 預設兜底值 (行情連線逾時)"
 
     # 取得技術面波段輪廓（供成長型 ETF 姿態判定）
     swing_info = None

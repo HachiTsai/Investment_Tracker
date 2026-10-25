@@ -476,3 +476,32 @@ def test_load_yaml_simple_null_value(tmp_path):
     data = pc.load_yaml_simple(sample_file)
     assert data["contribution"]["lot_shares"] == 1000
     assert data["contribution"]["tax_retention_rate"] is None
+
+
+def test_fetch_ticker_live_data_price_fallback(monkeypatch):
+    """驗證 fetch_ticker_live_data 在 both 逾時或失敗時，能透過 price 子命令降級取得現價。"""
+    import json
+    import subprocess
+    from pathlib import Path
+    import patrol_evaluator as pe
+
+    def mock_subprocess_run(cmd, *args, **kwargs):
+        # 模擬 both 逾時拋出例外
+        if "both" in cmd:
+            raise subprocess.TimeoutExpired(cmd, timeout=15)
+        # 模擬 price 成功回傳真實市價
+        if "price" in cmd:
+            return subprocess.CompletedProcess(
+                cmd, 0, stdout=json.dumps([{"ticker": "TPE:009805", "price": 14.38, "source": "Google Finance"}])
+            )
+        return subprocess.CompletedProcess(cmd, 1, stdout="")
+
+    monkeypatch.setattr(subprocess, "run", mock_subprocess_run)
+
+    cards_data = {"ticker": {"ticker": "009805", "strategy_type": "DIVIDEND_INCOME"}}
+    repo_root = Path(__file__).resolve().parents[4]
+    res = pe.fetch_ticker_live_data("009805", cards_data, repo_root)
+
+    assert res["price"] == 14.38
+    assert "live-price-fallback" in res["source_notes"]
+

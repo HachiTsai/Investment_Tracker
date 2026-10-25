@@ -150,6 +150,11 @@ def load_all_etf_models(models_dir: Path) -> List[Dict[str, Any]]:
             continue
 
         ticker_info = load_yaml_simple(ticker_file)
+        category = str(ticker_info.get("category", "ETF")).strip().upper()
+        # 僅載入 ETF 標的模型，嚴格排除 STOCK（如 1216, 1919, 2356 等個股模型）
+        if category != "ETF":
+            continue
+
         ticker_code = model_path.name
         ticker_name = str(ticker_info.get("title", ticker_code)).replace("&amp;", "&")
 
