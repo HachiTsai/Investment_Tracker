@@ -287,6 +287,14 @@ def test_etf_sheets_sync_functions(tmp_path):
         encoding="utf-8",
     )
 
+    # 建立個股 model（驗證排除 STOCK）
+    stock_dir = m_dir / "1216" / "cards"
+    stock_dir.mkdir(parents=True)
+    (stock_dir / "ticker.yml").write_text(
+        "ticker: \"1216\"\ntitle: \"1216 統一\"\ncategory: STOCK\nlast_model_update: \"2026-10-25\"\n",
+        encoding="utf-8",
+    )
+
     models = load_all_etf_models(m_dir)
     assert len(models) == 1
     assert models[0]["ticker"] == "00878"
