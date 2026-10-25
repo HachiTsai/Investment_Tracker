@@ -451,9 +451,39 @@ def sync_via_google_api(
         return False, f"無法初始化 Google Sheets API 客戶端：{e}"
 
     try:
-        # 1. 寫入 ETF_Summary
+        # 1. 解析 CSV 內容
         with open(summary_csv, "r", encoding="utf-8") as f:
             summary_rows = list(csv.reader(f))
+        with open(constituents_csv, "r", encoding="utf-8") as f:
+            constituents_rows = list(csv.reader(f))
+
+        # 2. 獲取試算表元資料並動態確保網格容量與設定代號純文字格式
+        meta = client.get_spreadsheet(sheet_id)
+        sheets_list = meta.get("sheets", [])
+        summary_sheet_id = next(
+            (s["properties"]["sheetId"] for s in sheets_list if s.get("properties", {}).get("title") == "ETF_Summary"),
+            0,
+        )
+        constituents_sheet_id = next(
+            (s["properties"]["sheetId"] for s in sheets_list if s.get("properties", {}).get("title") == "ETF_Constituents"),
+            1048345883,
+        )
+
+        # 確保網格容量足夠（避免超出 grid limits）
+        if summary_rows:
+            client.ensure_sheet_capacity(sheet_id, summary_sheet_id, len(summary_rows) + 50)
+        if constituents_rows:
+            client.ensure_sheet_capacity(sheet_id, constituents_sheet_id, len(constituents_rows) + 500)
+
+        # 設定代號欄位為純文字（TEXT），防止 0 開頭代號（如 0050, 0056）被 Google 轉型為整數
+        try:
+            client.format_columns_as_text(sheet_id, summary_sheet_id, [0])
+            client.format_columns_as_text(sheet_id, constituents_sheet_id, [0, 2])
+            print("   🔤 已鎖定代號欄位為純文字格式（保護 0050、0056 等前導零完整性）")
+        except Exception as e:
+            print(f"   ℹ️ 設定純文字格式提示：{e}")
+
+        # 3. 寫入 ETF_Summary
         if summary_rows:
             client.update_values(
                 sheet_id,
@@ -462,9 +492,7 @@ def sync_via_google_api(
                 value_input_option="USER_ENTERED",
             )
 
-        # 2. 寫入 ETF_Constituents (每批 1,500 列)
-        with open(constituents_csv, "r", encoding="utf-8") as f:
-            constituents_rows = list(csv.reader(f))
+        # 4. 寫入 ETF_Constituents (每批 1,500 列)
         if constituents_rows:
             chunk_size = 1500
             total_len = len(constituents_rows)
@@ -480,17 +508,8 @@ def sync_via_google_api(
                     value_input_option="USER_ENTERED",
                 )
 
-        # 3. 清除 ETF_Constituents 超連結，防止代號（如 2330.TW、NVDA.US）被 Google 誤判為可疑連結
+        # 5. 清除 ETF_Constituents 超連結，防止代號（如 2330.TW、NVDA.US）被 Google 誤判為可疑連結
         try:
-            meta = client.get_spreadsheet(sheet_id)
-            constituents_sheet_id = next(
-                (
-                    s["properties"]["sheetId"]
-                    for s in meta.get("sheets", [])
-                    if s.get("properties", {}).get("title") == "ETF_Constituents"
-                ),
-                1048345883,
-            )
             client.clear_hyperlinks(
                 sheet_id=sheet_id,
                 sheet_tab_id=constituents_sheet_id,
@@ -503,7 +522,7 @@ def sync_via_google_api(
         except Exception as e:
             print(f"   ℹ️ 清除 ETF_Constituents 超連結提示：{e}")
 
-        # 4. 寫入同步元資訊至 ETF_Summary!R1:S2 與 ETF_Constituents!I1:J2（資料欄位外側）
+        # 6. 寫入同步元資訊至 ETF_Summary!R1:S2 與 ETF_Constituents!I1:J2（資料欄位外側）
         now_tpe = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S (TPE)")
         meta_values = [
             ["最後同步時間", now_tpe],
@@ -542,9 +561,7 @@ def sync_to_google_sheets(
 ) -> Tuple[bool, str]:
     """透過 Google API 或 gsheets CLI 將 CSV 回填至 Google Sheets 雲端試算表。"""
     if os.environ.get("GCP_SA_KEY") or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
-        ok, msg = sync_via_google_api(sheet_id, summary_csv, constituents_csv)
-        if ok:
-            return ok, msg
+        return sync_via_google_api(sheet_id, summary_csv, constituents_csv)
 
     bin_cmd = gsheets_bin or find_gsheets_bin()
     if not bin_cmd:
