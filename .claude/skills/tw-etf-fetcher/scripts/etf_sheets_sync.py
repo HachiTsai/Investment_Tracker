@@ -11,6 +11,7 @@
 
 import argparse
 import csv
+from datetime import datetime, timezone, timedelta
 import json
 import os
 import re
@@ -360,6 +361,22 @@ def sync_via_google_api(
                     chunk,
                     value_input_option="USER_ENTERED",
                 )
+
+        # 3. 寫入同步元資訊至 ETF_Summary!R1:S2（A:P 範圍外，不干擾 APP 讀取）
+        now_tpe = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S (TPE)")
+        meta_values = [
+            ["最後同步時間", now_tpe],
+            ["執行者", "GitHub Actions"],
+        ]
+        try:
+            client.update_values(
+                sheet_id,
+                "ETF_Summary!R1:S2",
+                meta_values,
+                value_input_option="USER_ENTERED",
+            )
+        except Exception as e:
+            print(f"   ℹ️ 寫入 ETF_Summary 元資訊欄位提示：{e}")
 
         return True, f"成功透過 Google API 批次同步至 Google Sheets (ID: {sheet_id})"
     except Exception as e:

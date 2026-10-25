@@ -314,6 +314,7 @@ def test_sync_via_google_api(tmp_path):
         ok, msg = sync_via_google_api("fake_sheet_id", summary_csv, constituents_csv)
         assert ok
         assert "成功透過 Google API 批次同步" in msg
-        assert mock_client.update_values.call_count == 2
+        # summary, constituents, metadata 各更新一次
+        assert mock_client.update_values.call_count == 3
 
 

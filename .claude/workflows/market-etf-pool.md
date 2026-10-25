@@ -75,6 +75,11 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --expor
    - 由於資料量達 5,000 列以上，**採分批寫入（每批不超過 1,500 列）**。
    - `constituent_ticker` 與代號欄強制加 `'` 前綴存成文字。
 
+#### 元資料存放規範（最後同步時間 R1:S2）
+
+- 執行時間戳記與執行者標籤**不得放置於 A:P 欄位內**。
+- 同步元資訊記錄於 `ETF_Summary!R1:S2`（`最後同步時間`、`執行者: GitHub Actions`），供使用者直觀核對排程時效，同時保障 APP 讀取 A:P 時零干擾。
+
 #### 寫入防呆與互鎖
 
 - 不帶 `valueInputOption`。

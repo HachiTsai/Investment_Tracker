@@ -131,3 +131,23 @@ def test_merge_sheet_rows_error_handling():
     assert merged[1][15] == "網路超時"
     # 其餘數值保留舊值
     assert merged[1][5] == "900.0"
+
+
+def test_run_swing_pipeline_market_closed():
+    from swing_sync import run_swing_pipeline
+
+    mock_client = MagicMock()
+    mock_client.get_values.return_value = [["代號", "名稱"]]
+
+    fake_scan = [{"ticker": "0050", "fresh": False}]
+    with patch("subprocess.run") as mock_sub:
+        mock_sub.return_value = MagicMock(returncode=0, stdout=json.dumps(fake_scan))
+        code = run_swing_pipeline(sheet_id="fake_id", client=mock_client)
+        assert code == 0
+        # 即使休市亦應更新 Z1:AA2 之巡檢時間戳記
+        mock_client.update_values.assert_called_once()
+        args, _ = mock_client.update_values.call_args
+        assert args[1] == "Untitled!Z1:AA2"
+        assert args[2][0][0] == "最後巡檢時間"
+        assert args[2][1][0] == "狀態"
+

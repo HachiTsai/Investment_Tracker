@@ -165,7 +165,16 @@ def run_swing_pipeline(
 
     is_all_closed = len(scan_results) > 0 and all(not r.get("fresh", False) for r in scan_results)
     if is_all_closed and not force:
-        print("ℹ️ [Market Closed] 今日所有市場均為休市，略過寫入 Sheet。")
+        now_tpe = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S (TPE)")
+        meta_values = [
+            ["最後巡檢時間", now_tpe],
+            ["狀態", "休市略過（維持最新交易日數據）"],
+        ]
+        try:
+            client.update_values(sheet_id, "Untitled!Z1:AA2", meta_values, value_input_option="USER_ENTERED")
+        except Exception as e:
+            print(f"   ℹ️ 寫入元資料欄位提示：{e}")
+        print(f"ℹ️ [Market Closed] 今日所有市場均為休市，已更新巡檢時間戳記至 Z1:AA2（{now_tpe}），略過覆寫標的數據。")
         return 0
 
     if not sheet_out_path.exists():
