@@ -413,10 +413,14 @@ def run_portfolio_patrol(
     custom_models_dir: Optional[Path] = None,
     mock_macro: Optional[Dict[str, Any]] = None,
     workers: int = DEFAULT_WORKERS,
+    filter_tier: Optional[str] = "core",
 ) -> Dict[str, Any]:
     """執行投資組合全標的巡檢核心主程序。抓價階段以 workers 條執行緒並行，評估與警報維持原順序。"""
     models_root = custom_models_dir if custom_models_dir else repo_root / "models"
-    tickers = discover_tickers(models_root, filter_tickers)
+    tickers = discover_tickers(models_root, filter_tickers, filter_tier=filter_tier)
+
+    if (filter_tier or "core").lower() == "core" and len(tickers) > 60:
+        print(f"⚠️ [Patrol Safeguard] 核心團隊標的數量達 {len(tickers)} 檔（超過安全防護門檻 60 檔），建議檢視標的並將次要標的調整為 pool。", file=sys.stderr)
 
     macro_data = mock_macro if mock_macro is not None else fetch_macro_telemetry(repo_root)
 

@@ -189,6 +189,19 @@ def test_scaffold_etf_model(tmp_path):
     ticker_content = (target_cards / "ticker.yml").read_text(encoding="utf-8")
     assert "card:ticker:00878" in ticker_content
     assert "國泰永續高股息" in ticker_content
+    assert "tier: pool" in ticker_content
+
+    # 測試指定 tier=core
+    target_core = scaffold_etf_model(
+        ticker="00878",
+        repo_root=tmp_path,
+        holdings_data=holdings,
+        etf_info=etf_info,
+        custom_models_dir=tmp_path / "models_core",
+        tier="core",
+    )
+    core_content = (target_core / "ticker.yml").read_text(encoding="utf-8")
+    assert "tier: core" in core_content
 
     lines = (target_cards / "constituents.jsonl").read_text(encoding="utf-8").strip().splitlines()
     assert len(lines) == 2
@@ -218,10 +231,26 @@ def test_cli_subcommands(tmp_path, monkeypatch, capsys):
     captured_lt = capsys.readouterr()
     assert "投資組合實質穿透持股報告" in captured_lt.out
 
-    # 測試 scaffold-model
+    # 測試 scaffold-model（預設 tier=pool）
     rc_scaffold = facade.main(["scaffold-model", "00878", "--models-dir", str(tmp_path / "models")])
     assert rc_scaffold == 0
-    assert (tmp_path / "models" / "00878" / "cards" / "ticker.yml").exists()
+    scaffold_ticker_path = tmp_path / "models" / "00878" / "cards" / "ticker.yml"
+    assert scaffold_ticker_path.exists()
+    assert "tier: pool" in scaffold_ticker_path.read_text(encoding="utf-8")
+
+    # 測試 set-tier 調整為 core
+    rc_set_core = facade.main(["set-tier", "00878", "core", "--models-dir", str(tmp_path / "models")])
+    assert rc_set_core == 0
+    assert "tier: core" in scaffold_ticker_path.read_text(encoding="utf-8")
+
+    # 測試 set-tier 調整回 pool
+    rc_set_pool = facade.main(["set-tier", "00878", "pool", "--models-dir", str(tmp_path / "models")])
+    assert rc_set_pool == 0
+    assert "tier: pool" in scaffold_ticker_path.read_text(encoding="utf-8")
+
+    # 測試 set-tier 錯誤處理
+    rc_set_err = facade.main(["set-tier", "99999", "core", "--models-dir", str(tmp_path / "models")])
+    assert rc_set_err == 1
 
     # 測試 sync-sheets --dry-run
     rc_sync = facade.main([

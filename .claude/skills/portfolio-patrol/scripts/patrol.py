@@ -66,6 +66,7 @@ def run_portfolio_patrol(
     custom_models_dir: Optional[Path] = None,
     mock_macro: Optional[Dict[str, Any]] = None,
     workers: int = DEFAULT_WORKERS,
+    filter_tier: Optional[str] = "core",
 ) -> Dict[str, Any]:
     """執行投資組合全標的巡檢核心主程序（Facade 包裝器，預設帶入 REPO_ROOT）。"""
     return _run_patrol(
@@ -74,12 +75,14 @@ def run_portfolio_patrol(
         custom_models_dir=custom_models_dir,
         mock_macro=mock_macro,
         workers=workers,
+        filter_tier=filter_tier,
     )
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--tickers", help="逗號分隔的標的代碼過濾（例如：00882）")
+    parser.add_argument("--tier", choices=["core", "pool", "all"], default="core", help="巡檢標的分級（core: 核心團隊，預設 / pool: 資料池 / all: 全標的）")
     parser.add_argument("--workers", type=int, default=DEFAULT_WORKERS, help="抓價並行執行緒數（預設 %(default)s）")
     parser.add_argument("--json", action="store_true", help="輸出結構化 JSON 格式")
     parser.add_argument("--markdown", action="store_true", help="輸出 Google Doc 標準 Markdown 區塊")
@@ -129,6 +132,7 @@ def main(argv=None) -> int:
         filter_tickers=filter_tickers,
         custom_models_dir=custom_models_dir,
         workers=args.workers,
+        filter_tier=args.tier,
     )
 
     if args.json:

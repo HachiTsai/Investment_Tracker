@@ -56,10 +56,16 @@
 當執行 `scaffold-model <ticker>` 時，系統自動建立以下四張卡片：
 
 1. **標的卡片（`models/<ticker>/cards/ticker.yml`）**：
-   - 記錄標的代號、全名、發行投信、追蹤指數與總費用率。
+   - 記錄標的代號、全名、分級標籤（`tier: core` 核心團隊 / `tier: pool` 資料池，新建預設為 `pool`）、發行投信、追蹤指數與總費用率。
 2. **成分股卡片庫（`models/<ticker>/cards/constituents.jsonl`）**：
    - 記錄全體成分股之個股代號、權重比例與持有股數。
 3. **50 萬被動收入迴路卡片（`models/<ticker>/cards/loop_dividend_500k.yml`）**：
    - 納入個人整體股利目標收斂體系。
 4. **高息陷阱互鎖卡片（`models/<ticker>/cards/interlock_yield_trap.yml`）**：
    - 配息持續性與成分股集中度風控互鎖。
+
+### 3.1 標的分級維護 (Tier Management)
+
+- **核心團隊 (`tier: core`)**：參與每日巡檢 (`patrol.py`) 與波段戰報 (`swing.py`)。未標記 `tier` 之既有卡片向下相容預設視為 `core`。
+- **資料池 (`tier: pool`)**：僅供全市場穿透分析與 Google Sheet 同步，每日巡檢自動略過，避免 API 超載。
+- **升降級指令**：`python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py set-tier <ticker> <core|pool>`。
