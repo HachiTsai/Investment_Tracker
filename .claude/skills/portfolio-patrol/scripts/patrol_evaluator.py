@@ -193,12 +193,29 @@ _STOCK_POSTURES = {
 }
 
 
+_GROWTH_POSTURES = {
+    "UPTREND": ("🔵 趨勢續抱", "收盤在 20、60 日線之上且 MACD 柱為正", "維持核心部位持有，定額常態累積", 5),
+    "NEUTRAL": ("🔵 常態配置", "指標處於常態震盪區間", "維持例行性資產配置與定期定額", 5),
+    "OVERHEATED": ("🟠 乖離防禦", "RSI≥70 或觸及布林上緣", "短線乖離過大，暫停單筆追高，維持既有定額", 4),
+    "OVERSOLD_WATCH": ("🟢 回檔加碼", "RSI≤30 或觸及布林下緣，且未明顯跌離半年線", "長線成長標的回檔超跌，可評估額外加碼", 3),
+    "DOWNTREND": ("⚪ 定額微笑", "收盤在 20、60 日線之下且 MACD 柱為負", "順勢方向偏弱，維持常態定期定額，不單筆大額接刀", 5),
+}
+
+
 def _stock_posture(swing: Optional[Dict[str, Any]]):
     """個股狀態：取波段分類；抓不到日線時標示資料不足。回傳 (key, label, name, action, priority)。"""
     if not swing or swing.get("state") not in _STOCK_POSTURES:
         return "NO_DATA", "⚪ 資料不足", "缺日線資料，暫不判定", "待下次巡檢取得日線後再評估", 5
     label, name, action, priority = _STOCK_POSTURES[swing["state"]]
     return f"SWING_{swing['state']}", label, name, action, priority
+
+
+def _growth_posture(swing: Optional[Dict[str, Any]]):
+    """資本成長型 ETF 狀態：映射長線配置姿態。回傳 (key, label, name, action, priority)。"""
+    if not swing or swing.get("state") not in _GROWTH_POSTURES:
+        return "NO_DATA", "⚪ 資料不足", "缺日線資料，暫不判定", "待下次巡檢取得日線後再評估", 5
+    label, name, action, priority = _GROWTH_POSTURES[swing["state"]]
+    return f"GROWTH_{swing['state']}", label, name, action, priority
 
 
 def evaluate_ticker_posture(
@@ -240,8 +257,8 @@ def evaluate_ticker_posture(
             yield_rate = annual_div / price
             yield_pct = round(yield_rate * 100.0, 2)
     elif is_growth:
-        # 資本利得/成長型或無配息標的：改用波段狀態，不套用高息陷阱與殖利率過熱門檻
-        posture_key, posture_label, posture_name, valve_action, priority = _stock_posture(swing)
+        # 資本利得/成長型或無配息標的：改用成長型專屬配置狀態，不套用高息陷阱與殖利率過熱門檻
+        posture_key, posture_label, posture_name, valve_action, priority = _growth_posture(swing)
         yield_rate = 0.0
         yield_pct = None
     elif price <= 0:
@@ -250,46 +267,68 @@ def evaluate_ticker_posture(
         posture_name = "缺報價資料，暫不判定"
         valve_action = "待下次巡檢取得報價後再評估"
     else:
-        # 收息型 ETF (DIVIDEND_INCOME / BOND_DEFENSE) 且 annual_div > 0
+        # 收息型 (DIVIDEND_INCOME) 與債券型 (BOND_DEFENSE) 且 annual_div > 0
         yield_rate = annual_div / price if price > 0 else 0.0
         yield_pct = round(yield_rate * 100.0, 2)
         net_score = scores.get("netScore", 50)
         div_score = scores.get("divScore", 50)
 
-        # 優先級 1：高息陷阱斷路 (僅非債券型且 net/div 評分破底)
-        if strategy_type != "BOND_DEFENSE" and yield_rate >= 0.08 and (net_score < 50 or div_score < 40):
-            posture_key = "TRAP_ALERT"
-            posture_label = "🚨 陷阱警戒"
-            posture_name = "高息陷阱斷路保護 (Yield Trap Trip)"
-            valve_action = "強制關閉加碼閥門！股息暫留現金池，啟動持股專案審查"
-            priority = 1
-        # 優先級 2：流速過快斷路 (僅港陸標的)
-        elif southbound_flow < -8000:
-            posture_key = "VELOCITY_PAUSE"
-            posture_label = "⏸️ 流速警戒"
-            posture_name = "資金流速過快警報 (Velocity Trip)"
-            valve_action = "暫緩大額市價單買進，等待資金流速放緩再行佈置"
-            priority = 2
-        # 優先級 3：積極進攻
-        elif yield_rate >= 0.082 and net_score >= 70 and div_score >= 60:
-            posture_key = "AGGRESSIVE_ACCUMULATE"
-            posture_label = "🟢 積極進攻"
-            posture_name = "積極進攻姿態 (Aggressive Accumulate)"
-            valve_action = "股息 100% 立即再投入，若有閒置資金啟動額外加碼，最大化滾動張數"
-            priority = 3
-        # 優先級 4：過熱防禦
-        elif yield_rate <= 0.048:
-            posture_key = "OVERVALUED_HOLD"
-            posture_label = "🟡 防禦觀望"
-            posture_name = "估值過熱防禦姿態 (Overvalued / Hold)"
-            valve_action = "停止加碼買進，維持既有部位持有，股息可部分保留現金儲備"
-            priority = 4
+        if strategy_type == "BOND_DEFENSE":
+            # 債券防禦型：脫離股票高股息絕對門檻，依債券合理息收區間判定
+            if yield_rate >= 0.048:
+                posture_key = "BOND_ACCUMULATE"
+                posture_label = "🟢 積極佈建"
+                posture_name = "債券高息防禦進攻 (Bond Yield Accumulate)"
+                valve_action = "債券殖利率具防禦吸引力，可提高股息再投入或加碼配比"
+                priority = 3
+            elif yield_rate <= 0.035:
+                posture_key = "BOND_OVERBOUGHT"
+                posture_label = "🟡 防禦觀望"
+                posture_name = "債券估值過熱 (Bond Overbought / Hold)"
+                valve_action = "債券殖利率偏低，暫停單筆加碼，維持資產配置持有"
+                priority = 4
+            else:
+                posture_key = "STEADY_REINVEST"
+                posture_label = "🔵 穩健配置"
+                posture_name = "債券常態防禦配置 (Bond Steady Defense)"
+                valve_action = "維持例行性債券息收再投入，發揮投資組合防禦穩定器功能"
+                priority = 5
         else:
-            posture_key = "STEADY_REINVEST"
-            posture_label = "🔵 穩健複利"
-            posture_name = "預設穩健複利姿態 (Steady Reinvest)"
-            valve_action = "維持例行性半年配息再投入，按部就班累積雪球"
-            priority = 5
+            # 股票高股息收息型 (DIVIDEND_INCOME)
+            # 優先級 1：高息陷阱斷路 (net/div 評分破底)
+            if yield_rate >= 0.08 and (net_score < 50 or div_score < 40):
+                posture_key = "TRAP_ALERT"
+                posture_label = "🚨 陷阱警戒"
+                posture_name = "高息陷阱斷路保護 (Yield Trap Trip)"
+                valve_action = "強制關閉加碼閥門！股息暫留現金池，啟動持股專案審查"
+                priority = 1
+            # 優先級 2：流速過快斷路 (僅港陸標的)
+            elif southbound_flow < -8000:
+                posture_key = "VELOCITY_PAUSE"
+                posture_label = "⏸️ 流速警戒"
+                posture_name = "資金流速過快警報 (Velocity Trip)"
+                valve_action = "暫緩大額市價單買進，等待資金流速放緩再行佈置"
+                priority = 2
+            # 優先級 3：積極進攻
+            elif yield_rate >= 0.082 and net_score >= 70 and div_score >= 60:
+                posture_key = "AGGRESSIVE_ACCUMULATE"
+                posture_label = "🟢 積極進攻"
+                posture_name = "積極進攻姿態 (Aggressive Accumulate)"
+                valve_action = "股息 100% 立即再投入，若有閒置資金啟動額外加碼，最大化滾動張數"
+                priority = 3
+            # 優先級 4：過熱防禦
+            elif yield_rate <= 0.048:
+                posture_key = "OVERVALUED_HOLD"
+                posture_label = "🟡 防禦觀望"
+                posture_name = "估值過熱防禦姿態 (Overvalued / Hold)"
+                valve_action = "停止加碼買進，維持既有部位持有，股息可部分保留現金儲備"
+                priority = 4
+            else:
+                posture_key = "STEADY_REINVEST"
+                posture_label = "🔵 穩健複利"
+                posture_name = "預設穩健複利姿態 (Steady Reinvest)"
+                valve_action = "維持例行性半年配息再投入，按部就班累積雪球"
+                priority = 5
 
     # 個股卡片：以「每一張（lot_shares）對 50 萬目標的貢獻度」取代持股達成率（不輸出個人持股）
     contribution_pct = None

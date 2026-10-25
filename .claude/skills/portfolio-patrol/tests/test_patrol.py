@@ -325,7 +325,7 @@ def test_parallel_patrol_matches_sequential_order(repo_root, offline_live_data):
 
 
 def test_growth_etf_zero_dividend_multi_track():
-    """驗證零配息/成長型 ETF (如 00954, 00757) 走波段狀態機，不誤判為過熱防禦，不產出虛假殖利率與 51.2% 達成率。"""
+    """驗證零配息/成長型 ETF (如 00954, 00757) 走成長型專屬配置狀態，不誤判為過熱防禦，不產出虛假殖利率與 51.2% 達成率。"""
     import patrol_cards as pc
     mock_cards = {
         "ticker_id": "00954",
@@ -346,11 +346,108 @@ def test_growth_etf_zero_dividend_multi_track():
         "swing": {"state": "NEUTRAL", "label": "⚪ 未觸發條件"},
     }
     res = patrol.evaluate_ticker_posture(mock_cards, live_growth)
-    # 姿態應走技術面波段狀態，非殖利率判定 (不可被誤判為 OVERVALUED_HOLD 或 STEADY_REINVEST)
-    assert res["posture_key"] == "SWING_NEUTRAL"
-    assert res["posture_label"] == "⚪ 未觸發條件"
+    # 姿態應走成長型專屬配置狀態 (脫離與個股波段未觸發條件完全重複的現狀)
+    assert res["posture_key"] == "GROWTH_NEUTRAL"
+    assert res["posture_label"] == "🔵 常態配置"
     # 殖利率與達成率應為 None，格式化輸出應為 -
     assert res["yield_pct"] is None
     assert res["goal_progress_pct"] is None
     assert pc.format_yield_or_return(res) == "-"
     assert pc.format_progress(res) == "-"
+
+
+def test_growth_etf_postures_mapping():
+    """驗證成長型 ETF 各波段狀態映射到長線配置姿態。"""
+    mock_cards = {
+        "ticker_id": "0050",
+        "ticker": {
+            "title": "元大台灣50",
+            "category": "ETF",
+            "strategy_type": "CAPITAL_GROWTH",
+            "currency": "TWD",
+        },
+        "loops": [],
+    }
+
+    states_to_test = {
+        "UPTREND": ("GROWTH_UPTREND", "🔵 趨勢續抱", 5),
+        "OVERSOLD_WATCH": ("GROWTH_OVERSOLD_WATCH", "🟢 回檔加碼", 3),
+        "OVERHEATED": ("GROWTH_OVERHEATED", "🟠 乖離防禦", 4),
+        "DOWNTREND": ("GROWTH_DOWNTREND", "⚪ 定額微笑", 5),
+    }
+
+    for state, (expected_key, expected_label, expected_pri) in states_to_test.items():
+        live = {
+            "price": 180.0,
+            "annual_dividend": 0.0,
+            "tax_retention": 1.0,
+            "scores": {},
+            "swing": {"state": state},
+        }
+        res = patrol.evaluate_ticker_posture(mock_cards, live)
+        assert res["posture_key"] == expected_key
+        assert res["posture_label"] == expected_label
+        assert res["priority"] == expected_pri
+
+
+def test_bond_defense_postures():
+    """驗證債券防禦型 (BOND_DEFENSE) 脫離高股息門檻，依債券合理息收區間判定。"""
+    mock_cards = {
+        "ticker_id": "00687B",
+        "ticker": {
+            "title": "國泰20年美債",
+            "category": "ETF",
+            "strategy_type": "BOND_DEFENSE",
+            "currency": "TWD",
+        },
+        "loops": [],
+    }
+
+    # 1. 殖利率 4.9% (>= 4.8%) -> 積極佈建
+    live_accum = {
+        "price": 30.0,
+        "annual_dividend": 1.47,  # 1.47 / 30 = 4.9%
+        "tax_retention": 1.0,
+        "scores": {},
+    }
+    res_accum = patrol.evaluate_ticker_posture(mock_cards, live_accum)
+    assert res_accum["posture_key"] == "BOND_ACCUMULATE"
+    assert res_accum["posture_label"] == "🟢 積極佈建"
+    assert res_accum["priority"] == 3
+
+    # 2. 殖利率 4.2% (3.5% ~ 4.8%) -> 穩健配置 (不再被誤判為 4.8% 以下的 OVERVALUED_HOLD)
+    live_steady = {
+        "price": 30.0,
+        "annual_dividend": 1.26,  # 1.26 / 30 = 4.2%
+        "tax_retention": 1.0,
+        "scores": {},
+    }
+    res_steady = patrol.evaluate_ticker_posture(mock_cards, live_steady)
+    assert res_steady["posture_key"] == "STEADY_REINVEST"
+    assert res_steady["posture_label"] == "🔵 穩健配置"
+    assert res_steady["priority"] == 5
+
+    # 3. 殖利率 3.2% (<= 3.5%) -> 防禦觀望
+    live_over = {
+        "price": 30.0,
+        "annual_dividend": 0.96,  # 0.96 / 30 = 3.2%
+        "tax_retention": 1.0,
+        "scores": {},
+    }
+    res_over = patrol.evaluate_ticker_posture(mock_cards, live_over)
+    assert res_over["posture_key"] == "BOND_OVERBOUGHT"
+    assert res_over["posture_label"] == "🟡 防禦觀望"
+    assert res_over["priority"] == 4
+
+
+def test_load_yaml_simple_null_value(tmp_path):
+    """驗證 load_yaml_simple 在備援簡易解析模式下能正確將 null 轉為 None 而非字串。"""
+    import patrol_cards as pc
+    sample_file = tmp_path / "sample.yml"
+    sample_file.write_text(
+        "id: test\ncontribution:\n  lot_shares: 1000\n  tax_retention_rate: null\n",
+        encoding="utf-8",
+    )
+    data = pc.load_yaml_simple(sample_file)
+    assert data["contribution"]["lot_shares"] == 1000
+    assert data["contribution"]["tax_retention_rate"] is None

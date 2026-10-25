@@ -44,6 +44,8 @@ def load_yaml_simple(path: Path) -> Dict[str, Any]:
                 parsed_v = float(v)
             elif v.lower() in ("true", "false"):
                 parsed_v = v.lower() == "true"
+            elif v.lower() == "null":
+                parsed_v = None
             elif v == "":
                 parsed_v = {}
 
