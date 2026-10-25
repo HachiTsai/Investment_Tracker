@@ -214,7 +214,10 @@ def cmd_sync_sheets(args) -> int:
     delay = getattr(args, "delay", 0.1)
 
     def _prog(code, idx, total):
-        print(f"   [{idx}/{total}] 正在聚合全市場資料池成分股：{code}...", end="\r", flush=True)
+        if idx == total:
+            print(f"   [{idx}/{total}] 正在聚合全市場資料池成分股：{code}... 完成！\n   ⚡ 正在計算穿透加權 ROE 與評分矩陣...", flush=True)
+        else:
+            print(f"   [{idx}/{total}] 正在聚合全市場資料池成分股：{code}...", end="\r", flush=True)
 
     res = run_sync_pipeline(
         models_dir=models_dir,
