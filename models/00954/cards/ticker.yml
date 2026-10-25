@@ -7,6 +7,7 @@ full_name: "中國信託日本ETF傘型證券投資信託基金之中國信託�
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: CAPITAL_GROWTH
 manager: "陳金榮"
 benchmark: "NYSE FactSet 日本半導體指數"
 last_model_update: "2026-10-18"

@@ -7,6 +7,7 @@ full_name: "富邦台灣釆吉50 證券投資信託基金"
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: CAPITAL_GROWTH
 manager: "黃昭棠"
 benchmark: "臺灣50指數"
 last_model_update: "2026-10-18"

@@ -7,6 +7,7 @@ full_name: "野村臺灣創新科技50 ETF證券投資信託基金"
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: CAPITAL_GROWTH
 manager: "毛昱文"
 benchmark: "臺灣指數公司特選臺灣上市上櫃FactSet創新科技50指數"
 last_model_update: "2026-10-19"

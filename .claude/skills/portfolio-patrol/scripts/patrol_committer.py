@@ -19,11 +19,12 @@ def build_patrol_commit_message(report: Dict[str, Any], agent: str = "Antigravit
     alerts = report.get("alerts", [])
 
     if not alerts and report.get("is_steady"):
-        prog = fleet[0]["goal_progress_pct"] if fleet else 51.2
+        prog_val = next((f["goal_progress_pct"] for f in fleet if f.get("ticker") == "00882" and f.get("goal_progress_pct") is not None), None)
+        prog_str = f" ｜ 50萬達成率 {prog_val:.1f}%" if prog_val is not None else ""
         scfi_val = report.get("macro_data", {}).get("shipping_freight", {}).get("scfi", {}).get("current")
         if scfi_val is None:
             scfi_val = report.get("macro_data", {}).get("shipping_freight", {}).get("scfi", {}).get("latest_index", 3679)
-        title = f"patrol(fleet): 🔵 穩健複利 ｜ 50萬達成率 {prog:.1f}% ｜ SCFI {int(scfi_val)}"
+        title = f"patrol(fleet): 🔵 穩健複利{prog_str} ｜ SCFI {int(scfi_val)}"
     else:
         top_alert = alerts[0] if alerts else {"ticker": "00882", "type": "ALERT", "message": "姿態微調", "action": "注意市場"}
         ticker = top_alert["ticker"]

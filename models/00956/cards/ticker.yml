@@ -7,6 +7,7 @@ full_name: "中國信託日本ETF傘型證券投資信託基金之中國信託�
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: DIVIDEND_INCOME
 manager: "陳金榮"
 benchmark: "日經高股息50指數"
 last_model_update: "2026-10-18"

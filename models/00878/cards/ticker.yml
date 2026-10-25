@@ -7,6 +7,7 @@ full_name: "國泰台灣高股息傘型證券投資信託基金之台灣ESG永�
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: DIVIDEND_INCOME
 manager: "李偉正"
 benchmark: "MSCI臺灣ESG永續高股息精選30指數"
 last_model_update: "2026-10-18"

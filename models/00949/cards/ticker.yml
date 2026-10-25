@@ -7,6 +7,7 @@ full_name: "復華日本護城河優勢龍頭企業ETF證券投資信託基金"
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: CAPITAL_GROWTH
 manager: "杜俊雄"
 benchmark: "NYSE FactSet日本護城河優勢龍頭企業指數"
 last_model_update: "2026-10-18"

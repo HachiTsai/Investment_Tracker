@@ -7,6 +7,7 @@ full_name: "元大台灣卓越50證券投資信託基金"
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: CAPITAL_GROWTH
 manager: "劉宗聖"
 benchmark: "臺灣50指數"
 last_model_update: "2026-10-18"

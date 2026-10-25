@@ -255,8 +255,10 @@ def test_inspect_ticker(repo_root):
         price_override=15.20,
     )
     assert data["ticker"] == "00882"
-    assert data["loop_state"]["process_value_pv"] == pytest.approx(256013, abs=5)
-    assert data["loop_state"]["achievement_rate_pct"] == pytest.approx(51.2, 0.1)
+    pv = data["loop_state"]["process_value_pv"]
+    sp = data["loop_state"]["setpoint_sp"]
+    assert pv > 0
+    assert data["loop_state"]["achievement_rate_pct"] == pytest.approx((pv / sp) * 100.0, 0.1)
 
     ascii_out = patrol.format_inspect_ascii(data)
     assert "00882 中信中國高股息" in ascii_out
@@ -320,3 +322,35 @@ def test_parallel_patrol_matches_sequential_order(repo_root, offline_live_data):
     par = patrol.run_portfolio_patrol(repo_root=repo_root, mock_macro=macro, workers=8)
     assert [f["ticker"] for f in seq["fleet"]] == [f["ticker"] for f in par["fleet"]]
     assert seq["fleet"] == par["fleet"] and seq["alerts"] == par["alerts"]
+
+
+def test_growth_etf_zero_dividend_multi_track():
+    """驗證零配息/成長型 ETF (如 00954, 00757) 走波段狀態機，不誤判為過熱防禦，不產出虛假殖利率與 51.2% 達成率。"""
+    import patrol_cards as pc
+    mock_cards = {
+        "ticker_id": "00954",
+        "ticker": {
+            "title": "中信日本半導體",
+            "category": "ETF",
+            "strategy_type": "CAPITAL_GROWTH",
+            "currency": "TWD",
+        },
+        "loops": [],
+    }
+    live_growth = {
+        "price": 16.40,
+        "annual_dividend": 0.0,
+        "tax_retention": 1.0,
+        "scores": {"netScore": 75, "divScore": 70},
+        "southbound_2d_net": 0.0,
+        "swing": {"state": "NEUTRAL", "label": "⚪ 未觸發條件"},
+    }
+    res = patrol.evaluate_ticker_posture(mock_cards, live_growth)
+    # 姿態應走技術面波段狀態，非殖利率判定 (不可被誤判為 OVERVALUED_HOLD 或 STEADY_REINVEST)
+    assert res["posture_key"] == "SWING_NEUTRAL"
+    assert res["posture_label"] == "⚪ 未觸發條件"
+    # 殖利率與達成率應為 None，格式化輸出應為 -
+    assert res["yield_pct"] is None
+    assert res["goal_progress_pct"] is None
+    assert pc.format_yield_or_return(res) == "-"
+    assert pc.format_progress(res) == "-"

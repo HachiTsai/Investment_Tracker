@@ -7,6 +7,7 @@ full_name: "群益台灣精選高息ETF證券投資信託基金"
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: DIVIDEND_INCOME
 manager: "賴政昇"
 benchmark: "臺灣指數公司特選臺灣上市上櫃精選高息指數"
 last_model_update: "2026-10-18"

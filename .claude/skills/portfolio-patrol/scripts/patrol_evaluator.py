@@ -52,36 +52,51 @@ def fetch_macro_telemetry(repo_root: Path) -> Dict[str, Any]:
 
 
 def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: Path) -> Dict[str, Any]:
-    """抓取標的即時行情與多空分數（帶安全降級）。"""
+    """抓取標的即時行情與配息（調用 fetch.py both，帶安全降級）。"""
     ticker_info = cards_data.get("ticker", {})
     calib = ticker_info.get("calibration", {})
     fail_safe = ticker_info.get("fail_safe", {})
 
     default_price = 15.20 if ticker == "00882" else 10.00
-    fallback_div = fail_safe.get("fallback_annual_dividend", 0.86)
-    tax_retention = calib.get("tax_retention_rate", 0.9923)
+    # 僅 00882 或有在卡片明確定義 fallback_annual_dividend 的標的才保留 fallback
+    fallback_div = fail_safe.get("fallback_annual_dividend", 0.86 if ticker == "00882" else 0.0)
+    tax_retention = calib.get("tax_retention_rate", 0.9923 if ticker == "00882" else 1.0)
 
     price = default_price
+    annual_div = fallback_div
     source_notes = "基準校準值"
 
-    # 嘗試調用 price-dividend-fetcher
+    # 嘗試調用 price-dividend-fetcher（呼叫 both 以同時取得現價與近 12 個月 TTM 配息）
     fetch_script = repo_root / ".claude" / "skills" / "price-dividend-fetcher" / "scripts" / "fetch.py"
     if fetch_script.exists():
         try:
             out = subprocess.run(
-                [sys.executable, str(fetch_script), "price", ticker],
+                [sys.executable, str(fetch_script), "both", ticker],
                 capture_output=True,
                 text=True,
-                timeout=6,
+                timeout=8,
             )
             if out.returncode == 0:
                 res = json.loads(out.stdout)
-                if isinstance(res, list) and res and res[0].get("price"):
-                    price = float(res[0]["price"])
-                    source_notes = f"live-fetcher ({res[0].get('source', 'web')})"
-                elif isinstance(res, dict) and res.get("price"):
-                    price = float(res["price"])
-                    source_notes = f"live-fetcher ({res.get('source', 'web')})"
+                p_info = res.get("price") if isinstance(res.get("price"), dict) else res
+                if p_info and p_info.get("price"):
+                    price = float(p_info["price"])
+                    source_notes = f"live-fetcher ({p_info.get('source', 'web')})"
+                d_info = res.get("dividends") or {}
+                if "ttm_total" in d_info:
+                    annual_div = float(d_info["ttm_total"] or 0.0)
+        except Exception:
+            pass
+
+    # 取得技術面波段輪廓（供成長型 ETF 姿態判定）
+    swing_info = None
+    pdf_dir = repo_root / ".claude" / "skills" / "price-dividend-fetcher" / "scripts"
+    if pdf_dir.exists():
+        if str(pdf_dir) not in sys.path:
+            sys.path.insert(0, str(pdf_dir))
+        try:
+            import swing
+            swing_info = swing.stock_profile(ticker)
         except Exception:
             pass
 
@@ -105,13 +120,17 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
         except Exception:
             pass
 
+    # 南向資金僅適用於 00882 / 港陸相關標的，其餘標的為 0.0
+    southbound = 1250.0 if ticker == "00882" else 0.0
+
     return {
         "price": price,
-        "annual_dividend": fallback_div,
+        "annual_dividend": annual_div,
         "tax_retention": tax_retention,
         "source_notes": source_notes,
         "scores": scores,
-        "southbound_2d_net": 1250.0,
+        "southbound_2d_net": southbound,
+        "swing": swing_info,
     }
 
 
@@ -190,16 +209,19 @@ def evaluate_ticker_posture(
     ticker_info = cards_data.get("ticker", {})
     title = ticker_info.get("title", cards_data.get("ticker_id", "Unknown"))
     currency = ticker_info.get("currency", "TWD")
+    strategy_type = ticker_info.get("strategy_type")
     price = live_data["price"]
-    annual_div = live_data["annual_dividend"]
-    tax_retention = live_data["tax_retention"]
+    annual_div = live_data.get("annual_dividend") or 0.0
+    tax_retention = live_data.get("tax_retention", 1.0)
     scores = live_data.get("scores", {})
     southbound_flow = live_data.get("southbound_2d_net", 0.0)
 
-    yield_rate = annual_div / price if price > 0 else 0.0
-
-    net_score = scores.get("netScore", 50)
-    div_score = scores.get("divScore", 50)
+    is_stock = ticker_info.get("category") == "STOCK"
+    # 判斷是否為資本利得/成長型或無配息標的：
+    # 1. 明確標示 strategy_type 為 CAPITAL_GROWTH
+    # 2. 或非個股且 annual_div <= 0
+    is_growth = (strategy_type == "CAPITAL_GROWTH") or (not is_stock and annual_div <= 0)
+    swing = live_data.get("swing")
 
     # 優先級風控互鎖邏輯 (BLS)
     posture_key = "STEADY_REINVEST"
@@ -208,46 +230,66 @@ def evaluate_ticker_posture(
     valve_action = "維持例行性半年配息再投入，按部就班累積雪球"
     priority = 5
 
-    is_stock = ticker_info.get("category") == "STOCK"
-    swing = live_data.get("swing") if is_stock else None
+    yield_rate = 0.0
+    yield_pct = None
 
-    # 個股：不套高息陷阱互鎖（殖利率門檻是為 ETF 設計），改用波段狀態＋階段性含息報酬率
     if is_stock:
+        # 個股：不套高息陷阱互鎖，改用波段狀態＋階段性含息報酬率
         posture_key, posture_label, posture_name, valve_action, priority = _stock_posture(swing)
-    # 無報價或無配息資料：不判定估值姿態，避免殖利率 0% 被誤判為過熱
-    elif price <= 0 or annual_div <= 0:
+        if annual_div > 0 and price > 0:
+            yield_rate = annual_div / price
+            yield_pct = round(yield_rate * 100.0, 2)
+    elif is_growth:
+        # 資本利得/成長型或無配息標的：改用波段狀態，不套用高息陷阱與殖利率過熱門檻
+        posture_key, posture_label, posture_name, valve_action, priority = _stock_posture(swing)
+        yield_rate = 0.0
+        yield_pct = None
+    elif price <= 0:
         posture_key = "NO_DATA"
         posture_label = "⚪ 資料不足"
-        posture_name = "缺報價或配息資料，暫不判定"
-        valve_action = "待下次巡檢取得報價與近 12 個月配息後再評估"
-    # 優先級 1：高息陷阱斷路
-    elif yield_rate >= 0.08 and (net_score < 50 or div_score < 40):
-        posture_key = "TRAP_ALERT"
-        posture_label = "🚨 陷阱警戒"
-        posture_name = "高息陷阱斷路保護 (Yield Trap Trip)"
-        valve_action = "強制關閉加碼閥門！股息暫留現金池，啟動持股專案審查"
-        priority = 1
-    # 優先級 2：流速過快斷路
-    elif southbound_flow < -8000:
-        posture_key = "VELOCITY_PAUSE"
-        posture_label = "⏸️ 流速警戒"
-        posture_name = "資金流速過快警報 (Velocity Trip)"
-        valve_action = "暫緩大額市價單買進，等待資金流速放緩再行佈置"
-        priority = 2
-    # 優先級 3：積極進攻
-    elif yield_rate >= 0.082 and net_score >= 70 and div_score >= 60:
-        posture_key = "AGGRESSIVE_ACCUMULATE"
-        posture_label = "🟢 積極進攻"
-        posture_name = "積極進攻姿態 (Aggressive Accumulate)"
-        valve_action = "股息 100% 立即再投入，若有閒置資金啟動額外加碼，最大化滾動張數"
-        priority = 3
-    # 優先級 4：過熱防禦
-    elif yield_rate <= 0.048:
-        posture_key = "OVERVALUED_HOLD"
-        posture_label = "🟡 防禦觀望"
-        posture_name = "估值過熱防禦姿態 (Overvalued / Hold)"
-        valve_action = "停止加碼買進，維持既有部位持有，股息可部分保留現金儲備"
-        priority = 4
+        posture_name = "缺報價資料，暫不判定"
+        valve_action = "待下次巡檢取得報價後再評估"
+    else:
+        # 收息型 ETF (DIVIDEND_INCOME / BOND_DEFENSE) 且 annual_div > 0
+        yield_rate = annual_div / price if price > 0 else 0.0
+        yield_pct = round(yield_rate * 100.0, 2)
+        net_score = scores.get("netScore", 50)
+        div_score = scores.get("divScore", 50)
+
+        # 優先級 1：高息陷阱斷路 (僅非債券型且 net/div 評分破底)
+        if strategy_type != "BOND_DEFENSE" and yield_rate >= 0.08 and (net_score < 50 or div_score < 40):
+            posture_key = "TRAP_ALERT"
+            posture_label = "🚨 陷阱警戒"
+            posture_name = "高息陷阱斷路保護 (Yield Trap Trip)"
+            valve_action = "強制關閉加碼閥門！股息暫留現金池，啟動持股專案審查"
+            priority = 1
+        # 優先級 2：流速過快斷路 (僅港陸標的)
+        elif southbound_flow < -8000:
+            posture_key = "VELOCITY_PAUSE"
+            posture_label = "⏸️ 流速警戒"
+            posture_name = "資金流速過快警報 (Velocity Trip)"
+            valve_action = "暫緩大額市價單買進，等待資金流速放緩再行佈置"
+            priority = 2
+        # 優先級 3：積極進攻
+        elif yield_rate >= 0.082 and net_score >= 70 and div_score >= 60:
+            posture_key = "AGGRESSIVE_ACCUMULATE"
+            posture_label = "🟢 積極進攻"
+            posture_name = "積極進攻姿態 (Aggressive Accumulate)"
+            valve_action = "股息 100% 立即再投入，若有閒置資金啟動額外加碼，最大化滾動張數"
+            priority = 3
+        # 優先級 4：過熱防禦
+        elif yield_rate <= 0.048:
+            posture_key = "OVERVALUED_HOLD"
+            posture_label = "🟡 防禦觀望"
+            posture_name = "估值過熱防禦姿態 (Overvalued / Hold)"
+            valve_action = "停止加碼買進，維持既有部位持有，股息可部分保留現金儲備"
+            priority = 4
+        else:
+            posture_key = "STEADY_REINVEST"
+            posture_label = "🔵 穩健複利"
+            posture_name = "預設穩健複利姿態 (Steady Reinvest)"
+            valve_action = "維持例行性半年配息再投入，按部就班累積雪球"
+            priority = 5
 
     # 個股卡片：以「每一張（lot_shares）對 50 萬目標的貢獻度」取代持股達成率（不輸出個人持股）
     contribution_pct = None
@@ -256,20 +298,22 @@ def evaluate_ticker_posture(
     if ticker_info.get("category") == "STOCK" and lot_shares and annual_div and fx_to_twd:
         contribution_pct = round(lot_shares * annual_div * fx_to_twd * tax_retention / 500000.0 * 100.0, 2)
 
-    # 50 萬被動股利目標達成率計算（比率計算，不輸出個人持股張數）
-    progress_pct = 0.0
+    # 50 萬被動股利目標達成率計算（僅收息型且卡片明確指定 base_shares 時才計算，不虛構假設張數）
+    progress_pct = 0.0 if is_stock else None
     sp_title = "50萬被動股利目標"
     loops = cards_data.get("loops", [])
-    if loops:
+    if loops and not is_growth and not is_stock:
         first_loop = loops[0]
         params = first_loop.get("parameters", {})
         sp = params.get("setpoint_sp", 500000.0)
         snowball = first_loop.get("snowball_simulator", {})
-        base_shares = snowball.get("base_shares", 300000)
-        pv = base_shares * annual_div * tax_retention
-        if sp > 0:
+        base_shares = snowball.get("base_shares")
+        if base_shares and annual_div > 0 and sp > 0:
+            pv = base_shares * annual_div * tax_retention
             progress_pct = round((pv / sp) * 100.0, 1)
         sp_title = first_loop.get("title", sp_title)
+
+    resolved_strategy = strategy_type or ("STOCK" if is_stock else ("CAPITAL_GROWTH" if is_growth else "DIVIDEND_INCOME"))
 
     return {
         "ticker": cards_data.get("ticker_id"),
@@ -278,7 +322,7 @@ def evaluate_ticker_posture(
         "price": price,
         "annual_dividend": annual_div,
         "yield_rate": yield_rate,
-        "yield_pct": round(yield_rate * 100.0, 2),
+        "yield_pct": yield_pct,
         "posture_key": posture_key,
         "posture_label": posture_label,
         "posture_name": posture_name,
@@ -288,6 +332,7 @@ def evaluate_ticker_posture(
         "goal_title": sp_title,
         "scores": scores,
         "category": ticker_info.get("category", "ETF"),
+        "strategy_type": resolved_strategy,
         "lot_contribution_pct": contribution_pct,
         "swing": swing,
     }

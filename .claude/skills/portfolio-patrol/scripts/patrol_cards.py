@@ -170,16 +170,21 @@ def check_watchdog(cards_data: Dict[str, Any], max_stale_days: int = 5) -> Dict[
 
 
 def format_progress(item: Dict[str, Any]) -> str:
-    """目標達成率顯示：個股卡片顯示每 1,000 股對 50 萬目標的貢獻，ETF 顯示整體達成率。"""
+    """目標達成率顯示：個股卡片顯示每 1,000 股對 50 萬目標的貢獻，ETF 顯示整體達成率；未持股或成長型顯示 -。"""
     if item.get("lot_contribution_pct") is not None:
         return f"每千股+{item['lot_contribution_pct']:.2f}%"
-    return f"{item['goal_progress_pct']:.1f}%"
+    pct = item.get("goal_progress_pct")
+    if pct is None:
+        return "-"
+    return f"{pct:.1f}%"
 
 
 def format_yield_or_return(item: Dict[str, Any]) -> str:
-    """ETF 顯示殖利率；個股顯示階段性含息報酬率（3M／1Y），抓不到時顯示 -。"""
+    """ETF 顯示殖利率；個股顯示階段性含息報酬率（3M／1Y）；成長型或無配息顯示 -。"""
     if item.get("category") == "STOCK":
         r = ((item.get("swing") or {}).get("returns_total")) or {}
         parts = [f"{k}{r[k]:+.1f}%" for k in ("3M", "1Y") if r.get(k) is not None]
         return " ".join(parts) if parts else "-"
+    if item.get("yield_pct") is None or item.get("annual_dividend", 0) <= 0:
+        return "-"
     return f"{item['yield_pct']:.2f}%"

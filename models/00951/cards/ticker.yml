@@ -7,6 +7,7 @@ full_name: "台新日本半導體ETF證券投資信託基金"
 currency: TWD
 exchange: TWSE
 category: ETF
+strategy_type: CAPITAL_GROWTH
 manager: "賴昭吟"
 benchmark: "NYSE FactSet日本半導體指數"
 last_model_update: "2026-10-18"

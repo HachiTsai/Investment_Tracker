@@ -7,6 +7,7 @@ full_name: "中國信託日本商社及批發ETF證券投資信託基金"
 currency: TWD
 exchange: TPEx
 category: ETF
+strategy_type: CAPITAL_GROWTH
 manager: "辛忠駿"
 benchmark: "NYSE FactSet 日本商社及批發指數"
 last_model_update: "2026-10-19"
