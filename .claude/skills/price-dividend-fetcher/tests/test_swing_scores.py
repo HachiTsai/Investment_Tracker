@@ -156,3 +156,17 @@ def test_daily_template_flow_has_ticker_picker():
     tpl = (Path(swing.__file__).resolve().parent.parent / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
     for key in ("fpdlg", "flPick", "dpFlSel.v1", "function flBase", "選擇標的"):
         assert key in tpl
+
+
+def test_daily_template_has_indicator_help_popups():
+    from pathlib import Path
+    import swing
+    tpl = (Path(swing.__file__).resolve().parent.parent / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
+    for key in ("class=\"ih\"", ".h-box", "helpmask", "HELP={", "data-help"):
+        assert key in tpl
+    assert "🔍 這個指標在看什麼？" in tpl
+    assert "🎯 協助什麼判斷？" in tpl
+    for ind in ("name", "state", "posture", "close", "yield", "rsi", "p52", "fib", "lms", "combo", "trend", "macd", "vol", "ret", "total", "stop", "sr", "boll", "ma20"):
+        assert f'{ind}:' in tpl or f'HELP["{ind}"]' in tpl
+    assert '!e.target.closest("[data-help]")' in tpl
+
