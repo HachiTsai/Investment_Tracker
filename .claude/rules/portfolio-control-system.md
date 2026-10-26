@@ -61,15 +61,24 @@
 
 ---
 
-## 4. 實體識別碼（ID）規範
+## 4. 實體識別碼（ID）與卡片結構規範
 
-| 實體類型 | ID 格式範例 | 說明 |
-| :--- | :--- | :--- |
-| 標的卡片 | `card:ticker:00882` | 核心追蹤投資標的 |
-| 成分股卡片 | `card:comp:1919` | 49 檔底層成分股，以港股代號識別 |
-| 控制迴路卡片 | `card:loop:passive_income_500k` | 50 萬被動股利年收入目標控制迴路 |
-| 風控互鎖卡片 | `card:interlock:yield_trap_guard` | 殖利率陷阱與策略狀態互鎖保護邏輯 |
-| 情報訊號 | `sig-YYYY-MM-DD-<流水號>` | 寫入情報資料庫的客觀事實訊號 |
+| 實體類型 | ID 格式範例 | 對應檔案與生成條件 | 說明 |
+| :--- | :--- | :--- | :--- |
+| 標的卡片 | `card:ticker:00882` | `ticker.yml`（必備） | 核心追蹤投資標的；含 `category`（`ETF` / `STOCK`）、`tier`（`core` / `pool`）與 `strategy_type` 欄位 |
+| 成分股卡片 | `card:comp:1919` | `constituents.jsonl`（ETF 必備） | 底層成分股代號、名稱、權重與持有股數 |
+| 控制迴路卡片 | `card:loop:passive_income_500k` | `loop_dividend_500k.yml`（僅 `DIVIDEND_INCOME` 產生） | 50 萬被動股利年收入目標控制迴路；成長型（`CAPITAL_GROWTH`）等非高息型 ETF 不產生此卡片 |
+| 風控互鎖卡片 | `card:interlock:yield_trap_guard` | `interlock_yield_trap.yml`（`HEDGING_OR_DERIVATIVE` 除外） | 殖利率陷阱與策略狀態互鎖保護邏輯 |
+| 情報訊號 | `sig-YYYY-MM-DD-<流水號>` | 情報資料庫試算表 | 寫入情報資料庫的客觀事實訊號 |
+
+### `ticker.yml` 之 `strategy_type` 策略類型定義
+
+| `strategy_type` 值 | 資產策略定位 | `loop_dividend_500k.yml` 生成規則 | 巡檢狀態判定軌道 |
+| :--- | :--- | :---: | :--- |
+| `DIVIDEND_INCOME` | 高股息／收息型 ETF | ✅ 產生 | 殖利率區間 × 基本面高息陷阱互鎖（50 萬股利目標收斂） |
+| `CAPITAL_GROWTH` | 市值／科技／成長型 ETF | ❌ 不產生 | 波段技術位階與趨勢配置狀態（不計算 50 萬股利達成率） |
+| `BOND_DEFENSE` | 債券防禦型 ETF | ❌ 不產生 | 債券合理息收區間（積極佈建／穩健配置／防禦觀望） |
+| `HEDGING_OR_DERIVATIVE` | 槓桿／反向／期貨型 ETF | ❌ 不產生 | 獨立避險或波段觀察，不納入長線收息迴路 |
 
 ---
 
