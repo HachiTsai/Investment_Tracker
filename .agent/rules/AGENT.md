@@ -12,12 +12,14 @@
 2. **採用 Claude Code 官方語法編寫**：
    - 新增或修改任何 Rule、Skill（`SKILL.md`）或設定時，一律遵循 **Claude 官方原生語法與目錄結構**編寫於 `.claude/` 下。
    - 新增 `.claude/rules/<name>.md` 時，同步將引用加入根目錄 `CLAUDE.md` 與本檔案（`.agent/rules/AGENT.md`）第 2 節清單中。
-3. **本機環境與測試鐵律**：
+3. **本機環境、分支與測試鐵律**：
    - 本機環境（macOS / Antigravity）一律綁定 Conda 環境（`ai-it-go`，Python 3.14.8）。
+   - 分支命名：Antigravity 作業一律使用 `agy/<task-name>` 分支，Claude 作業一律使用 `claude/<task-name>` 分支；不得直接 push 至 `main`。`ci.yml` 的 `auto-merge` 對 `claude/` 與 `agy/` 開頭分支皆自動合併（不限定 PR 範圍）。
    - 提交前必須先執行測試與語法檢查（`pytest` 與 `markdown-linter`）。
-   - 變更提交一律遵循分支與 PR 機制，不得直接 push 至 `main`。
 
-4. **憲法（同 `CLAUDE.md`）**：變更 `.claude/` 下的 skills／workflows／hooks／tools 時，提交前必須先掃描 `.claude/rules/`、`CLAUDE.md` 與本檔，條列可能需要更新的規定並詢問 Hachi，經同意才更新。
+4. **憲法（動工前預檢與 PR 規則掃描，同 `CLAUDE.md`）**：
+   - **動工前預檢**：開工前必先寫出作業範圍、流程、步驟，逐步對照 `.claude/rules/*.md`、`CLAUDE.md` 與本檔（`.agent/rules/AGENT.md`）。相關的話先列清單給 Hachi，經同意後才改；無關也要明寫「已掃描 rules，無需更新」。
+   - **PR 描述固定段落與 CI 備援檢查**：所有 PR 描述固定加上「規則掃描」段落（列出掃了哪些檔、結論、Hachi 同意的訊息位置）。CI 設有備援檢查：PR 若改到 `.claude/`、`CLAUDE.md` 或 `.agent/rules/AGENT.md` 卻缺少「規則掃描」段落即失敗。
 
 ---
 
