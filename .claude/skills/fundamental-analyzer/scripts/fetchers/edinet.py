@@ -7,11 +7,12 @@ HTTP 200 仍要查 body 的 metadata.status；IFRS 與日本會計準則的要�
 import datetime
 import io
 import json
+import re
 import threading
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 
 from . import clean, http_bytes, http_json, ratio
 
@@ -139,20 +140,45 @@ def save_doc(sec_code: str, entry: Dict[str, str]) -> None:
         pass
 
 
-def parse_rows(zip_bytes: bytes) -> Dict[str, float]:
-    """取 jpcrp030000-asr 主檔（UTF-16、tab 分隔），只留合併當期的數值，鍵為不含命名空間的要素 ID。"""
+def xbrl_rows(zip_bytes: bytes) -> Iterator[Tuple[str, str, str]]:
+    """jpcrp030000-asr 主檔（UTF-16、tab 分隔）的每一列：(不含命名空間的要素 ID, コンテキストID, 原始值字串)。"""
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
         name = next(n for n in z.namelist() if "jpcrp030000-asr" in n)
         text = z.read(name).decode("utf-16")
-    out: Dict[str, float] = {}
     for line in text.splitlines()[1:]:
         f = [c.strip('"') for c in line.split("\t")]
-        if len(f) < 9 or f[2] not in ("CurrentYearDuration", "CurrentYearInstant"):
+        if len(f) >= 9:
+            yield f[0].split(":")[-1], f[2], f[8]
+
+
+def parse_rows(zip_bytes: bytes) -> Dict[str, float]:
+    """取 jpcrp030000-asr 主檔，只留合併當期的數值，鍵為不含命名空間的要素 ID。"""
+    out: Dict[str, float] = {}
+    for tag, ctx, val in xbrl_rows(zip_bytes):
+        if ctx not in ("CurrentYearDuration", "CurrentYearInstant"):
             continue
         try:
-            out.setdefault(f[0].split(":")[-1], float(f[8].replace(",", "")))
+            out.setdefault(tag, float(val.replace(",", "")))
         except ValueError:
             continue
+    return out
+
+
+HISTORY_CONTEXT = re.compile(r"(Current|Prior(\d))Year(?:Duration|Instant)")  # 當期，以及前一期起的比較期間（Prior1～Prior4）
+
+
+def parse_history(zip_bytes: bytes) -> Dict[str, Dict[int, float]]:
+    """近五年的數值：{要素 ID: {年數偏移: 值}}，0 為當期、1 為前一期，依此類推。只留不含成員別（連結個別之外）的 context。"""
+    out: Dict[str, Dict[int, float]] = {}
+    for tag, ctx, val in xbrl_rows(zip_bytes):
+        m = HISTORY_CONTEXT.fullmatch(ctx)
+        if not m:
+            continue
+        try:
+            v = float(val.replace(",", ""))
+        except ValueError:
+            continue
+        out.setdefault(tag, {}).setdefault(0 if m.group(1) == "Current" else int(m.group(2)), v)
     return out
 
 
@@ -174,12 +200,18 @@ def edinet_info(vals: Dict[str, float]) -> Dict[str, Any]:
     })
 
 
-def fetch(code: str) -> Dict[str, Any]:
+def report_bytes(code: str) -> Optional[bytes]:
+    """4 碼代號最新有價證券報告書的 XBRL 壓縮檔；查不到回 None。命中快取時不掃日期。"""
     sec_code = f"{code}0" if len(code) == 4 else code
     doc = cached_doc(sec_code)
     if not doc:
         doc = find_doc(sec_code)
         if not doc:
-            return {}
+            return None
         save_doc(sec_code, doc)
-    return edinet_info(parse_rows(http_bytes(f"{BASE}/documents/{doc['docID']}?type=5")))
+    return http_bytes(f"{BASE}/documents/{doc['docID']}?type=5")
+
+
+def fetch(code: str) -> Dict[str, Any]:
+    raw = report_bytes(code)
+    return edinet_info(parse_rows(raw)) if raw else {}

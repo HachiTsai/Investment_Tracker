@@ -33,6 +33,12 @@ PROFILES: Dict[str, Dict[str, Any]] = {
         fxnote="股價、股利與財報都是美元，頁面不換算新台幣。",
         ynote="殖利率以近 12 月股息除以 Yahoo Finance 股價（股息依除息日計）",
         ysrc="Yahoo Finance 股價與股息，美元；財報 SEC EDGAR 10-K，美元"),
+    "jp": dict(
+        cur="日圓", src="EDINET", unit_note=YIELD_NOTE, fin_orgs=[], mid=False, split_fin=False,
+        qnote="日股這一頁只用有價證券報告書（年度），沒有季度 EPS；股利只有除息日與金額（Yahoo Finance），沒有付款日與類別，「當年度已配發」與「當期配息率」留白。",
+        fxnote="股價、股利與財報都是日圓，頁面不換算新台幣。",
+        ynote="殖利率以近 12 月股息除以股價（股價先 Google Finance，失敗時改用 Yahoo Finance；股息依除息日計）",
+        ysrc="Google Finance 股價（Yahoo Finance 備援）與 Yahoo Finance 股息，日圓；財報 EDINET 有價證券報告書，日圓"),
 }
 
 
