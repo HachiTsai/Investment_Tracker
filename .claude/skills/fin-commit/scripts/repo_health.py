@@ -118,7 +118,7 @@ def _note_handoff_rows(repo: Path):
 
 
 def _session_sync_handoff_rows(repo: Path, default: str = "main"):
-    """檢查最新 commit（若 HEAD 為 Merge Commit 則穿透讀 HEAD^2）的 Session-Sync 下一步／阻塞，以及未合併的 origin/claude/* 分支。"""
+    """檢查最新 commit（若 HEAD 為 Merge Commit 則穿透讀 HEAD^2）的 Session-Sync 下一步／阻塞，以及未合併的 origin/claude/* 與 origin/agy/* 分支。"""
     rows = []
     code, msg = _run(["git", "log", "-1", "--format=%B", "HEAD"], repo)
     if code == 0 and "## Session-Sync" not in msg:
@@ -139,7 +139,16 @@ def _session_sync_handoff_rows(repo: Path, default: str = "main"):
                 detail += f"（阻塞：{blk}）"
             rows.append((WARN, "交接下一步", detail))
     _, cur_br = _run(["git", "branch", "--show-current"], repo)
-    code, refs = _run(["git", "for-each-ref", "--format=%(refname:short)", "refs/remotes/origin/claude/"], repo)
+    code, refs = _run(
+        [
+            "git",
+            "for-each-ref",
+            "--format=%(refname:short)",
+            "refs/remotes/origin/claude/",
+            "refs/remotes/origin/agy/",
+        ],
+        repo,
+    )
     c_main, main_ts = _run(["git", "log", "-1", "--format=%ct", f"origin/{default}"], repo)
     if code == 0 and refs and c_main == 0 and main_ts.isdigit():
         for ref in refs.splitlines():

@@ -24,11 +24,12 @@
 
 ## 憲法：`.claude/` 變更必先掃描 rules
 
-只要變更 `.claude/` 下任何內容（`skills/`、`workflows/`、`hooks`／`settings.json`、`tools`／腳本，含新增、修改、刪除），**提交前必須先做這三步，不得省略、不待提醒**：
+只要變更 `.claude/` 下任何內容（`skills/`、`workflows/`、`hooks`／`settings.json`、`tools`／腳本，含新增、修改、刪除），**開工與提交前必須先做以下預檢與掃描，不得省略、不待提醒**：
 
-1. **掃描**：逐一檢查 `.claude/rules/*.md`、`CLAUDE.md`、`.agent/rules/AGENT.md` 是否與本次變更相關（觸發時機、檢查機制、指令、技能清單、索引）。
+1. **動工前預檢與掃描**：開工前先寫出作業範圍、流程、步驟，逐步對照 `.claude/rules/*.md`、`CLAUDE.md`、`.agent/rules/AGENT.md` 是否與本次變更相關（觸發時機、檢查機制、指令、技能清單、索引）。
 2. **列出**：在回覆中條列「哪些規則檔可能需要更新、為什麼」；掃描後確認無關也要明寫「已掃描 rules，無需更新」。
 3. **詢問**：把清單交給 Hachi，詢問是否更新；經同意才改規則檔，並與本次變更放在同一個 PR。
+4. **PR 描述與 CI 備援檢查**：PR 描述固定加「規則掃描」段落（掃了哪些檔、結論、Hachi 同意的訊息位置）。CI 設有備援檢查：PR 若改到 `.claude/`、`CLAUDE.md` 或 `.agent/rules/AGENT.md` 卻缺少該段落即失敗。
 
 規則檔與實際行為不一致時，視為缺漏，須在同一輪回報。
 
@@ -137,7 +138,7 @@ scripts/                     共用計算或抓價工具
 ## Git 與 Commit
 
 - **雙 Agent 協作分工**：Claude 雲端（Linux 環境）負責前端 HTML Artifact 渲染與定時排程，Antigravity（macOS 本機環境）負責重度後端演算與歷史回測；雙方透過 Session-Sync 與交接雷達（`committer.py --check-env` / `--sync` / `--patrol` 之 `check_handoff`）無縫接力，避免雲端額度浪費。
-- **先開 PR 再合併 `main`**：所有變更（含文件）都在工作階段指定的分支上 commit 並推送，開 PR 到 `main`；PR 的 CI 全綠後由 `ci.yml` 的 `auto-merge` job 自動合併（僅限同 repo、`claude/` 開頭分支；草稿會先自動轉正式；用 Secrets `AUTO_MERGE_PAT`，Hachi 已授權，不另等人工審查），Claude 於合併後確認 `main` 的 CI 也通過，失敗就立刻修正。不直接推 `main`。
+- **先開 PR 再合併 `main`**：Claude 作業一律使用 `claude/<task-name>` 分支，Antigravity 作業一律使用 `agy/<task-name>` 分支。所有變更（含文件）都在工作階段指定的分支上 commit 並推送，開 PR 到 `main`（PR 描述固定附「規則掃描」段落）；PR 的 CI 全綠後由 `ci.yml` 的 `auto-merge` job 自動合併（涵蓋同 repo 之 `claude/` 或 `agy/` 開頭分支，不限定 PR 範圍；草稿會先自動轉正式；用 Secrets `AUTO_MERGE_PAT`，Hachi 已授權，不另等人工審查），Agent 於合併後確認 `main` 的 CI 也通過，失敗就立刻修正。不直接推 `main`。
   - **合併方式一律用 merge commit**（不用 squash、不用 rebase），保留分支上每個 commit 的完整訊息，方便用 `git log --grep` 回溯。
   - **草稿 PR 全自動**：雲端工作階段的系統指令要求 PR 先開為草稿。`auto-merge` job 不分草稿與否，CI 全綠後先 `gh pr ready` 轉為正式 PR，再以 merge commit 合併，全程免人工。
   - 舊規則（2026-10-15 前）：Hachi 授權不另開分支與 PR，commit 後直接 push 到 `main`。改用 PR 是為了讓變更先過 CI 再進 `main`。

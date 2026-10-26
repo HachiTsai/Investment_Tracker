@@ -123,3 +123,25 @@ def test_check_handoff_detects_draft_note_and_session_sync(tmp_path):
     assert any(k == "交接下一步" and "接手完成後端測試" in d and "雲端額度耗盡" in d for _, k, d in rows2)
 
 
+def test_check_handoff_detects_unmerged_claude_and_agy_branches(tmp_path):
+    a, b = _make_pair(tmp_path)
+    _git(a, "checkout", "-q", "-b", "claude/feat-one")
+    (a / "c1.txt").write_text("1", encoding="utf-8")
+    _git(a, "add", ".")
+    _git(a, "commit", "-qm", "feat(claude): one")
+    _git(a, "push", "-q", "-u", "origin", "claude/feat-one")
+
+    _git(a, "checkout", "-q", "main")
+    _git(a, "checkout", "-q", "-b", "agy/feat-two")
+    (a / "a2.txt").write_text("2", encoding="utf-8")
+    _git(a, "add", ".")
+    _git(a, "commit", "-qm", "feat(agy): two")
+    _git(a, "push", "-q", "-u", "origin", "agy/feat-two")
+
+    _git(b, "fetch", "-q", "origin")
+    rows = rh.check_handoff(b)
+    assert any(k == "未合併分支" and "origin/claude/feat-one" in d for _, k, d in rows)
+    assert any(k == "未合併分支" and "origin/agy/feat-two" in d for _, k, d in rows)
+
+
+

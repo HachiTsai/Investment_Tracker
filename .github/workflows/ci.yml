@@ -11,9 +11,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: "22"
+      - name: PR 規則掃描段落備援檢查（動到 .claude/、CLAUDE.md、AGENT.md 時必填）
+        if: github.event_name == 'pull_request'
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          CHANGED=$(git diff --name-only "origin/${BASE_REF}...HEAD" || true)
+          NEED_CHECK=0
+          for f in $CHANGED; do
+            case "$f" in
+              .claude/*|CLAUDE.md|.agent/rules/AGENT.md|AGENT.md)
+                NEED_CHECK=1
+                break
+                ;;
+            esac
+          done
+          if [ "$NEED_CHECK" -eq 1 ]; then
+            if ! printf '%s' "$PR_BODY" | grep -q "規則掃描"; then
+              echo "::error::PR 變更包含 .claude/、CLAUDE.md 或 AGENT.md，但 PR 描述缺少「規則掃描」段落。"
+              exit 1
+            fi
+            echo "✅ PR 描述已包含「規則掃描」段落。"
+          else
+            echo "ℹ️ 未變更 .claude/、CLAUDE.md 或 AGENT.md，略過規則掃描段落檢查。"
+          fi
       - name: markdownlint（.markdownlint-cli2.jsonc）
         run: python3 .claude/skills/markdown-linter/scripts/mdlint.py
 
@@ -37,7 +64,7 @@ jobs:
     needs: [markdown-lint, skill-tests]
     if: >-
       github.event_name == 'pull_request'
-      && startsWith(github.head_ref, 'claude/')
+      && (startsWith(github.head_ref, 'claude/') || startsWith(github.head_ref, 'agy/'))
       && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
