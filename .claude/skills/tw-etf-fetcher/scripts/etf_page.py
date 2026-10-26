@@ -3,10 +3,11 @@
 範本在 references/constituents_template.html，市場差異（幣別、資料來源說明、金融業判斷、有無中期配息）
 全放在 PROFILES；新增市場只要加一份設定，不必改範本。
 """
-import json
 import re
 from pathlib import Path
 from typing import Any, Dict, List
+
+from etf_market import json_for_script
 
 TEMPLATE = Path(__file__).resolve().parent.parent / "references" / "constituents_template.html"
 
@@ -30,7 +31,7 @@ def render(profile: str, etf: str, ncomp: int, data: List[dict], miss: List[dict
            asof: str, n: int, top: str, unit: str, nav: str = "") -> str:
     """把資料與市場設定代入範本。佔位符皆為 __NAME__，缺任何一個會讓 assert 失敗，避免漏填。"""
     p = PROFILES[profile]
-    dump = lambda o: json.dumps(o, ensure_ascii=False)  # noqa: E731
+    dump = json_for_script
     page = TEMPLATE.read_text(encoding="utf-8")
     pairs = [
         ("__DATA__", dump(data)), ("__MISS__", dump(miss)), ("__FIN__", dump(fin)),

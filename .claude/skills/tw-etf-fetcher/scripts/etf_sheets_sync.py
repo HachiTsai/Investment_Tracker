@@ -38,6 +38,7 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from etf_list_scraper import fetch_twse_etf_list
 from etf_holdings_scraper import fetch_etf_holdings
+import etf_market
 
 ETF_PRICE_SNAPSHOTS: Dict[str, float] = {
     "0050": 109.0,
@@ -460,6 +461,10 @@ def sync_via_google_api(
 ) -> Tuple[bool, str]:
     """使用輕量 Google Sheets API 客戶端將 CSV 批次同步至 Google Sheets。"""
     try:
+        etf_market.guard_sheet_id(sheet_id)
+    except etf_market.CoreWriteRefused as e:
+        return False, str(e)
+    try:
         sys.path.insert(0, str(REPO_ROOT / ".claude/skills/price-dividend-fetcher/scripts"))
         from google_sheets import GoogleSheetsClient
         client = GoogleSheetsClient()
@@ -578,6 +583,10 @@ def sync_to_google_sheets(
     gsheets_bin: Optional[str] = None,
 ) -> Tuple[bool, str]:
     """透過 Google API 或 gsheets CLI 將 CSV 回填至 Google Sheets 雲端試算表。"""
+    try:
+        etf_market.guard_sheet_id(sheet_id)
+    except etf_market.CoreWriteRefused as e:
+        return False, str(e)
     if os.environ.get("GCP_SA_KEY") or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"):
         return sync_via_google_api(sheet_id, summary_csv, constituents_csv)
 

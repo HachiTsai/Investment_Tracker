@@ -25,7 +25,7 @@ def test_holdings_fall_back_to_cards(tmp_path, monkeypatch):
 
     def down(_):
         raise RuntimeError("moneydj down")
-    monkeypatch.setattr(etf_pool.etf_holdings_scraper, "fetch_etf_holdings", down)
+    monkeypatch.setattr(etf_pool.etf_table.etf_holdings_scraper, "fetch_etf_holdings", down)
     h = etf_pool.holdings_for("0050", str(tmp_path))
     assert "備援" in h["source"] and h["constituents"][0]["symbol"] == "2330.TW"
 
