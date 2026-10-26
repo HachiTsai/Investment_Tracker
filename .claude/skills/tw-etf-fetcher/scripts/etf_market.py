@@ -114,6 +114,7 @@ class Market:
     unit_note: str = ""  # 頁首頭條數字的說明；空白沿用 etf_page.PROFILES
     source_note: str = ""  # 索引頁的財報與股價來源說明
     finish: Optional[Callable[[Dict[str, Dict[str, Any]], date], Dict[str, Dict[str, Any]]]] = None  # 資料池完成後的跨檔步驟
+    accept_coverage: Tuple[str, ...] = ("full",)  # 採用官方持股的 coverage；美股只有前幾大持股，允許 partial（頁面標示）
 
 
 def market_stocks(market: Market, holdings: Dict[str, Any]) -> List[Dict[str, Any]]:

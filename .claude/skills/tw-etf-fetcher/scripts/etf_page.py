@@ -5,7 +5,7 @@
 """
 import re
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from etf_market import json_for_script
 
@@ -27,21 +27,32 @@ PROFILES: Dict[str, Dict[str, Any]] = {
         fxnote="台股股息與報表同為新台幣，不需換算。",
         ynote="殖利率以近 12 月股息除以 Google Finance 股價（股息來自 FinMind，採最近幾次定期分配）",
         ysrc="Google Finance 股價、FinMind 股息，新台幣元"),
+    "us": dict(
+        cur="美元", src="SEC EDGAR", unit_note=YIELD_NOTE, fin_orgs=[], mid=False, split_fin=False,
+        qnote="美股這一頁只用 10-K 年報，沒有季度 EPS；股利只有除息日與金額（Yahoo Finance），沒有付款日與類別，「當年度已配發」與「當期配息率」留白。",
+        fxnote="股價、股利與財報都是美元，頁面不換算新台幣。",
+        ynote="殖利率以近 12 月股息除以 Yahoo Finance 股價（股息依除息日計）",
+        ysrc="Yahoo Finance 股價與股息，美元；財報 SEC EDGAR 10-K，美元"),
 }
 
 
 def render(profile: str, etf: str, ncomp: int, data: List[dict], miss: List[dict], fin: Dict[str, Any],
-           asof: str, n: int, top: str, unit: str, nav: str = "", unit_note: str = "") -> str:
-    """把資料與市場設定代入範本。佔位符皆為 __NAME__，缺任何一個會讓 assert 失敗，避免漏填。"""
+           asof: str, n: int, top: str, unit: str, nav: str = "", unit_note: str = "", partial_total: Optional[float] = None) -> str:
+    """把資料與市場設定代入範本。佔位符皆為 __NAME__，缺任何一個會讓 assert 失敗，避免漏填。
+    partial_total 是持股只涵蓋部分基金時的合計權重（%）：整體本益比卡片改寫成「占基金」，不寫成「權重 100%」；完整持股不傳，輸出與原本相同。"""
     p = PROFILES[profile]
     dump = json_for_script
     page = TEMPLATE.read_text(encoding="utf-8")
+    partial = partial_total is not None
     pairs = [
         ("__DATA__", dump(data)), ("__MISS__", dump(miss)), ("__FIN__", dump(fin)),
         ("__QNOTE__", p["qnote"]), ("__FXNOTE__", p["fxnote"]), ("__YNOTE__", p["ynote"]), ("__YSRC__", p["ysrc"]),
         ("__FINORGS__", dump(p["fin_orgs"])), ("__MID__", "true" if p["mid"] else "false"), ("__SPLIT__", "true" if p["split_fin"] else "false"),
         ("__ASOF__", asof), ("__NAV__", nav), ("__N__", str(n)), ("__TOP__", top), ("__UNIT__", unit), ("__UNITNOTE__", unit_note or p["unit_note"]),
         ("__NCOMP__", str(ncomp)), ("__ETF__", etf), ("__CUR__", p["cur"]), ("__SRC__", p["src"]),
+        ("__PARTIAL__", f"（只含前幾大持股，合計約占基金 {partial_total:.1f}%，其餘持股未納入計算）" if partial else ""),
+        ("__WLABEL__", "占基金 " if partial else "權重 "),
+        ("__WEXPR__", "pa.w.toFixed(1)" if partial else "(pa.w/tw*100).toFixed(0)"),
     ]
     for k, v in pairs:
         page = page.replace(k, v)
