@@ -9,7 +9,7 @@ import json
 import os
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, wait
 from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -81,6 +81,7 @@ def _tw_code(symbol: str) -> Optional[str]:
 
 
 # 台股是目前唯一的市場實作。持股與個股用 lambda 轉接，測試替換模組上的函式時仍會生效。
+# 限流與健康門檻沿用 etf_market 的預設值；其他市場在各自的 Market 上覆寫 limits、gate。
 TW = etf_market.Market(
     code="TW", name="台股", profile="tw", currency="TWD",
     parse_code=_tw_code,
@@ -94,23 +95,45 @@ def tw_stocks(holdings: Dict[str, Any]) -> List[Dict[str, Any]]:
     return etf_market.market_stocks(TW, holdings)
 
 
-def build_pool(codes: Dict[str, str], today: Optional[date] = None, workers: int = 6,
-               market: etf_market.Market = TW) -> Dict[str, Dict[str, Any]]:
-    """資料池：{代號: 名稱} → {代號: 個股結果}。每檔只抓一次，多個 ETF 共用。"""
+RETRY_ON = ("financials", "dividends", "pbr")  # 限流造成的失敗（FinMind 回錯誤）才補抓
+
+
+def _retryable(g: Dict[str, Any]) -> bool:
+    return any(e.startswith(RETRY_ON) for e in g["errs"])
+
+
+def build_pool(codes: Dict[str, str], today: Optional[date] = None, workers: Optional[int] = None,
+               market: etf_market.Market = TW, deadline: Optional[float] = None) -> Dict[str, Dict[str, Any]]:
+    """資料池：{代號: 名稱} → {代號: 個股結果}。每檔只抓一次，多個 ETF 共用。
+    deadline 是 time.monotonic() 的時刻，預設為現在起算的市場總時間上限；超過就拋出 TimeLimitExceeded，不回傳部分結果。"""
     today = today or date.today()
+    limits = market.limits
+    deadline = time.monotonic() + limits.max_seconds if deadline is None else deadline
     try:
         industry = market.industry()
     except Exception:  # noqa: BLE001  產業別抓不到只影響金融股判斷
         industry = {}
-    with ThreadPoolExecutor(workers) as ex:
-        got = list(ex.map(lambda kv: market.stock(kv[0], kv[1], industry.get(kv[0]), today), codes.items()))
+    ex = ThreadPoolExecutor(workers or limits.workers)
+    try:
+        futures = [ex.submit(market.stock, c, n, industry.get(c), today) for c, n in codes.items()]
+        _, pending = wait(futures, timeout=max(0.0, deadline - time.monotonic()))
+        if pending:
+            raise etf_market.TimeLimitExceeded(f"資料池抓取超過總時間上限 {limits.max_seconds:g} 秒，仍有 {len(pending)} 檔未完成")
+        got = [f.result() for f in futures]
+    finally:
+        ex.shutdown(wait=False, cancel_futures=True)
     pool = {g["c"]: g for g in got}
-    # 限流造成的失敗（FinMind 回錯誤）退避後單執行緒補抓一次；成功的請求有快取，不會重複打
-    for code in [c for c, g in pool.items() if any(e.startswith(("financials", "dividends", "pbr")) for e in g["errs"])]:
-        time.sleep(3)
-        again = market.stock(code, pool[code]["n"], industry.get(code), today)
-        if len(again["errs"]) < len(pool[code]["errs"]):
-            pool[code] = again
+    # 限流造成的失敗退避後單執行緒補抓；成功的請求有快取，不會重複打
+    for code in [c for c, g in pool.items() if _retryable(g)]:
+        for _ in range(limits.retries):
+            if time.monotonic() + limits.retry_wait > deadline:
+                raise etf_market.TimeLimitExceeded(f"補抓超過總時間上限 {limits.max_seconds:g} 秒")
+            time.sleep(limits.retry_wait)
+            again = market.stock(code, pool[code]["n"], industry.get(code), today)
+            if len(again["errs"]) < len(pool[code]["errs"]):
+                pool[code] = again
+            if not _retryable(pool[code]):
+                break
     return pool
 
 
@@ -152,7 +175,11 @@ def main(argv: List[str]) -> int:
     if len(argv) < 3:
         print(__doc__)
         return 2
-    r = build(argv[1].upper())
+    try:
+        r = build(argv[1].upper())
+    except etf_market.TimeLimitExceeded as e:
+        print(f"❌ [Time Limit] {e}，未寫入任何檔案", file=sys.stderr)
+        return 1
     open(argv[2], "w", encoding="utf-8").write(r["page"])
     print(json.dumps(r["summary"], ensure_ascii=False))
     if len(argv) > 3:

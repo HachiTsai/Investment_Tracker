@@ -8,11 +8,12 @@
 - find_forbidden_suffix：寫檔前掃描輸出，出現後綴就中止。
 - guard_sheet_id：寫入試算表前檢查目標，Investment_Tracker_Core 一律拒絕。
 - json_for_script：把 JSON 放進頁面的 script 區塊前跳脫 < > &，外部名稱不會截斷頁面。
+- gate_reasons：排程健康門檻判定（ETF 數量、缺價與財報、列數下限），資料池與全市場試算表共用同一套規則。
 """
 import json
 import re
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 SCHEMA_VERSION = 1
 
@@ -55,6 +56,42 @@ def json_for_script(obj: Any) -> str:
     return s
 
 
+class TimeLimitExceeded(RuntimeError):
+    """抓取超過市場的總時間上限：中止，且不寫入任何檔案。"""
+
+
+@dataclass(frozen=True)
+class Limits:
+    """限流與逾時：並行數、補抓次數與補抓前的等待秒數、整段抓取的總時間上限（秒，預設 15 分鐘）。"""
+    workers: int = 6
+    retries: int = 1
+    retry_wait: float = 3.0
+    max_seconds: float = 900.0
+
+
+@dataclass(frozen=True)
+class Gate:
+    """健康門檻：排程資料池（ETF 數量、缺價與缺財報合計、異常 ETF）與全市場試算表（列數）的下限與上限。"""
+    min_pool_etfs: int = 15
+    max_pool_missing: int = 10
+    max_pool_error_etfs: int = 0
+    min_summary_rows: int = 200
+    min_constituent_rows: int = 10000
+
+
+def gate_reasons(rules: Sequence[Tuple[str, float, float, str]]) -> List[str]:
+    """健康門檻判定：每條規則是 (說明, 實際值, 門檻, "min" 或 "max")。min 低於門檻、max 高於門檻就是一條失敗原因。"""
+    reasons = []
+    for label, value, limit, kind in rules:
+        if kind == "min" and value < limit:
+            reasons.append(f"{label}：{value} < {limit}")
+        elif kind == "max" and value > limit:
+            reasons.append(f"{label}：{value} > {limit}")
+        elif kind not in ("min", "max"):
+            raise ValueError(f"未知的門檻種類：{kind}")
+    return reasons
+
+
 @dataclass(frozen=True)
 class Market:
     """一個市場的接點。持股與個股函式由呼叫端注入，測試可替換；coverage_label 判定持股是否完整。"""
@@ -66,6 +103,8 @@ class Market:
     holdings: Callable[[str], Dict[str, Any]]             # ETF 代號 → 持股（as_of_date、source、constituents）
     stock: Callable[[str, str, Optional[str], Any], Dict[str, Any]]  # (代號, 名稱, 產業, 日期) → 個股結果
     industry: Callable[[], Dict[str, str]]                # 代號 → 產業別；抓不到就拋例外，由呼叫端退回空值
+    limits: Limits = Limits()                             # 並行數、補抓與總時間上限（台股用預設值）
+    gate: Gate = Gate()                                   # 健康門檻（資料池與全市場試算表共用）
 
 
 def market_stocks(market: Market, holdings: Dict[str, Any]) -> List[Dict[str, Any]]:
