@@ -140,9 +140,18 @@ def build_pool(codes: Dict[str, str], today: Optional[date] = None, workers: Opt
     return pool
 
 
+def per_unit_twd_dividend(holdings: Dict[str, Any], ok: List[Dict[str, Any]], fx: Optional[Dict[str, Any]]) -> Optional[float]:
+    """每單位台幣年股利（毛額）：Σ 持股數 × 近 12 月股息 × 匯率 ÷ 在外流通單位數，口徑與 hk-market-data 的 00882 頁相同。
+    持股來源沒有單位數、或沒有匯率，就回傳 None，頭條改用加權殖利率。"""
+    units = holdings.get("units")
+    if not units or not fx:
+        return None
+    return sum(r["q"] * (r["ttm"] or 0) for r in ok) * fx["rate"] / units
+
+
 def build_page(etf: str, holdings: Dict[str, Any], pool: Dict[str, Dict[str, Any]], today: date, nav: str = "",
-               market: etf_market.Market = TW) -> Dict[str, Any]:
-    """由持股與資料池組出單一 ETF 的頁面與摘要。"""
+               market: etf_market.Market = TW, fx: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """由持股與資料池組出單一 ETF 的頁面與摘要。fx 是外幣市場的匯率（etf_fx.fetch_rate），台股不傳。"""
     stocks = etf_market.market_stocks(market, holdings)
     rows = []
     for c in stocks:
@@ -157,11 +166,15 @@ def build_page(etf: str, holdings: Dict[str, Any], pool: Dict[str, Dict[str, Any
     rows_out = [{k: r[k] for k in keys} for r in ok]
     miss = [dict(c=r["c"], n=r["n"], w=r["w"], px=r["px"]) for r in rows if not r["px"]]
     partial = holdings.get("total_weight_pct", 0.0) if etf_market.coverage_label(holdings) == "partial" else None
+    per_unit = per_unit_twd_dividend(holdings, ok, fx)
+    unit, unit_note = (f"{per_unit:.3f} 元", etf_page.PER_UNIT_NOTE) if per_unit is not None else (f"{wy:.2f}%", market.unit_note)
     page = etf_page.render(market.profile, etf, len(stocks), rows_out, miss, fin, f"{today.isoformat()}（持股 {holdings['as_of_date']}，{holdings['source']}）",
-                           len(ok), f'{top["n"]} {top["w"]}%', f"{wy:.2f}%", nav=nav, unit_note=market.unit_note, partial_total=partial)
+                           len(ok), f'{top["n"]} {top["w"]}%', unit, nav=nav, unit_note=unit_note, partial_total=partial, fx=fx)
     errors = {r["c"]: pool[r["c"]]["errs"] for r in rows if pool[r["c"]]["errs"]}
     summary = dict(etf=etf, rows=len(ok), holdings=len(stocks), weight_pct=holdings.get("total_weight_pct"), no_price=[m["c"] for m in miss],
                    no_fin=[r["c"] for r in rows if not pool[r["c"]]["f"]], errors=errors, weighted_yield_pct=round(wy, 2))
+    if per_unit is not None:
+        summary["per_unit_twd"] = round(per_unit, 4)
     return dict(page=page, summary=summary, rows=rows_out, fin=fin)
 
 

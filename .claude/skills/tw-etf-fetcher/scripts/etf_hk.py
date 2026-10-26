@@ -62,8 +62,18 @@ def fetch_holdings(etf: str) -> Dict[str, Any]:
     cons = [dict(symbol=x["code_"], name=x["name_"], weight_pct=float(x["weights_"]),
                  shares=int(float(x["qty_"].replace(",", ""))))
             for x in hold["FundAssetsDetail"][0]["Data"] if parse_hk_code(x["code_"]) is not None]
-    return dict(ticker=etf, as_of_date=hold["FundAssets"][0]["資料日期"], source=etf_market.CTBC_SOURCE, total_count=len(cons),
-                total_weight_pct=round(sum(c["weight_pct"] for c in cons), 2), constituents=cons)
+    fa = hold["FundAssets"][0]
+    return dict(ticker=etf, as_of_date=fa["資料日期"], source=etf_market.CTBC_SOURCE, total_count=len(cons),
+                total_weight_pct=round(sum(c["weight_pct"] for c in cons), 2), constituents=cons,
+                units=_num(fa.get("基金在外流通單位數")), nav=_num(fa.get("基金每單位淨值")))
+
+
+def _num(s: Any) -> Optional[float]:
+    """基金資料的數字欄位是千分位字串；缺值或格式不符就回傳 None。"""
+    try:
+        return float(str(s).replace(",", ""))
+    except ValueError:
+        return None
 
 
 def _closes(code: str) -> List[Tuple[str, float]]:
