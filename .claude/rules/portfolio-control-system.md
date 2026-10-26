@@ -79,6 +79,7 @@
 | `CAPITAL_GROWTH` | 市值／科技／成長型 ETF | ❌ 不產生 | 波段技術位階與趨勢配置狀態（不計算 50 萬股利達成率） |
 | `BOND_DEFENSE` | 債券防禦型 ETF | ❌ 不產生 | 債券合理息收區間（積極佈建／穩健配置／防禦觀望） |
 | `HEDGING_OR_DERIVATIVE` | 槓桿／反向／期貨型 ETF | ❌ 不產生 | 獨立避險或波段觀察，不納入長線收息迴路 |
+| `STOCK` | 個股（`category: STOCK`，非 ETF 分類） | ❌ 不產生 | 個股分支評估（`category` 為 `STOCK` 時進入個股評估，不套用 ETF 策略分軌） |
 
 ---
 
