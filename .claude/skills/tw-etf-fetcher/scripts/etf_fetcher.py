@@ -140,7 +140,7 @@ def cmd_scaffold(args) -> int:
         tier=tier,
     )
 
-    print(f"✅ 成功為 {code} 建立 DCS 建模卡片：")
+    print(f"✅ 成功為 {code} 建立標的建模卡片：")
     print(f"   📂 目錄：{target_dir}")
     print("   📄 生成卡片：ticker.yml, constituents.jsonl, loop_dividend_500k.yml, interlock_yield_trap.yml")
     if tier == "core":
@@ -294,7 +294,7 @@ def main(argv=None) -> int:
     p_lookthrough.set_defaults(func=cmd_lookthrough)
 
     # scaffold-model
-    p_scaffold = subparsers.add_parser("scaffold-model", help="為指定 ETF 自動建立 DCS 建模卡片")
+    p_scaffold = subparsers.add_parser("scaffold-model", help="為指定 ETF 自動建立標的建模卡片")
     p_scaffold.add_argument("ticker", help="目標 ETF 代號（例如 00878）")
     p_scaffold.add_argument(
         "--tier",

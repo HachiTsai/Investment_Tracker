@@ -26,7 +26,7 @@ def build_patrol_commit_message(report: Dict[str, Any], agent: str = "Antigravit
             scfi_val = report.get("macro_data", {}).get("shipping_freight", {}).get("scfi", {}).get("latest_index", 3679)
         title = f"patrol(fleet): 🔵 穩健複利{prog_str} ｜ SCFI {int(scfi_val)}"
     else:
-        top_alert = alerts[0] if alerts else {"ticker": "00882", "type": "ALERT", "message": "姿態微調", "action": "注意市場"}
+        top_alert = alerts[0] if alerts else {"ticker": "00882", "type": "ALERT", "message": "配置微調", "action": "注意市場"}
         ticker = top_alert["ticker"]
         atype = top_alert["type"]
         if atype == "TRAP_ALERT":
@@ -40,7 +40,7 @@ def build_patrol_commit_message(report: Dict[str, Any], agent: str = "Antigravit
         elif atype == "WATCHDOG_STALE":
             title = f"patrol(fleet): ⚠️ 心跳警報【{ticker}】資料過期 ｜ 需更新母表"
         else:
-            title = f"patrol(fleet): ⚠️ 戰況提醒【{ticker}】互鎖調整 ｜ 關注姿態"
+            title = f"patrol(fleet): ⚠️ 配置提醒【{ticker}】互鎖調整 ｜ 關注狀態"
 
     if len(title) > 50:
         title = title[:50]
