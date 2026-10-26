@@ -66,7 +66,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 <li>後段新增：毛利率、淨利率、ROA、ROIC（最近一期，來自__SRC__）、流動比率（非金融股）、股息覆蓋（年報 EPS ÷ 全年股息，低於 1 代表股息超過盈餘）、連續配息年數與股息年複合成長（由歷次分配推算，資料窗內最多約 10 年）。銀行與保險的毛利率、流動比率通常沒有。</li>
 <li>訊號是規則式判讀（營收或淨利年增減 5～10% 以上、ROE 變動 1 個百分點以上、現金流為負等），拿去年同期對比；銀行與保險不套用現金流與負債規則。這是事實彙整，不構成買賣建議。</li>
 <li>「報表期」是財報結算日，各公司不同，不能直接橫向比較累計金額；空白代表__SRC__沒有該欄位；沒有財報資料的標的不列入。</li>
-</ul></section>
+__FXLI__</ul></section>
 </div>
 <div id="pg-div" hidden style="display:contents">
 <section class="sum" aria-label="摘要" id="dsum">
@@ -200,7 +200,7 @@ return'<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+title+'">'+g+'</s
 const plab=h=>h.p.slice(2,7).replace('-','/');
 function open(r){const hs=(r.hist||[]).slice(0,8),rv=[...hs].reverse();const x=r;
 document.getElementById('dt').textContent=x.c+' '+x.n+'　權重 '+fx(x.w,2)+'%　'+(x.kind||'')+'（'+(x.period||'')+'，'+(x.cur||'')+'）';
-const kp=[[fx(x.qeps,2),'單季／單期 EPS','qeps'],[fx(x.eps,2),'累計 EPS','eps'],[fx(x.ytd,3),'當年度已配發股息（__CUR__）','ytd'],[fx(x.dr_cur,1)+'%','當期配息率（'+(x.dr_cur_lab||'—')+'）','dr_cur'],[fx(x.dr_fy,1)+'%','上年度配息率（'+(x.dr_fy_lab||'—')+'）','dr_fy'],[fx(x.px,2),'股價（__CUR__）'],[fx(x.roe,1)+'%','ROE','roe'],[fx(x.payout,1)+'%','配發率','payout'],[yi(x.ocf)+' 億','經營現金流（累計）','ocf'],[yi(x.rev)+' 億','營收（累計）','rev'],[fx(x.pb,2),'PB','pb'],[fx(x.pe,1),'PE','pe']];
+const kp=[[fx(x.qeps,2),'單季／單期 EPS','qeps'],[fx(x.eps,2),'累計 EPS','eps'],[fx(x.ytd,3),'當年度已配發股息（__CUR__）','ytd'],[fx(x.dr_cur,1)+'%','當期配息率（'+(x.dr_cur_lab||'—')+'）','dr_cur'],[fx(x.dr_fy,1)+'%','上年度配息率（'+(x.dr_fy_lab||'—')+'）','dr_fy'],[fx(x.px,2),'股價（__CUR__）'],[fx(x.roe,1)+'%','ROE','roe'],[fx(x.payout,1)+'%','配發率','payout'],[yi(x.ocf)+' 億','經營現金流（累計）','ocf'],[yi(x.rev)+' 億','營收（累計）','rev'],[fx(x.pb,2),'PB','pb'],[fx(x.pe,1),'PE','pe']__FXKP__];
 const q2=[[fx(x.gpm,1)+'%','毛利率','gpm'],[fx(x.npm,1)+'%','淨利率','npm'],[fx(x.roa,1)+'%','ROA','roa'],[fx(x.roic,1)+'%','ROIC','roic'],[fx(x.cr,2),'流動比率','cr'],[fx(x.cover,2)+' 倍','股息覆蓋（年報 EPS ÷ 全年股息）','cover'],[(x.fcf_cover!=null?fx(x.fcf_cover,2)+' 倍':''),'自由現金流覆蓋'+(x.fcf_fy?'（'+x.fcf_fy+' 年報）':''),'fcf_cover'],[fx(x.pb_fair,2),'PB 相對合理值（假設要求報酬 10%）','pb_fair'],[(x.y_pct!=null?fx(x.y_pct,0)+'%':''),'殖利率歷史分位（近 5 年）','y_pct'],[(x.px_pct!=null?fx(x.px_pct,0)+'%':''),'股價 5 年高低位置','px_pct'],[(x.streak!=null?(x.streak>=10?'10 年以上':x.streak+' 年'):''),'連續配息','streak'],[(x.cagr!=null?sg(x.cagr)+'%':''),'股息年複合成長'+(x.cagr_n?'（'+x.cagr_n+' 年）':''),'cagr']];
 let h='<section><h3>重點指標</h3><div class="kp">'+kp.map(([b,s,k])=>'<div><b>'+b+'</b><span>'+s+(k?' <span class="hi" data-help="'+k+'" role="button" aria-label="說明">ⓘ</span>':'')+'</span></div>').join('')+'</div></section>';
 h+='<section><h3>獲利品質、償債與股息可持續性</h3><div class="kp">'+q2.map(([b,t,k])=>'<div><b>'+(b.replace(/^%$/,'')||'—')+'</b><span>'+t+(k?' <span class="hi" data-help="'+k+'" role="button" aria-label="說明">ⓘ</span>':'')+'</span></div>').join('')+'</div></section>';

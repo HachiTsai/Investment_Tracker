@@ -5,6 +5,7 @@
 不給 --etfs 時，掃描 models/*/cards/constituents.jsonl，成分股有 5 檔以上台股個股的 ETF 都納入。港股、美股與日股沒有這種卡片，要用 --etfs 指定（例如 --market HK --etfs 00882、--market US --etfs VOO、--market JP --etfs 1306）。
 輸出：index.html、<代號>.html（每檔 ETF）、pool.json（個股與持股兩張表，供寫入 Drive Sheet）、summary 印在標準輸出。
 寫檔前掃描國別後綴（.TW 等），出現就中止且不寫任何檔案；超過市場總時間上限也中止、不寫任何檔案。
+外幣市場（港股、美股、日股）會先抓一次外幣對新台幣匯率（Google Finance），抓不到就中止、不寫任何檔案；台股不抓匯率。
 """
 import argparse
 import html
@@ -18,9 +19,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import etf_fx  # noqa: E402
 import etf_hk  # noqa: E402
 import etf_jp  # noqa: E402
 import etf_market  # noqa: E402
+import etf_page  # noqa: E402
 import etf_table  # noqa: E402
 import etf_us  # noqa: E402
 
@@ -72,7 +75,10 @@ def as_page(fragment: str) -> str:
             + fragment[:i] + "</head><body>" + fragment[i:] + "</body></html>")
 
 
-def index_page(summaries: List[Dict[str, Any]], asof: str, n_stocks: int, market: etf_market.Market = etf_table.TW) -> str:
+def index_page(summaries: List[Dict[str, Any]], asof: str, n_stocks: int, market: etf_market.Market = etf_table.TW,
+               fx: Optional[Dict[str, Any]] = None) -> str:
+    fx_li = (f"<li>台幣參考值：1 {etf_page.PROFILES[market.profile]['cur']} ≈ {fx['rate']:.4f} 元新台幣，匯率來自 {fx['source']}，"
+             f"報價時間 {etf_page.fx_time(fx)}。</li>") if fx else ""
     rows = "".join(
         f'<tr><td><a href="{s["etf"]}.html">{s["etf"]}</a></td><td class="n">{s["holdings"]}</td><td class="n">{s["rows"]}</td>'
         f'<td class="n">{s["weighted_yield_pct"]:.2f}</td><td>{html.escape(s["holdings_asof"])}</td>'
@@ -93,7 +99,7 @@ th{{background:var(--head)}} .n{{text-align:right;font-variant-numeric:tabular-n
 <p class="mut">資料日期 {asof}。{len(summaries)} 檔 ETF，成分股去重後 {n_stocks} 檔個股，每檔只抓一次、各 ETF 共用。點 ETF 代號進入財報與股利明細頁，頁首可切換。</p>
 <div class="wrap"><table><thead><tr><th>ETF</th><th class="n">持股檔數</th><th class="n">有股價</th><th class="n">加權殖利率%</th><th>持股日期</th><th>持股來源</th><th class="n">缺財報</th></tr></thead><tbody>{rows}</tbody></table></div>
 <ul class="mut"><li>加權殖利率是成分股近 12 月殖利率依持股權重加權（毛額，未含 ETF 費用與稅，持股以外部位視為 0），是推估，不是 ETF 的配息率。</li>
-<li>{market.source_note}；非官方彙整，缺值標示「無資料」不推估。</li></ul></main>
+<li>{market.source_note}；非官方彙整，缺值標示「無資料」不推估。</li>{fx_li}</ul></main>
 """
 
 
@@ -122,15 +128,24 @@ def markets() -> Dict[str, etf_market.Market]:
 
 
 def pool_payload(etfs: List[str], holds: Dict[str, Any], pool: Dict[str, Dict[str, Any]], today: date,
-                 summaries: List[Dict[str, Any]], market: etf_market.Market = etf_table.TW) -> Dict[str, Any]:
-    """pool.json：個股與持股兩張表（供寫入 Drive Sheet）。代號一律是純代號；schema_version 讓讀取端判斷格式。"""
+                 summaries: List[Dict[str, Any]], market: etf_market.Market = etf_table.TW,
+                 fx: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """pool.json：個股與持股兩張表（供寫入 Drive Sheet）。代號一律是純代號；schema_version 讓讀取端判斷格式。
+    外幣市場多一個 fx 欄位（匯率與報價時間），每檔多 pxTwd、ttmDivTwd 兩個台幣參考值；台股沒有這些欄位，輸出不變。"""
     stocks = [dict(code=c, name=g["n"], px=g["px"], ttmDiv=g["ttm"], yieldPct=g.get("y"), pe=g["f"].get("pe"), pb=g["f"].get("pb"),
                    roe=g["f"].get("roe"), payoutPct=g["f"].get("payout"), fcfCover=g["f"].get("fcf_cover"), debtPct=g["f"].get("debt"),
                    period=g["f"].get("kind"), industry=g["f"].get("org")) for c, g in pool.items()]
+    if fx:
+        for s in stocks:
+            s["pxTwd"] = round(s["px"] * fx["rate"], 4) if s["px"] else None
+            s["ttmDivTwd"] = round((s["ttmDiv"] or 0) * fx["rate"], 4)
     holdings = [dict(etf=e, code=market.parse_code(c["symbol"]), weightPct=c["weight_pct"], shares=c.get("shares"))
                 for e in etfs for c in etf_market.market_stocks(market, holds[e])]
-    return dict(schema_version=etf_market.SCHEMA_VERSION, market=market.code, asof=today.isoformat(),
-                stocks=stocks, holdings=holdings, summaries=summaries)
+    payload = dict(schema_version=etf_market.SCHEMA_VERSION, market=market.code, asof=today.isoformat(),
+                   stocks=stocks, holdings=holdings, summaries=summaries)
+    if fx:
+        payload["fx"] = dict(currency=fx["currency"], rate=fx["rate"], asOf=fx["as_of"], source=fx["source"])
+    return payload
 
 
 def main(argv: List[str]) -> int:
@@ -153,6 +168,13 @@ def main(argv: List[str]) -> int:
     except RuntimeError as e:
         print(f"❌ [Holdings] {e}，未寫入任何檔案", file=sys.stderr)
         return 1
+    fx = None  # 台股不換算；外幣市場在抓價前先取匯率，抓不到就不往下做
+    if market.currency != "TWD":
+        try:
+            fx = etf_fx.fetch_rate(market.currency)
+        except (ValueError, RuntimeError) as e:
+            print(f"❌ [FX] {e}，未寫入任何檔案", file=sys.stderr)
+            return 1
     codes: Dict[str, str] = {}
     for h in holds.values():
         codes.update({market.parse_code(c["symbol"]): c["name"] for c in etf_market.market_stocks(market, h)})
@@ -164,14 +186,14 @@ def main(argv: List[str]) -> int:
     pages: Dict[str, str] = {}
     summaries, bad = [], {}
     for e in etfs:
-        r = etf_table.build_page(e, holds[e], pool, today, nav=nav_html(etfs, e), market=market)
+        r = etf_table.build_page(e, holds[e], pool, today, nav=nav_html(etfs, e), market=market, fx=fx)
         pages[f"{e}.html"] = as_page(r["page"])
         summaries.append(dict(r["summary"], holdings_asof=holds[e]["as_of_date"], source=holds[e]["source"],
                               coverage=etf_market.coverage_label(holds[e])))
         if r["summary"]["errors"]:
             bad[e] = len(r["summary"]["errors"])
-    pages["index.html"] = index_page(summaries, today.isoformat(), len(pool), market)
-    pages["pool.json"] = json.dumps(pool_payload(etfs, holds, pool, today, summaries, market), ensure_ascii=False)
+    pages["index.html"] = index_page(summaries, today.isoformat(), len(pool), market, fx)
+    pages["pool.json"] = json.dumps(pool_payload(etfs, holds, pool, today, summaries, market, fx), ensure_ascii=False)
     # 要上傳或發佈的內容不得含國別後綴；任一頁有就整批中止，不寫任何檔案
     leaks: Dict[str, List[str]] = {}
     for name, text in pages.items():
