@@ -156,8 +156,9 @@ def build_page(etf: str, holdings: Dict[str, Any], pool: Dict[str, Dict[str, Any
     keys = ("c", "n", "w", "q", "px", "ttm", "lfy", "chg", "y", "i26", "p25", "cmp")
     rows_out = [{k: r[k] for k in keys} for r in ok]
     miss = [dict(c=r["c"], n=r["n"], w=r["w"], px=r["px"]) for r in rows if not r["px"]]
+    partial = holdings.get("total_weight_pct", 0.0) if etf_market.coverage_label(holdings) == "partial" else None
     page = etf_page.render(market.profile, etf, len(stocks), rows_out, miss, fin, f"{today.isoformat()}（持股 {holdings['as_of_date']}，{holdings['source']}）",
-                           len(ok), f'{top["n"]} {top["w"]}%', f"{wy:.2f}%", nav=nav, unit_note=market.unit_note)
+                           len(ok), f'{top["n"]} {top["w"]}%', f"{wy:.2f}%", nav=nav, unit_note=market.unit_note, partial_total=partial)
     errors = {r["c"]: pool[r["c"]]["errs"] for r in rows if pool[r["c"]]["errs"]}
     summary = dict(etf=etf, rows=len(ok), holdings=len(stocks), weight_pct=holdings.get("total_weight_pct"), no_price=[m["c"] for m in miss],
                    no_fin=[r["c"] for r in rows if not pool[r["c"]]["f"]], errors=errors, weighted_yield_pct=round(wy, 2))
