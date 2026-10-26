@@ -88,6 +88,7 @@ TW = etf_market.Market(
     holdings=lambda etf: etf_holdings_scraper.fetch_etf_holdings(etf),
     stock=lambda code, name, industry, today: fetch_stock(code, name, industry, today),
     industry=lambda: finmind_detail.industries(),
+    source_note="財報與配息來自 FinMind，股價 Google Finance",
 )
 
 
@@ -134,6 +135,8 @@ def build_pool(codes: Dict[str, str], today: Optional[date] = None, workers: Opt
                 pool[code] = again
             if not _retryable(pool[code]):
                 break
+    if market.finish:  # 跨檔步驟（港股的人民幣匯率中位數）在所有個股與補抓都完成後才執行
+        pool = market.finish(pool, today)
     return pool
 
 
@@ -154,7 +157,7 @@ def build_page(etf: str, holdings: Dict[str, Any], pool: Dict[str, Dict[str, Any
     rows_out = [{k: r[k] for k in keys} for r in ok]
     miss = [dict(c=r["c"], n=r["n"], w=r["w"], px=r["px"]) for r in rows if not r["px"]]
     page = etf_page.render(market.profile, etf, len(stocks), rows_out, miss, fin, f"{today.isoformat()}（持股 {holdings['as_of_date']}，{holdings['source']}）",
-                           len(ok), f'{top["n"]} {top["w"]}%', f"{wy:.2f}%", nav=nav)
+                           len(ok), f'{top["n"]} {top["w"]}%', f"{wy:.2f}%", nav=nav, unit_note=market.unit_note)
     errors = {r["c"]: pool[r["c"]]["errs"] for r in rows if pool[r["c"]]["errs"]}
     summary = dict(etf=etf, rows=len(ok), holdings=len(stocks), weight_pct=holdings.get("total_weight_pct"), no_price=[m["c"] for m in miss],
                    no_fin=[r["c"] for r in rows if not pool[r["c"]]["f"]], errors=errors, weighted_yield_pct=round(wy, 2))

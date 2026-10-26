@@ -68,3 +68,8 @@ def test_default_limits_and_gate_keep_the_tw_contract():
     assert (gate.min_pool_etfs, gate.max_pool_missing, gate.max_pool_error_etfs) == (15, 10, 0)
     assert (gate.min_summary_rows, gate.min_constituent_rows) == (200, 10000)
     assert issubclass(etf_market.TimeLimitExceeded, RuntimeError)
+
+
+def test_coverage_label_counts_ctbc_as_full_and_tw_skips_the_holdings_floor():
+    assert etf_market.coverage_label({"source": etf_market.CTBC_SOURCE}) == "full"
+    assert etf_market.Gate().min_holdings == 0

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """台股 ETF 成分股資料池：多檔 ETF 的成分股去重後各抓一次，產出每檔 ETF 一頁與一個索引頁（同一個 Artifact 的多頁）。
 
-用法：python3 etf_pool.py <輸出資料夾> [--etfs 0050,0056,...] [--models-dir models]
-不給 --etfs 時，掃描 models/*/cards/constituents.jsonl，成分股有 5 檔以上台股個股的 ETF 都納入。
+用法：python3 etf_pool.py <輸出資料夾> [--market TW|HK] [--etfs 0050,0056,...] [--models-dir models]
+不給 --etfs 時，掃描 models/*/cards/constituents.jsonl，成分股有 5 檔以上台股個股的 ETF 都納入。港股沒有這種卡片，要用 --etfs 指定（例如 --market HK --etfs 00882）。
 輸出：index.html、<代號>.html（每檔 ETF）、pool.json（個股與持股兩張表，供寫入 Drive Sheet）、summary 印在標準輸出。
 寫檔前掃描國別後綴（.TW 等），出現就中止且不寫任何檔案；超過市場總時間上限也中止、不寫任何檔案。
 """
@@ -14,10 +14,11 @@ import re
 import sys
 import time
 from datetime import date
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import etf_hk  # noqa: E402
 import etf_market  # noqa: E402
 import etf_table  # noqa: E402
 
@@ -37,10 +38,10 @@ def discover(models_dir: str, min_stocks: int = 5) -> List[str]:
 
 
 def holdings_for(etf: str, models_dir: str, market: etf_market.Market = etf_table.TW) -> Dict[str, Any]:
-    """市場官方持股（台股為 MoneyDJ）；抓不到就退回 repo 內 models 的持股卡片（標示來源與較舊的日期）。"""
+    """市場官方持股（台股為 MoneyDJ，港股為中信投信）；抓不到或不完整就退回 repo 內 models 的持股卡片（標示來源與較舊的日期）。"""
     try:
         h = market.holdings(etf)
-        if h.get("constituents") and h.get("source") == "MoneyDJ":
+        if h.get("constituents") and etf_market.coverage_label(h) == "full":
             return h
     except Exception:  # noqa: BLE001
         pass
@@ -65,12 +66,12 @@ def as_page(fragment: str) -> str:
             + fragment[:i] + "</head><body>" + fragment[i:] + "</body></html>")
 
 
-def index_page(summaries: List[Dict[str, Any]], asof: str, n_stocks: int) -> str:
+def index_page(summaries: List[Dict[str, Any]], asof: str, n_stocks: int, market: etf_market.Market = etf_table.TW) -> str:
     rows = "".join(
         f'<tr><td><a href="{s["etf"]}.html">{s["etf"]}</a></td><td class="n">{s["holdings"]}</td><td class="n">{s["rows"]}</td>'
         f'<td class="n">{s["weighted_yield_pct"]:.2f}</td><td>{html.escape(s["holdings_asof"])}</td>'
         f'<td>{html.escape(s["source"])}</td><td class="n">{len(s["no_fin"])}</td></tr>' for s in summaries)
-    return f"""<title>台股 ETF 成分股明細</title>
+    return f"""<title>{market.name} ETF 成分股明細</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 :root{{--bg:#f6f7f5;--fg:#1d2420;--mut:#5d6862;--line:#d9ded9;--acc:#1f6b57;--head:#eceee9}}
@@ -82,11 +83,11 @@ main{{max-width:960px;margin:0 auto}} h1{{font-size:1.5rem;margin:0 0 4px;text-w
 table{{border-collapse:collapse;width:100%;min-width:560px}} th,td{{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}}
 th{{background:var(--head)}} .n{{text-align:right;font-variant-numeric:tabular-nums}} a{{color:var(--acc);font-weight:600}}
 </style>
-<main><h1>台股 ETF 成分股明細</h1>
+<main><h1>{market.name} ETF 成分股明細</h1>
 <p class="mut">資料日期 {asof}。{len(summaries)} 檔 ETF，成分股去重後 {n_stocks} 檔個股，每檔只抓一次、各 ETF 共用。點 ETF 代號進入財報與股利明細頁，頁首可切換。</p>
 <div class="wrap"><table><thead><tr><th>ETF</th><th class="n">持股檔數</th><th class="n">有股價</th><th class="n">加權殖利率%</th><th>持股日期</th><th>持股來源</th><th class="n">缺財報</th></tr></thead><tbody>{rows}</tbody></table></div>
 <ul class="mut"><li>加權殖利率是成分股近 12 月殖利率依持股權重加權（毛額，未含 ETF 費用與稅，持股以外部位視為 0），是推估，不是 ETF 的配息率。</li>
-<li>財報與配息來自 FinMind，股價 Google Finance；非官方彙整，缺值標示「無資料」不推估。</li></ul></main>
+<li>{market.source_note}；非官方彙整，缺值標示「無資料」不推估。</li></ul></main>
 """
 
 
@@ -96,15 +97,22 @@ def check_gate(
     no_fin: List[str],
     bad: Dict[str, int],
     gate: etf_market.Gate = etf_table.TW.gate,
+    holdings_counts: Optional[Dict[str, int]] = None,
 ) -> Tuple[bool, List[str]]:
-    """排程健康門檻檢核（台股資料池）：ETF 數量、缺價與缺財報合計、異常 ETF，門檻值來自市場的 Gate。"""
+    """排程健康門檻檢核：ETF 數量、缺價與缺財報合計、異常 ETF、每檔持股檔數，門檻值來自市場的 Gate。"""
     reasons = etf_market.gate_reasons([
         ("ETF 數量不足", etf_count, gate.min_pool_etfs, "min"),
         ("缺價格與財報檔數超標", len(no_price) + len(no_fin), gate.max_pool_missing, "max"),
+        *[(f"{e} 持股檔數不足", n, gate.min_holdings, "min") for e, n in (holdings_counts or {}).items()],
     ])
     if len(bad) > gate.max_pool_error_etfs:
         reasons.append(f"存在異常 ETF：{bad}")
     return len(reasons) == 0, reasons
+
+
+def markets() -> Dict[str, etf_market.Market]:
+    """可用市場；呼叫時才讀取，測試替換 etf_table.TW 時仍會生效。"""
+    return {"TW": etf_table.TW, "HK": etf_hk.HK}
 
 
 def pool_payload(etfs: List[str], holds: Dict[str, Any], pool: Dict[str, Dict[str, Any]], today: date,
@@ -122,14 +130,17 @@ def pool_payload(etfs: List[str], holds: Dict[str, Any], pool: Dict[str, Dict[st
 def main(argv: List[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("outdir")
+    ap.add_argument("--market", default="TW", type=str.upper, choices=sorted(markets()), help="市場：TW 台股（預設）、HK 港股（目前只支援 00882）")
     ap.add_argument("--etfs", default="")
     ap.add_argument("--models-dir", default="models")
     ap.add_argument("--gate", action="store_true", help="啟用排程健康檢查門檻判定，未達門檻回傳退出碼 1")
     a = ap.parse_args(argv[1:])
     t0 = time.time()
+    market = markets()[a.market]
+    if a.market != "TW" and not a.etfs:
+        ap.error(f"{market.name}沒有模型卡片可自動探索，請用 --etfs 指定 ETF 代號")
     etfs = [e.strip().upper() for e in a.etfs.split(",") if e.strip()] or discover(a.models_dir)
     today = date.today()
-    market = etf_table.TW
     deadline = time.monotonic() + market.limits.max_seconds  # 總時間上限從開始抓取起算
     holds = {e: holdings_for(e, a.models_dir, market) for e in etfs}
     codes: Dict[str, str] = {}
@@ -149,7 +160,7 @@ def main(argv: List[str]) -> int:
                               coverage=etf_market.coverage_label(holds[e])))
         if r["summary"]["errors"]:
             bad[e] = len(r["summary"]["errors"])
-    pages["index.html"] = index_page(summaries, today.isoformat(), len(pool))
+    pages["index.html"] = index_page(summaries, today.isoformat(), len(pool), market)
     pages["pool.json"] = json.dumps(pool_payload(etfs, holds, pool, today, summaries, market), ensure_ascii=False)
     # 要上傳或發佈的內容不得含國別後綴；任一頁有就整批中止，不寫任何檔案
     leaks: Dict[str, List[str]] = {}
@@ -169,7 +180,8 @@ def main(argv: List[str]) -> int:
     print(json.dumps(dict(etfs=len(etfs), stocks=len(pool), seconds=round(time.time() - t0), no_price=no_price,
                           no_fin=no_fin, etfs_with_errors=bad), ensure_ascii=False))
     if a.gate:
-        ok, reasons = check_gate(len(etfs), no_price, no_fin, bad, market.gate)
+        ok, reasons = check_gate(len(etfs), no_price, no_fin, bad, market.gate,
+                                 holdings_counts={s["etf"]: s["holdings"] for s in summaries})
         if not ok:
             print(f"❌ [Gate Failed] {'; '.join(reasons)}", file=sys.stderr)
             return 1

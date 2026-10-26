@@ -13,12 +13,17 @@
 import json
 import re
 from dataclasses import dataclass
+from datetime import date
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 SCHEMA_VERSION = 1
 
 # Investment_Tracker_Core 是 APP 後台資料庫，程式不得寫入（規則見 .claude/rules/core-database.md）
 CORE_SHEET_IDS = frozenset({"1QBEgUi-kTOuLgj2yGHmP-0g_ug-Sl_M21SN0g93b6xI"})
+
+# 持股來源：MoneyDJ 與中信投信 ETFHoldingWeight 是官方完整持股（coverage full）；repo 內的 models 卡片只是備援
+CTBC_SOURCE = "中信投信 ETFHoldingWeight"
+FULL_SOURCES = ("MoneyDJ", CTBC_SOURCE)
 
 SUFFIXES = ("TW", "TWO", "US", "JP", "HK", "TF")
 _SUFFIX_RE = re.compile(r"\.(?:%s)$" % "|".join(SUFFIXES), re.IGNORECASE)
@@ -71,10 +76,11 @@ class Limits:
 
 @dataclass(frozen=True)
 class Gate:
-    """健康門檻：排程資料池（ETF 數量、缺價與缺財報合計、異常 ETF）與全市場試算表（列數）的下限與上限。"""
+    """健康門檻：排程資料池（ETF 數量、缺價與缺財報合計、異常 ETF、每檔持股檔數）與全市場試算表（列數）的下限與上限。"""
     min_pool_etfs: int = 15
     max_pool_missing: int = 10
     max_pool_error_etfs: int = 0
+    min_holdings: int = 0  # 每檔 ETF 的持股檔數下限；0 不檢查（台股沿用）
     min_summary_rows: int = 200
     min_constituent_rows: int = 10000
 
@@ -105,6 +111,9 @@ class Market:
     industry: Callable[[], Dict[str, str]]                # 代號 → 產業別；抓不到就拋例外，由呼叫端退回空值
     limits: Limits = Limits()                             # 並行數、補抓與總時間上限（台股用預設值）
     gate: Gate = Gate()                                   # 健康門檻（資料池與全市場試算表共用）
+    unit_note: str = ""  # 頁首頭條數字的說明；空白沿用 etf_page.PROFILES
+    source_note: str = ""  # 索引頁的財報與股價來源說明
+    finish: Optional[Callable[[Dict[str, Dict[str, Any]], date], Dict[str, Dict[str, Any]]]] = None  # 資料池完成後的跨檔步驟
 
 
 def market_stocks(market: Market, holdings: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -113,9 +122,9 @@ def market_stocks(market: Market, holdings: Dict[str, Any]) -> List[Dict[str, An
 
 
 def coverage_label(holdings: Dict[str, Any]) -> str:
-    """持股完整度：官方即時來源為 full；repo 內舊卡片為 fallback；其餘來源視為 partial。"""
+    """持股完整度：官方完整來源為 full；repo 內舊卡片為 fallback；其餘來源視為 partial。"""
     src = str(holdings.get("source", ""))
-    if src == "MoneyDJ":
+    if src in FULL_SOURCES:
         return "full"
     if "備援" in src or "models" in src:
         return "fallback"
