@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """台股 ETF 成分股資料池：多檔 ETF 的成分股去重後各抓一次，產出每檔 ETF 一頁與一個索引頁（同一個 Artifact 的多頁）。
 
-用法：python3 etf_pool.py <輸出資料夾> [--market TW|HK|US] [--etfs 0050,0056,...] [--models-dir models]
-不給 --etfs 時，掃描 models/*/cards/constituents.jsonl，成分股有 5 檔以上台股個股的 ETF 都納入。港股與美股沒有這種卡片，要用 --etfs 指定（例如 --market HK --etfs 00882、--market US --etfs VOO）。
+用法：python3 etf_pool.py <輸出資料夾> [--market TW|HK|US|JP] [--etfs 0050,0056,...] [--models-dir models]
+不給 --etfs 時，掃描 models/*/cards/constituents.jsonl，成分股有 5 檔以上台股個股的 ETF 都納入。港股、美股與日股沒有這種卡片，要用 --etfs 指定（例如 --market HK --etfs 00882、--market US --etfs VOO、--market JP --etfs 1306）。
 輸出：index.html、<代號>.html（每檔 ETF）、pool.json（個股與持股兩張表，供寫入 Drive Sheet）、summary 印在標準輸出。
 寫檔前掃描國別後綴（.TW 等），出現就中止且不寫任何檔案；超過市場總時間上限也中止、不寫任何檔案。
 """
@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional, Tuple
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import etf_hk  # noqa: E402
+import etf_jp  # noqa: E402
 import etf_market  # noqa: E402
 import etf_table  # noqa: E402
 import etf_us  # noqa: E402
@@ -39,7 +40,7 @@ def discover(models_dir: str, min_stocks: int = 5) -> List[str]:
 
 
 def holdings_for(etf: str, models_dir: str, market: etf_market.Market = etf_table.TW) -> Dict[str, Any]:
-    """市場持股（台股 MoneyDJ、港股中信投信、美股 Yahoo 前幾大）：coverage 在 market.accept_coverage 內才採用；
+    """市場持股（台股 MoneyDJ、港股中信投信、美股與日股 Yahoo 前幾大）：coverage 在 market.accept_coverage 內才採用；
     否則退回 repo 內 models 的持股卡片（標示來源與較舊的日期）。沒有卡片時拋出 RuntimeError，說明原因。"""
     try:
         h = market.holdings(etf)
@@ -117,7 +118,7 @@ def check_gate(
 
 def markets() -> Dict[str, etf_market.Market]:
     """可用市場；呼叫時才讀取，測試替換 etf_table.TW 時仍會生效。"""
-    return {"TW": etf_table.TW, "HK": etf_hk.HK, "US": etf_us.US}
+    return {"TW": etf_table.TW, "HK": etf_hk.HK, "US": etf_us.US, "JP": etf_jp.JP}
 
 
 def pool_payload(etfs: List[str], holds: Dict[str, Any], pool: Dict[str, Dict[str, Any]], today: date,
@@ -135,7 +136,7 @@ def pool_payload(etfs: List[str], holds: Dict[str, Any], pool: Dict[str, Dict[st
 def main(argv: List[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("outdir")
-    ap.add_argument("--market", default="TW", type=str.upper, choices=sorted(markets()), help="市場：TW 台股（預設）、HK 港股（目前只支援 00882）、US 美股（Yahoo 前幾大持股，部分持股）")
+    ap.add_argument("--market", default="TW", type=str.upper, choices=sorted(markets()), help="市場：TW 台股（預設）、HK 港股（目前只支援 00882）、US 美股（Yahoo 前幾大持股，部分持股）、JP 日股（Yahoo 前幾大持股，部分持股，財報來自 EDINET）")
     ap.add_argument("--etfs", default="")
     ap.add_argument("--models-dir", default="models")
     ap.add_argument("--gate", action="store_true", help="啟用排程健康檢查門檻判定，未達門檻回傳退出碼 1")

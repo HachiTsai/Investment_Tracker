@@ -144,6 +144,7 @@ def test_us_stock_computes_yield_growth_and_the_latest_annual_ratios(us_offline)
     assert f["fcf_cover"] == 2.5 and f["pb_fair"] == 4.0
     assert f["fy_lab"] == "2025 年度" and f["fy_hkd"] == 1.8 and f["fy_prev_hkd"] == 1.5 and f["fy_chg"] == 20.0
     assert f["hist"][0]["k"] == "2025年報" and f["hist"][0]["roe"] == 25.0 and f["hist"][0]["debt"] == 28.6
+    assert f["debt"] == 28.6 and f["ocf"] == f["hist"][0]["ocf"] and f["np"] == f["hist"][0]["np"]  # 頁面卡片讀最近一年的頂層欄位
 
 
 def test_us_stock_keeps_the_price_when_sec_is_down(us_offline, monkeypatch):
@@ -175,7 +176,7 @@ def test_holdings_for_takes_partial_us_holdings_and_refuses_partial_tw(tmp_path,
 
 
 def test_pool_registers_the_us_market():
-    assert set(etf_pool.markets()) == {"TW", "HK", "US"}
+    assert set(etf_pool.markets()) == {"TW", "HK", "US", "JP"}
     assert etf_us.US.accept_coverage == ("full", "partial") and etf_table.TW.accept_coverage == ("full",)
 
 

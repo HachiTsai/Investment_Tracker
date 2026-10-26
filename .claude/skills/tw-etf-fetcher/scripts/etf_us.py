@@ -135,7 +135,8 @@ def us_financials(code: str, px: Optional[float], ttm: float) -> Dict[str, Any]:
                    roe=_pct(v["np"], v["eq"]), debt=_pct(v["liab"], v["assets"]), gpm=_pct(v["gp"], v["rev"]))
         hist.append({k: val for k, val in row.items() if val is not None})
     top, p0 = hist[0], periods[0]
-    f = enrich(dict(kind="10-K 年報", cur="美元", hist=hist, eps=top.get("eps"), roe=top.get("roe")))
+    f = enrich(dict(kind="10-K 年報", cur="美元", hist=hist, eps=top.get("eps"), roe=top.get("roe"),
+                    rev=top.get("rev"), np=top.get("np"), ocf=top.get("ocf"), debt=top.get("debt")))
     eps, eq, shares = top.get("eps"), s["eq"].get(p0), _shares_outstanding(facts)
     f.update(pe=round(px / eps, 1) if px and eps and eps > 0 else None,
              pb=round(px / (eq / shares), 2) if px and eq and eq > 0 and shares else None,
