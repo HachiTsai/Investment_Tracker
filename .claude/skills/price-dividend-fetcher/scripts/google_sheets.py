@@ -9,9 +9,14 @@ from __future__ import annotations
 
 import json
 import os
+import sys
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import requests
+
+sys.path.append(str(Path(__file__).resolve().parents[2] / "tw-etf-fetcher" / "scripts"))
+import etf_market  # noqa: E402
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 SHEETS_API_BASE = "https://sheets.googleapis.com/v4/spreadsheets"
@@ -78,6 +83,7 @@ class GoogleSheetsClient:
         value_input_option: str = "USER_ENTERED",
     ) -> Dict[str, Any]:
         """覆寫指定範圍之二維陣列值。"""
+        etf_market.guard_sheet_id(sheet_id)
         url = f"{SHEETS_API_BASE}/{sheet_id}/values/{range_name}?valueInputOption={value_input_option}"
         resp = requests.put(url, headers=self.headers, json={"values": values}, timeout=60)
         resp.raise_for_status()
@@ -90,6 +96,7 @@ class GoogleSheetsClient:
         value_input_option: str = "USER_ENTERED",
     ) -> Dict[str, Any]:
         """批次覆寫多個範圍（適合大量分批寫入）。"""
+        etf_market.guard_sheet_id(sheet_id)
         url = f"{SHEETS_API_BASE}/{sheet_id}/values:batchUpdate"
         body = {
             "valueInputOption": value_input_option,
@@ -101,6 +108,7 @@ class GoogleSheetsClient:
 
     def clear_values(self, sheet_id: str, range_name: str) -> Dict[str, Any]:
         """清空指定範圍之資料（不刪除列）。"""
+        etf_market.guard_sheet_id(sheet_id)
         url = f"{SHEETS_API_BASE}/{sheet_id}/values/{range_name}:clear"
         resp = requests.post(url, headers=self.headers, json={}, timeout=30)
         resp.raise_for_status()
@@ -115,6 +123,7 @@ class GoogleSheetsClient:
 
     def batch_update(self, sheet_id: str, requests_list: List[Dict[str, Any]]) -> Dict[str, Any]:
         """執行 BatchUpdateSpreadsheetRequest（樣式變更、清除連結、結構調整等）。"""
+        etf_market.guard_sheet_id(sheet_id)
         url = f"{SHEETS_API_BASE}/{sheet_id}:batchUpdate"
         resp = requests.post(url, headers=self.headers, json={"requests": requests_list}, timeout=60)
         resp.raise_for_status()
@@ -130,6 +139,7 @@ class GoogleSheetsClient:
         end_column_index: int = 10,
     ) -> Dict[str, Any]:
         """清除指定範圍的超連結樣式，保留純文字，防範 Google Drive 安全機制誤判。"""
+        etf_market.guard_sheet_id(sheet_id)
         cell_range: Dict[str, Any] = {
             "sheetId": sheet_tab_id,
             "startRowIndex": start_row_index,
@@ -163,6 +173,7 @@ class GoogleSheetsClient:
         required_rows: int,
     ) -> bool:
         """確保工作表列數足夠，若不足則自動調大網格容量（rowCount），避免寫入時超出網格上限。"""
+        etf_market.guard_sheet_id(sheet_id)
         meta = self.get_spreadsheet(sheet_id)
         current_rows = 1000
         for s in meta.get("sheets", []):
@@ -199,6 +210,7 @@ class GoogleSheetsClient:
         end_row_index: Optional[int] = None,
     ) -> Dict[str, Any]:
         """將指定欄位格式設為純文字（TEXT），確保代號前導 0（如 0050、0056）不被轉為整數。"""
+        etf_market.guard_sheet_id(sheet_id)
         requests_list = []
         for col_idx in column_indices:
             cell_range: Dict[str, Any] = {

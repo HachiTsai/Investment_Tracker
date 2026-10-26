@@ -7,6 +7,7 @@ import pytest
 
 from google_sheets import GoogleSheetsClient, get_credentials
 from swing_sync import extract_prev_from_sheet, merge_sheet_rows
+import etf_market
 
 
 def test_get_credentials_missing_env(monkeypatch):
@@ -237,5 +238,26 @@ def test_format_columns_as_text():
         assert reqs[0]["repeatCell"]["cell"]["userEnteredFormat"]["numberFormat"]["type"] == "TEXT"
         assert reqs[0]["repeatCell"]["range"]["startColumnIndex"] == 0
         assert reqs[1]["repeatCell"]["range"]["startColumnIndex"] == 2
+
+
+def test_core_sheet_is_refused_by_every_write_method():
+    core = "1QBEgUi-kTOuLgj2yGHmP-0g_ug-Sl_M21SN0g93b6xI"
+    client = GoogleSheetsClient(token="fake-token")
+    writes = [
+        lambda: client.update_values(core, "Sheet1!A1", [["a"]]),
+        lambda: client.batch_update_values(core, [{"range": "Sheet1!A1", "values": [["a"]]}]),
+        lambda: client.clear_values(core, "Sheet1!A1:B2"),
+        lambda: client.batch_update(core, [{}]),
+        lambda: client.clear_hyperlinks(core, sheet_tab_id=0),
+        lambda: client.ensure_sheet_capacity(core, 0, required_rows=10),
+        lambda: client.format_columns_as_text(core, sheet_tab_id=0, column_indices=[0]),
+    ]
+    no_network = AssertionError("寫入 Core 時不得連網")
+    with patch("requests.get", side_effect=no_network), \
+         patch("requests.post", side_effect=no_network), \
+         patch("requests.put", side_effect=no_network):
+        for write in writes:
+            with pytest.raises(etf_market.CoreWriteRefused):
+                write()
 
 
