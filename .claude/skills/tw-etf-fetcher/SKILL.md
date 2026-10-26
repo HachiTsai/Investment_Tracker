@@ -58,6 +58,7 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py outdir [--etfs 0050,00
 - **市場介面（`scripts/etf_market.py`）**：每個市場是一份 `Market`，提供代號解析（`parse_code`）、ETF 持股（`holdings`）、個股資料（`stock`）與產業別（`industry`）；台股是 `etf_table.TW`，`etf_table`、`etf_pool` 的函式都接受 `market` 參數。持股的 `coverage`（`full`／`partial`／`fallback`）寫進 `pool.json` 的摘要，之後美股、日股若只有前幾大持股，靠這個欄位標示。
 - **安全防線（所有入口共用）**：輸出一律是純代號，不帶 `.TW`、`.TWO`、`.US`、`.JP` 等國別後綴（這類文字上傳 Drive 會被標成危險檔案）；`etf_pool` 寫檔前掃描，出現就整批中止、不寫任何檔案；寫入試算表前過 `guard_sheet_id`，`Investment_Tracker_Core` 一律拒絕；頁面內嵌的 JSON 經 `json_for_script` 跳脫 `< > &`。
 - **韌性**：FinMind 請求過 `finmind_detail.get`（快取 6 小時、限流退避重試、可用環境變數 `FINMIND_TOKEN` 提高上限）；單檔任何一步失敗只讓該欄空白，並記在輸出摘要的 `errors`、`no_fin`、`no_price`。約 40 秒（50 檔、6 執行緒）。
+- **健康門檻與限流**：每個市場的 `Market` 帶 `limits`（並行 6 檔、補抓 1 次、補抓前等 3 秒、整段抓取總時間上限 900 秒）與 `gate`。資料池門檻：ETF 數量 ≥ 15、缺價與缺財報合計 ≤ 10、異常 ETF 0 檔；全市場試算表門檻：ETF_Summary ≥ 200 列、ETF_Constituents ≥ 10000 列。`etf_pool --gate` 與 `etf_fetcher sync-sheets --gate` 共用 `etf_market.gate_reasons` 判定，未達門檻退出碼 1。超過總時間上限就中止、印出 `[Time Limit]`、不寫任何檔案，退出碼 1；單次 HTTP 請求的逾時仍由各抓取模組設定。
 - **口徑**：殖利率＝近 12 月股息（最近幾次定期分配，季配取 4 次、半年配取 2 次、年配取 1 次，不含特別股息的判斷以類別為準）÷ Google Finance 股價；PE＝股價 ÷ 近四季 EPS，PB 取 FinMind 當日 PBR；配發率＝近 12 月股息 ÷ 近四季 EPS；已付股息＝該年付款的每股現金股利 × 參與股數（近似）。持股以外部位（現金、期貨）不在表內，權重加權殖利率視為 0。
 - **已知限制**：季配公司的「當期配息率」留白（只算年配與半年配）；純配股不列入股息；上櫃財報覆蓋以 FinMind 為準，缺值標「無資料」不推估；MOPS、Goodinfo 擋爬蟲不採用；主動式 ETF 持股每日變動，頁首標示持股日期。
 

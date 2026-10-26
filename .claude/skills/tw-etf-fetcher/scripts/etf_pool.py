@@ -4,7 +4,7 @@
 用法：python3 etf_pool.py <輸出資料夾> [--etfs 0050,0056,...] [--models-dir models]
 不給 --etfs 時，掃描 models/*/cards/constituents.jsonl，成分股有 5 檔以上台股個股的 ETF 都納入。
 輸出：index.html、<代號>.html（每檔 ETF）、pool.json（個股與持股兩張表，供寫入 Drive Sheet）、summary 印在標準輸出。
-寫檔前掃描國別後綴（.TW 等），出現就中止且不寫任何檔案。
+寫檔前掃描國別後綴（.TW 等），出現就中止且不寫任何檔案；超過市場總時間上限也中止、不寫任何檔案。
 """
 import argparse
 import html
@@ -95,18 +95,14 @@ def check_gate(
     no_price: List[str],
     no_fin: List[str],
     bad: Dict[str, int],
-    min_etfs: int = 15,
-    max_missing: int = 10,
-    max_errors: int = 0,
+    gate: etf_market.Gate = etf_table.TW.gate,
 ) -> Tuple[bool, List[str]]:
-    """排程健康門檻檢核：etfs 約 17 檔（>=15）、缺價與財報合計不超過 10 檔、無異常 ETF。"""
-    reasons = []
-    if etf_count < min_etfs:
-        reasons.append(f"ETF 數量不足：{etf_count} < {min_etfs}")
-    total_missing = len(no_price) + len(no_fin)
-    if total_missing > max_missing:
-        reasons.append(f"缺價格與財報檔數超標：{total_missing} > {max_missing}")
-    if len(bad) > max_errors:
+    """排程健康門檻檢核（台股資料池）：ETF 數量、缺價與缺財報合計、異常 ETF，門檻值來自市場的 Gate。"""
+    reasons = etf_market.gate_reasons([
+        ("ETF 數量不足", etf_count, gate.min_pool_etfs, "min"),
+        ("缺價格與財報檔數超標", len(no_price) + len(no_fin), gate.max_pool_missing, "max"),
+    ])
+    if len(bad) > gate.max_pool_error_etfs:
         reasons.append(f"存在異常 ETF：{bad}")
     return len(reasons) == 0, reasons
 
@@ -134,11 +130,16 @@ def main(argv: List[str]) -> int:
     etfs = [e.strip().upper() for e in a.etfs.split(",") if e.strip()] or discover(a.models_dir)
     today = date.today()
     market = etf_table.TW
+    deadline = time.monotonic() + market.limits.max_seconds  # 總時間上限從開始抓取起算
     holds = {e: holdings_for(e, a.models_dir, market) for e in etfs}
     codes: Dict[str, str] = {}
     for h in holds.values():
         codes.update({market.parse_code(c["symbol"]): c["name"] for c in etf_market.market_stocks(market, h)})
-    pool = etf_table.build_pool(codes, today, market=market)
+    try:
+        pool = etf_table.build_pool(codes, today, market=market, deadline=deadline)
+    except etf_market.TimeLimitExceeded as e:
+        print(f"❌ [Time Limit] {e}，未寫入任何檔案", file=sys.stderr)
+        return 1
     pages: Dict[str, str] = {}
     summaries, bad = [], {}
     for e in etfs:
@@ -168,7 +169,7 @@ def main(argv: List[str]) -> int:
     print(json.dumps(dict(etfs=len(etfs), stocks=len(pool), seconds=round(time.time() - t0), no_price=no_price,
                           no_fin=no_fin, etfs_with_errors=bad), ensure_ascii=False))
     if a.gate:
-        ok, reasons = check_gate(len(etfs), no_price, no_fin, bad)
+        ok, reasons = check_gate(len(etfs), no_price, no_fin, bad, market.gate)
         if not ok:
             print(f"❌ [Gate Failed] {'; '.join(reasons)}", file=sys.stderr)
             return 1

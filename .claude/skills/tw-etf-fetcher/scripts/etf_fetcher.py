@@ -34,6 +34,7 @@ REPO_ROOT = SCRIPT_DIR.parents[3]
 from etf_holdings_scraper import clean_ticker, fetch_etf_holdings, format_holdings_ascii  # noqa: E402
 from etf_list_scraper import fetch_twse_etf_list, filter_etfs, format_etf_list_ascii  # noqa: E402
 from etf_lookthrough import calculate_lookthrough, format_lookthrough_ascii  # noqa: E402
+import etf_market  # noqa: E402
 from etf_model_scaffolder import scaffold_etf_model  # noqa: E402
 from etf_sheets_sync import DEFAULT_SHEET_ID, run_sync_pipeline  # noqa: E402
 
@@ -193,15 +194,14 @@ def cmd_set_tier(args) -> int:
 def check_gate(
     etf_count: int,
     constituents_count: int,
-    min_etfs: int = 200,
-    min_constituents: int = 10000,
+    min_etfs: int = etf_market.Gate().min_summary_rows,
+    min_constituents: int = etf_market.Gate().min_constituent_rows,
 ) -> Tuple[bool, List[str]]:
-    """排程健康門檻檢核：全市場 ETF_Summary >= 200 檔、ETF_Constituents >= 10000 筆。"""
-    reasons = []
-    if etf_count < min_etfs:
-        reasons.append(f"ETF_Summary 列數不足：{etf_count} < {min_etfs}")
-    if constituents_count < min_constituents:
-        reasons.append(f"ETF_Constituents 列數不足：{constituents_count} < {min_constituents}")
+    """排程健康門檻檢核（全市場）：ETF_Summary 列數與 ETF_Constituents 列數的下限，門檻值來自 etf_market.Gate。"""
+    reasons = etf_market.gate_reasons([
+        ("ETF_Summary 列數不足", etf_count, min_etfs, "min"),
+        ("ETF_Constituents 列數不足", constituents_count, min_constituents, "min"),
+    ])
     return len(reasons) == 0, reasons
 
 

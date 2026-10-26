@@ -1,7 +1,10 @@
 """台股 ETF 資料池（etf_pool）離線測試：持股、個股價格與財報全部換成固定資料，驗證輸出與安全防線。"""
 
+import dataclasses
 import json
 import sys
+import time
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -74,3 +77,48 @@ def test_core_sheet_is_refused_before_any_network_call(tmp_path, monkeypatch):
     core = next(iter(etf_market.CORE_SHEET_IDS))
     ok, msg = sync_to_google_sheets(core, tmp_path / "summary.csv", tmp_path / "constituents.csv")
     assert ok is False and "Investment_Tracker_Core" in msg
+
+
+def test_gate_failure_exits_1_and_names_the_reason(tmp_path, offline, capsys):
+    assert etf_pool.main(["etf_pool.py", str(tmp_path / "out"), "--etfs", "0050,0056", "--gate"]) == 1
+    assert "[Gate Failed] ETF 數量不足：2 < 15" in capsys.readouterr().err
+
+
+def test_time_limit_stops_the_run_and_writes_nothing(tmp_path, offline, monkeypatch, capsys):
+    def slow(code, name, industry, today):
+        time.sleep(0.5)
+        return _fake_stock(code, name, industry, today)
+
+    slow_tw = dataclasses.replace(etf_table.TW, stock=slow, limits=etf_market.Limits(max_seconds=0.05))
+    monkeypatch.setattr(etf_table, "TW", slow_tw)
+    out = tmp_path / "out"
+    assert etf_pool.main(["etf_pool.py", str(out), "--etfs", "0050,0056"]) == 1
+    assert not out.exists()
+    assert "[Time Limit]" in capsys.readouterr().err
+
+
+def test_retry_recovers_a_rate_limited_stock_once(offline):
+    calls = {"n": 0}
+
+    def flaky(code, name, industry, today):
+        calls["n"] += 1
+        g = _fake_stock(code, name, industry, today)
+        if calls["n"] == 1:  # 第一次回報 FinMind 限流，補抓一次即成功
+            g = dict(g, errs=["financials:HTTPError"], f={})
+        return g
+
+    market = dataclasses.replace(etf_table.TW, stock=flaky, limits=etf_market.Limits(workers=1, retry_wait=0.0))
+    pool = etf_table.build_pool({"2330": "台積電"}, date(2026, 10, 26), market=market)
+    assert pool["2330"]["errs"] == [] and calls["n"] == 2
+
+
+def test_retries_are_capped_by_the_market_limit(offline):
+    calls = {"n": 0}
+
+    def always_down(code, name, industry, today):
+        calls["n"] += 1
+        return dict(_fake_stock(code, name, industry, today), errs=["pbr:HTTPError"], f={})
+
+    market = dataclasses.replace(etf_table.TW, stock=always_down, limits=etf_market.Limits(retries=2, retry_wait=0.0))
+    etf_table.build_pool({"2330": "台積電"}, date(2026, 10, 26), market=market)
+    assert calls["n"] == 1 + 2

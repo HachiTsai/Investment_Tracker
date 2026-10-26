@@ -52,3 +52,19 @@ def test_market_stocks_keeps_only_this_markets_codes():
                                holdings=None, stock=None, industry=None)
     holdings = {"constituents": [{"symbol": "2330.TW"}, {"symbol": "NVDA.US"}, {"symbol": "CASH"}]}
     assert etf_market.market_stocks(market, holdings) == [{"symbol": "2330.TW"}]
+
+
+def test_gate_reasons_applies_min_and_max_rules():
+    assert etf_market.gate_reasons([("ETF 數量不足", 15, 15, "min"), ("缺檔超標", 10, 10, "max")]) == []
+    assert etf_market.gate_reasons([("ETF 數量不足", 14, 15, "min"), ("缺檔超標", 11, 10, "max")]) == [
+        "ETF 數量不足：14 < 15", "缺檔超標：11 > 10"]
+    with pytest.raises(ValueError):
+        etf_market.gate_reasons([("未知規則", 1, 1, "eq")])
+
+
+def test_default_limits_and_gate_keep_the_tw_contract():
+    assert etf_market.Limits() == etf_market.Limits(workers=6, retries=1, retry_wait=3.0, max_seconds=900.0)
+    gate = etf_market.Gate()
+    assert (gate.min_pool_etfs, gate.max_pool_missing, gate.max_pool_error_etfs) == (15, 10, 0)
+    assert (gate.min_summary_rows, gate.min_constituent_rows) == (200, 10000)
+    assert issubclass(etf_market.TimeLimitExceeded, RuntimeError)
