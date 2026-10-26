@@ -4,6 +4,7 @@
 用法：python3 etf_pool.py <輸出資料夾> [--etfs 0050,0056,...] [--models-dir models]
 不給 --etfs 時，掃描 models/*/cards/constituents.jsonl，成分股有 5 檔以上台股個股的 ETF 都納入。
 輸出：index.html、<代號>.html（每檔 ETF）、pool.json（個股與持股兩張表，供寫入 Drive Sheet）、summary 印在標準輸出。
+寫檔前掃描國別後綴（.TW 等），出現就中止且不寫任何檔案。
 """
 import argparse
 import html
@@ -17,7 +18,7 @@ from typing import Any, Dict, List, Tuple
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import etf_holdings_scraper  # noqa: E402
+import etf_market  # noqa: E402
 import etf_table  # noqa: E402
 
 TW_CODE = re.compile(r"\d{4}\.(TW|TWO)")
@@ -35,10 +36,10 @@ def discover(models_dir: str, min_stocks: int = 5) -> List[str]:
     return out
 
 
-def holdings_for(etf: str, models_dir: str) -> Dict[str, Any]:
-    """MoneyDJ 即時持股；抓不到就退回 repo 內 models 的持股卡片（標示來源與較舊的日期）。"""
+def holdings_for(etf: str, models_dir: str, market: etf_market.Market = etf_table.TW) -> Dict[str, Any]:
+    """市場官方持股（台股為 MoneyDJ）；抓不到就退回 repo 內 models 的持股卡片（標示來源與較舊的日期）。"""
     try:
-        h = etf_holdings_scraper.fetch_etf_holdings(etf)
+        h = market.holdings(etf)
         if h.get("constituents") and h.get("source") == "MoneyDJ":
             return h
     except Exception:  # noqa: BLE001
@@ -110,6 +111,18 @@ def check_gate(
     return len(reasons) == 0, reasons
 
 
+def pool_payload(etfs: List[str], holds: Dict[str, Any], pool: Dict[str, Dict[str, Any]], today: date,
+                 summaries: List[Dict[str, Any]], market: etf_market.Market = etf_table.TW) -> Dict[str, Any]:
+    """pool.json：個股與持股兩張表（供寫入 Drive Sheet）。代號一律是純代號；schema_version 讓讀取端判斷格式。"""
+    stocks = [dict(code=c, name=g["n"], px=g["px"], ttmDiv=g["ttm"], yieldPct=g.get("y"), pe=g["f"].get("pe"), pb=g["f"].get("pb"),
+                   roe=g["f"].get("roe"), payoutPct=g["f"].get("payout"), fcfCover=g["f"].get("fcf_cover"), debtPct=g["f"].get("debt"),
+                   period=g["f"].get("kind"), industry=g["f"].get("org")) for c, g in pool.items()]
+    holdings = [dict(etf=e, code=market.parse_code(c["symbol"]), weightPct=c["weight_pct"], shares=c.get("shares"))
+                for e in etfs for c in etf_market.market_stocks(market, holds[e])]
+    return dict(schema_version=etf_market.SCHEMA_VERSION, market=market.code, asof=today.isoformat(),
+                stocks=stocks, holdings=holdings, summaries=summaries)
+
+
 def main(argv: List[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("outdir")
@@ -120,26 +133,36 @@ def main(argv: List[str]) -> int:
     t0 = time.time()
     etfs = [e.strip().upper() for e in a.etfs.split(",") if e.strip()] or discover(a.models_dir)
     today = date.today()
-    holds = {e: holdings_for(e, a.models_dir) for e in etfs}
+    market = etf_table.TW
+    holds = {e: holdings_for(e, a.models_dir, market) for e in etfs}
     codes: Dict[str, str] = {}
     for h in holds.values():
-        codes.update({c["symbol"].split(".")[0]: c["name"] for c in etf_table.tw_stocks(h)})
-    pool = etf_table.build_pool(codes, today)
-    os.makedirs(a.outdir, exist_ok=True)
+        codes.update({market.parse_code(c["symbol"]): c["name"] for c in etf_market.market_stocks(market, h)})
+    pool = etf_table.build_pool(codes, today, market=market)
+    pages: Dict[str, str] = {}
     summaries, bad = [], {}
     for e in etfs:
-        r = etf_table.build_page(e, holds[e], pool, today, nav=nav_html(etfs, e))
-        open(os.path.join(a.outdir, f"{e}.html"), "w", encoding="utf-8").write(as_page(r["page"]))
-        summaries.append(dict(r["summary"], holdings_asof=holds[e]["as_of_date"], source=holds[e]["source"]))
+        r = etf_table.build_page(e, holds[e], pool, today, nav=nav_html(etfs, e), market=market)
+        pages[f"{e}.html"] = as_page(r["page"])
+        summaries.append(dict(r["summary"], holdings_asof=holds[e]["as_of_date"], source=holds[e]["source"],
+                              coverage=etf_market.coverage_label(holds[e])))
         if r["summary"]["errors"]:
             bad[e] = len(r["summary"]["errors"])
-    open(os.path.join(a.outdir, "index.html"), "w", encoding="utf-8").write(index_page(summaries, today.isoformat(), len(pool)))
-    stocks = [dict(code=c, name=g["n"], px=g["px"], ttmDiv=g["ttm"], yieldPct=g.get("y"), pe=g["f"].get("pe"), pb=g["f"].get("pb"),
-                   roe=g["f"].get("roe"), payoutPct=g["f"].get("payout"), fcfCover=g["f"].get("fcf_cover"), debtPct=g["f"].get("debt"),
-                   period=g["f"].get("kind"), industry=g["f"].get("org")) for c, g in pool.items()]
-    holdings = [dict(etf=e, code=c["symbol"].split(".")[0], weightPct=c["weight_pct"], shares=c.get("shares"))
-                for e in etfs for c in etf_table.tw_stocks(holds[e])]
-    json.dump(dict(asof=today.isoformat(), stocks=stocks, holdings=holdings, summaries=summaries), open(os.path.join(a.outdir, "pool.json"), "w", encoding="utf-8"), ensure_ascii=False)
+    pages["index.html"] = index_page(summaries, today.isoformat(), len(pool))
+    pages["pool.json"] = json.dumps(pool_payload(etfs, holds, pool, today, summaries, market), ensure_ascii=False)
+    # 要上傳或發佈的內容不得含國別後綴；任一頁有就整批中止，不寫任何檔案
+    leaks: Dict[str, List[str]] = {}
+    for name, text in pages.items():
+        found = etf_market.find_forbidden_suffix(text)
+        if found:
+            leaks[name] = found
+    if leaks:
+        print(f"❌ [Suffix Guard] 輸出含國別後綴，未寫入任何檔案：{leaks}", file=sys.stderr)
+        return 1
+    os.makedirs(a.outdir, exist_ok=True)
+    for name, text in pages.items():
+        with open(os.path.join(a.outdir, name), "w", encoding="utf-8") as f:
+            f.write(text)
     no_price = sorted({c for s in summaries for c in s["no_price"]})
     no_fin = sorted({c for s in summaries for c in s["no_fin"]})
     print(json.dumps(dict(etfs=len(etfs), stocks=len(pool), seconds=round(time.time() - t0), no_price=no_price,

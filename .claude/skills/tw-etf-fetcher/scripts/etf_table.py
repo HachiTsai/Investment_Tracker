@@ -18,6 +18,7 @@ SKILLS = os.path.join(HERE, "..", "..")
 for sub in ("fundamental-analyzer", "price-dividend-fetcher", "tw-etf-fetcher"):
     sys.path.insert(0, os.path.join(SKILLS, sub, "scripts"))
 import etf_holdings_scraper  # noqa: E402
+import etf_market  # noqa: E402
 import etf_page  # noqa: E402
 import fetch as price_fetch  # noqa: E402
 from fetchers import finmind_detail  # noqa: E402
@@ -73,35 +74,53 @@ def fetch_stock(code: str, name: str, industry: Optional[str], today: date) -> D
     return out
 
 
+def _tw_code(symbol: str) -> Optional[str]:
+    """台股個股代號：去掉國別後綴後為純數字才算；美股、現金、期貨等回 None。"""
+    code = etf_market.pure_code(symbol)
+    return code if code.isdigit() else None
+
+
+# 台股是目前唯一的市場實作。持股與個股用 lambda 轉接，測試替換模組上的函式時仍會生效。
+TW = etf_market.Market(
+    code="TW", name="台股", profile="tw", currency="TWD",
+    parse_code=_tw_code,
+    holdings=lambda etf: etf_holdings_scraper.fetch_etf_holdings(etf),
+    stock=lambda code, name, industry, today: fetch_stock(code, name, industry, today),
+    industry=lambda: finmind_detail.industries(),
+)
+
+
 def tw_stocks(holdings: Dict[str, Any]) -> List[Dict[str, Any]]:
-    return [c for c in holdings["constituents"] if c["symbol"].split(".")[0].isdigit()]
+    return etf_market.market_stocks(TW, holdings)
 
 
-def build_pool(codes: Dict[str, str], today: Optional[date] = None, workers: int = 6) -> Dict[str, Dict[str, Any]]:
-    """資料池：{代號: 名稱} → {代號: fetch_stock 結果}。每檔只抓一次，多個 ETF 共用。"""
+def build_pool(codes: Dict[str, str], today: Optional[date] = None, workers: int = 6,
+               market: etf_market.Market = TW) -> Dict[str, Dict[str, Any]]:
+    """資料池：{代號: 名稱} → {代號: 個股結果}。每檔只抓一次，多個 ETF 共用。"""
     today = today or date.today()
     try:
-        industry = finmind_detail.industries()
+        industry = market.industry()
     except Exception:  # noqa: BLE001  產業別抓不到只影響金融股判斷
         industry = {}
     with ThreadPoolExecutor(workers) as ex:
-        got = list(ex.map(lambda kv: fetch_stock(kv[0], kv[1], industry.get(kv[0]), today), codes.items()))
+        got = list(ex.map(lambda kv: market.stock(kv[0], kv[1], industry.get(kv[0]), today), codes.items()))
     pool = {g["c"]: g for g in got}
     # 限流造成的失敗（FinMind 回錯誤）退避後單執行緒補抓一次；成功的請求有快取，不會重複打
     for code in [c for c, g in pool.items() if any(e.startswith(("financials", "dividends", "pbr")) for e in g["errs"])]:
         time.sleep(3)
-        again = fetch_stock(code, pool[code]["n"], industry.get(code), today)
+        again = market.stock(code, pool[code]["n"], industry.get(code), today)
         if len(again["errs"]) < len(pool[code]["errs"]):
             pool[code] = again
     return pool
 
 
-def build_page(etf: str, holdings: Dict[str, Any], pool: Dict[str, Dict[str, Any]], today: date, nav: str = "") -> Dict[str, Any]:
+def build_page(etf: str, holdings: Dict[str, Any], pool: Dict[str, Dict[str, Any]], today: date, nav: str = "",
+               market: etf_market.Market = TW) -> Dict[str, Any]:
     """由持股與資料池組出單一 ETF 的頁面與摘要。"""
-    stocks = tw_stocks(holdings)
+    stocks = etf_market.market_stocks(market, holdings)
     rows = []
     for c in stocks:
-        g = pool[c["symbol"].split(".")[0]]
+        g = pool[market.parse_code(c["symbol"])]
         rows.append(dict({k: v for k, v in g.items() if k not in ("f", "errs")}, w=c["weight_pct"], q=int(c.get("shares") or 0)))
     ok = [r for r in rows if r["px"]]
     fin = {r["c"]: pool[r["c"]]["f"] for r in rows if pool[r["c"]]["f"]}
@@ -111,7 +130,7 @@ def build_page(etf: str, holdings: Dict[str, Any], pool: Dict[str, Dict[str, Any
     keys = ("c", "n", "w", "q", "px", "ttm", "lfy", "chg", "y", "i26", "p25", "cmp")
     rows_out = [{k: r[k] for k in keys} for r in ok]
     miss = [dict(c=r["c"], n=r["n"], w=r["w"], px=r["px"]) for r in rows if not r["px"]]
-    page = etf_page.render("tw", etf, len(stocks), rows_out, miss, fin, f"{today.isoformat()}（持股 {holdings['as_of_date']}，{holdings['source']}）",
+    page = etf_page.render(market.profile, etf, len(stocks), rows_out, miss, fin, f"{today.isoformat()}（持股 {holdings['as_of_date']}，{holdings['source']}）",
                            len(ok), f'{top["n"]} {top["w"]}%', f"{wy:.2f}%", nav=nav)
     errors = {r["c"]: pool[r["c"]]["errs"] for r in rows if pool[r["c"]]["errs"]}
     summary = dict(etf=etf, rows=len(ok), holdings=len(stocks), weight_pct=holdings.get("total_weight_pct"), no_price=[m["c"] for m in miss],
@@ -119,12 +138,14 @@ def build_page(etf: str, holdings: Dict[str, Any], pool: Dict[str, Dict[str, Any
     return dict(page=page, summary=summary, rows=rows_out, fin=fin)
 
 
-def build(etf: str, today: Optional[date] = None, holdings: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+def build(etf: str, today: Optional[date] = None, holdings: Optional[Dict[str, Any]] = None,
+          market: etf_market.Market = TW) -> Dict[str, Any]:
     """單一 ETF：抓持股、抓成分股資料池、組頁面。"""
     today = today or date.today()
-    holdings = holdings or etf_holdings_scraper.fetch_etf_holdings(etf)
-    pool = build_pool({c["symbol"].split(".")[0]: c["name"] for c in tw_stocks(holdings)}, today)
-    return build_page(etf, holdings, pool, today)
+    holdings = holdings or market.holdings(etf)
+    codes = {market.parse_code(c["symbol"]): c["name"] for c in etf_market.market_stocks(market, holdings)}
+    pool = build_pool(codes, today, market=market)
+    return build_page(etf, holdings, pool, today, market=market)
 
 
 def main(argv: List[str]) -> int:

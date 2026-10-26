@@ -1,0 +1,83 @@
+"""tw-etf-fetcher 的市場介面與共用安全防線（只用標準函式庫）。
+
+每個市場是一個 Market：代號解析、ETF 持股、個股資料、產業別，外加頁面設定。台股是第一個實作（etf_table.TW）；
+港股、美股、日股之後各自提供一份 Market，頁面與資料池流程不必再改。
+
+安全防線放在這裡，所有入口共用：
+- pure_code：輸出一律是純代號，不帶 .TW／.TWO／.US／.JP 等國別後綴（這類文字上傳 Drive 後會被標成危險檔案）。
+- find_forbidden_suffix：寫檔前掃描輸出，出現後綴就中止。
+- guard_sheet_id：寫入試算表前檢查目標，Investment_Tracker_Core 一律拒絕。
+- json_for_script：把 JSON 放進頁面的 script 區塊前跳脫 < > &，外部名稱不會截斷頁面。
+"""
+import json
+import re
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Optional
+
+SCHEMA_VERSION = 1
+
+# Investment_Tracker_Core 是 APP 後台資料庫，程式不得寫入（規則見 .claude/rules/core-database.md）
+CORE_SHEET_IDS = frozenset({"1QBEgUi-kTOuLgj2yGHmP-0g_ug-Sl_M21SN0g93b6xI"})
+
+SUFFIXES = ("TW", "TWO", "US", "JP", "HK", "TF")
+_SUFFIX_RE = re.compile(r"\.(?:%s)$" % "|".join(SUFFIXES), re.IGNORECASE)
+_PREFIX_RE = re.compile(r"^(?:TPE|TWO|HKG|NYSE|NASDAQ|TYO):", re.IGNORECASE)
+# 只認大寫的國別後綴，與 Drive 的判定對齊；小寫網域（例如 .com.tw）不在此列
+_FORBIDDEN_RE = re.compile(r"[A-Za-z0-9]+\.(?:%s)(?![A-Za-z0-9])" % "|".join(SUFFIXES))
+
+
+class CoreWriteRefused(RuntimeError):
+    """要寫入的目標是 Investment_Tracker_Core。"""
+
+
+def pure_code(raw: str) -> str:
+    """'TPE:2330' → '2330'、'2330.TW' → '2330'、'nvda.us' → 'NVDA'。"""
+    return _SUFFIX_RE.sub("", _PREFIX_RE.sub("", str(raw).strip())).upper()
+
+
+def find_forbidden_suffix(text: str) -> List[str]:
+    """回傳文字中出現的國別後綴片段（排序去重）；空清單代表乾淨。"""
+    return sorted(set(_FORBIDDEN_RE.findall(text)))
+
+
+def guard_sheet_id(sheet_id: str) -> str:
+    """寫入前檢查目標試算表：Core 一律拒絕，其餘原樣回傳。"""
+    if str(sheet_id).strip() in CORE_SHEET_IDS:
+        raise CoreWriteRefused("目標是 Investment_Tracker_Core，嚴禁寫入（見 .claude/rules/core-database.md）")
+    return sheet_id
+
+
+def json_for_script(obj: Any) -> str:
+    """JSON 文字，可安全放進 HTML 的 script 區塊；跳脫後解析結果與原物件相同。"""
+    s = json.dumps(obj, ensure_ascii=False)
+    for ch, esc in (("<", "\\u003c"), (">", "\\u003e"), ("&", "\\u0026"), (" ", "\\u2028"), (" ", "\\u2029")):
+        s = s.replace(ch, esc)
+    return s
+
+
+@dataclass(frozen=True)
+class Market:
+    """一個市場的接點。持股與個股函式由呼叫端注入，測試可替換；coverage_label 判定持股是否完整。"""
+    code: str                                             # 輸出用的市場代號，例如 TW
+    name: str                                             # 顯示名稱，例如 台股
+    profile: str                                          # etf_page.PROFILES 的鍵
+    currency: str                                         # 個股報價幣別
+    parse_code: Callable[[str], Optional[str]]            # 成分股原始代號 → 純代號；不屬於此市場回 None
+    holdings: Callable[[str], Dict[str, Any]]             # ETF 代號 → 持股（as_of_date、source、constituents）
+    stock: Callable[[str, str, Optional[str], Any], Dict[str, Any]]  # (代號, 名稱, 產業, 日期) → 個股結果
+    industry: Callable[[], Dict[str, str]]                # 代號 → 產業別；抓不到就拋例外，由呼叫端退回空值
+
+
+def market_stocks(market: Market, holdings: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """持股中屬於此市場的個股列；現金、海外股票、期貨等不列入個股頁。"""
+    return [c for c in holdings["constituents"] if market.parse_code(c["symbol"]) is not None]
+
+
+def coverage_label(holdings: Dict[str, Any]) -> str:
+    """持股完整度：官方即時來源為 full；repo 內舊卡片為 fallback；其餘來源視為 partial。"""
+    src = str(holdings.get("source", ""))
+    if src == "MoneyDJ":
+        return "full"
+    if "備援" in src or "models" in src:
+        return "fallback"
+    return "partial"
