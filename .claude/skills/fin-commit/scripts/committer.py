@@ -22,6 +22,7 @@ from dep_guard import (
     find_env_issues,
     find_rule_sync_issues,
     find_sensitive,
+    find_workflow_dep_issues,
     normalize_pkg_name,
     parse_pyproject_deps,
     parse_rule_toml_deps,

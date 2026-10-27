@@ -189,6 +189,23 @@ def test_find_dependency_and_rule_sync_issues(tmp_path):
     assert any("requests" in issue and "未同步至 .claude/rules/python-environment.md" in issue for issue in issues)
 
 
+def test_workflow_pip_install_must_be_declared(tmp_path):
+    repo = tmp_path / "repo"
+    (repo / ".github" / "workflows").mkdir(parents=True)
+    (repo / "pyproject.toml").write_text('[project]\nname = "test"\ndependencies = ["pytest>=8.0.0", "requests>=2.0.0"]\n')
+    wf = repo / ".github" / "workflows" / "job.yml"
+    wf.write_text("steps:\n  - run: python -m pip install -q pytest requests>=2 yfinance\n")
+    issues = c.find_workflow_dep_issues(repo_root=repo)
+    assert len(issues) == 1 and "yfinance" in issues[0] and "job.yml" in issues[0]
+    wf.write_text("steps:\n  - run: python -m pip install pytest requests\n")
+    assert c.find_workflow_dep_issues(repo_root=repo) == []
+
+
+def test_real_workflows_only_install_declared_packages():
+    """真實 repo：workflow 裝的套件必須登記在 pyproject.toml，新增套件漏登記時 CI 會在此失敗。"""
+    assert c.find_workflow_dep_issues() == []
+
+
 def test_patrol_commit_message_and_inference():
     patrol_msg = """patrol(fleet): 🔵 全投資組合穩健複利 ｜ 50萬達成率 51.2% ｜ LPR 3.0% ｜ SCFI 3679
 
