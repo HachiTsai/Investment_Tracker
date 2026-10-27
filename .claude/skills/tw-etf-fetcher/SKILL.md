@@ -72,7 +72,32 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py outdir --market jp --e
 
 ---
 
-## 3. 架構與防護規則
+## 3. 市場與模組對照
+
+本技能名稱沿用 `tw-etf-fetcher`，實際涵蓋台、港、美、日四個市場；腳本是平的，以檔名分工。改某個市場時先看下表。
+
+| 市場 | 持股來源 | 市場介面（`Market`） | 專屬模組 | 財報與配息 |
+| :--- | :--- | :--- | :--- | :--- |
+| 台股 | MoneyDJ（全市場 ETF 清單來自證交所） | `etf_table.TW` | `etf_holdings_scraper.py`（完整持股）、`etf_list_scraper.py`（ETF 清單） | `fundamental-analyzer` 的 FinMind |
+| 港股 | 中信投信 ETFHoldingWeight（目前只有 00882） | `etf_hk.HK` | `etf_hk.py` | 東方財富 |
+| 美股 | Drive 全市場表，沒有才用 Yahoo 前幾大 | `etf_us.US` | `etf_us.py`、`etf_drive.py` | SEC EDGAR |
+| 日股 | Drive 全市場表，沒有才用 Yahoo 前幾大 | `etf_jp.JP` | `etf_jp.py`、`etf_drive.py` | EDINET |
+
+四個市場共用的模組（新增或修改市場行為時不必重複實作）：
+
+| 模組 | 負責 |
+| :--- | :--- |
+| `etf_market.py` | `Market` 介面、健康門檻與限流、純代號與國別後綴掃描、`guard_sheet_id`（拒絕 Core） |
+| `etf_pool.py`、`etf_table.py` | 資料池與單檔頁的流程（`--market` 切換市場） |
+| `etf_page.py` | 頁面渲染與各市場的頁面設定（`PROFILES`） |
+| `etf_fx.py` | 外幣對新台幣匯率（港、美、日） |
+| `etf_sheets_sync.py`、`etf_sheets_io.py` | 寫入各市場的外圍試算表與本機 CSV |
+| `etf_lookthrough.py`、`etf_model_scaffolder.py` | 穿透曝險分析、一鍵生成標的建模卡片 |
+| `etf_fetcher.py` | 命令列入口（`list`、`holdings`、`lookthrough`、`scaffold-model`、`set-tier`、`sync-sheets`） |
+
+---
+
+## 4. 架構與防護規則
 
 1. **唯讀資料庫鐵律**：本技能僅作為資料擷取與運算工廠，嚴禁對 `Investment_Tracker_Core` 進行任何寫入。
 2. **客觀專業用語**：所有終端報告與註解維持客觀金融分析用語，嚴禁使用浮誇詞彙。
