@@ -58,6 +58,11 @@ from etf_list_scraper import fetch_twse_etf_list
 from etf_holdings_scraper import fetch_etf_holdings
 import etf_market
 
+_PATROL_SCRIPTS = Path(__file__).resolve().parents[2] / "portfolio-patrol" / "scripts"
+if str(_PATROL_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_PATROL_SCRIPTS))
+from patrol_cards import load_yaml_simple  # 卡片 YAML 讀取的唯一實作
+
 def fetch_live_etf_price(ticker: str) -> Optional[float]:
     """自 Yahoo Finance 輕量端點獲取最新收盤/即時市價；抓不到回傳 None，不用任何寫死的備援價。"""
     suffixes = [".TW", ".TWO"]
@@ -74,50 +79,6 @@ def fetch_live_etf_price(ticker: str) -> Optional[float]:
         except Exception:
             continue
     return None
-
-
-def load_yaml_simple(path: Path) -> Dict[str, Any]:
-    """YAML 讀取器：簡易純文字卡片解析器。"""
-    content = path.read_text(encoding="utf-8")
-    result: Dict[str, Any] = {}
-    current_section: Optional[Dict[str, Any]] = None
-
-    for line in content.splitlines():
-        if "#" in line:
-            line = line.split("#", 1)[0]
-        stripped = line.strip()
-        if not stripped:
-            continue
-
-        indent = len(line) - len(line.lstrip())
-        if ":" in stripped:
-            k, v = stripped.split(":", 1)
-            k, v = k.strip(), v.strip().strip('"').strip("'")
-
-            parsed_v: Any = v
-            if k in ("ticker", "id", "target_ticker", "code", "etf_id"):
-                parsed_v = str(v)
-            elif v.isdigit():
-                parsed_v = int(v)
-            elif re.match(r"^-?\d+\.\d+$", v):
-                parsed_v = float(v)
-            elif v.lower() in ("true", "false"):
-                parsed_v = v.lower() == "true"
-            elif v == "":
-                parsed_v = {}
-
-            if indent == 0:
-                if isinstance(parsed_v, dict):
-                    result[k] = {}
-                    current_section = result[k]
-                else:
-                    result[k] = parsed_v
-                    current_section = None
-            else:
-                if current_section is not None:
-                    current_section[k] = parsed_v
-
-    return result
 
 
 def load_all_etf_models(models_dir: Path) -> List[Dict[str, Any]]:
