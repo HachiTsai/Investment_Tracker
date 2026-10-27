@@ -8,7 +8,6 @@
   python3 .claude/skills/portfolio-patrol/scripts/patrol.py --json
   python3 .claude/skills/portfolio-patrol/scripts/patrol.py --markdown
   python3 .claude/skills/portfolio-patrol/scripts/patrol.py --sync-doc <DOC_ID>
-  python3 .claude/skills/portfolio-patrol/scripts/patrol.py --commit [--dry-run] [--no-push]
 
   # 單標的個人深潛試算與複利滾雪球時間線模擬
   python3 .claude/skills/portfolio-patrol/scripts/patrol.py --inspect [00882] [--shares 300000] [--dca 0] [--price 15.20]
@@ -35,10 +34,6 @@ from patrol_cards import (
     load_cards,
     load_yaml_simple,
 )
-from patrol_committer import (
-    build_patrol_commit_message,
-    commit_patrol_report,
-)
 from patrol_evaluator import (
     _format_macro_feed,
     evaluate_ticker_posture,
@@ -56,7 +51,6 @@ from patrol_reporter import (
     format_ascii_dashboard,
     format_markdown_briefing,
     sync_to_google_doc,
-    update_briefing_file,
 )
 
 
@@ -90,9 +84,6 @@ def main(argv=None) -> int:
     parser.add_argument("--markdown", action="store_true", help="輸出 Google Doc 標準 Markdown 區塊")
     parser.add_argument("--sync-doc", metavar="DOC_ID", help="同步寫入特定 Google Doc ID")
     parser.add_argument("--models-dir", help="指定模型根目錄（測試用）")
-    parser.add_argument("--commit", action="store_true", help="原地更新 reports/portfolio_briefing.md 並自動 commit & push 觸發 Slack 通知")
-    parser.add_argument("--dry-run", action="store_true", help="模擬 commit 訊息生成，不實際執行 git commit")
-    parser.add_argument("--no-push", action="store_true", help="提交後不執行 git push")
 
     # 單標的深潛與個人持股試算參數
     parser.add_argument(
@@ -149,15 +140,6 @@ def main(argv=None) -> int:
 
     if args.sync_doc:
         sync_to_google_doc(args.sync_doc, md_content, repo_root=REPO_ROOT)
-
-    if args.commit or args.dry_run:
-        ok = commit_patrol_report(
-            report,
-            dry_run=args.dry_run,
-            no_push=args.no_push,
-            repo_root=REPO_ROOT,
-        )
-        return 0 if ok else 1
 
     if args.markdown:
         print(md_content)

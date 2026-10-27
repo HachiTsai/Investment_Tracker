@@ -24,7 +24,7 @@
 - **陷阱狀態**：`ArtifactData` 的 `trap_state` 集合，用於兩日確認（步驟 0 與 1a）。排程需要此工具；本 Artifact 已宣告 `db` 能力。
 - **唯讀保護約束**：
   - 嚴禁寫入 `Investment_Tracker_Core`。
-  - 不要 commit 或 push，不要發送 Slack 通報。
+  - 不要 commit 或 push。
 
 ---
 

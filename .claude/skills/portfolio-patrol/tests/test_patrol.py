@@ -377,37 +377,6 @@ def test_patrol_report_and_mbe_output(repo_root, offline_live_data):
     assert "總成本" not in md_out
 
 
-def test_build_patrol_commit_message(repo_root, offline_live_data):
-    mock_macro = {
-        "lpr": {"1Y": 3.0, "5Y": 3.5},
-        "chinabond_yield": {"10Y": 1.648},
-        "fx": {"USDCNH": {"price": 6.6853}},
-        "shipping_freight": {"scfi": {"latest_index": 3679.58, "change": 15.47}},
-    }
-
-    report = patrol.run_portfolio_patrol(
-        repo_root=repo_root,
-        mock_macro=mock_macro,
-    )
-
-    msg = patrol.build_patrol_commit_message(report, agent="Antigravity")
-    first_line = msg.splitlines()[0]
-    assert len(first_line) <= 50
-    assert first_line.startswith("patrol(fleet):")
-    assert "## 核心變更" in msg
-    assert "## 變更理由" in msg
-    assert "## 驗證" in msg
-    assert "## Session-Sync" in msg
-
-    # 驗證透過 committer 檢查無誤
-    committer_path = repo_root / ".claude" / "skills" / "fin-commit" / "scripts"
-    if str(committer_path) not in sys.path:
-        sys.path.insert(0, str(committer_path))
-    import committer as c  # type: ignore
-    errors, _ = c.validate_message(msg)
-    assert errors == []
-
-
 def test_simulate_snowball():
     # 測試複利滾雪球時間線
     years, timeline = patrol.simulate_snowball(

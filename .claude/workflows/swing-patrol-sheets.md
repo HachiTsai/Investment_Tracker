@@ -21,7 +21,7 @@
 
 - **工作目錄**：REPO 根目錄。
 - **前置動作**：`git pull origin main`。
-- **產出型態**：**純 Sheet（無 Artifact）**。嚴禁發布或更新任何 Artifact，不碰 `reports/portfolio_briefing.md`。
+- **產出型態**：**純 Sheet（無 Artifact）**。嚴禁發布或更新任何 Artifact。
 - **唯讀約束**：只讀取資料，嚴禁寫入 `Investment_Tracker_Core`。
 
 ---
