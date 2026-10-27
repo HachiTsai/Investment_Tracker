@@ -78,11 +78,11 @@ def test_pool_payload_adds_fx_and_twd_fields_only_for_foreign_markets():
 
 
 def test_index_page_states_the_rate_and_quote_time_only_for_foreign_markets():
-    summaries = [dict(etf="00882", rows=1, holdings=1, weighted_yield_pct=20.0, holdings_asof="2026-10-21",
+    summaries = [dict(etf="00882", name="中國信託恒生高息", rows=1, holdings=1, weighted_yield_pct=20.0, holdings_asof="2026-10-21",
                       source=etf_market.CTBC_SOURCE, no_fin=[], errors={}, coverage="full", weight_pct=50.0)]
-    page = etf_pool.index_page(summaries, "2026-10-26", 1, market=etf_hk.HK, fx=FX)
+    page = etf_pool.index_page(summaries, 1, market=etf_hk.HK, fx=FX)
     assert "台幣參考值：1 港元 ≈ 4.0000 元新台幣，匯率來自 Google Finance，報價時間 2026-10-26 17:10 UTC" in page
-    assert "台幣參考值" not in etf_pool.index_page(summaries, "2026-10-26", 1, market=etf_table.TW)
+    assert "台幣參考值" not in etf_pool.index_page(summaries, 1, market=etf_table.TW)
 
 
 def test_hk_holdings_keep_fund_units_and_nav(monkeypatch):

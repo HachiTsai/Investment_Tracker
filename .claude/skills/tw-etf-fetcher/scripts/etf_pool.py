@@ -8,6 +8,7 @@
 外幣市場（港股、美股、日股）會先抓一次外幣對新台幣匯率（Google Finance），抓不到就中止、不寫任何檔案；台股不抓匯率。
 """
 import argparse
+import html
 import json
 import os
 import re
@@ -54,6 +55,19 @@ def card_model_date(models_dir: str, etf: str) -> Optional[str]:
     return m.group(1) if m else None
 
 
+_TITLE = re.compile(r'^title:\s*"?(.+?)"?\s*$', re.MULTILINE)
+
+
+def card_title(models_dir: str, etf: str) -> str:
+    """模型卡片的名稱（ticker.yml 的 title）；沒有卡片或沒有這個欄位就回空字串。"""
+    path = os.path.join(models_dir, etf, "cards", "ticker.yml")
+    if not os.path.exists(path):
+        return ""
+    with open(path, encoding="utf-8") as f:
+        m = _TITLE.search(f.read())
+    return m.group(1).strip() if m else ""
+
+
 def holdings_for(etf: str, models_dir: str, market: etf_market.Market = etf_table.TW) -> Dict[str, Any]:
     """市場持股（台股 MoneyDJ、港股中信投信、美股與日股的 Drive 全市場表或 Yahoo 前幾大）：coverage 在 market.accept_coverage 內才採用；
     否則退回 repo 內 models 的持股卡片。兩種日期分開：as_of_date 是來源標示的持股日期（沒有就是 None），
@@ -89,12 +103,12 @@ def as_page(fragment: str) -> str:
             + fragment[:i] + "</head><body>" + fragment[i:] + "</body></html>")
 
 
-def index_page(summaries: List[Dict[str, Any]], asof: str, n_stocks: int, market: etf_market.Market = etf_table.TW,
+def index_page(summaries: List[Dict[str, Any]], n_stocks: int, market: etf_market.Market = etf_table.TW,
                fx: Optional[Dict[str, Any]] = None) -> str:
     fx_li = (f"<li>台幣參考值：1 {etf_page.PROFILES[market.profile]['cur']} ≈ {fx['rate']:.4f} 元新台幣，匯率來自 {fx['source']}，"
              f"報價時間 {etf_page.fx_time(fx)}。</li>") if fx else ""
     rows = "".join(
-        f'<tr><td><a href="{s["etf"]}.html">{s["etf"]}</a></td><td class="n">{s["holdings"]}</td>'
+        f'<tr><td><a href="{s["etf"]}.html">{s["etf"]}</a></td><td>{html.escape(s["name"])}</td><td class="n">{s["holdings"]}</td>'
         f'<td class="n">{s["weighted_yield_pct"]:.2f}</td><td class="n">{len(s["no_fin"])}</td></tr>' for s in summaries)
     return f"""<title>{market.name} ETF 成分股明細</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -110,7 +124,7 @@ th{{background:var(--head)}} .n{{text-align:right;font-variant-numeric:tabular-n
 </style>
 <main><h1>{market.name} ETF 成分股明細</h1>
 <p class="mut">{len(summaries)} 檔 ETF，成分股去重後 {n_stocks} 檔個股，每檔只抓一次、各 ETF 共用。點 ETF 代號進入財報與股利明細頁，頁首可切換。</p>
-<div class="wrap"><table><thead><tr><th>ETF</th><th class="n">持股檔數</th><th class="n">加權殖利率%</th><th class="n">缺財報</th></tr></thead><tbody>{rows}</tbody></table></div>
+<div class="wrap"><table><thead><tr><th>ETF</th><th>ETF名稱</th><th class="n">持股檔數</th><th class="n">加權殖利率%</th><th class="n">缺財報</th></tr></thead><tbody>{rows}</tbody></table></div>
 <ul class="mut"><li>加權殖利率是成分股近 12 月殖利率依持股權重加權（毛額，未含 ETF 費用與稅，持股以外部位視為 0），是推估，不是 ETF 的配息率。</li>
 <li>{market.source_note}；非官方彙整，缺值標示「無資料」不推估。</li>{fx_li}</ul></main>
 """
@@ -201,11 +215,11 @@ def main(argv: List[str]) -> int:
     for e in etfs:
         r = etf_table.build_page(e, holds[e], pool, today, nav=nav_html(etfs, e), market=market, fx=fx)
         pages[f"{e}.html"] = as_page(r["page"])
-        summaries.append(dict(r["summary"], holdings_asof=holds[e]["as_of_date"], model_date=holds[e]["model_date"], source=holds[e]["source"],
+        summaries.append(dict(r["summary"], name=card_title(a.models_dir, e) or "-", holdings_asof=holds[e]["as_of_date"], model_date=holds[e]["model_date"], source=holds[e]["source"],
                               coverage=etf_market.coverage_label(holds[e])))
         if r["summary"]["errors"]:
             bad[e] = len(r["summary"]["errors"])
-    pages["index.html"] = index_page(summaries, today.isoformat(), len(pool), market, fx)
+    pages["index.html"] = index_page(summaries, len(pool), market, fx)
     pages["pool.json"] = json.dumps(pool_payload(etfs, holds, pool, today, summaries, market, fx), ensure_ascii=False)
     # 要上傳或發佈的內容不得含國別後綴；任一頁有就整批中止，不寫任何檔案
     leaks: Dict[str, List[str]] = {}

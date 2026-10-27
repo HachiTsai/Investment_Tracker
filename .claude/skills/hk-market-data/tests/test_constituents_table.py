@@ -20,7 +20,7 @@ def test_every_placeholder_the_script_fills_exists_in_template():
     # 腳本載入時就會連網抓資料，所以只做靜態比對：replace("__X__") 的每個佔位符都要在範本裡
     used = set(re.findall(r'\("(__[A-Z0-9]+__)"', PAGE.read_text(encoding="utf-8")))
     tpl = TEMPLATE.read_text(encoding="utf-8")
-    assert {"__DATA__", "__ASOF__", "__N__", "__TOP__", "__UNIT__", "__FIN__", "__MISS__"} <= used
+    assert {"__DATA__", "__ASOFLINE__", "__CUTOFF__", "__N__", "__TOP__", "__UNIT__", "__FIN__", "__MISS__"} <= used
     assert [p for p in sorted(used) if p not in tpl] == []
 
 
