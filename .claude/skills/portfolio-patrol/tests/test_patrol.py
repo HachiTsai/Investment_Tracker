@@ -65,6 +65,20 @@ def test_trap_needs_sufficient_coverage():
     assert patrol.evaluate_ticker_posture(mock_cards, live)["posture_key"] == "DATA_INSUFFICIENT"
 
 
+def test_zero_dividend_is_no_data_not_growth():
+    """收息型或債券型配息為零是配息資料未取得：標示無資料，不歸為成長型；成長型配息為零仍屬成長型。"""
+    live = {"price": 20.0, "annual_dividend": 0.0, "tax_retention": 0.9923,
+            "scores": {"netScore": 70, "divScore": 70}, "southbound_2d_net": 0.0, "coverage_ok": True}
+    dividend = {"ticker_id": "00878", "ticker": {"title": "00878", "currency": "TWD", "strategy_type": "DIVIDEND_INCOME"}, "loops": []}
+    res = patrol.evaluate_ticker_posture(dividend, live)
+    assert res["posture_key"] == "NO_DIVIDEND_DATA"
+    assert res["posture_label"] == "⚪ 無資料"
+    assert res["priority"] == 4
+
+    growth = {"ticker_id": "0050", "ticker": {"title": "0050", "currency": "TWD", "strategy_type": "CAPITAL_GROWTH"}, "loops": []}
+    assert patrol.evaluate_ticker_posture(growth, live)["posture_key"] != "NO_DIVIDEND_DATA"
+
+
 def test_discover_tickers(repo_root):
     models_dir = repo_root / "models"
     tickers = patrol.discover_tickers(models_dir)
