@@ -67,6 +67,7 @@ def render(profile: str, etf: str, ncomp: int, data: List[dict], miss: List[dict
            fx: Optional[Dict[str, Any]] = None) -> str:
     """把資料與市場設定代入範本。佔位符皆為 __NAME__，缺任何一個會讓 assert 失敗，避免漏填。
     partial_total 是持股只涵蓋部分基金時的合計權重（%）：整體本益比卡片改寫成「占基金」，不寫成「權重 100%」；完整持股不傳，輸出與原本相同。
+    asof 是空白時，頁首不放資料日期，付款日的說明也略去（台股頁，2026-10-27）。
     fx 是外幣頁的匯率（etf_fx.fetch_rate 的結果）；台股不傳，輸出與沒有這項功能時位元組相同。"""
     p = PROFILES[profile]
     dump = json_for_script
@@ -77,7 +78,8 @@ def render(profile: str, etf: str, ncomp: int, data: List[dict], miss: List[dict
         ("__DATA__", dump(data)), ("__MISS__", dump(miss)), ("__FIN__", dump(fin)),
         ("__QNOTE__", p["qnote"]), ("__FXNOTE__", p["fxnote"]), ("__YNOTE__", p["ynote"]), ("__YSRC__", p["ysrc"]),
         ("__FINORGS__", dump(p["fin_orgs"])), ("__MID__", "true" if p["mid"] else "false"), ("__SPLIT__", "true" if p["split_fin"] else "false"),
-        ("__ASOF__", asof), ("__NAV__", nav), ("__N__", str(n)), ("__TOP__", top), ("__UNIT__", unit), ("__UNITNOTE__", unit_note or p["unit_note"]),
+        ("__ASOFLINE__", f'<p class="mut">資料日期 {asof}。</p>' if asof else ""), ("__CUTOFF__", "（付款日不晚於資料日期）" if asof else ""),
+        ("__NAV__", nav), ("__N__", str(n)), ("__TOP__", top), ("__UNIT__", unit), ("__UNITNOTE__", unit_note or p["unit_note"]),
         ("__NCOMP__", str(ncomp)), ("__ETF__", etf), ("__CUR__", p["cur"]), ("__SRC__", p["src"]),
         ("__PARTIAL__", f"（只含前幾大持股，合計約占基金 {partial_total:.1f}%，其餘持股未納入計算）" if partial else ""),
         ("__WLABEL__", "占基金 " if partial else "權重 "),

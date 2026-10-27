@@ -168,7 +168,9 @@ def build_page(etf: str, holdings: Dict[str, Any], pool: Dict[str, Dict[str, Any
     partial = holdings.get("total_weight_pct", 0.0) if etf_market.coverage_label(holdings) == "partial" else None
     per_unit = per_unit_twd_dividend(holdings, ok, fx)
     unit, unit_note = (f"{per_unit:.3f} 元", etf_page.PER_UNIT_NOTE) if per_unit is not None else (f"{wy:.2f}%", market.unit_note)
-    page = etf_page.render(market.profile, etf, len(stocks), rows_out, miss, fin, f"{today.isoformat()}（建立日期 {holdings.get('model_date') or '無'}，持股日期 {holdings.get('as_of_date') or '無'}，{holdings['source']}）",
+    # 台股頁首不放資料日期（2026-10-27 Hachi 決定）；其他市場的頁首照舊
+    asof = "" if market is TW else f"{today.isoformat()}（建立日期 {holdings.get('model_date') or '無'}，持股日期 {holdings.get('as_of_date') or '無'}，{holdings['source']}）"
+    page = etf_page.render(market.profile, etf, len(stocks), rows_out, miss, fin, asof,
                            len(ok), f'{top["n"]} {top["w"]}%', unit, nav=nav, unit_note=unit_note, partial_total=partial, fx=fx)
     errors = {r["c"]: pool[r["c"]]["errs"] for r in rows if pool[r["c"]]["errs"]}
     summary = dict(etf=etf, rows=len(ok), holdings=len(stocks), weight_pct=holdings.get("total_weight_pct"), no_price=[m["c"] for m in miss],

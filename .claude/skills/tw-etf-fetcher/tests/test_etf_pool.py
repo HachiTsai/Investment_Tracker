@@ -4,6 +4,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 import etf_holdings_scraper  # noqa: E402
+import etf_page  # noqa: E402
 import etf_pool  # noqa: E402
 
 
@@ -64,11 +65,16 @@ def test_nav_marks_current_and_as_page_wraps_fragment():
 
 
 def test_index_page_links_each_etf():
-    s = [dict(etf="0050", holdings=50, rows=50, weighted_yield_pct=1.234, model_date="2026-10-18", holdings_asof=None,
+    s = [dict(etf="0050", name="元大台灣50", holdings=50, rows=50, weighted_yield_pct=1.234, model_date="2026-10-18", holdings_asof=None,
               source="models 持股卡片（備援）", no_fin=[])]
-    out = etf_pool.index_page(s, "2026-10-22", 214)
-    assert 'href="0050.html"' in out and "214" in out and "1.23" in out
+    out = etf_pool.index_page(s, 214)
+    assert 'href="0050.html"' in out and "元大台灣50" in out and "214" in out and "1.23" in out
     assert "建立日期" not in out and "持股日期" not in out and "持股來源" not in out and "資料日期" not in out and "有股價" not in out
+
+
+def test_tw_page_without_asof_has_no_data_date_line():
+    page = etf_page.render("tw", "00985A", 1, [], [], {}, "", 0, "t", "u")
+    assert "資料日期" not in page and "付款日不晚於" not in page and "__ASOFLINE__" not in page and "__CUTOFF__" not in page
 
 
 def test_check_gate():

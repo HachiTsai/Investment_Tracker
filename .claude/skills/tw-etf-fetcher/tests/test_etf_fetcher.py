@@ -329,7 +329,7 @@ def test_etf_sheets_sync_functions(tmp_path):
 
 
 def test_load_all_market_etfs_combines_core_and_pool(tmp_path):
-    from etf_sheets_sync import load_all_market_etfs
+    from etf_sheets_sync import generate_flattened_constituents, load_all_market_etfs
 
     # 1. 建立核心 model 00878
     m_dir = tmp_path / "models"
@@ -377,6 +377,12 @@ def test_load_all_market_etfs_combines_core_and_pool(tmp_path):
     assert m_0050["title"] == "元大台灣50"
     assert len(m_0050["constituents"]) == 1
     assert m_0050["constituents"][0]["ticker"] == "2330.TW"
+    # 全市場表只放建立日期：候選 ETF 沒有卡片就是無，MoneyDJ 的持股日期不進表（2026-10-27）
+    assert m_0050["last_model_update"] == "無"
+    assert next(m for m in all_models if m["ticker"] == "00878")["last_model_update"] == "2026-10-18"
+    flat = generate_flattened_constituents(all_models)
+    assert {r["update_date"] for r in flat if r["etf_id"] == "0050"} == {"無"}
+    assert {r["update_date"] for r in flat if r["etf_id"] == "00878"} == {"2026-10-18"}
 
 
 def test_check_gate():
