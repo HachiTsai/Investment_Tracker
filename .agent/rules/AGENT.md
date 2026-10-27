@@ -37,7 +37,7 @@
 - **股價與配息抓取 Skill**：@[.claude/skills/price-dividend-fetcher/SKILL.md](../../.claude/skills/price-dividend-fetcher/SKILL.md)
 - **Markdown 檢查 Skill**：@[.claude/skills/markdown-linter/SKILL.md](../../.claude/skills/markdown-linter/SKILL.md)
 - **投資組合全標的巡檢 Skill**：@[.claude/skills/portfolio-patrol/SKILL.md](../../.claude/skills/portfolio-patrol/SKILL.md)
-- **台股 ETF 資料管線 Skill**：@[.claude/skills/tw-etf-fetcher/SKILL.md](../../.claude/skills/tw-etf-fetcher/SKILL.md)
+- **ETF 資料管線 Skill（台股、港股、美股、日股）**：@[.claude/skills/tw-etf-fetcher/SKILL.md](../../.claude/skills/tw-etf-fetcher/SKILL.md)
 - **基本面財務指標評分 Skill**：@[.claude/skills/fundamental-analyzer/SKILL.md](../../.claude/skills/fundamental-analyzer/SKILL.md)
 - **00882 成分股股利調查工作流**：@[.claude/workflows/component-dividend-investigation.md](../../.claude/workflows/component-dividend-investigation.md)
 - **投資組合全標的巡檢工作流**：@[.claude/workflows/portfolio-patrol.md](../../.claude/workflows/portfolio-patrol.md)

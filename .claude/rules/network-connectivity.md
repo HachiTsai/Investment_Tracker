@@ -33,6 +33,8 @@
 | `www.moneydj.com` | MoneyDJ 理財網 | ✅ HTTP 200 | 00882 總管理費用率、持股比例查證；台股 ETF 持股明細與資料日期（`tw-etf-fetcher`，2026-10-22 實測 00985A） |
 | `finance.yahoo.com` | Yahoo Finance 網頁 | ✅ HTTP 200 | 港股、美股歷史配息與行情抓取 |
 | `query1.finance.yahoo.com` | Yahoo Finance API | ✅ HTTP 429/200 | 需帶正確 Ticker 與 Cookie/Crumb 參數發送請求 |
+| `query2.finance.yahoo.com` | Yahoo Finance API（Crumb 與基本面端點） | ✅ HTTP 429 | yfinance 取得 Crumb 與基本面時序；美股、日股前幾大持股與財報備援經由 yfinance 取得（2026-10-27 探測回 429，限流中，可連線但可用性依限流狀況而定） |
+| `fc.yahoo.com` | Yahoo Cookie 端點 | ✅ HTTP 404 | yfinance 取得 Cookie 的端點；根路徑回 404 但會發出 Set-Cookie，屬正常（2026-10-27 實測） |
 | `www.investing.com` | Investing.com | ✅ HTTP 200 | 總體經濟指標、全球殖利率走勢 |
 | `www.aastocks.com` | 阿斯達克財經網 | ✅ HTTP 200 | 港股即時報價、股利日程與分析師評級 |
 | `www.etnet.com.hk` | 經濟通 | ✅ HTTP 200 | 港股深度行情、資金流向 |
