@@ -62,7 +62,7 @@
 3. **50 萬被動收入迴路卡片（`models/<ticker>/cards/loop_dividend_500k.yml`）**：
    - 納入個人整體股利目標收斂體系。
 4. **高息陷阱互鎖卡片（`models/<ticker>/cards/interlock_yield_trap.yml`）**：
-   - 配息持續性與成分股集中度風控互鎖。
+   - 殖利率與多空、股利評分雙條件的高息陷阱互鎖。門檻由 `.claude/skills/portfolio-patrol/references/interlock_rules.json` 產生；00882 為手寫例外（見架構文件 v6）。
 
 ### 3.1 標的分級維護 (Tier Management)
 

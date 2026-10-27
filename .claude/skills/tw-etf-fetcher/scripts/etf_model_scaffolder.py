@@ -21,6 +21,29 @@ def detect_strategy_type(name: str, full_name: str, category: str) -> str:
     return "CAPITAL_GROWTH"
 
 
+# 高息陷阱門檻的單一來源（與巡檢程式 patrol_evaluator 共用同一份參數檔）
+INTERLOCK_RULES_PATH = Path(__file__).resolve().parents[2] / "portfolio-patrol" / "references" / "interlock_rules.json"
+
+
+def load_interlock_rules(path: Path = INTERLOCK_RULES_PATH) -> Dict[str, Any]:
+    """讀取互鎖門檻參數檔。"""
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def render_interlock_yml(code: str, rules: Optional[Dict[str, Any]] = None) -> str:
+    """依參數檔產生高息陷阱互鎖卡片；卡片不寫死門檻，避免與巡檢程式分叉。"""
+    trap = (rules or load_interlock_rules())["yield_trap"]
+    return f"""id: card:interlock:yield_trap
+type: interlock
+schema_version: 1.0.0
+target_ticker: "{code}"
+description: "高息陷阱互鎖：殖利率與多空、股利評分雙條件"
+rule_source: "portfolio-patrol/references/interlock_rules.json"
+trigger_rule: "IF yield_pct >= {trap['yield_min'] * 100:.1f} AND (netScore < {trap['net_score_below']} OR divScore < {trap['div_score_below']}) THEN TRAP_WATCH；次一交易日仍成立則 TRAP_ALERT"
+valve_action: "{trap['valve_action']}"
+"""
+
+
 def scaffold_etf_model(
     ticker: str,
     repo_root: Path,
@@ -92,16 +115,8 @@ control_strategy: "reinvest_and_dca"
 """
         (target_cards_dir / "loop_dividend_500k.yml").write_text(loop_yml, encoding="utf-8")
 
-    # 4. 產生 interlock_yield_trap.yml (槓桿衍生型除外)
+    # 4. 產生 interlock_yield_trap.yml (槓桿衍生型除外)，門檻由參數檔產生
     if strat != "HEDGING_OR_DERIVATIVE":
-        interlock_yml = f"""id: card:interlock:yield_trap
-type: interlock
-schema_version: 1.0.0
-target_ticker: "{code}"
-description: "高息陷阱與成分股集中度防禦互鎖"
-trigger_rule: "IF yield_pct > 12.0 AND dividend_sustainability < 40 THEN alert"
-valve_action: "暫停額外單筆加碼，維持例行再投入"
-"""
-        (target_cards_dir / "interlock_yield_trap.yml").write_text(interlock_yml, encoding="utf-8")
+        (target_cards_dir / "interlock_yield_trap.yml").write_text(render_interlock_yml(code), encoding="utf-8")
 
     return target_cards_dir

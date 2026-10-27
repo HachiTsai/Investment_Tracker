@@ -17,6 +17,12 @@ from patrol_cards import check_watchdog, discover_tickers, load_cards
 DEFAULT_WORKERS = 8  # 抓價並行數；全標的 42 檔實測 8 條約 1 分鐘，16、32 條沒有更快也沒被限流
 DIVIDEND_FETCH_TIMEOUT_SEC = 120  # 配息抓取實測單檔可超過 60 秒；原 15 秒逾時會把配息誤判為 0
 DIVIDEND_FETCH_ATTEMPTS = 2  # 逾時或失敗重試一次
+# 高息陷阱與互鎖門檻：單一來源為 references/interlock_rules.json（見架構文件 v5）
+RULES = json.loads((Path(__file__).resolve().parents[1] / "references" / "interlock_rules.json").read_text(encoding="utf-8"))
+_TRAP = RULES["yield_trap"]
+_AGG = RULES["aggressive"]
+_OVER = RULES["overvalued"]
+_VEL = RULES["velocity"]
 
 
 def _fetch_both(fetch_script: Path, ticker: str) -> Optional[Dict[str, Any]]:
@@ -365,17 +371,17 @@ def evaluate_ticker_posture(
             # 股票高股息收息型 (DIVIDEND_INCOME)
             # 評分類判定須有足夠的成分股財報覆蓋（門檻見 lookthrough_fundamentals.COVERAGE_MIN_PCT），覆蓋不足時不判定
             data_ok = bool(live_data.get("coverage_ok"))
-            trap_cond = yield_rate >= 0.08 and (net_score < 50 or div_score < 40)
+            trap_cond = yield_rate >= _TRAP["yield_min"] and (net_score < _TRAP["net_score_below"] or div_score < _TRAP["div_score_below"])
             # 優先級 1：高息陷阱斷路 (net/div 評分破底)；未經次一交易日確認的首日觸發先列為觀察
             confirmed = live_data.get("trap_confirmed")  # None＝未啟用兩日確認，沿用單日判定
             if trap_cond and data_ok and confirmed is not False:
                 posture_key = "TRAP_ALERT"
                 posture_label = "🚨 陷阱警戒"
                 posture_name = "高息陷阱斷路保護 (Yield Trap Trip)"
-                valve_action = "強制關閉加碼閥門！股息暫留現金池，啟動持股專案審查"
+                valve_action = _TRAP["valve_action"]
                 priority = 1
             # 優先級 2：流速過快斷路 (僅港陸標的)
-            elif southbound_flow < -8000:
+            elif southbound_flow < _VEL["southbound_2d_net_below"]:
                 posture_key = "VELOCITY_PAUSE"
                 posture_label = "⏸️ 流速警戒"
                 posture_name = "資金流速過快警報 (Velocity Trip)"
@@ -389,21 +395,21 @@ def evaluate_ticker_posture(
                 valve_action = "暫不升級為陷阱警戒；次一交易日仍觸發即列為陷阱警戒"
                 priority = 4
             # 高息區間（≥ 8%）的判定依賴評分：覆蓋不足時不判定陷阱，也不落入預設穩健姿態
-            elif yield_rate >= 0.08 and not data_ok:
+            elif yield_rate >= _TRAP["yield_min"] and not data_ok:
                 posture_key = "DATA_INSUFFICIENT"
                 posture_label = "⚪ 資料不足"
                 posture_name = "成分股財報覆蓋不足，暫不判定 (Insufficient Coverage)"
                 valve_action = "成分股財報覆蓋率不足，暫不判定高息陷阱，待資料恢復後重新評估"
                 priority = 4
             # 優先級 3：積極進攻
-            elif data_ok and yield_rate >= 0.082 and net_score >= 70 and div_score >= 60:
+            elif data_ok and yield_rate >= _AGG["yield_min"] and net_score >= _AGG["net_score_min"] and div_score >= _AGG["div_score_min"]:
                 posture_key = "AGGRESSIVE_ACCUMULATE"
                 posture_label = "🟢 積極進攻"
                 posture_name = "積極進攻姿態 (Aggressive Accumulate)"
                 valve_action = "股息 100% 立即再投入，若有閒置資金啟動額外加碼，最大化滾動張數"
                 priority = 3
             # 優先級 4：過熱防禦
-            elif yield_rate <= 0.048:
+            elif yield_rate <= _OVER["yield_max"]:
                 posture_key = "OVERVALUED_HOLD"
                 posture_label = "🟡 防禦觀望"
                 posture_name = "估值過熱防禦姿態 (Overvalued / Hold)"

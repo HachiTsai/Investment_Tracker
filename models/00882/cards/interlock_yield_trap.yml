@@ -17,11 +17,9 @@ inputs:
     southbound_flow_velocity: "sensor:hkdata:southbound_2d_net" # 百萬港元
     cnh_fx_trend: "sensor:market:usdcnh_trend"    # 前饋離岸人民幣
 
-hysteresis_bands:
+entry_thresholds:  # 進入門檻（與參數檔一致）；退出滯後帶尚未實作，見架構文件 v6
   aggressive_entry: 0.082     # 殖利率需 ≥ 8.2% 才能進入積極姿態
-  aggressive_exit: 0.078      # 殖利率跌破 7.8% 才退出積極姿態
   expensive_entry: 0.048      # 殖利率跌至 ≤ 4.8% 進入過熱防禦
-  expensive_exit: 0.052       # 殖利率回升至 ≥ 5.2% 退出過熱防禦
 
 logic_sequence:
   - priority: 1
@@ -30,7 +28,7 @@ logic_sequence:
     condition: "yield_rate >= 0.08 AND (net_score < 50 OR div_score < 40)"
     posture: "TRAP_ALERT"
     posture_label: "【陷阱警戒 (Yield Trap Alert)】"
-    valve_action: "強制關閉加碼閥門！股息暫時不執行再投入，全數留存現金緩衝池，啟動持股專案審查"
+    valve_action: "暫停額外單筆加碼，維持例行再投入"
 
   - priority: 2
     name: "資金流速過快警報 (Velocity Trip)"
@@ -43,7 +41,7 @@ logic_sequence:
   - priority: 3
     name: "積極進攻姿態 (Aggressive Accumulate)"
     description: "估值進入便宜區且基本面與多空分扎實"
-    condition: "yield_rate >= hysteresis_bands.aggressive_entry AND net_score >= 70 AND div_score >= 60"
+    condition: "yield_rate >= entry_thresholds.aggressive_entry AND net_score >= 70 AND div_score >= 60"
     posture: "AGGRESSIVE_ACCUMULATE"
     posture_label: "【積極進攻 (Aggressive Accumulate)】"
     valve_action: "股息 100% 立即再投入，若有閒置資金啟動額外加碼，最大化滾動張數"
@@ -51,7 +49,7 @@ logic_sequence:
   - priority: 4
     name: "估值過熱防禦姿態 (Overvalued / Hold)"
     description: "殖利率低於 5%，估值透支未來股息"
-    condition: "yield_rate <= hysteresis_bands.expensive_entry"
+    condition: "yield_rate <= entry_thresholds.expensive_entry"
     posture: "OVERVALUED_HOLD"
     posture_label: "【防禦觀望 (Overvalued / Hold)】"
     valve_action: "停止加碼買進，維持既有部位持有，股息可部分保留現金儲備"

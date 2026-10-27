@@ -157,6 +157,37 @@ def test_first_day_trap_is_watch_until_confirmed():
     assert patrol.evaluate_ticker_posture(cards, live)["posture_key"] == "TRAP_ALERT"
 
 
+def test_thresholds_come_from_interlock_rules_json():
+    """門檻數值與處置文字的單一來源為 references/interlock_rules.json；程式不應另行寫死。"""
+    import patrol_evaluator as ev
+
+    rules = ev.RULES
+    assert rules["yield_trap"]["yield_min"] == 0.08
+    assert rules["yield_trap"]["net_score_below"] == 50
+    assert rules["yield_trap"]["div_score_below"] == 40
+    assert rules["yield_trap"]["valve_action"] == "暫停額外單筆加碼，維持例行再投入"
+    assert rules["aggressive"] == {"yield_min": 0.082, "net_score_min": 70, "div_score_min": 60}
+    assert rules["overvalued"]["yield_max"] == 0.048
+    assert rules["velocity"]["southbound_2d_net_below"] == -8000
+
+
+def test_trap_boundaries_are_inclusive_and_strict():
+    """殖利率 ≥ 8.0% 含邊界；netScore < 50、divScore < 40 為嚴格小於。"""
+    cards = {"ticker_id": "X", "ticker": {"title": "X", "currency": "TWD", "strategy_type": "DIVIDEND_INCOME"}, "loops": []}
+
+    def posture(yld, net, div):
+        live = {"price": 1.0, "annual_dividend": yld, "tax_retention": 1.0,
+                "scores": {"netScore": net, "divScore": div}, "southbound_2d_net": 0.0, "coverage_ok": True}
+        return patrol.evaluate_ticker_posture(cards, live)["posture_key"]
+
+    # 未傳入 trap_confirmed＝未啟用兩日確認，觸發條件直接為 TRAP_ALERT
+    assert posture(0.08, 49.9, 60) == "TRAP_ALERT"    # 8.0% 含邊界、netScore 未達 50
+    assert posture(0.0799, 49.9, 60) != "TRAP_ALERT"  # 低於 8.0% 不觸發
+    assert posture(0.08, 50.0, 60) != "TRAP_ALERT"    # netScore = 50 不屬於 < 50
+    assert posture(0.08, 60.0, 39.9) == "TRAP_ALERT"  # divScore < 40
+    assert posture(0.08, 60.0, 40.0) != "TRAP_ALERT"  # divScore = 40 不屬於 < 40
+
+
 def test_discover_tickers(repo_root):
     models_dir = repo_root / "models"
     tickers = patrol.discover_tickers(models_dir)
@@ -269,7 +300,7 @@ def test_evaluate_ticker_postures():
     res_trap = patrol.evaluate_ticker_posture(mock_cards, live_trap)
     assert res_trap["posture_key"] == "TRAP_ALERT"
     assert res_trap["priority"] == 1
-    assert "強制關閉加碼閥門" in res_trap["valve_action"]
+    assert res_trap["valve_action"] == "暫停額外單筆加碼，維持例行再投入"
 
     # 3. 優先級 2：流速過快斷路 (南向流出 < -8000)
     live_velocity = {
