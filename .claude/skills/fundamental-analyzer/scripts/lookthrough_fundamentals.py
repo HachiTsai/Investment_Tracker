@@ -15,6 +15,7 @@ from fundamental_calculator import calculate_stock_fundamentals, has_netscore_in
 
 ETF_CACHE_FILE = Path.home() / ".cache" / "investment_tracker" / "etf_fundamentals.json"
 CACHE_TTL_DAYS = 7
+CACHE_SCHEMA = 2  # 快取格式版本，與 fundamental_calculator 同步遞增（v3）
 COVERAGE_MIN_PCT = 60.0  # 有 netScore 輸入的權重占比低於此值＝資料不足：不判定、不快取
 
 
@@ -83,7 +84,7 @@ def aggregate_etf_fundamentals(
     if mock_constituents is None and mock_stock_fundamentals is None and use_cache:
         cache = _load_etf_cache()
         cached_entry = cache.get(etf_id)
-        if cached_entry and isinstance(cached_entry, dict):
+        if cached_entry and isinstance(cached_entry, dict) and cached_entry.get("schema") == CACHE_SCHEMA:
             c_date_str = cached_entry.get("cached_at")
             if c_date_str:
                 try:
@@ -117,6 +118,7 @@ def aggregate_etf_fundamentals(
         if is_bond and mock_constituents is None and mock_stock_fundamentals is None and use_cache:
             cache = _load_etf_cache()
             cache[etf_id] = {
+                "schema": CACHE_SCHEMA,
                 "cached_at": datetime.date.today().isoformat(),
                 "data": res,
             }
@@ -193,6 +195,7 @@ def aggregate_etf_fundamentals(
     if mock_constituents is None and mock_stock_fundamentals is None and use_cache and result["coverage_sufficient"]:
         cache = _load_etf_cache()
         cache[etf_id] = {
+            "schema": CACHE_SCHEMA,
             "cached_at": datetime.date.today().isoformat(),
             "data": result,
         }

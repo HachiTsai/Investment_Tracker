@@ -17,6 +17,7 @@ from typing import Any, Dict, Optional
 CACHE_DIR = Path.home() / ".cache" / "investment_tracker"
 CACHE_FILE = CACHE_DIR / "stock_fundamentals.json"
 CACHE_TTL_DAYS = 7
+CACHE_SCHEMA = 2  # 快取格式版本：評分規則變更時遞增，舊快取自動失效（v3 金融股不計負債比）
 
 
 def _load_cache() -> Dict[str, Any]:
@@ -267,8 +268,9 @@ def normalize_ticker_for_yf(symbol: Optional[str]) -> str:
 
 
 def has_netscore_input(fund: Dict[str, Any]) -> bool:
-    """netScore 的三項輸入（ROE、負債比、營業利益率）至少一項有值。全部缺值的結果是降級資料：不快取，也不計入 ETF 覆蓋率。"""
-    return any(fund.get(k) is not None for k in ("roe", "debt_to_equity", "operating_margin"))
+    """netScore 的輸入至少一項有值（金融股不計負債比，見 v3）。全部缺值的結果是降級資料：不快取，也不計入 ETF 覆蓋率。"""
+    keys = ("roe", "operating_margin") if fund.get("sector") == "financial" else ("roe", "debt_to_equity", "operating_margin")
+    return any(fund.get(k) is not None for k in keys)
 
 
 def calculate_stock_fundamentals(
@@ -321,7 +323,7 @@ def calculate_stock_fundamentals(
     if mock_data is None and use_cache:
         cache = _load_cache()
         cached_entry = cache.get(symbol)
-        if cached_entry and isinstance(cached_entry, dict):
+        if cached_entry and isinstance(cached_entry, dict) and cached_entry.get("schema") == CACHE_SCHEMA:
             cached_date_str = cached_entry.get("cached_at")
             if cached_date_str:
                 try:
@@ -379,12 +381,14 @@ def calculate_stock_fundamentals(
         ocf_quality = ocf / net_inc
 
     div_score = calculate_div_score(fcf_coverage, payout, ocf_quality)
-    net_score = calculate_net_score(roe, dte, op_margin)
+    # 金融股的負債比是存款等負債經營的結構性產物，不計入綜合分，改以中性 50 分計（v3）
+    net_score = calculate_net_score(roe, None if data.get("sector") == "financial" else dte, op_margin)
     val_score = calculate_val_score(pe, pb, div_yield)
     fric_score = calculate_fric_score(symbol)
 
     result = {
         "symbol": symbol,
+        "sector": data.get("sector"),
         "roe": round(roe * 100.0, 2) if roe is not None else None,
         "debt_to_equity": round(dte, 2) if dte is not None else None,
         "operating_margin": round(op_margin * 100.0, 2) if op_margin is not None else None,
@@ -405,6 +409,7 @@ def calculate_stock_fundamentals(
     if mock_data is None and use_cache and data and has_netscore_input(result):
         cache = _load_cache()
         cache[symbol] = {
+            "schema": CACHE_SCHEMA,
             "cached_at": datetime.date.today().isoformat(),
             "data": result,
         }

@@ -262,8 +262,10 @@ def evaluate_ticker_posture(
     is_stock = ticker_info.get("category") == "STOCK"
     # 判斷是否為資本利得/成長型或無配息標的：
     # 1. 明確標示 strategy_type 為 CAPITAL_GROWTH
-    # 2. 或非個股且 annual_div <= 0
-    is_growth = (strategy_type == "CAPITAL_GROWTH") or (not is_stock and annual_div <= 0)
+    # 2. 或非個股、非收息型／債券型且 annual_div <= 0（收息型配息為零代表配息資料未取得，見 NO_DIVIDEND_DATA）
+    is_growth = (strategy_type == "CAPITAL_GROWTH") or (
+        not is_stock and annual_div <= 0 and strategy_type not in ("DIVIDEND_INCOME", "BOND_DEFENSE")
+    )
     swing = live_data.get("swing")
 
     # 優先級風控互鎖邏輯 (BLS)
@@ -292,6 +294,13 @@ def evaluate_ticker_posture(
         posture_label = "⚪ 資料不足"
         posture_name = "缺報價資料，暫不判定"
         valve_action = "待下次巡檢取得報價後再評估"
+    elif annual_div <= 0 and strategy_type in ("DIVIDEND_INCOME", "BOND_DEFENSE"):
+        # 收息型或債券型配息為零：配息資料未取得（逾時或來源失敗），標示無資料，不歸為成長型
+        posture_key = "NO_DIVIDEND_DATA"
+        posture_label = "⚪ 無資料"
+        posture_name = "配息資料未取得，暫不判定 (No Dividend Data)"
+        valve_action = "配息資料未取得，待下次巡檢取得配息後重新評估"
+        priority = 4
     else:
         # 收息型 (DIVIDEND_INCOME) 與債券型 (BOND_DEFENSE) 且 annual_div > 0
         yield_rate = annual_div / price if price > 0 else 0.0
