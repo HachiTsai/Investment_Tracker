@@ -19,7 +19,6 @@
 - **外部網路連線與資料來源清單**：@[.claude/rules/network-connectivity.md](.claude/rules/network-connectivity.md)
 - **投資組合控制系統架構規範**：@[.claude/rules/portfolio-control-system.md](.claude/rules/portfolio-control-system.md)
 - **00882 成分股股利調查工作流**：@[.claude/workflows/component-dividend-investigation.md](.claude/workflows/component-dividend-investigation.md)
-- **投資組合全標的自動巡檢工作流**：@[.claude/workflows/portfolio-patrol.md](.claude/workflows/portfolio-patrol.md)
 - **台股 ETF 成分股明細工作流**：@[.claude/workflows/tw-etf-pool.md](.claude/workflows/tw-etf-pool.md)
 - **00882 成分股股利表排程工作流**：@[.claude/workflows/hk-00882-dividend.md](.claude/workflows/hk-00882-dividend.md)
 - **全市場 ETF 資料庫排程工作流**：@[.claude/workflows/market-etf-pool.md](.claude/workflows/market-etf-pool.md)
