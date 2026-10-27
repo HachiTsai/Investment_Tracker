@@ -108,6 +108,7 @@ def inspect_ticker(
         "sensors": {
             "current_price": price,
             "price_source": live_data.get("source_notes", "基準值"),
+            "price_is_live": bool(live_data.get("price_is_live")),
             "scores": scores,
         },
         "loop_state": {
