@@ -1,14 +1,16 @@
 """日股：EDINET API v2 有價證券報告書（官方，合併報表當期）。
 
-API key 由環境代理以標頭注入（主機 api.edinet-fsa.go.jp），腳本不帶 key，也不得印出或寫入 git。
+API key：沙盒由環境代理注入（主機 api.edinet-fsa.go.jp）；GitHub Actions 有 EDINET_API_KEY 時由 `_keyed` 以 Subscription-Key 查詢參數帶上。不得印出或寫入 git。
 HTTP 200 仍要查 body 的 metadata.status；IFRS 與日本會計準則的要素 ID 不同，兩套都對照。
 """
 
 import datetime
 import io
 import json
+import os
 import re
 import threading
+import urllib.parse
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -38,8 +40,16 @@ CAPEX = ("PurchaseOfPropertyPlantAndEquipmentAndIntangibleAssetsInvCF", "Purchas
 DIVIDENDS = ("DividendsPaidToOwnersOfParentFinCFIFRS", "DividendsPaidFinCF")
 
 
+def _keyed(url: str) -> str:
+    """有 EDINET_API_KEY（GitHub secret）時以 Subscription-Key 查詢參數帶上，參數名見 EDINET API 仕様書；沒有就原樣送出，沙盒由代理注入。"""
+    key = os.environ.get("EDINET_API_KEY", "").strip()
+    if not key:
+        return url
+    return f"{url}{'&' if '?' in url else '?'}{urllib.parse.urlencode({'Subscription-Key': key})}"
+
+
 def api(path: str) -> Any:
-    return http_json(f"{BASE}/{path}")
+    return http_json(_keyed(f"{BASE}/{path}"))
 
 
 def list_docs(day: datetime.date) -> List[Dict[str, Any]]:
@@ -209,7 +219,7 @@ def report_bytes(code: str) -> Optional[bytes]:
         if not doc:
             return None
         save_doc(sec_code, doc)
-    return http_bytes(f"{BASE}/documents/{doc['docID']}?type=5")
+    return http_bytes(_keyed(f"{BASE}/documents/{doc['docID']}?type=5"))
 
 
 def fetch(code: str) -> Dict[str, Any]:
