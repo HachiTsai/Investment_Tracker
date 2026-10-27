@@ -68,7 +68,7 @@ def test_index_page_links_each_etf():
               source="models 持股卡片（備援）", no_fin=[])]
     out = etf_pool.index_page(s, "2026-10-22", 214)
     assert 'href="0050.html"' in out and "214" in out and "1.23" in out
-    assert "建立日期" not in out and "持股日期" not in out and "持股來源" not in out and "資料日期" not in out
+    assert "建立日期" not in out and "持股日期" not in out and "持股來源" not in out and "資料日期" not in out and "有股價" not in out
 
 
 def test_check_gate():
