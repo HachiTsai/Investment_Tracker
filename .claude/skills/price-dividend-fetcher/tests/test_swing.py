@@ -72,12 +72,12 @@ def test_scan_records_errors(monkeypatch):
 
 
 def test_watchlist_includes_stock_cards():
-    tickers = [i["ticker"] for i in sw.watchlist()]
+    tickers = [i["ticker"] for i in sw.watchlist(filter_tier="all")]
     assert "HKG:1919" in tickers and "TPE:2356" in tickers
 
 
 def test_watchlist_includes_etf_cards():
-    by = {i["ticker"]: i for i in sw.watchlist()}
+    by = {i["ticker"]: i for i in sw.watchlist(filter_tier="all")}
     assert by["TPE:00882"]["source"] == "ETF 卡片" and by["TPE:0050"]["source"] == "ETF 卡片"
     assert by["TPE:2356"]["source"] == "個股卡片"
 
