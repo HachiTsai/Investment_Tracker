@@ -49,7 +49,7 @@ python3 .claude/skills/portfolio-patrol/scripts/patrol.py --sync-doc <GOOGLE_DOC
 
 1. **優先級 1：高息陷阱斷路 (`TRAP_ALERT`)**
    - 條件：殖利率 $\ge 8\%$ 且多空評分崩跌（$\text{netScore} < 50$ 或 $\text{divScore} < 40$），且前一個交易日同一標的也觸發（兩日確認，見第 8 項）。
-   - 處置：頂部大字標記 🚨，強制關閉加碼閥門，股息暫留現金緩衝池，啟動專案持股審查。
+   - 處置：頂部大字標記 🚨，暫停額外單筆加碼，維持例行再投入。文字與門檻來源：`.claude/skills/portfolio-patrol/references/interlock_rules.json`。
 2. **優先級 2：資金流速急流 (`VELOCITY_PAUSE`)**
    - 條件：南向資金 2 日累計淨流出超過 80 億港元。
    - 處置：暫緩市價大額追買，等待資金流速放緩。
