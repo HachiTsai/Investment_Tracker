@@ -20,6 +20,11 @@
 - **投資組合控制系統架構規範**：@[.claude/rules/portfolio-control-system.md](.claude/rules/portfolio-control-system.md)
 - **00882 成分股股利調查工作流**：@[.claude/workflows/component-dividend-investigation.md](.claude/workflows/component-dividend-investigation.md)
 - **投資組合全標的自動巡檢工作流**：@[.claude/workflows/portfolio-patrol.md](.claude/workflows/portfolio-patrol.md)
+- **台股 ETF 成分股明細工作流**：@[.claude/workflows/tw-etf-pool.md](.claude/workflows/tw-etf-pool.md)
+- **00882 成分股股利表排程工作流**：@[.claude/workflows/hk-00882-dividend.md](.claude/workflows/hk-00882-dividend.md)
+- **全市場 ETF 資料庫排程工作流**：@[.claude/workflows/market-etf-pool.md](.claude/workflows/market-etf-pool.md)
+- **波段觀察資料庫排程工作流**：@[.claude/workflows/swing-patrol-sheets.md](.claude/workflows/swing-patrol-sheets.md)
+- **每日波段巡檢報告排程工作流**：@[.claude/workflows/daily-portfolio-patrol.md](.claude/workflows/daily-portfolio-patrol.md)
 - **情資管線與 APP 整合架構**：@[architecture/情資管線與APP整合架構.md](architecture/情資管線與APP整合架構.md)
 
 ## 憲法：`.claude/` 變更必先掃描 rules
@@ -128,7 +133,7 @@ scripts/                     共用計算或抓價工具
 
 ## 投資管理 Skill 開發規範
 
-- **先盤點、擴充優先（Reuse & Extend First）**：建立任何新腳本或技能前，**必須強制盤點現有 6 大核心技能**。若既有領域（抓價殖利率、港股前饋指標、全標的巡檢評估、筆記與情資歸納）已涵蓋，一律**優先擴充現有技能**（以子模組拆分或新增 CLI 參數），嚴禁隨意在頂層 `scripts/` 建立未受技能管轄與測試覆蓋的孤立腳本（Orphan Scripts）。
+- **先盤點、擴充優先（Reuse & Extend First）**：建立任何新腳本或技能前，**必須強制盤點現有 8 大核心技能**。若既有領域（抓價殖利率、港股前饋指標、全標的巡檢評估、筆記與情資歸納）已涵蓋，一律**優先擴充現有技能**（以子模組拆分或新增 CLI 參數），嚴禁隨意在頂層 `scripts/` 建立未受技能管轄與測試覆蓋的孤立腳本（Orphan Scripts）。
 - **新建技能嚴格門檻**：唯有面對「全新領域且現有技能完全無法涵蓋、具備獨特觸發情境與獨立生命週期」之需求時，才獲准於 `.claude/skills/<kebab-case 名稱>/` 建立新技能。
 - **標準目錄結構**：每個技能必須具備 `SKILL.md`、`scripts/`、`references/`、`tests/`。
 - **觸發與規則職責**：`SKILL.md` 的 description 寫清楚何時觸發；規則類內容放 `references/` 作為 SSOT。

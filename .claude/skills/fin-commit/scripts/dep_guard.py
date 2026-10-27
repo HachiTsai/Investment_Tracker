@@ -131,9 +131,31 @@ def find_rule_sync_issues(repo_root: Path = REPO_ROOT) -> List[str]:
     return issues
 
 
+def find_workflow_dep_issues(repo_root: Path = REPO_ROOT) -> List[str]:
+    """Check that every package a GitHub workflow pip-installs is declared in pyproject.toml."""
+    wf_dir = repo_root / ".github" / "workflows"
+    pyproj_path = repo_root / "pyproject.toml"
+    if not wf_dir.is_dir() or not pyproj_path.is_file():
+        return []
+    declared = parse_pyproject_deps(pyproj_path)
+    issues: List[str] = []
+    for wf in sorted(wf_dir.glob("*.yml")):
+        for line in wf.read_text(encoding="utf-8", errors="replace").splitlines():
+            m = re.search(r"pip install\s+(.+)", line)
+            if not m:
+                continue
+            for tok in m.group(1).split():
+                if tok.startswith("-"):
+                    continue
+                pkg = normalize_pkg_name(re.split(r"[<>=!~\[;]", tok)[0])
+                if pkg and pkg not in declared:
+                    issues.append(f"{pkg}（.github/workflows/{wf.name} 安裝，未記錄於 pyproject.toml）")
+    return issues
+
+
 def find_dependency_issues(files: Sequence[str], repo_root: Path = REPO_ROOT) -> List[str]:
     """Check staged .py imports against pyproject.toml, and sync with .claude/rules/python-environment.md."""
-    issues: List[str] = find_rule_sync_issues(repo_root)
+    issues: List[str] = find_rule_sync_issues(repo_root) + find_workflow_dep_issues(repo_root)
     pyproj_path = repo_root / "pyproject.toml"
     rule_path = repo_root / ".claude" / "rules" / "python-environment.md"
     has_pyproj, has_rule = pyproj_path.is_file(), rule_path.is_file()
