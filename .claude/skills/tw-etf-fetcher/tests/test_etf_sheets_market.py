@@ -39,13 +39,13 @@ _REAL_FETCH_PRICE = etf_sheets_sync.fetch_live_etf_price
 @pytest.fixture(autouse=True)
 def _offline(monkeypatch):
     """市場表測試不連網：現價與評分預設拿不到，要測的情境在測試內另外設定。"""
-    monkeypatch.setattr(etf_sheets_sync, "fetch_live_etf_price", lambda ticker, allow_snapshot=True: None)
+    monkeypatch.setattr(etf_sheets_sync, "fetch_live_etf_price", lambda ticker: None)
     monkeypatch.setattr(etf_sheets_sync, "_load_aggregate_func", lambda: None)
 
 
 def test_foreign_price_and_scores_use_tw_source_and_method(monkeypatch, tmp_path):
     monkeypatch.setattr(etf_sheets_sync, "fetch_live_etf_price",
-                        lambda ticker, allow_snapshot=True: 16.83 if allow_snapshot is False else None)
+                        lambda ticker: 16.83)
 
     def fake_aggregate(etf_id, top_n=10, repo_root=None):
         return dict(status="success", weighted_roe=12.98,
@@ -76,13 +76,13 @@ def test_foreign_price_and_scores_dash_on_fallback_or_error(monkeypatch, tmp_pat
     assert row["net_score"] == "-"
 
 
-def test_live_price_without_snapshot_stays_none_when_quote_fails(monkeypatch):
+def test_live_price_stays_none_when_quote_fails(monkeypatch):
     def offline(*args, **kwargs):
         raise OSError("offline")
 
     monkeypatch.setattr(etf_sheets_sync.urllib.request, "urlopen", offline)
-    assert _REAL_FETCH_PRICE("0050", allow_snapshot=False) is None
-    assert _REAL_FETCH_PRICE("0050") == etf_sheets_sync.ETF_PRICE_SNAPSHOTS["0050"]
+    assert _REAL_FETCH_PRICE("0050") is None
+    assert not hasattr(etf_sheets_sync, "ETF_PRICE_SNAPSHOTS")
 
 
 def test_market_tables_have_the_tw_columns_plus_coverage(tmp_path):
@@ -243,3 +243,19 @@ def test_tw_keeps_its_original_summary_range_and_creates_nothing(tmp_path, fake_
     assert ok, msg
     assert instances[0].requests == []
     assert ("ETF_Summary!A1:P2", 2) in instances[0].updates
+
+
+def test_tw_summary_rows_do_not_fabricate_scores_or_prices(monkeypatch):
+    """台股全表：穿透評分失敗或 fallback、報價失敗時一律寫 "-"，不補預設分或舊價。"""
+    model = dict(ticker="00878", title="國泰永續高股息", exchange="TWSE", category="ETF", benchmark="x",
+                 last_model_update="2026-10-27",
+                 constituents=[dict(ticker="2891.TW", name="中信金", weight_pct=10.0, shares=1)])
+
+    def fallback(etf_id, top_n=10, repo_root=None):
+        return dict(status="fallback", weighted_roe=9.9,
+                    scores=dict(netScore=60.0, divScore=55.0, valScore=70.0, fricScore=80.0))
+
+    monkeypatch.setattr(etf_sheets_sync, "_load_aggregate_func", lambda: fallback)
+    row = etf_sheets_sync.generate_summary_rows([model])[0]
+    assert row["current_price"] == "-" and row["weighted_roe"] == "-"
+    assert [row[k] for k in ("net_score", "div_score", "val_score", "fric_score")] == ["-"] * 4

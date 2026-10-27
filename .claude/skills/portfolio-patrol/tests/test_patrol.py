@@ -655,3 +655,37 @@ def test_fetch_ticker_live_data_price_fallback(monkeypatch):
     assert res["price"] == 14.38
     assert "live-price-fallback" in res["source_notes"]
 
+
+
+def test_fetch_ticker_live_data_marks_non_live_and_leaves_scores_empty(monkeypatch):
+    """行情與穿透評分都取不到時：標明非即時、評分留空，不補預設分。"""
+    import subprocess
+    import sys
+    import types
+    from pathlib import Path
+    import patrol_evaluator as pe
+
+    def always_fail(cmd, *args, **kwargs):
+        return subprocess.CompletedProcess(cmd, 1, stdout="")
+
+    def agg_fails(*args, **kwargs):
+        raise RuntimeError("no fundamentals")
+
+    monkeypatch.setattr(subprocess, "run", always_fail)
+    monkeypatch.setitem(sys.modules, "lookthrough_fundamentals", types.SimpleNamespace(aggregate_etf_fundamentals=agg_fails))
+    monkeypatch.setitem(sys.modules, "swing", types.SimpleNamespace(stock_profile=lambda t: None))
+    cards_data = {"ticker": {"ticker": "009805", "strategy_type": "DIVIDEND_INCOME"}}
+    res = pe.fetch_ticker_live_data("009805", cards_data, Path(__file__).resolve().parents[4])
+
+    assert res["price_is_live"] is False
+    assert "非即時" in res["source_notes"]
+    assert res["scores"] == {}
+    assert res["coverage_ok"] is False
+
+
+def test_macro_feed_flags_baseline_snapshot():
+    import patrol_evaluator as pe
+
+    snap = {"lpr": {"1Y": 3.0, "source": "中國人民銀行/東方財富 (基準快照)"}}
+    assert "非即時" in pe._format_macro_feed(snap)
+    assert "非即時" not in pe._format_macro_feed({"lpr": {"1Y": 3.0, "source": "live"}})

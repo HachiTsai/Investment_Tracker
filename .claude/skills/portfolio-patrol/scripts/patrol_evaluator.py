@@ -111,6 +111,7 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
     default_price = fallback_price
     annual_div = fallback_div
     source_notes = "基準校準值"
+    is_live = False  # 現價是否取自即時行情；False 時輸出會標明「非即時」
 
     # 嘗試調用 price-dividend-fetcher（呼叫 both 以同時取得現價與近 12 個月 TTM 配息）
     fetch_script = repo_root / ".claude" / "skills" / "price-dividend-fetcher" / "scripts" / "fetch.py"
@@ -122,6 +123,7 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
                 if p_info and p_info.get("price"):
                     price = float(p_info["price"])
                     source_notes = f"live-fetcher ({p_info.get('source', 'web')})"
+                    is_live = True
                 d_info = res.get("dividends") or {}
                 if "ttm_total" in d_info:
                     annual_div = float(d_info["ttm_total"] or 0.0)
@@ -143,11 +145,13 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
                     if isinstance(item_p, dict) and item_p.get("price"):
                         price = float(item_p["price"])
                         source_notes = f"live-price-fallback ({item_p.get('source', 'web')})"
+                        is_live = True
             except Exception:
                 pass
 
-    if price == 10.00 and ticker != "00882" and not fail_safe.get("fallback_price"):
-        source_notes = "⚠️ 預設兜底值 (行情連線逾時)"
+    if not is_live:
+        # 抓不到即時價時，價格與殖利率都是卡片或預設基準值，必須讓讀者看得出來
+        source_notes = "⚠️ 非即時：行情連線失敗，使用卡片或預設基準值"
 
     # 取得技術面波段輪廓（供成長型 ETF 姿態判定）
     swing_info = None
@@ -161,12 +165,7 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
         except Exception:
             pass
 
-    scores = {
-        "netScore": 75.0,
-        "divScore": 70.0,
-        "valScore": 75.0,
-        "fricScore": 80.0,
-    }
+    scores: Dict[str, float] = {}  # 穿透評分取不到時留空，不補預設分
 
     coverage_ok = False  # 聚合失敗或覆蓋不足時為 False，評估端不判定評分類姿態
 
@@ -192,6 +191,7 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
         "annual_dividend": annual_div,
         "tax_retention": tax_retention,
         "source_notes": source_notes,
+        "price_is_live": is_live,
         "scores": scores,
         "coverage_ok": coverage_ok,
         "southbound_2d_net": southbound,
@@ -204,7 +204,8 @@ def fetch_stock_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: Pa
     info = cards_data.get("ticker", {})
     symbol = info.get("symbol") or ticker
     baseline = (info.get("dividend") or {}).get("annual_dps_baseline")
-    live: Dict[str, Any] = {"price": 0.0, "annual_dividend": baseline or 0.0, "source_notes": "個股卡片基準值"}
+    live: Dict[str, Any] = {"price": 0.0, "annual_dividend": baseline or 0.0, "source_notes": "⚠️ 非即時：個股卡片基準值",
+                            "price_is_live": False}
 
     fetch_script = repo_root / ".claude" / "skills" / "price-dividend-fetcher" / "scripts" / "fetch.py"
     if fetch_script.exists():
@@ -218,13 +219,14 @@ def fetch_stock_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: Pa
             if price_info.get("price"):
                 live["price"] = float(price_info["price"])
                 live["source_notes"] = f"live-fetcher ({price_info.get('source', 'web')})"
+                live["price_is_live"] = True
             ttm = (res.get("dividends") or res).get("ttm_total")
             if ttm:
                 live["annual_dividend"] = float(ttm)
         except Exception:
             pass
 
-    scores = {"netScore": 50.0, "divScore": 50.0, "valScore": 50.0, "fricScore": 50.0}
+    scores: Dict[str, float] = {}  # 取不到評分時留空，不補預設分
     fund_dir = repo_root / ".claude" / "skills" / "fundamental-analyzer" / "scripts"
     if fund_dir.exists():
         if str(fund_dir) not in sys.path:
@@ -496,7 +498,10 @@ def _format_macro_feed(macro: Dict[str, Any]) -> str:
         chg_str = f"({chg:+})" if chg is not None else ""
         parts.append(f"SCFI: {scfi_val} {chg_str}".strip())
 
-    return " ｜ ".join(parts) if parts else "宏觀指標正常運作中"
+    line = " ｜ ".join(parts) if parts else "宏觀指標正常運作中"
+    if "基準快照" in json.dumps(macro, ensure_ascii=False):
+        line += " ｜ ⚠️ 非即時：宏觀來源連線失敗，使用基準快照"
+    return line
 
 
 def run_portfolio_patrol(

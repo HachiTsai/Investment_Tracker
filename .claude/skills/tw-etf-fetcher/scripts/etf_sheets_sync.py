@@ -58,47 +58,8 @@ from etf_list_scraper import fetch_twse_etf_list
 from etf_holdings_scraper import fetch_etf_holdings
 import etf_market
 
-ETF_PRICE_SNAPSHOTS: Dict[str, float] = {
-    "0050": 109.0,
-    "0056": 58.75,
-    "006208": 250.35,
-    "00645": 57.8,
-    "00646": 79.35,
-    "00657": 78.1,
-    "00661": 85.35,
-    "00662": 124.95,
-    "00679B": 25.74,
-    "00687B": 26.75,
-    "00692": 94.35,
-    "00710B": 18.78,
-    "00712": 7.18,
-    "00713": 65.8,
-    "00720B": 31.9,
-    "00751B": 29.93,
-    "00757": 146.3,
-    "00772B": 32.37,
-    "00830": 83.95,
-    "00878": 35.53,
-    "00881": 50.0,
-    "00882": 15.21,
-    "00915": 33.71,
-    "00918": 34.53,
-    "00919": 32.74,
-    "00929": 29.84,
-    "00933B": 15.48,
-    "00937B": 14.15,
-    "00939": 25.09,
-    "00940": 13.48,
-    "00945B": 14.48,
-    "00949": 22.96,
-    "00951": 16.73,
-    "00954": 17.83,
-    "00956": 13.79,
-}
-
-
-def fetch_live_etf_price(ticker: str, allow_snapshot: bool = True) -> Optional[float]:
-    """自 Yahoo Finance 輕量端點獲取最新收盤/即時市價；allow_snapshot=False 時抓不到就回傳 None，不用快照價。"""
+def fetch_live_etf_price(ticker: str) -> Optional[float]:
+    """自 Yahoo Finance 輕量端點獲取最新收盤/即時市價；抓不到回傳 None，不用任何寫死的備援價。"""
     suffixes = [".TW", ".TWO"]
     for s in suffixes:
         url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}{s}?interval=1d&range=1d"
@@ -112,7 +73,7 @@ def fetch_live_etf_price(ticker: str, allow_snapshot: bool = True) -> Optional[f
                     return float(p)
         except Exception:
             continue
-    return ETF_PRICE_SNAPSHOTS.get(ticker) if allow_snapshot else None
+    return None
 
 
 def load_yaml_simple(path: Path) -> Dict[str, Any]:
@@ -406,21 +367,19 @@ def generate_summary_rows(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             return f"{name} ({float(w):.2f}%)"
 
         w_roe = "-"
-        net_s = 70.0
-        div_s = 70.0
-        val_s = 70.0
-        fric_s = 80.0
+        score_str = {k: "-" for k in ("netScore", "divScore", "valScore", "fricScore")}
 
+        # 只收穿透計算成功的評分；失敗或 fallback 一律寫 "-"，不補預設分
         if aggregate_func:
             try:
                 res = aggregate_func(ticker, top_n=10, repo_root=REPO_ROOT)
-                sc = res.get("scores", {})
-                if res.get("weighted_roe") is not None:
-                    w_roe = f"{res.get('weighted_roe')}%"
-                net_s = sc.get("netScore", net_s)
-                div_s = sc.get("divScore", div_s)
-                val_s = sc.get("valScore", val_s)
-                fric_s = sc.get("fricScore", fric_s)
+                if res.get("status") == "success":
+                    sc = res.get("scores", {})
+                    if res.get("weighted_roe") is not None:
+                        w_roe = f"{res.get('weighted_roe')}%"
+                    for k in score_str:
+                        if sc.get(k) is not None:
+                            score_str[k] = f"{float(sc[k]):.1f}"
             except Exception:
                 pass
 
@@ -439,10 +398,10 @@ def generate_summary_rows(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             "top2_holding": format_top(top2),
             "top3_holding": format_top(top3),
             "weighted_roe": w_roe,
-            "net_score": f"{net_s:.1f}",
-            "div_score": f"{div_s:.1f}",
-            "val_score": f"{val_s:.1f}",
-            "fric_score": f"{fric_s:.1f}",
+            "net_score": score_str["netScore"],
+            "div_score": score_str["divScore"],
+            "val_score": score_str["valScore"],
+            "fric_score": score_str["fricScore"],
             "last_model_update": m["last_model_update"],
         })
 
@@ -744,7 +703,7 @@ def _etf_title(models_dir: Path, code: str) -> str:
 def _foreign_live_fields(etf: str, aggregate_func: Optional[Any]) -> Dict[str, str]:
     """外幣市場的現價與評分，與台股表同一來源與算法；拿不到就寫 "-"，不用快照價，也不用 fallback 的預設分。"""
     out = dict(current_price="-", weighted_roe="-", net_score="-", div_score="-", val_score="-", fric_score="-")
-    price = fetch_live_etf_price(etf, allow_snapshot=False)
+    price = fetch_live_etf_price(etf)
     if price is not None:
         out["current_price"] = f"{price:.2f}"
     if aggregate_func is None:
