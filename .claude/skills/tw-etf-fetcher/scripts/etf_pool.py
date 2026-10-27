@@ -94,7 +94,7 @@ def index_page(summaries: List[Dict[str, Any]], asof: str, n_stocks: int, market
     fx_li = (f"<li>台幣參考值：1 {etf_page.PROFILES[market.profile]['cur']} ≈ {fx['rate']:.4f} 元新台幣，匯率來自 {fx['source']}，"
              f"報價時間 {etf_page.fx_time(fx)}。</li>") if fx else ""
     rows = "".join(
-        f'<tr><td><a href="{s["etf"]}.html">{s["etf"]}</a></td><td class="n">{s["holdings"]}</td><td class="n">{s["rows"]}</td>'
+        f'<tr><td><a href="{s["etf"]}.html">{s["etf"]}</a></td><td class="n">{s["holdings"]}</td>'
         f'<td class="n">{s["weighted_yield_pct"]:.2f}</td><td class="n">{len(s["no_fin"])}</td></tr>' for s in summaries)
     return f"""<title>{market.name} ETF 成分股明細</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -110,7 +110,7 @@ th{{background:var(--head)}} .n{{text-align:right;font-variant-numeric:tabular-n
 </style>
 <main><h1>{market.name} ETF 成分股明細</h1>
 <p class="mut">{len(summaries)} 檔 ETF，成分股去重後 {n_stocks} 檔個股，每檔只抓一次、各 ETF 共用。點 ETF 代號進入財報與股利明細頁，頁首可切換。</p>
-<div class="wrap"><table><thead><tr><th>ETF</th><th class="n">持股檔數</th><th class="n">有股價</th><th class="n">加權殖利率%</th><th class="n">缺財報</th></tr></thead><tbody>{rows}</tbody></table></div>
+<div class="wrap"><table><thead><tr><th>ETF</th><th class="n">持股檔數</th><th class="n">加權殖利率%</th><th class="n">缺財報</th></tr></thead><tbody>{rows}</tbody></table></div>
 <ul class="mut"><li>加權殖利率是成分股近 12 月殖利率依持股權重加權（毛額，未含 ETF 費用與稅，持股以外部位視為 0），是推估，不是 ETF 的配息率。</li>
 <li>{market.source_note}；非官方彙整，缺值標示「無資料」不推估。</li>{fx_li}</ul></main>
 """
