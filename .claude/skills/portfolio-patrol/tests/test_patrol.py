@@ -79,6 +79,45 @@ def test_zero_dividend_is_no_data_not_growth():
     assert patrol.evaluate_ticker_posture(growth, live)["posture_key"] != "NO_DIVIDEND_DATA"
 
 
+def test_fetch_both_retries_once_after_timeout(monkeypatch, tmp_path):
+    """配息抓取逾時後重試一次，逾時上限為 120 秒（原 15 秒會把配息誤判為 0）。"""
+    import subprocess
+    import patrol_evaluator as ev
+
+    calls = []
+
+    def fake_run(cmd, capture_output, text, timeout):
+        calls.append(timeout)
+        if len(calls) == 1:
+            raise subprocess.TimeoutExpired(cmd, timeout)
+        return subprocess.CompletedProcess(cmd, 0, stdout='{"dividends": {"ttm_total": 3.42}}', stderr="")
+
+    monkeypatch.setattr(ev.subprocess, "run", fake_run)
+    script = tmp_path / "fetch.py"
+    script.write_text("", encoding="utf-8")
+
+    assert ev._fetch_both(script, "00919") == {"dividends": {"ttm_total": 3.42}}
+    assert calls == [120, 120]
+
+
+def test_fetch_both_gives_up_after_two_attempts(monkeypatch, tmp_path):
+    import subprocess
+    import patrol_evaluator as ev
+
+    calls = []
+
+    def always_timeout(cmd, capture_output, text, timeout):
+        calls.append(timeout)
+        raise subprocess.TimeoutExpired(cmd, timeout)
+
+    monkeypatch.setattr(ev.subprocess, "run", always_timeout)
+    script = tmp_path / "fetch.py"
+    script.write_text("", encoding="utf-8")
+
+    assert ev._fetch_both(script, "00919") is None
+    assert len(calls) == 2
+
+
 def test_discover_tickers(repo_root):
     models_dir = repo_root / "models"
     tickers = patrol.discover_tickers(models_dir)

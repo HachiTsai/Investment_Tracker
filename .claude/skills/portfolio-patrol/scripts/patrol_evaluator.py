@@ -15,6 +15,28 @@ from typing import Any, Dict, List, Optional
 from patrol_cards import check_watchdog, discover_tickers, load_cards
 
 DEFAULT_WORKERS = 8  # 抓價並行數；全標的 42 檔實測 8 條約 1 分鐘，16、32 條沒有更快也沒被限流
+DIVIDEND_FETCH_TIMEOUT_SEC = 120  # 配息抓取實測單檔可超過 60 秒；原 15 秒逾時會把配息誤判為 0
+DIVIDEND_FETCH_ATTEMPTS = 2  # 逾時或失敗重試一次
+
+
+def _fetch_both(fetch_script: Path, ticker: str) -> Optional[Dict[str, Any]]:
+    """呼叫 price-dividend-fetcher 取得現價與近 12 個月配息；逾時或失敗重試一次，兩次皆失敗回 None。"""
+    for _ in range(DIVIDEND_FETCH_ATTEMPTS):
+        try:
+            out = subprocess.run(
+                [sys.executable, str(fetch_script), "both", ticker],
+                capture_output=True,
+                text=True,
+                timeout=DIVIDEND_FETCH_TIMEOUT_SEC,
+            )
+        except subprocess.TimeoutExpired:
+            continue
+        if out.returncode == 0:
+            try:
+                return json.loads(out.stdout)
+            except ValueError:
+                continue
+    return None
 
 
 def fetch_macro_telemetry(repo_root: Path) -> Dict[str, Any]:
@@ -71,14 +93,8 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
     fetch_script = repo_root / ".claude" / "skills" / "price-dividend-fetcher" / "scripts" / "fetch.py"
     if fetch_script.exists():
         try:
-            out = subprocess.run(
-                [sys.executable, str(fetch_script), "both", ticker],
-                capture_output=True,
-                text=True,
-                timeout=15,
-            )
-            if out.returncode == 0:
-                res = json.loads(out.stdout)
+            res = _fetch_both(fetch_script, ticker)
+            if res:
                 p_info = res.get("price") if isinstance(res.get("price"), dict) else res
                 if p_info and p_info.get("price"):
                     price = float(p_info["price"])
