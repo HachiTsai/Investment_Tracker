@@ -2,6 +2,7 @@ id: card:interlock:yield_trap
 type: interlock
 schema_version: 1.0.0
 target_ticker: "00772B"
-description: "高息陷阱與成分股集中度防禦互鎖"
-trigger_rule: "IF yield_pct > 12.0 AND dividend_sustainability < 40 THEN alert"
+description: "高息陷阱互鎖：殖利率與多空、股利評分雙條件"
+rule_source: "portfolio-patrol/references/interlock_rules.json"
+trigger_rule: "IF yield_pct >= 8.0 AND (netScore < 50 OR divScore < 40) THEN TRAP_WATCH；次一交易日仍成立則 TRAP_ALERT"
 valve_action: "暫停額外單筆加碼，維持例行再投入"
