@@ -38,11 +38,12 @@ MARKET_SHEET_IDS = {
     "US": "1qfMn6hbPD4qFmlCAm0fC2zTfEtm9uVjdZYL4YDUrmY4",
     "JP": "1XtSRy14KdLMv75g9ShAL6jWpa9XmoUpiSY4Srvuycxc",
 }
-# 外幣市場的兩張表與台股同名同序；ETF_Summary 多一欄 coverage，持股完整度必須寫進 Sheet
+# 外幣市場的兩張表與台股同名同序；ETF_Summary 多兩欄：coverage（持股完整度）與 holdings_asof（持股日期）。
+# last_model_update 在外幣市場是建立日期（模型卡片的日期），持股日期只放 holdings_asof，來源沒有就寫「無」
 FOREIGN_SUMMARY_FIELDS = [
     "etf_id", "etf_name", "current_price", "exchange", "category", "benchmark", "constituent_count",
     "top1_holding", "top2_holding", "top3_holding", "weighted_roe", "net_score", "div_score", "val_score",
-    "fric_score", "last_model_update", "coverage",
+    "fric_score", "last_model_update", "coverage", "holdings_asof",
 ]
 CONSTITUENT_FIELDS = ["etf_id", "etf_name", "constituent_ticker", "constituent_name", "weight_pct", "shares", "update_date"]
 COVERAGE_LABELS = {"full": "完整", "partial": "前幾大", "fallback": "備援"}
@@ -253,7 +254,6 @@ def load_all_market_etfs(
     ]
 
     total_pool = len(pool_candidates)
-    today_iso = datetime.now().strftime("%Y-%m-%d")
 
     for idx, item in enumerate(pool_candidates, 1):
         code = str(item.get("ticker", "")).strip().upper()
@@ -272,7 +272,7 @@ def load_all_market_etfs(
             h_data = {}
 
         raw_cons = h_data.get("constituents", [])
-        as_of = h_data.get("as_of_date") or today_iso
+        as_of = h_data.get("as_of_date") or "無"  # 來源沒有持股日期就填無，不以抓取日代替
 
         constituents: List[Dict[str, Any]] = []
         for c in raw_cons:
@@ -527,7 +527,7 @@ def sync_via_google_api(
         except Exception as e:
             print(f"   ℹ️ 設定純文字格式提示：{e}")
 
-        # 3. 寫入 ETF_Summary（台股為 A:P；外幣市場多一欄 coverage，為 A:Q）
+        # 3. 寫入 ETF_Summary（台股為 A:P；外幣市場多 coverage 與 holdings_asof，為 A:R）
         summary_last_col = chr(ord("A") + summary_width - 1)
         if summary_rows:
             print(f"   📤 正在寫入 ETF_Summary：共 {len(summary_rows)} 筆標的摘要...", flush=True)
@@ -569,16 +569,21 @@ def sync_via_google_api(
         except Exception as e:
             print(f"   ℹ️ 清除 ETF_Constituents 超連結提示：{e}")
 
-        # 6. 寫入同步元資訊至 ETF_Summary!R1:S2 與 ETF_Constituents!I1:J2（資料欄位外側）
+        # 6. 寫入同步元資訊：ETF_Summary 放在資料欄右側（台股 R1:S2；外幣市場的 A:R 已是資料欄，改放 T1:U2，舊的 S1:S2 先清掉），
+        #    ETF_Constituents 在 I1:J2（資料欄位外側）
+        meta_col = chr(ord("A") + summary_width + 1)
+        meta_end = chr(ord(meta_col) + 1)
         now_tpe = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S (TPE)")
         meta_values = [
             ["最後同步時間", now_tpe],
             ["執行者", "GitHub Actions"],
         ]
         try:
+            if summary_width > 16:
+                client.update_values(sheet_id, "ETF_Summary!S1:S2", [[""], [""]], value_input_option="USER_ENTERED")
             client.update_values(
                 sheet_id,
-                "ETF_Summary!R1:S2",
+                f"ETF_Summary!{meta_col}1:{meta_end}2",
                 meta_values,
                 value_input_option="USER_ENTERED",
             )
@@ -748,12 +753,12 @@ def market_tables(payload: Dict[str, Any], models_dir: Path) -> Tuple[List[Dict[
         s = summaries[etf]
         hs = sorted(holds.get(etf, []), key=lambda h: h["weightPct"], reverse=True)
         title = _etf_title(models_dir, etf)
-        as_of = s.get("holdings_asof") or payload["asof"]
+        holdings_asof = s.get("holdings_asof") or "無"
         for h in hs:
             constituent_rows.append(dict(
                 etf_id=etf, etf_name=title, constituent_ticker=h["code"],
                 constituent_name=_clean_name(names.get(h["code"], h["code"])), weight_pct=f"{h['weightPct']:.2f}",
-                shares="" if h.get("shares") is None else h["shares"], update_date=as_of,
+                shares="" if h.get("shares") is None else h["shares"], update_date=holdings_asof,
             ))
         tops = [f"{_clean_name(names.get(h['code'], h['code']))} ({h['weightPct']:.2f}%)" for h in hs[:3]]
         tops += ["-"] * (3 - len(tops))
@@ -761,7 +766,8 @@ def market_tables(payload: Dict[str, Any], models_dir: Path) -> Tuple[List[Dict[
             etf_id=etf, etf_name=title, current_price="-", exchange="-", category="ETF", benchmark="-",
             constituent_count=len(hs), top1_holding=tops[0], top2_holding=tops[1], top3_holding=tops[2],
             weighted_roe="-", net_score="-", div_score="-", val_score="-", fric_score="-",
-            last_model_update=as_of, coverage=COVERAGE_LABELS.get(s.get("coverage"), "-"),
+            last_model_update=s.get("model_date") or "無", coverage=COVERAGE_LABELS.get(s.get("coverage"), "-"),
+            holdings_asof=holdings_asof,
         ))
     return summary_rows, constituent_rows
 

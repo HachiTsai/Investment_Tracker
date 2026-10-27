@@ -12,6 +12,7 @@ import pytest
 SKILLS = Path(__file__).resolve().parent.parent.parent
 for sub in ("tw-etf-fetcher", "fundamental-analyzer", "price-dividend-fetcher"):
     sys.path.insert(0, str(SKILLS / sub / "scripts"))
+import etf_drive  # noqa: E402
 import etf_jp  # noqa: E402
 import etf_market  # noqa: E402
 import etf_page  # noqa: E402
@@ -80,6 +81,7 @@ def _rename(rows, old, new):
 
 @pytest.fixture
 def jp_offline(monkeypatch):
+    monkeypatch.setattr(etf_drive, "_tables", lambda *a, **k: ([], []))  # 全市場表沒有資料 → 走 Yahoo 前幾大
     monkeypatch.setattr(etf_jp, "_top_holdings_rows", lambda etf: list(TOP))
     monkeypatch.setattr(etf_jp.price_fetch, "get_price", lambda ticker, source="auto": {"price": PRICES.get(ticker, 1.0)})
     monkeypatch.setattr(etf_jp.price_fetch, "yahoo_dividends",

@@ -50,6 +50,17 @@ def test_partial_coverage_is_labelled_for_the_sheet(tmp_path):
     assert summary[0]["coverage"] == "前幾大"
 
 
+def test_model_date_and_holdings_date_are_separate_columns(tmp_path):
+    payload = _payload()
+    payload["summaries"] = [dict(etf="00882", coverage="fallback", holdings_asof="無", model_date="2026-10-18")]
+    summary, cons = etf_sheets_sync.market_tables(payload, tmp_path)
+    assert summary[0]["last_model_update"] == "2026-10-18" and summary[0]["holdings_asof"] == "無"
+    assert all(c["update_date"] == "無" for c in cons)
+    payload["summaries"] = [dict(etf="00882", coverage="full", holdings_asof="2026-10-21")]
+    summary, _ = etf_sheets_sync.market_tables(payload, tmp_path)
+    assert summary[0]["last_model_update"] == "無" and summary[0]["holdings_asof"] == "2026-10-21"
+
+
 def test_etf_name_comes_from_the_model_card_when_there_is_one(tmp_path):
     card = tmp_path / "00882" / "cards"
     card.mkdir(parents=True)
@@ -89,7 +100,7 @@ def test_dry_run_cli_writes_csv_and_never_uploads(tmp_path, capsys):
                                "--output-dir", str(out), "--models-dir", str(tmp_path), "--dry-run"])
     assert rc == 0
     header = (out / "hk_etf_summary.csv").read_text(encoding="utf-8").splitlines()[0]
-    assert header.split(",")[:3] == ["etf_id", "etf_name", "current_price"] and header.endswith(",coverage")
+    assert header.split(",")[:3] == ["etf_id", "etf_name", "current_price"] and header.endswith(",coverage,holdings_asof")
     assert (out / "hk_etf_constituents.csv").exists()
     assert "未上傳雲端" in capsys.readouterr().out
 
@@ -165,9 +176,10 @@ def test_missing_tabs_are_created_and_the_summary_range_follows_its_width(tmp_pa
     assert ok, msg
     client = instances[0]
     assert [r["addSheet"]["properties"]["title"] for r in client.requests] == ["ETF_Summary", "ETF_Constituents"]
-    assert ("ETF_Summary!A1:Q2", 2) in client.updates
+    assert ("ETF_Summary!A1:R2", 2) in client.updates
     assert ("ETF_Constituents!A1:G3", 3) in client.updates
-    assert ("ETF_Summary!R1:S2", 2) in client.updates  # 同步元資訊放在 A:Q 以外
+    assert ("ETF_Summary!S1:S2", 2) in client.updates  # 外幣市場的 S 欄是舊版元資訊，先清掉
+    assert ("ETF_Summary!T1:U2", 2) in client.updates  # 同步元資訊放在 A:R 以外
 
 
 def test_tw_keeps_its_original_summary_range_and_creates_nothing(tmp_path, fake_sheets):

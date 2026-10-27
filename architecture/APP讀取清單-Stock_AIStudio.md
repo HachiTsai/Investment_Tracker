@@ -62,6 +62,7 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
   - 表頭：`etf_id,etf_name,current_price,exchange,category,benchmark,constituent_count,top1_holding,top2_holding,top3_holding,weighted_roe,net_score,div_score,val_score,fric_score,last_model_update`
   - 防呆：自 A1 寫入；`etf_id` 加 `'` 前綴。
   - 元數據隔離：最後同步時間與執行者放置於 R1:S2（A:P 以外儲存格），保障 APP 讀取 A:P 零干擾。
+  - 日期（2026-10-27 起）：models 卡片的 `last_model_update` 是建立日期；MoneyDJ 抓到的 ETF 寫入持股日期（MoneyDJ 資料日期）；抓不到的寫「無」，不再寫執行當天。同一欄目前混用兩種日期，拆成兩欄要等 APP 決定（欄位名與欄序固定不可改）。
 - **分頁「ETF_Constituents」**：
   - 欄位以 CSV 表頭為準；超過 5,000 列時採分批寫入（每批不超過 1,500 列）。
   - 防呆：`constituent_ticker` 加 `'` 前綴。
@@ -83,11 +84,12 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 
 ### 5. 外幣市場 ETF 成分股資料庫（港股、美股、日股）
 
-- 三份 Sheet 與台股全市場表的 ETF_Summary、ETF_Constituents 同名同序；ETF_Summary 比台股多一欄 `coverage`（完整、前幾大、備援），持股完整度寫進 Sheet。
-- ETF_Summary 表頭：`etf_id,etf_name,current_price,exchange,category,benchmark,constituent_count,top1_holding,top2_holding,top3_holding,weighted_roe,net_score,div_score,val_score,fric_score,last_model_update,coverage`。
+- 三份 Sheet 與台股全市場表的 ETF_Summary、ETF_Constituents 欄名同序；ETF_Summary 比台股多兩欄：`coverage`（完整、前幾大、備援）與 `holdings_asof`（持股日期），持股完整度與日期都寫進 Sheet。
+- ETF_Summary 表頭：`etf_id,etf_name,current_price,exchange,category,benchmark,constituent_count,top1_holding,top2_holding,top3_holding,weighted_roe,net_score,div_score,val_score,fric_score,last_model_update,coverage,holdings_asof`。
 - ETF_Constituents 表頭：`etf_id,etf_name,constituent_ticker,constituent_name,weight_pct,shares,update_date`。
-- 拿不到的欄位寫 `-`（外幣市場沒有 ETF 現價、ROE 與評分），不估值補；代號一律純代號，寫入前掃描國別後綴。
-- 寫入者：`etf_sheets_sync.py --market HK|US|JP`，只用 GCP_SA_KEY；同步元資訊放在 R1:S2 與 I1:J2，位於 A:Q 與 A:G 以外。
+- 拿不到的欄位寫 `-`（外幣市場沒有 ETF 現價、ROE 與評分），不估值補；持股日期拿不到寫「無」；代號一律純代號，寫入前掃描國別後綴。
+- 寫入者：`etf_sheets_sync.py --market HK|US|JP`，只用 GCP_SA_KEY；同步元資訊：ETF_Summary 在 T1:U2（A:R 以外），ETF_Constituents 在 I1:J2（A:G 以外）。
+- 日期：`last_model_update` 是建立日期（模型卡片的 last_model_update）；`holdings_asof` 是持股日期，來源沒有標示就寫「無」；ETF_Constituents 的 `update_date` 也是持股日期。備援與全市場表的持股沒有持股日期。
 - APP 尚未讀取。欄位若要改，先改這份文件，再改寫入器。
 
 ## 本機備援與非 Drive 來源

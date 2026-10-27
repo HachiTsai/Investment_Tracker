@@ -42,13 +42,27 @@ def discover(models_dir: str, min_stocks: int = 5) -> List[str]:
     return out
 
 
+_LAST_UPDATE = re.compile(r'^last_model_update:\s*"?(\d{4}-\d{2}-\d{2})"?\s*$', re.MULTILINE)
+
+
+def card_model_date(models_dir: str, etf: str) -> Optional[str]:
+    """模型卡片的建立日期（ticker.yml 的 last_model_update）；沒有卡片或沒有這個欄位就回 None。"""
+    path = os.path.join(models_dir, etf, "cards", "ticker.yml")
+    if not os.path.exists(path):
+        return None
+    with open(path, encoding="utf-8") as f:
+        m = _LAST_UPDATE.search(f.read())
+    return m.group(1) if m else None
+
+
 def holdings_for(etf: str, models_dir: str, market: etf_market.Market = etf_table.TW) -> Dict[str, Any]:
-    """市場持股（台股 MoneyDJ、港股中信投信、美股與日股 Yahoo 前幾大）：coverage 在 market.accept_coverage 內才採用；
-    否則退回 repo 內 models 的持股卡片（標示來源與較舊的日期）。沒有卡片時拋出 RuntimeError，說明原因。"""
+    """市場持股（台股 MoneyDJ、港股中信投信、美股與日股的 Drive 全市場表或 Yahoo 前幾大）：coverage 在 market.accept_coverage 內才採用；
+    否則退回 repo 內 models 的持股卡片。兩種日期分開：as_of_date 是來源標示的持股日期（沒有就是 None），
+    model_date 是模型卡片的建立日期。沒有卡片時拋出 RuntimeError，說明原因。"""
     try:
         h = market.holdings(etf)
         if h.get("constituents") and etf_market.coverage_label(h) in market.accept_coverage:
-            return h
+            return dict(h, model_date=h.get("model_date") or card_model_date(models_dir, etf))
         reason = f"{h.get('source', '')}，{len(h.get('constituents') or [])} 檔，coverage {etf_market.coverage_label(h)}"
     except Exception as e:  # noqa: BLE001
         reason = f"{type(e).__name__}：{e}"
@@ -57,7 +71,8 @@ def holdings_for(etf: str, models_dir: str, market: etf_market.Market = etf_tabl
         raise RuntimeError(f"{etf} 的{market.name}持股抓取失敗（{reason}），且 {models_dir} 沒有備援卡片")
     rows = [json.loads(line) for line in open(path, encoding="utf-8") if line.strip()]
     cons = [dict(symbol=r["ticker"], name=r["name"], weight_pct=r["weight_pct"], shares=r.get("shares")) for r in rows]
-    return dict(ticker=etf, as_of_date=date.fromtimestamp(os.path.getmtime(path)).isoformat(), source="models 持股卡片（備援）",
+    # 備援的持股日期不填：卡片記的是模型建立日，不是持股當天的資料（2026-10-27 定義）
+    return dict(ticker=etf, as_of_date=None, model_date=card_model_date(models_dir, etf), source="models 持股卡片（備援）",
                 total_count=len(cons), total_weight_pct=round(sum(c["weight_pct"] for c in cons), 2), constituents=cons)
 
 
@@ -81,7 +96,7 @@ def index_page(summaries: List[Dict[str, Any]], asof: str, n_stocks: int, market
              f"報價時間 {etf_page.fx_time(fx)}。</li>") if fx else ""
     rows = "".join(
         f'<tr><td><a href="{s["etf"]}.html">{s["etf"]}</a></td><td class="n">{s["holdings"]}</td><td class="n">{s["rows"]}</td>'
-        f'<td class="n">{s["weighted_yield_pct"]:.2f}</td><td>{html.escape(s["holdings_asof"])}</td>'
+        f'<td class="n">{s["weighted_yield_pct"]:.2f}</td><td>{html.escape(s.get("model_date") or "無")}</td><td>{html.escape(s.get("holdings_asof") or "無")}</td>'
         f'<td>{html.escape(s["source"])}</td><td class="n">{len(s["no_fin"])}</td></tr>' for s in summaries)
     return f"""<title>{market.name} ETF 成分股明細</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -97,8 +112,8 @@ th{{background:var(--head)}} .n{{text-align:right;font-variant-numeric:tabular-n
 </style>
 <main><h1>{market.name} ETF 成分股明細</h1>
 <p class="mut">資料日期 {asof}。{len(summaries)} 檔 ETF，成分股去重後 {n_stocks} 檔個股，每檔只抓一次、各 ETF 共用。點 ETF 代號進入財報與股利明細頁，頁首可切換。</p>
-<div class="wrap"><table><thead><tr><th>ETF</th><th class="n">持股檔數</th><th class="n">有股價</th><th class="n">加權殖利率%</th><th>持股日期</th><th>持股來源</th><th class="n">缺財報</th></tr></thead><tbody>{rows}</tbody></table></div>
-<ul class="mut"><li>加權殖利率是成分股近 12 月殖利率依持股權重加權（毛額，未含 ETF 費用與稅，持股以外部位視為 0），是推估，不是 ETF 的配息率。</li>
+<div class="wrap"><table><thead><tr><th>ETF</th><th class="n">持股檔數</th><th class="n">有股價</th><th class="n">加權殖利率%</th><th>建立日期</th><th>持股日期</th><th>持股來源</th><th class="n">缺財報</th></tr></thead><tbody>{rows}</tbody></table></div>
+<ul class="mut"><li>加權殖利率是成分股近 12 月殖利率依持股權重加權（毛額，未含 ETF 費用與稅，持股以外部位視為 0），是推估，不是 ETF 的配息率。</li><li>建立日期是模型卡片最後更新的日期；持股日期是來源標示的資料日期，來源沒有給就填「無」，不以抓取日代替。</li>
 <li>{market.source_note}；非官方彙整，缺值標示「無資料」不推估。</li>{fx_li}</ul></main>
 """
 
@@ -188,7 +203,7 @@ def main(argv: List[str]) -> int:
     for e in etfs:
         r = etf_table.build_page(e, holds[e], pool, today, nav=nav_html(etfs, e), market=market, fx=fx)
         pages[f"{e}.html"] = as_page(r["page"])
-        summaries.append(dict(r["summary"], holdings_asof=holds[e]["as_of_date"], source=holds[e]["source"],
+        summaries.append(dict(r["summary"], holdings_asof=holds[e]["as_of_date"], model_date=holds[e]["model_date"], source=holds[e]["source"],
                               coverage=etf_market.coverage_label(holds[e])))
         if r["summary"]["errors"]:
             bad[e] = len(r["summary"]["errors"])

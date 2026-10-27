@@ -50,18 +50,19 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_table.py 00985A out.html [tabl
 python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py outdir [--etfs 0050,0056] [--models-dir models]
 # 7.1 港股資料池（目前只支援 00882，必須用 --etfs 指定；持股來自中信投信）
 python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py outdir --market hk --etfs 00882
-# 7.2 美股資料池（持股為 Yahoo 前幾大持股，coverage 為 partial；必須用 --etfs 指定）
+# 7.2 美股資料池（持股先查全市場表，表內沒有才用 Yahoo 前幾大，coverage 為 partial；必須用 --etfs 指定）
 python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py outdir --market us --etfs VOO
-# 7.3 日股資料池（持股為 Yahoo 前幾大持股，coverage 為 partial；代號為 4 碼，必須用 --etfs 指定）
+# 7.3 日股資料池（持股先查全市場表，表內沒有才用 Yahoo 前幾大，coverage 為 partial；代號為 4 碼，必須用 --etfs 指定）
 python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py outdir --market jp --etfs 1306,1489,1329
 ```
 
 ## 成分股股利與財報明細頁（`etf_table.py`、`etf_page.py`）
 
 - **分層**：持股取 MoneyDJ（資料日期取頁面上的「資料日期」，不是抓取日）；股價 Google Finance（`price-dividend-fetcher`，Yahoo、證交所、櫃買備援）；財報與配息 FinMind（`fundamental-analyzer/scripts/fetchers/finmind_detail.py`，輸出格式同港股版，趨勢、配息率、估值位置共用 `fundamental-analyzer/scripts/fin_trend.py`）；頁面渲染 `scripts/etf_page.py`＋`references/constituents_template.html`，與 00882 港股頁共用同一份範本，市場差異（幣別、說明文字、金融業判斷、有無中期配息）放在 `etf_page.PROFILES`。
+- **日期定義（2026-10-27）**：建立日期（模型卡片的 `last_model_update`）與持股日期（來源標示的資料日期，沒有就填「無」）分開。備援持股與全市場表的持股沒有持股日期，不以抓取當天或檔案時間代替。
 - **新增市場或 ETF**：台股 ETF 直接給代號；新市場在 `PROFILES` 加一份設定，再寫一個「持股＋單檔資料」模組，不必動範本。
 - **資料池（`etf_pool.py`）**：不給 `--etfs` 時掃描 `models/*/cards/constituents.jsonl`，台股個股達 5 檔的 ETF 都納入；成分股跨 ETF 去重後各抓一次（17 檔 ETF 約 214 檔個股，約 70 秒），限流失敗的個股在執行緒池之後序列重試一輪。輸出的多頁以 `files` 發佈成同一個 Artifact（`index.html` 為入口，頁首下拉切換 ETF）；`pool.json` 的個股與持股兩張表供寫入 Drive 的 All_Market/Taiwan 公開試算表（僅市場公開資料，不含個人持股）。
-- **市場介面（`scripts/etf_market.py`）**：每個市場是一份 `Market`，提供代號解析（`parse_code`）、ETF 持股（`holdings`）、個股資料（`stock`）與產業別（`industry`）；台股是 `etf_table.TW`，港股是 `etf_hk.HK`（持股來自中信投信 ETFHoldingWeight，目前只支援 00882，coverage 為 full），美股是 `etf_us.US`（持股為 Yahoo Finance 前幾大持股，coverage 為 partial），日股是 `etf_jp.JP`（持股同為 Yahoo 前幾大持股，coverage 為 partial，財報來自 EDINET）；`etf_table`、`etf_pool` 的函式都接受 `market` 參數，`etf_pool --market hk|us|jp` 切換市場。`Market.accept_coverage` 決定採用哪些官方持股：台股與港股只採用 full，美股與日股採用 full 與 partial；不採用時退回 models 卡片備援，連卡片也沒有就停止、不寫檔。持股的 `coverage`（`full`／`partial`／`fallback`）寫進 `pool.json` 的摘要，頁面的持股來源也會標出「前幾大持股」；日股若只有前幾大持股，同樣靠這個欄位標示。
+- **市場介面（`scripts/etf_market.py`）**：每個市場是一份 `Market`，提供代號解析（`parse_code`）、ETF 持股（`holdings`）、個股資料（`stock`）與產業別（`industry`）；台股是 `etf_table.TW`，港股是 `etf_hk.HK`（持股來自中信投信 ETFHoldingWeight，目前只支援 00882，coverage 為 full），美股是 `etf_us.US`（持股先查 Drive 全市場表，由 `etf_drive.py` 只讀取得；表內沒有才用 Yahoo Finance 前幾大，coverage 為 partial），日股是 `etf_jp.JP`（持股同樣先查全市場表，表內沒有才用 Yahoo 前幾大，coverage 為 partial，財報來自 EDINET）；`etf_table`、`etf_pool` 的函式都接受 `market` 參數，`etf_pool --market hk|us|jp` 切換市場。`Market.accept_coverage` 決定採用哪些官方持股：台股與港股只採用 full，美股與日股採用 full 與 partial；不採用時退回 models 卡片備援，連卡片也沒有就停止、不寫檔。持股的 `coverage`（`full`／`partial`／`fallback`）寫進 `pool.json` 的摘要，頁面的持股來源也會標出「前幾大持股」；日股若只有前幾大持股，同樣靠這個欄位標示。
 - **安全防線（所有入口共用）**：輸出一律是純代號，不帶 `.TW`、`.TWO`、`.US`、`.JP` 等國別後綴（這類文字上傳 Drive 會被標成危險檔案）；`etf_pool` 寫檔前掃描，出現就整批中止、不寫任何檔案；寫入試算表前過 `guard_sheet_id`，`Investment_Tracker_Core` 一律拒絕；頁面內嵌的 JSON 經 `json_for_script` 跳脫 `< > &`。
 - **台幣換算（`scripts/etf_fx.py`）**：港股、美股、日股在抓價前先取一次外幣對新台幣匯率（Google Finance 外匯報價頁，與股價同一來源）；抓不到就印出 `[FX]`、退出碼 1、不寫任何檔案，不沿用舊匯率。匯率與報價時間寫進 `pool.json` 的 `fx`（`currency`、`rate`、`asOf`、`source`），頁面與索引頁也會註明；個股視窗多兩張卡「股價（約新台幣）」與「近 12 月股息（約新台幣）」。外幣市場的每檔多 `pxTwd`、`ttmDivTwd`，`schema_version` 維持 1（新增的都是可選欄位）。匯率只供比較，不是實際成交或入帳金額。台股不抓匯率，輸出與改動前位元組相同（離線比對）。
 - **韌性**：FinMind 請求過 `finmind_detail.get`（快取 6 小時、限流退避重試、可用環境變數 `FINMIND_TOKEN` 提高上限）；單檔任何一步失敗只讓該欄空白，並記在輸出摘要的 `errors`、`no_fin`、`no_price`。約 40 秒（50 檔、6 執行緒）。

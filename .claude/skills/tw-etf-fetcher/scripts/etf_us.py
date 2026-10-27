@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """美股成分股市場介面（美股 ETF 的前幾大持股，Yahoo Finance）。
 
-持股來自 yfinance 的 funds_data.top_holdings，只有前幾大、不是完整持股：coverage 為 partial，頁面與 pool.json 標示來源與抓取日。
+持股先到 Drive 全市場表找（etf_drive），表內沒有才用 yfinance 的 funds_data.top_holdings；後者只有前幾大、不是完整持股，coverage 為 partial。頁面與 pool.json 標示來源，不以抓取日當持股日期。
 股價與股利來自 Yahoo Finance（price-dividend-fetcher），財報來自 SEC EDGAR 的 10-K 年度數字（companyfacts），
 全年數字的判斷沿用 fundamental-analyzer 的 fetchers.sec。每一步獨立失敗：單檔缺資料只讓該欄空白並記在 errs。
 用法：`etf_pool.py outdir --market us --etfs VOO`（美股沒有模型卡片可自動探索，要用 --etfs 指定）。
@@ -18,6 +18,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SKILLS = os.path.join(HERE, "..", "..")
 for sub in ("fundamental-analyzer", "price-dividend-fetcher"):
     sys.path.insert(0, os.path.join(SKILLS, sub, "scripts"))
+import etf_drive  # noqa: E402
 import etf_market  # noqa: E402
 import etf_page  # noqa: E402
 import fetch as price_fetch  # noqa: E402
@@ -74,8 +75,16 @@ def fetch_holdings(etf: str) -> Dict[str, Any]:
         code = parse_us_code(sym)
         if code is not None and math.isfinite(w):
             cons.append(dict(symbol=code, name=name, weight_pct=round(w, 2), shares=None))
-    return dict(ticker=etf, as_of_date=date.today().isoformat(), source=TOP_SOURCE, total_count=len(cons),
+    return dict(ticker=etf, as_of_date=None, source=TOP_SOURCE, total_count=len(cons),
                 total_weight_pct=round(sum(c["weight_pct"] for c in cons), 2), constituents=cons)
+
+
+def holdings(etf: str) -> Dict[str, Any]:
+    """美股持股：先到 Drive 全市場表找（2026-10-27 指示），表內沒有這檔才退回 Yahoo 前幾大。"""
+    try:
+        return etf_drive.holdings(etf)
+    except etf_drive.NotInPool:
+        return fetch_holdings(etf)
 
 
 def _sec_json(url: str) -> Any:
@@ -181,7 +190,7 @@ def us_stock(code: str, name: str, industry: Optional[str], today: date) -> Dict
 US = etf_market.Market(
     code="US", name="美股", profile="us", currency="USD",
     parse_code=parse_us_code,
-    holdings=lambda etf: fetch_holdings(etf),
+    holdings=lambda etf: holdings(etf),
     stock=lambda code, name, industry, today: us_stock(code, name, industry, today),
     industry=lambda: {},
     accept_coverage=("full", "partial"),

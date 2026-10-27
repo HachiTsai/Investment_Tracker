@@ -44,6 +44,7 @@ jobs:
         env:
           MARKET: ${{ inputs.market }}
           ETFS: ${{ inputs.etfs }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
           python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py "reports/pool-$MARKET" --market "$MARKET" --etfs "$ETFS" --gate --models-dir models
       - name: Write foreign-market tables to Google Sheets

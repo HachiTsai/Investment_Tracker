@@ -11,6 +11,7 @@ import pytest
 SKILLS = Path(__file__).resolve().parent.parent.parent
 for sub in ("tw-etf-fetcher", "fundamental-analyzer", "price-dividend-fetcher"):
     sys.path.insert(0, str(SKILLS / sub / "scripts"))
+import etf_drive  # noqa: E402
 import etf_market  # noqa: E402
 import etf_page  # noqa: E402
 import etf_pool  # noqa: E402
@@ -67,6 +68,7 @@ def _fake_sec(url):
 
 @pytest.fixture
 def us_offline(monkeypatch):
+    monkeypatch.setattr(etf_drive, "_tables", lambda *a, **k: ([], []))  # 全市場表沒有資料 → 走 Yahoo 前幾大
     monkeypatch.setattr(etf_us, "_top_holdings_rows", lambda etf: list(TOP))
     monkeypatch.setattr(etf_us, "_sec_json", _fake_sec)
     monkeypatch.setattr(etf_us.price_fetch, "get_price", lambda ticker, source="auto": {"price": PRICES.get(ticker, 1.0)})
@@ -92,7 +94,7 @@ def test_parse_us_code_refuses_other_markets_and_cash(raw):
 def test_fetch_holdings_keeps_us_stocks_and_marks_partial(us_offline):
     h = etf_us.fetch_holdings("VOO")
     assert [c["symbol"] for c in h["constituents"]] == ["NVDA", "BRK-B"]
-    assert h["source"] == etf_us.TOP_SOURCE and h["as_of_date"] == date.today().isoformat()
+    assert h["source"] == etf_us.TOP_SOURCE and h["as_of_date"] is None  # Yahoo 不給持股日期，不填抓取日
     assert h["total_weight_pct"] == 8.62 and etf_market.coverage_label(h) == "partial"
 
 
