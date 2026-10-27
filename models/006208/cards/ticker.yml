@@ -3,6 +3,7 @@ type: ticker
 schema_version: 1.0.0
 ticker: "006208"
 title: "富邦台50"
+tier: pool
 full_name: "富邦台灣釆吉50 證券投資信託基金"
 currency: TWD
 exchange: TWSE

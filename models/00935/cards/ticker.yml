@@ -3,6 +3,7 @@ type: ticker
 schema_version: 1.0.0
 ticker: "00935"
 title: "野村臺灣新科技50"
+tier: pool
 full_name: "野村臺灣創新科技50 ETF證券投資信託基金"
 currency: TWD
 exchange: TWSE

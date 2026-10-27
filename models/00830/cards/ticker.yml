@@ -3,6 +3,7 @@ type: ticker
 schema_version: 1.0.0
 ticker: "00830"
 title: "國泰費城半導體"
+tier: pool
 full_name: "國泰大三元ETF傘型證券投資信託基金之美國費城半導體證券投資信託基金"
 currency: TWD
 exchange: TWSE

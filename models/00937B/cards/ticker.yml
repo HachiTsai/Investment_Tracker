@@ -3,6 +3,7 @@ type: ticker
 schema_version: 1.0.0
 ticker: "00937B"
 title: "群益ESG投等債20+"
+tier: pool
 full_name: "群益ESG 20年期以上BBB投資級公司債ETF基金"
 currency: TWD
 exchange: TWSE

@@ -32,8 +32,6 @@ tr:last-child td{border-bottom:0}
 .s-OVERHEATED{background:var(--over-bg);color:var(--over)}.s-DOWNTREND{background:var(--down-bg);color:var(--down)}
 .s-UPTREND{background:var(--up-bg);color:var(--up)}.s-OVERSOLD_WATCH{background:var(--up-bg);color:var(--accent)}
 .s-NEUTRAL,.s-NO_DATA,.s-ERROR{background:var(--none-bg);color:var(--mute)}
-.notes{color:var(--mute);font-size:13px;display:flex;flex-direction:column;gap:6px;max-width:68ch}
-.notes p{margin:0}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.lbl{color:var(--mute);font-size:13px;margin-right:4px}
 th[data-k]{cursor:pointer}th[data-k]:hover{color:var(--fg)}
 .sc{display:inline-block;min-width:38px;padding:1px 6px;border-radius:4px;text-align:center;font-family:var(--mono);font-size:13px}
@@ -100,17 +98,6 @@ main{zoom:var(--z,1)}.dlg{zoom:var(--z,1);width:min(820px,calc((100vw - 24px) / 
 <dialog id="fpdlg" aria-label="選擇標的"><div class="hd"><h2 style="margin:0;font-size:18px">選擇標的</h2><button type="button" class="x" id="fpx">完成</button></div><p class="mac">動態檢視只播放選到的標的，設定記在這個瀏覽器。按組合可一次選取，也可以逐檔勾選。<span id="fpn"></span></p><div class="row" id="fpg"></div><p class="row"><button type="button" class="x" id="fpall">全選</button><button type="button" class="x" id="fpnone">全部取消</button><input type="search" id="fpq" placeholder="搜尋名稱或股號" autocomplete="off" style="flex:1;min-width:140px;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:99px;padding:3px 12px"></p><div id="fpl"></div></dialog>
 <dialog id="tcdlg" aria-label="選擇指標欄位"><div class="hd"><h2 style="margin:0;font-size:18px">選擇指標欄位</h2><button type="button" class="x" id="tcx">完成</button></div><p class="mac">標的名稱固定顯示。按群組可一次加入或移除，也可以逐欄勾選。</p><p class="row"><button type="button" class="x" id="tcall">全部欄位</button><button type="button" class="x" id="tcnone">全部取消</button></p><div class="row" id="tcg"></div><div id="tcl"></div></dialog>
 <div class="mask" id="mask"><div class="dlg" id="dlg" role="dialog" aria-modal="true"></div></div>
-<section class="notes">
-<p>最新報價：按「更新最新報價」會向證交所取台股即時價；未更新或港股、非台股標的顯示最近一個交易日收盤價。指標與評分以日線收盤計算，不隨報價變動；乖離、區間位置、停損距離會用最新報價重算。</p>
-<p>點標的左側星號可加入「我的最愛」，再按「只看我的最愛」，可與地區、類型篩選疊加；最愛會同步到你的帳號，無法同步時只存在這個瀏覽器。</p>
-<p>表格與矩陣最多顯示 20 檔，其餘用縱向捲動，表頭固定在上方。</p>
-<p>象限預設把座標貼合資料範圍，圓點一律小而一致，游標移到圓點才顯示股號；象限可滾輪縮放、拖曳平移。「動態」檢視可播放近 60 日的趨勢×動能氣泡圖，或報酬賽跑折線。</p>
-<p>標的視窗的 K 線圖可滾輪縮放、拖曳平移，價格與 RSI、MACD 範圍貼合可見區間；點「還原全部」回到完整區間。</p>
-<p>點任一標的會跳出日 K、均線、布林通道、費波那契、RSI 與 MACD 圖。</p>
-<p>評分矩陣與 Stock_AIStudio 的波段觀察、雷達頁同一套算法：趨勢（價格相對 60 日線的乖離）、動能（MACD 柱）、量能（5 日均量 ÷ 60 日均量）、績效（近 1 年含息報酬），皆為 0 到 100 分、50 代表持平，描述強度與位置，不是好壞評分。綜合為四項平均，僅供排序參考。</p>
-<p>狀態與組合只描述指標條件，不是買賣指示；進出由你決定，波段部位與股利再投入部位分開記帳。配置狀態與殖利率來自 ETF 卡片的每日巡檢，個股沒有此欄。</p>
-<p>資料來源為 Yahoo Finance 日線（還原收盤價計算分數）。目前觀察清單只有台股與港股，美股、日股加入標的後會自動出現。</p>
-</section>
 </main>
 <script>
 var DATA=__DAILY_DATA__;var HEAD=__DAILY_HEAD__;var DATE="__DAILY_DATE__";

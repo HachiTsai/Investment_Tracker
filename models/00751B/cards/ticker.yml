@@ -3,6 +3,7 @@ type: ticker
 schema_version: 1.0.0
 ticker: "00751B"
 title: "元大AAA至A公司債"
+tier: pool
 full_name: "元大彭博10年期以上AAA至A級美元公司債券ETF基金"
 currency: TWD
 exchange: TWSE

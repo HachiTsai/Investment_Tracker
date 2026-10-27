@@ -3,6 +3,7 @@ type: ticker
 schema_version: 1.0.0
 ticker: "00713"
 title: "元大台灣高息低波"
+tier: pool
 full_name: "元大台灣高股息低波動ETF證券投資信託基金"
 currency: TWD
 exchange: TWSE
