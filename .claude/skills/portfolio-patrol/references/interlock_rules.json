@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "description": "高息陷阱與互鎖門檻的單一來源（SSOT）。殖利率以小數表示（0.08 = 8%）。巡檢程式讀取此檔；互鎖卡片與規則文字由此產生。",
+  "yield_trap": {
+    "yield_min": 0.08,
+    "net_score_below": 50,
+    "div_score_below": 40,
+    "valve_action": "暫停額外單筆加碼，維持例行再投入"
+  },
+  "aggressive": {
+    "yield_min": 0.082,
+    "net_score_min": 70,
+    "div_score_min": 60
+  },
+  "overvalued": {
+    "yield_max": 0.048
+  },
+  "velocity": {
+    "southbound_2d_net_below": -8000
+  }
+}
