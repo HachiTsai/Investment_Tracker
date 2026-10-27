@@ -40,6 +40,31 @@ def offline_live_data(monkeypatch):
         "swing": None, "scores": dict(scores), "southbound_2d_net": 0.0})
 
 
+def test_trap_needs_sufficient_coverage():
+    """陷阱條件成立但成分股財報覆蓋不足時，標示資料不足而非陷阱警戒；覆蓋充足才判定陷阱。"""
+    mock_cards = {
+        "ticker_id": "00919",
+        "ticker": {"title": "00919 群益台灣精選高息", "currency": "TWD",
+                   "thresholds": {"yield_cheap": 0.08, "yield_expensive": 0.05}},
+        "loops": [{"parameters": {"setpoint_sp": 500000.0}, "snowball_simulator": {"base_shares": 300000}}],
+    }
+    live = {"price": 10.00, "annual_dividend": 0.86, "tax_retention": 0.9923,
+            "scores": {"netScore": 48.2, "divScore": 45.6}, "southbound_2d_net": 0.0, "coverage_ok": False}
+
+    res = patrol.evaluate_ticker_posture(mock_cards, live)
+    assert res["posture_key"] == "DATA_INSUFFICIENT"
+    assert res["priority"] == 4
+    assert "暫不判定" in res["valve_action"]
+
+    live["coverage_ok"] = True
+    assert patrol.evaluate_ticker_posture(mock_cards, live)["posture_key"] == "TRAP_ALERT"
+
+    # 高息區間、評分未破線，但覆蓋不足：不得標為穩健複利
+    live["scores"] = {"netScore": 60, "divScore": 60}
+    live["coverage_ok"] = False
+    assert patrol.evaluate_ticker_posture(mock_cards, live)["posture_key"] == "DATA_INSUFFICIENT"
+
+
 def test_discover_tickers(repo_root):
     models_dir = repo_root / "models"
     tickers = patrol.discover_tickers(models_dir)
@@ -146,6 +171,7 @@ def test_evaluate_ticker_postures():
         "annual_dividend": 0.86,
         "tax_retention": 0.9923,
         "scores": {"netScore": 45, "divScore": 38},
+        "coverage_ok": True,
         "southbound_2d_net": 500.0,
     }
     res_trap = patrol.evaluate_ticker_posture(mock_cards, live_trap)
@@ -172,6 +198,7 @@ def test_evaluate_ticker_postures():
         "annual_dividend": 0.86,
         "tax_retention": 0.9923,
         "scores": {"netScore": 82, "divScore": 75},
+        "coverage_ok": True,
         "southbound_2d_net": 2000.0,
     }
     res_agg = patrol.evaluate_ticker_posture(mock_cards, live_agg)

@@ -31,7 +31,9 @@ def get(dataset: str, code: str = "", start: str = "", attempts: int = 3) -> Lis
     path = os.path.join(CACHE_DIR, hashlib.sha1(q.split("&token=")[0].encode()).hexdigest() + ".json")
     try:
         if time.time() - os.path.getmtime(path) < CACHE_TTL:
-            return json.load(open(path, encoding="utf-8"))
+            cached = json.load(open(path, encoding="utf-8"))
+            if cached:  # 空結果多半是限流時的降級回應，不沿用
+                return cached
     except (OSError, ValueError):
         pass
     last: Optional[Exception] = None
@@ -41,11 +43,12 @@ def get(dataset: str, code: str = "", start: str = "", attempts: int = 3) -> Lis
             if resp.get("status") not in (None, 200):
                 raise RuntimeError(f"FinMind {resp.get('status')}: {resp.get('msg')}")
             data = resp.get("data") or []
-            try:
-                os.makedirs(CACHE_DIR, exist_ok=True)
-                json.dump(data, open(path, "w", encoding="utf-8"), ensure_ascii=False)
-            except OSError:
-                pass
+            if data:  # 只快取有資料的回應，避免限流造成的空結果被快取 6 小時
+                try:
+                    os.makedirs(CACHE_DIR, exist_ok=True)
+                    json.dump(data, open(path, "w", encoding="utf-8"), ensure_ascii=False)
+                except OSError:
+                    pass
             return data
         except Exception as e:  # noqa: BLE001  網路、限流、格式錯誤都退避重試
             last = e

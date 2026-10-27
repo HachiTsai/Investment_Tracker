@@ -11,10 +11,11 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fundamental_calculator import calculate_stock_fundamentals
+from fundamental_calculator import calculate_stock_fundamentals, has_netscore_input
 
 ETF_CACHE_FILE = Path.home() / ".cache" / "investment_tracker" / "etf_fundamentals.json"
 CACHE_TTL_DAYS = 7
+COVERAGE_MIN_PCT = 60.0  # 有 netScore 輸入的權重占比低於此值＝資料不足：不判定、不快取
 
 
 def _load_etf_cache() -> Dict[str, Any]:
@@ -110,8 +111,10 @@ def aggregate_etf_fundamentals(
                 "fricScore": 95.0 if is_bond else 80.0,
             },
             "holdings_breakdown": [],
+            "coverage_pct": None,
+            "coverage_sufficient": False,
         }
-        if mock_constituents is None and mock_stock_fundamentals is None and use_cache:
+        if is_bond and mock_constituents is None and mock_stock_fundamentals is None and use_cache:
             cache = _load_etf_cache()
             cache[etf_id] = {
                 "cached_at": datetime.date.today().isoformat(),
@@ -133,6 +136,7 @@ def aggregate_etf_fundamentals(
     weighted_fric = 0.0
     weighted_roe = 0.0
     has_roe_count = 0
+    covered_w = 0.0  # 有 netScore 輸入的持股權重
 
     for c in selected:
         ticker = c.get("ticker", "")
@@ -150,6 +154,9 @@ def aggregate_etf_fundamentals(
         weighted_val += scores["valScore"] * norm_w
         weighted_fric += scores["fricScore"] * norm_w
 
+        if has_netscore_input(fund):
+            covered_w += raw_w
+
         if fund.get("roe") is not None:
             weighted_roe += fund["roe"] * norm_w
             has_roe_count += 1
@@ -164,6 +171,7 @@ def aggregate_etf_fundamentals(
             "scores": scores,
         })
 
+    coverage_pct = round(covered_w / total_raw_weight * 100.0, 1)
     result = {
         "etf_id": etf_id,
         "status": "success",
@@ -178,9 +186,11 @@ def aggregate_etf_fundamentals(
             "fricScore": round(weighted_fric, 1),
         },
         "holdings_breakdown": holdings_breakdown,
+        "coverage_pct": coverage_pct,
+        "coverage_sufficient": coverage_pct >= COVERAGE_MIN_PCT,
     }
 
-    if mock_constituents is None and mock_stock_fundamentals is None and use_cache:
+    if mock_constituents is None and mock_stock_fundamentals is None and use_cache and result["coverage_sufficient"]:
         cache = _load_etf_cache()
         cache[etf_id] = {
             "cached_at": datetime.date.today().isoformat(),
