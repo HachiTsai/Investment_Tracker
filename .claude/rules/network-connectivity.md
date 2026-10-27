@@ -47,7 +47,7 @@
 | `datacenter.eastmoney.com` | 東方財富 F10 數據中心 | ✅ HTTP 200 | 港股主要財務指標年報（`RPT_HKF10_FN_MAININDICATOR`，`fundamental-analyzer`；2026-10-21 實測） |
 | `data.sec.gov` | SEC EDGAR 資料 API | ✅ HTTP 200 | 美股 XBRL 財報事實（需帶含聯絡資訊的 User-Agent；2026-10-21 實測） |
 | `www.sec.gov` | SEC EDGAR 官網 | ✅ HTTP 200 | 代號對 CIK 對照表 `files/company_tickers.json`（2026-10-21 實測） |
-| `api.edinet-fsa.go.jp` | 金融廳 EDINET API v2 | ✅ HTTP 200 | 日股有價證券報告書清單與財報 CSV（`fundamental-analyzer`）；API key 在沙盒由環境「網路密鑰」注入；GitHub Actions 讀 secret `EDINET_API_KEY`，以 `Subscription-Key` 查詢參數帶上（EDINET 仕様書的參數名），無 key 時回 401（2026-10-21 實測） |
+| `api.edinet-fsa.go.jp` | 金融廳 EDINET API v2 | ✅ HTTP 200 | 日股有價證券報告書清單與財報 CSV（`fundamental-analyzer`）；API key 在沙盒由環境「網路密鑰」注入；GitHub Actions 讀 secret `EDINET_API_KEY`，以 `Subscription-Key` 查詢參數帶上（EDINET 仕様書的參數名），無 key 時回 401（2026-10-21 實測）；2026-10-27 Actions 讀到空白或空值時，下載的回應不是 zip（日誌為 BadZipFile），未見 HTTP 401，以日誌印出的原因為準 |
 | `api.finmindtrade.com` | FinMind 開放資料 API | ✅ HTTP 200 | 台股（上市與上櫃）現金流量表、資產負債表、損益表歷年季度，另有現金股利歷次分配（`TaiwanStockDividend`）、股價淨值比（`TaiwanStockPER`）、產業別（`TaiwanStockInfo`）；匿名有頻率限制（`fundamental-analyzer` 台股主來源，成分股明細頁快取 6 小時並可用 `FINMIND_TOKEN` 提高上限；2026-10-21 實測） |
 | `tw.stock.yahoo.com` | Yahoo 股市（台灣） | ✅ HTTP 200 | 台股現金流量表頁，資料嵌在網頁 JSON，非官方、改版即失效（`fundamental-analyzer` 台股備援；2026-10-21 實測） |
 | `mops.twse.com.tw` 報表端點、`goodinfo.tw` | MOPS 財報查詢、Goodinfo | ❌ 被擋 | MOPS 對非瀏覽器請求回「安全性考量無法呈現」，Goodinfo 被 Cloudflare 擋（403），不採用（2026-10-21 實測） |
