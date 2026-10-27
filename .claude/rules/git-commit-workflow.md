@@ -20,7 +20,7 @@
    - Claude 雲端（前端 Artifact 渲染＋排程）與 Antigravity（本機重度後端＋回測）透過 Git 分支與 commit 之 `## Session-Sync` 區塊無縫接力。
    - 額度受限或未完成工作可提交至 `claude/*` 或 `agy/*` 分支並在 `下一步` 標註接手項目；任一方開工執行 `--sync`、`--patrol` 或啟動時自動透過 `check_handoff` 偵測草稿筆記、最新交接事項與近期未合併分支（同步掃描 `origin/claude/*` 與 `origin/agy/*`）。
    - **動工前預檢與 PR 規則掃描**：開工前先寫出作業範圍、流程、步驟，逐步對照 `.claude/rules/*.md`、`CLAUDE.md`、`.agent/rules/AGENT.md`。相關的話先列清單給 Hachi，同意後才改；無關也要寫「已掃描 rules，無需更新」。PR 描述固定加「規則掃描」段落（掃了哪些檔、結論、Hachi 同意的訊息位置）；CI 設有備援檢查，PR 改到 `.claude/`、`CLAUDE.md` 或 `.agent/rules/AGENT.md` 卻缺少該段落即失敗。
-   - **排程即程式碼與試算表契約**：所有定時排程規格集中於 `.claude/workflows/*.md` 為單一真實來源（SSOT）；試算表 Schema 統一收斂於 `architecture/APP讀取清單-Stock_AIStudio.md`。Artifact 100% 由 Claude 雲端專屬發布（本機代班僅產出 HTML 推送分支）；純資料表（全市場 ETF、波段觀察）由 GitHub Actions 自動排程直寫 Google Sheets（節省 Claude Token），亦支援本機直寫代班；雙棲表（00882、台股 ETF）固定由雲端統籌發布與寫入。排程互鎖比對資料日期，並支援 `--force` 手動強制補跑。
+   - **排程即程式碼與試算表契約**：所有定時排程規格集中於 `.claude/workflows/*.md` 為單一真實來源（SSOT）；試算表 Schema 統一收斂於 `architecture/APP讀取清單-Stock_AIStudio.md`。Artifact 100% 由 Claude 雲端專屬發布（本機代班僅產出 HTML 推送分支）；純資料表（全市場 ETF、波段觀察）由 GitHub Actions 自動排程直寫 Google Sheets（節省 Claude Token），亦支援本機直寫代班；雙棲表（00882、台股 ETF）固定由雲端統籌發布與寫入。排程互鎖比對資料日期，並支援 `--force` 手動強制補跑（市場 ETF 池例外：不做同日互鎖，重跑即覆寫，見 `.claude/workflows/market-etf-pool.md` 補跑段）。
 
 ## 2. 結構化 Commit 流程
 

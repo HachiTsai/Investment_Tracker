@@ -127,7 +127,7 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --expor
 - 不帶 `valueInputOption`。
 - 新資料列數少於舊資料時，把多出的舊列清成空字串，**嚴禁刪列**。
 - 寫完調用 `get_values` 讀回首尾各幾列確認。
-- **補跑支援**：互鎖以 `最後同步時間` 的日期部分（台北時間，前 10 字）比對：TW 全市場表讀 `ETF_Summary!S1`，外幣市場讀 `ETF_Summary!U1`。`last_model_update` 只是模型卡片的建立日期，同步不會更新它，因此不再作為互鎖依據（2026-10-27 Hachi 決定）。若需手動重跑可指定強制覆寫。
+- **補跑（不做同日互鎖，2026-10-27 Hachi 同意）**：同步沒有同日互鎖，每次執行都會覆寫該市場的表，`最後同步時間`（TW 全市場表 `ETF_Summary!S1`，外幣市場 `ETF_Summary!U1`）隨寫入更新。因此手動補跑就是重新執行，沒有 `--force`。同一天重跑前先確認 FinMind 額度與 gate：外幣市場的評分算不出來時寫「-」，第二次若因額度或抓取失敗，可能把已算好的評分蓋掉。若日後同時開啟多條觸發路徑（雲端排程、本機與 GitHub Actions 同一週），再評估互鎖，比對上述欄位的日期部分。`last_model_update` 只是模型卡片的建立日期，同步不會更新它，不作為互鎖依據。
 
 ---
 
@@ -148,4 +148,4 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --expor
 - **外幣市場（港股、美股、日股）**：不加排程，需要時在 GitHub Actions 的 Market ETF Sheets Sync 手動執行（workflow_dispatch）：`market` 選 `hk`、`us` 或 `jp`，`etfs` 填 ETF 代號（港股預設 00882；美股、日股需指定）。流程為 `etf_pool.py` 產出 pool.json（`--gate`），再由 `etf_sheets_sync.py --market` 寫入該市場的 Sheet；寫入前過 Core 拒絕與國別後綴掃描，缺 `GCP_SA_KEY` 或 gate 不過就不寫入。
 - **持股來源（2026-10-27）**：美股、日股的持股先到全市場表的 `ETF_Constituents` 找（`etf_drive.py`，只讀），表內沒有才用 Yahoo 前幾大；pool 步驟因此需要 `GCP_SA_KEY` 讀表，沒有時退回 models 卡片備援。
 - **日期**：建立日期（模型卡片的 `last_model_update`）與持股日期（來源標示，沒有就寫「無」）分開。台股全市場表的日期欄只放建立日期（沒有模型卡片就寫「無」），不放持股日期（2026-10-27 Hachi 決定）；外幣市場的 `holdings_asof` 才放持股日期。備援與全市場表的持股沒有持股日期，不以執行當天或檔案時間代替。
-- **日股財報金鑰（2026-10-27）**：日股的 EDINET 財報在 GitHub Actions 需要 secret `EDINET_API_KEY`（pool 步驟已傳入）。沒有設定時，日股每檔財報都抓不到，gate 會擋下，不寫 Sheet。
+- **日股財報金鑰（2026-10-27）**：日股的 EDINET 財報在 GitHub Actions 需要 secret `EDINET_API_KEY`（pool 步驟已傳入）。目前的實際行為：EDINET 抓不到時，`fetch_info` 會退回 yfinance（Yahoo），gate 不會因此擋下（2026-10-27 的 log 只標了 4 檔缺財報，都不在前十）。2026-10-27 查證：Actions 上的 00955 ROE 12.98% 與評分，與 Yahoo 退路重算吻合，本機 EDINET 結果為 ROE 11.97%。因此日股表的數字可能來自 Yahoo，表上不會標示。是否改程式（不退回 Yahoo）待 Hachi 決定，見 `architecture/APP讀取清單-Stock_AIStudio.md` 的 2026-10-27 更新。
