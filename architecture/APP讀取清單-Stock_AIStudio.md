@@ -5,7 +5,7 @@ domain: 資料系統
 status: 生效
 version: 2
 created: 2026-10-22
-updated: 2026-10-24
+updated: 2026-10-27
 tags: [資料系統, ETF]
 tickers: [00882]
 related: ["[[情資管線與APP整合架構]]"]
@@ -92,6 +92,7 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 - 日期：`last_model_update` 是建立日期（模型卡片的 last_model_update）；`holdings_asof` 是持股日期，來源沒有標示就寫「無」；ETF_Constituents 的 `update_date` 也是持股日期。備援與全市場表的持股沒有持股日期。
 - **更新（2026-10-27）**：台股全市場表的日期欄照 Hachi 決定，只放建立日期。`ETF_Summary.last_model_update` 與 `ETF_Constituents.update_date` 都是模型卡片的 `last_model_update`，沒有模型卡片的 ETF 寫「無」。原本同一欄對有卡片的 ETF 放建立日期、對候選 ETF 放 MoneyDJ 持股日期，同一欄兩種意義；改後台股表不再有持股日期。外幣市場的 `holdings_asof` 規則不變，舊寫入結果不回溯改寫。排程的補跑互鎖以 `ETF_Summary` 最新 `last_model_update` 判斷（見 `.claude/workflows/market-etf-pool.md` 補跑支援）；此欄改後不再隨每次同步更新，若互鎖仍依它判斷會與實際同步脫節，待 Hachi 確認是否改以 `最後同步時間` 判斷。
 - **更新（2026-10-27，00955）**：外幣市場的現價與評分改與台股表同一來源與算法。現價取 Yahoo 報價（不用快照價）；加權 ROE 與四個評分取 `fundamental-analyzer` 的穿透評分，需要模型卡片的成分股。只採計 `status` 為 `success` 的結果；算不出來、沒有卡片或抓不到報價就寫「-」，不寫 fallback 的預設分。上面「拿不到的欄位寫 `-`（外幣市場沒有 ETF 現價、ROE 與評分）」保留為舊規則。
+- **更新（2026-10-27，互鎖依據）**：補跑互鎖改以 `最後同步時間` 比對，不再用 `last_model_update`。TW 全市場表讀 `ETF_Summary!S1`，外幣市場讀 `ETF_Summary!U1`，取日期部分（前 10 字，台北時間）與今天比對。理由：台股表的日期欄只放建立日期後，同步不再更新 `last_model_update`，依它互鎖會與實際同步脫節。上方 2026-10-27 第一條的「待 Hachi 確認」已由此決定取代，舊文字保留。排程比對條件由 Hachi 貼上，規則見 `.claude/workflows/market-etf-pool.md` 補跑支援。
 - APP 尚未讀取。欄位若要改，先改這份文件，再改寫入器。
 
 ## 本機備援與非 Drive 來源
