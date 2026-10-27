@@ -129,6 +129,8 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
         "fricScore": 80.0,
     }
 
+    coverage_ok = False  # 聚合失敗或覆蓋不足時為 False，評估端不判定評分類姿態
+
     # 動態穿透計算基本面評分
     fund_script_dir = repo_root / ".claude" / "skills" / "fundamental-analyzer" / "scripts"
     if fund_script_dir.exists():
@@ -139,6 +141,7 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
             agg = aggregate_etf_fundamentals(ticker, top_n=10, repo_root=repo_root)
             if agg and "scores" in agg:
                 scores = agg["scores"]
+                coverage_ok = bool(agg.get("coverage_sufficient"))
         except Exception:
             pass
 
@@ -151,6 +154,7 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
         "tax_retention": tax_retention,
         "source_notes": source_notes,
         "scores": scores,
+        "coverage_ok": coverage_ok,
         "southbound_2d_net": southbound,
         "swing": swing_info,
     }
@@ -317,8 +321,11 @@ def evaluate_ticker_posture(
                 priority = 5
         else:
             # 股票高股息收息型 (DIVIDEND_INCOME)
+            # 評分類判定須有足夠的成分股財報覆蓋（門檻見 lookthrough_fundamentals.COVERAGE_MIN_PCT），覆蓋不足時不判定
+            data_ok = bool(live_data.get("coverage_ok"))
+            trap_cond = yield_rate >= 0.08 and (net_score < 50 or div_score < 40)
             # 優先級 1：高息陷阱斷路 (net/div 評分破底)
-            if yield_rate >= 0.08 and (net_score < 50 or div_score < 40):
+            if trap_cond and data_ok:
                 posture_key = "TRAP_ALERT"
                 posture_label = "🚨 陷阱警戒"
                 posture_name = "高息陷阱斷路保護 (Yield Trap Trip)"
@@ -331,8 +338,15 @@ def evaluate_ticker_posture(
                 posture_name = "資金流速過快警報 (Velocity Trip)"
                 valve_action = "暫緩大額市價單買進，等待資金流速放緩再行佈置"
                 priority = 2
+            # 高息區間（≥ 8%）的判定依賴評分：覆蓋不足時不判定陷阱，也不落入預設穩健姿態
+            elif yield_rate >= 0.08 and not data_ok:
+                posture_key = "DATA_INSUFFICIENT"
+                posture_label = "⚪ 資料不足"
+                posture_name = "成分股財報覆蓋不足，暫不判定 (Insufficient Coverage)"
+                valve_action = "成分股財報覆蓋率不足，暫不判定高息陷阱，待資料恢復後重新評估"
+                priority = 4
             # 優先級 3：積極進攻
-            elif yield_rate >= 0.082 and net_score >= 70 and div_score >= 60:
+            elif data_ok and yield_rate >= 0.082 and net_score >= 70 and div_score >= 60:
                 posture_key = "AGGRESSIVE_ACCUMULATE"
                 posture_label = "🟢 積極進攻"
                 posture_name = "積極進攻姿態 (Aggressive Accumulate)"

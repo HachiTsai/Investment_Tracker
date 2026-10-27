@@ -266,6 +266,11 @@ def normalize_ticker_for_yf(symbol: Optional[str]) -> str:
 
 
 
+def has_netscore_input(fund: Dict[str, Any]) -> bool:
+    """netScore 的三項輸入（ROE、負債比、營業利益率）至少一項有值。全部缺值的結果是降級資料：不快取，也不計入 ETF 覆蓋率。"""
+    return any(fund.get(k) is not None for k in ("roe", "debt_to_equity", "operating_margin"))
+
+
 def calculate_stock_fundamentals(
     symbol: Optional[str],
     mock_data: Optional[Dict[str, Any]] = None,
@@ -396,8 +401,8 @@ def calculate_stock_fundamentals(
         },
     }
 
-    # 寫入快取 (僅在非 mock 且有有效數據時)
-    if mock_data is None and use_cache and data:
+    # 寫入快取 (僅在非 mock、有有效數據且 netScore 有輸入時；降級結果不快取)
+    if mock_data is None and use_cache and data and has_netscore_input(result):
         cache = _load_cache()
         cache[symbol] = {
             "cached_at": datetime.date.today().isoformat(),
