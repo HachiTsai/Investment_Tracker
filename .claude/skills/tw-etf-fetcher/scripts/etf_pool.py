@@ -8,7 +8,6 @@
 外幣市場（港股、美股、日股）會先抓一次外幣對新台幣匯率（Google Finance），抓不到就中止、不寫任何檔案；台股不抓匯率。
 """
 import argparse
-import html
 import json
 import os
 import re
@@ -96,8 +95,7 @@ def index_page(summaries: List[Dict[str, Any]], asof: str, n_stocks: int, market
              f"報價時間 {etf_page.fx_time(fx)}。</li>") if fx else ""
     rows = "".join(
         f'<tr><td><a href="{s["etf"]}.html">{s["etf"]}</a></td><td class="n">{s["holdings"]}</td><td class="n">{s["rows"]}</td>'
-        f'<td class="n">{s["weighted_yield_pct"]:.2f}</td><td>{html.escape(s.get("model_date") or "無")}</td><td>{html.escape(s.get("holdings_asof") or "無")}</td>'
-        f'<td>{html.escape(s["source"])}</td><td class="n">{len(s["no_fin"])}</td></tr>' for s in summaries)
+        f'<td class="n">{s["weighted_yield_pct"]:.2f}</td><td class="n">{len(s["no_fin"])}</td></tr>' for s in summaries)
     return f"""<title>{market.name} ETF 成分股明細</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
@@ -111,9 +109,9 @@ table{{border-collapse:collapse;width:100%;min-width:560px}} th,td{{padding:8px 
 th{{background:var(--head)}} .n{{text-align:right;font-variant-numeric:tabular-nums}} a{{color:var(--acc);font-weight:600}}
 </style>
 <main><h1>{market.name} ETF 成分股明細</h1>
-<p class="mut">資料日期 {asof}。{len(summaries)} 檔 ETF，成分股去重後 {n_stocks} 檔個股，每檔只抓一次、各 ETF 共用。點 ETF 代號進入財報與股利明細頁，頁首可切換。</p>
-<div class="wrap"><table><thead><tr><th>ETF</th><th class="n">持股檔數</th><th class="n">有股價</th><th class="n">加權殖利率%</th><th>建立日期</th><th>持股日期</th><th>持股來源</th><th class="n">缺財報</th></tr></thead><tbody>{rows}</tbody></table></div>
-<ul class="mut"><li>加權殖利率是成分股近 12 月殖利率依持股權重加權（毛額，未含 ETF 費用與稅，持股以外部位視為 0），是推估，不是 ETF 的配息率。</li><li>建立日期是模型卡片最後更新的日期；持股日期是來源標示的資料日期，來源沒有給就填「無」，不以抓取日代替。</li>
+<p class="mut">{len(summaries)} 檔 ETF，成分股去重後 {n_stocks} 檔個股，每檔只抓一次、各 ETF 共用。點 ETF 代號進入財報與股利明細頁，頁首可切換。</p>
+<div class="wrap"><table><thead><tr><th>ETF</th><th class="n">持股檔數</th><th class="n">有股價</th><th class="n">加權殖利率%</th><th class="n">缺財報</th></tr></thead><tbody>{rows}</tbody></table></div>
+<ul class="mut"><li>加權殖利率是成分股近 12 月殖利率依持股權重加權（毛額，未含 ETF 費用與稅，持股以外部位視為 0），是推估，不是 ETF 的配息率。</li>
 <li>{market.source_note}；非官方彙整，缺值標示「無資料」不推估。</li>{fx_li}</ul></main>
 """
 
