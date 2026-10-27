@@ -3,6 +3,7 @@ type: ticker
 schema_version: 1.0.0
 ticker: "00878"
 title: "國泰永續高股息"
+tier: pool
 full_name: "國泰台灣高股息傘型證券投資信託基金之台灣ESG永續高股息ETF證券投資信託基金"
 currency: TWD
 exchange: TWSE

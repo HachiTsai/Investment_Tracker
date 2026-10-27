@@ -5,6 +5,7 @@ ticker: "2356"
 symbol: "TPE:2356"            # price-dividend-fetcher 格式（交易所:代號）
 yf_symbol: "2356.TW"      # fundamental-analyzer / Yahoo 格式
 title: "2356 英業達"
+tier: core
 currency: TWD
 exchange: TWSE
 category: STOCK

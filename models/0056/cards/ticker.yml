@@ -3,6 +3,7 @@ type: ticker
 schema_version: 1.0.0
 ticker: "0056"
 title: "元大高股息"
+tier: pool
 full_name: "元大台灣高股息證券投資信託基金"
 currency: TWD
 exchange: TWSE

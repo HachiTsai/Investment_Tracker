@@ -2,6 +2,7 @@
 id: "card:ticker:00882"
 kind: "ticker"
 title: "00882 中信中國高股息"
+tier: core
 ticker: "00882"
 category: ETF
 strategy_type: DIVIDEND_INCOME

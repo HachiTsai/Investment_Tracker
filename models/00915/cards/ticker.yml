@@ -3,6 +3,7 @@ type: ticker
 schema_version: 1.0.0
 ticker: "00915"
 title: "凱基優選高股息30"
+tier: pool
 full_name: "凱基台灣優選高股息30ETF證券投資信託基金"
 currency: TWD
 exchange: TWSE

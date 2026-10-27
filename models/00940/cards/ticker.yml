@@ -3,6 +3,7 @@ type: ticker
 schema_version: 1.0.0
 ticker: "00940"
 title: "元大台灣價值高息"
+tier: pool
 full_name: "元大臺灣價值高息ETF證券投資信託基金"
 currency: TWD
 exchange: TWSE

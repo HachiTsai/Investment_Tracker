@@ -141,6 +141,8 @@ def run_swing_pipeline(
         str(swing_script),
         "--scan",
         "00882:15",
+        "--tier",
+        "all",
         "--prev",
         str(prev_json_path),
         "--sheet",

@@ -3,6 +3,7 @@ type: ticker
 schema_version: 1.0.0
 ticker: "00954"
 title: "中信日本半導體"
+tier: core
 full_name: "中國信託日本ETF傘型證券投資信託基金之中國信託日本半導體ETF證券投資信託基金"
 currency: TWD
 exchange: TWSE

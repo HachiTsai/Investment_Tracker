@@ -3,6 +3,7 @@ type: ticker
 schema_version: 1.0.0
 ticker: "00955"
 title: "中信日本商社"
+tier: core
 full_name: "中國信託日本商社及批發ETF證券投資信託基金"
 currency: TWD
 exchange: TPEx

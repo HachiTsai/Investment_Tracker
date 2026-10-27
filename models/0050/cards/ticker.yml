@@ -3,6 +3,7 @@ type: ticker
 schema_version: 1.0.0
 ticker: "0050"
 title: "元大台灣50"
+tier: pool
 full_name: "元大台灣卓越50證券投資信託基金"
 currency: TWD
 exchange: TWSE

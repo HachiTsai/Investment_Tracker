@@ -3,6 +3,7 @@ type: ticker
 schema_version: 1.0.0
 ticker: "00891"
 title: "中信關鍵半導體"
+tier: pool
 full_name: "中國信託臺灣ESG永續關鍵半導體ETF證券投資信託基金"
 currency: TWD
 exchange: TWSE

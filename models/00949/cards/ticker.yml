@@ -3,6 +3,7 @@ type: ticker
 schema_version: 1.0.0
 ticker: "00949"
 title: "復華日本龍頭"
+tier: pool
 full_name: "復華日本護城河優勢龍頭企業ETF證券投資信託基金"
 currency: TWD
 exchange: TWSE

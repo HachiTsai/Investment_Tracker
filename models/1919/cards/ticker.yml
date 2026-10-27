@@ -5,6 +5,7 @@ ticker: "1919"
 symbol: "HKG:1919"            # price-dividend-fetcher 格式（交易所:代號）
 yf_symbol: "1919.HK"      # fundamental-analyzer / Yahoo 格式
 title: "1919 中遠海控"
+tier: pool
 currency: HKD
 exchange: HKEX
 category: STOCK
