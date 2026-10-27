@@ -1,7 +1,7 @@
 # 風控互鎖卡片：殖利率陷阱與多空姿態互鎖邏輯 (BLS)
 id: "card:interlock:yield_trap_guard"
 kind: "interlock"
-title: "殖利率陷阱與多空戰術姿態互鎖邏輯"
+title: "殖利率陷阱與多空配置策略互鎖邏輯"
 
 inputs:
   market:
@@ -39,7 +39,7 @@ logic_sequence:
     valve_action: "暫緩大額市價單買進，等待資金流速放緩再行佈置"
 
   - priority: 3
-    name: "積極進攻姿態 (Aggressive Accumulate)"
+    name: "積極增持配置 (Aggressive Accumulate)"
     description: "估值進入便宜區且基本面與多空分扎實"
     condition: "yield_rate >= entry_thresholds.aggressive_entry AND net_score >= 70 AND div_score >= 60"
     posture: "AGGRESSIVE_ACCUMULATE"
@@ -47,7 +47,7 @@ logic_sequence:
     valve_action: "股息 100% 立即再投入，若有閒置資金啟動額外加碼，最大化滾動張數"
 
   - priority: 4
-    name: "估值過熱防禦姿態 (Overvalued / Hold)"
+    name: "估值偏高觀望 (Overvalued / Hold)"
     description: "殖利率低於 5%，估值透支未來股息"
     condition: "yield_rate <= entry_thresholds.expensive_entry"
     posture: "OVERVALUED_HOLD"
@@ -55,7 +55,7 @@ logic_sequence:
     valve_action: "停止加碼買進，維持既有部位持有，股息可部分保留現金儲備"
 
   - priority: 5
-    name: "預設穩健複利姿態 (Steady Reinvest)"
+    name: "穩健複利策略 (Steady Reinvest)"
     description: "指標在正常區間"
     condition: "DEFAULT"
     posture: "STEADY_REINVEST"

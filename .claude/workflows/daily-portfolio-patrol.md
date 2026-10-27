@@ -1,6 +1,6 @@
 # 口袋名單每日波段觀察巡檢報告排程工作流
 
-本工作流為投資組合全標的每日巡檢與波段觀察戰報之標準作業程序（SOP），規格收斂於 Git REPO 作為單一真實來源（SSOT），專注於產出高互動性之單檔 HTML 視覺化戰報，並發布至 Claude 專屬 Artifact。
+本工作流為投資組合全標的每日巡檢與波段觀察報告之標準作業程序（SOP），規格收斂於 Git REPO 作為單一真實來源（SSOT），專注於產出高互動性之單檔 HTML 視覺化戰報，並發布至 Claude 專屬 Artifact。
 
 ---
 
@@ -58,7 +58,7 @@ flowchart TD
 python3 .claude/skills/portfolio-patrol/scripts/patrol.py --json --prev-state "<prev_state.json 路徑>" > /tmp/patrol.json
 ```
 
-*自動遍歷 models/*/cards/ 計算 DCS 姿態、SP/PV/Error 與例外管理分診（MBE）。*
+*自動遍歷 models/*/cards/ 計算配置狀態、SP/PV/Error 與例外管理分診（MBE）。*
 
 ### 步驟 1a：寫回陷阱狀態
 
@@ -66,7 +66,7 @@ python3 .claude/skills/portfolio-patrol/scripts/patrol.py --json --prev-state "<
 
 - 寫回失敗：在執行回報中說明，不中止發布。下次巡檢會因狀態缺漏而不確認，屬保守方向。
 
-### 步驟 2：執行波段掃描與戰報頁面渲染
+### 步驟 2：執行波段掃描與報告頁面渲染
 
 在 REPO 根目錄執行：
 
@@ -74,7 +74,7 @@ python3 .claude/skills/portfolio-patrol/scripts/patrol.py --json --prev-state "<
 python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --patrol /tmp/patrol.json --daily-html /tmp/daily.html --gate > /tmp/scan.json
 ```
 
-*現場結合技術面指標、動能斜率與巡檢姿態，渲染出完整互動式單檔 HTML。*
+*現場結合技術面指標、動能斜率與巡檢狀態，渲染出完整互動式單檔 HTML。*
 
 ### 步驟 3：健康檢查門檻判定（Gatekeeper）
 

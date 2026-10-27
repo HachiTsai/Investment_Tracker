@@ -53,7 +53,7 @@ python3 .claude/skills/portfolio-patrol/scripts/patrol.py --sync-doc <GOOGLE_DOC
 2. **優先級 2：資金流速急流 (`VELOCITY_PAUSE`)**
    - 條件：南向資金 2 日累計淨流出超過 80 億港元。
    - 處置：暫緩市價大額追買，等待資金流速放緩。
-3. **優先級 3：積極進攻姿態 (`AGGRESSIVE_ACCUMULATE`)**
+3. **優先級 3：積極增持配置 (`AGGRESSIVE_ACCUMULATE`)**
    - 條件：殖利率進入便宜區（$\ge 8.2\%$）且基本面扎實（$\text{netScore} \ge 70$ 且 $\text{divScore} \ge 60$）。
    - 處置：股息 100% 立即再投入，啟動額外本金追加機制。
 4. **優先級 4：估值過熱防禦 (`OVERVALUED_HOLD`)**

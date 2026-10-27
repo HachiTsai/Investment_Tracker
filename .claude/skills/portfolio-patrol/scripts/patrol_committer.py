@@ -102,11 +102,11 @@ def commit_patrol_report(
     no_push: bool = False,
     repo_root: Optional[Path] = None,
 ) -> bool:
-    """自動執行更新戰報檔案、生成 commit 訊息並調用 fin-commit。"""
+    """自動執行更新巡檢簡報檔案、生成 commit 訊息並調用 fin-commit。"""
     root = repo_root or Path(__file__).resolve().parents[4]
     md_content = format_markdown_briefing(report)
     briefing_path = update_briefing_file(md_content, root)
-    print(f"📄 [Portfolio Patrol] 戰報已更新至: {briefing_path}")
+    print(f"📄 [Portfolio Patrol] 巡檢簡報已更新至: {briefing_path}")
 
     agent = os.environ.get("AGENT_ID") or ("Claude" if os.environ.get("CLAUDECODE") else "Antigravity")
     commit_msg = build_patrol_commit_message(report, agent=agent)

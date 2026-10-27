@@ -45,4 +45,4 @@
 - **00882 成分股股利表排程工作流**：@[.claude/workflows/hk-00882-dividend.md](../../.claude/workflows/hk-00882-dividend.md)
 - **全市場 ETF 資料庫排程工作流**：@[.claude/workflows/market-etf-pool.md](../../.claude/workflows/market-etf-pool.md)
 - **波段觀察資料庫排程工作流**：@[.claude/workflows/swing-patrol-sheets.md](../../.claude/workflows/swing-patrol-sheets.md)
-- **每日波段巡檢戰報排程工作流**：@[.claude/workflows/daily-portfolio-patrol.md](../../.claude/workflows/daily-portfolio-patrol.md)
+- **每日波段巡檢報告排程工作流**：@[.claude/workflows/daily-portfolio-patrol.md](../../.claude/workflows/daily-portfolio-patrol.md)

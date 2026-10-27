@@ -312,7 +312,7 @@ def evaluate_ticker_posture(
     # 優先級風控互鎖邏輯 (BLS)
     posture_key = "STEADY_REINVEST"
     posture_label = "🔵 穩健複利"
-    posture_name = "預設穩健複利姿態 (Steady Reinvest)"
+    posture_name = "穩健複利策略 (Steady Reinvest)"
     valve_action = "維持例行性半年配息再投入，按部就班累積雪球"
     priority = 5
 
@@ -407,20 +407,20 @@ def evaluate_ticker_posture(
             elif data_ok and yield_rate >= _AGG["yield_min"] and net_score >= _AGG["net_score_min"] and div_score >= _AGG["div_score_min"]:
                 posture_key = "AGGRESSIVE_ACCUMULATE"
                 posture_label = "🟢 積極進攻"
-                posture_name = "積極進攻姿態 (Aggressive Accumulate)"
+                posture_name = "積極增持配置 (Aggressive Accumulate)"
                 valve_action = "股息 100% 立即再投入，若有閒置資金啟動額外加碼，最大化滾動張數"
                 priority = 3
             # 優先級 4：過熱防禦
             elif yield_rate <= _OVER["yield_max"]:
                 posture_key = "OVERVALUED_HOLD"
                 posture_label = "🟡 防禦觀望"
-                posture_name = "估值過熱防禦姿態 (Overvalued / Hold)"
+                posture_name = "估值偏高觀望 (Overvalued / Hold)"
                 valve_action = "停止加碼買進，維持既有部位持有，股息可部分保留現金儲備"
                 priority = 4
             else:
                 posture_key = "STEADY_REINVEST"
                 posture_label = "🔵 穩健複利"
-                posture_name = "預設穩健複利姿態 (Steady Reinvest)"
+                posture_name = "穩健複利策略 (Steady Reinvest)"
                 valve_action = "維持例行性半年配息再投入，按部就班累積雪球"
                 priority = 5
 

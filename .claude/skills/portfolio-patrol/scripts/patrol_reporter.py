@@ -106,7 +106,7 @@ def sync_to_google_doc(doc_id: str, markdown_content: str, repo_root: Optional[P
     report_file = root / "reports" / f"patrol_briefing_{datetime.date.today().isoformat()}.md"
     report_file.parent.mkdir(parents=True, exist_ok=True)
     report_file.write_text(markdown_content, encoding="utf-8")
-    print(f"📄 [Portfolio Patrol] 戰報已同步備份至: {report_file}")
+    print(f"📄 [Portfolio Patrol] 巡檢簡報已同步備份至: {report_file}")
     print(f"🔗 [Portfolio Patrol] 目標 Google Doc ID: {doc_id}（支援 Claude 雲端與 Antigravity 共用）")
     return True
 
