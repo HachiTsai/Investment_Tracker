@@ -67,6 +67,7 @@ def run_portfolio_patrol(
     mock_macro: Optional[Dict[str, Any]] = None,
     workers: int = DEFAULT_WORKERS,
     filter_tier: Optional[str] = "core",
+    prev_state: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """執行投資組合全標的巡檢核心主程序（Facade 包裝器，預設帶入 REPO_ROOT）。"""
     return _run_patrol(
@@ -76,6 +77,7 @@ def run_portfolio_patrol(
         mock_macro=mock_macro,
         workers=workers,
         filter_tier=filter_tier,
+        prev_state=prev_state,
     )
 
 
@@ -103,6 +105,7 @@ def main(argv=None) -> int:
     parser.add_argument("--shares", type=float, help="個人持股股數（預設由卡片讀取，例如 300000 股 / 300 張）")
     parser.add_argument("--price", type=float, help="手動指定/覆蓋標的市價（TWD）")
     parser.add_argument("--dca", type=float, default=0.0, help="每年預計額外定期定額投入本金（TWD）")
+    parser.add_argument("--prev-state", metavar="PATH", help="前一個交易日的陷阱狀態 JSON（啟用兩日確認；由排程從 Artifact 資料庫讀取後傳入）")
 
     args = parser.parse_args(argv)
 
@@ -127,12 +130,15 @@ def main(argv=None) -> int:
     filter_tickers = [t.strip() for t in args.tickers.split(",")] if args.tickers else None
     custom_models_dir = Path(args.models_dir) if args.models_dir else None
 
+    prev_state = json.loads(Path(args.prev_state).read_text(encoding="utf-8")) if args.prev_state else None
+
     report = run_portfolio_patrol(
         repo_root=REPO_ROOT,
         filter_tickers=filter_tickers,
         custom_models_dir=custom_models_dir,
         workers=args.workers,
         filter_tier=args.tier,
+        prev_state=prev_state,
     )
 
     if args.json:
