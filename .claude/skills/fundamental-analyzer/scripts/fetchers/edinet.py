@@ -9,7 +9,9 @@ import io
 import json
 import os
 import re
+import sys
 import threading
+import urllib.error
 import urllib.parse
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
@@ -52,11 +54,19 @@ def api(path: str) -> Any:
     return http_json(_keyed(f"{BASE}/{path}"))
 
 
+class EdinetStatusError(RuntimeError):
+    """HTTP 200 但 metadata.status 不是 200（金鑰、參數等）；status 留給診斷輸出用。"""
+
+    def __init__(self, status: str):
+        super().__init__(f"EDINET status {status}")
+        self.status = status
+
+
 def list_docs(day: datetime.date) -> List[Dict[str, Any]]:
     data = api(f"documents.json?date={day.isoformat()}&type=2")
     status = str((data.get("metadata") or {}).get("status", data.get("StatusCode")))
     if status != "200":
-        raise RuntimeError(f"EDINET status {status}")
+        raise EdinetStatusError(status)
     return data.get("results") or []
 
 
@@ -222,6 +232,32 @@ def report_bytes(code: str) -> Optional[bytes]:
     return http_bytes(_keyed(f"{BASE}/documents/{doc['docID']}?type=5"))
 
 
+def _reason(e: Exception) -> str:
+    """只寫錯誤種類與狀態碼，不印 str(e)：請求網址帶有 Subscription-Key，訊息也可能含網址。"""
+    if isinstance(e, urllib.error.HTTPError):
+        return f"HTTP {e.code}"
+    if isinstance(e, EdinetStatusError):
+        return f"EDINET status {e.status}"
+    return type(e).__name__
+
+
+def _report(code: str, what: str) -> None:
+    """失敗原因寫到 stderr（GitHub Actions 日誌看得到），只說明有沒有設定金鑰，不印金鑰值。"""
+    key = "已設定" if os.environ.get("EDINET_API_KEY", "").strip() else "未設定"
+    print(f"EDINET {code}：{what}；EDINET_API_KEY {key}，退回 yfinance", file=sys.stderr)
+
+
 def fetch(code: str) -> Dict[str, Any]:
-    raw = report_bytes(code)
-    return edinet_info(parse_rows(raw)) if raw else {}
+    """查不到、失敗或沒有可用數值時印出原因；回傳與拋出的行為不變，由 fetch_info 退回 yfinance。"""
+    try:
+        raw = report_bytes(code)
+        if not raw:
+            _report(code, "近一年查無有價證券報告書")
+            return {}
+        info = edinet_info(parse_rows(raw))
+    except Exception as e:
+        _report(code, f"失敗（{_reason(e)}）")
+        raise
+    if not info:
+        _report(code, "報告書無可用數值")
+    return info
