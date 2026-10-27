@@ -214,7 +214,7 @@ def load_all_etf_models(models_dir: Path) -> List[Dict[str, Any]]:
             "category": ticker_info.get("category", "ETF"),
             "manager": ticker_info.get("manager", ""),
             "benchmark": ticker_info.get("benchmark", ""),
-            "last_model_update": ticker_info.get("last_model_update", ""),
+            "last_model_update": ticker_info.get("last_model_update") or "無",
             "constituents": constituents,
         })
 
@@ -272,7 +272,6 @@ def load_all_market_etfs(
             h_data = {}
 
         raw_cons = h_data.get("constituents", [])
-        as_of = h_data.get("as_of_date") or "無"  # 來源沒有持股日期就填無，不以抓取日代替
 
         constituents: List[Dict[str, Any]] = []
         for c in raw_cons:
@@ -301,7 +300,7 @@ def load_all_market_etfs(
             "category": "ETF",
             "manager": manager,
             "benchmark": benchmark,
-            "last_model_update": as_of,
+            "last_model_update": "無",  # 候選 ETF 沒有模型卡片，建立日期寫無；持股日期不進全市場表
             "constituents": constituents,
         })
 

@@ -90,6 +90,7 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 - 拿不到的欄位寫 `-`（外幣市場沒有 ETF 現價、ROE 與評分），不估值補；持股日期拿不到寫「無」；代號一律純代號，寫入前掃描國別後綴。
 - 寫入者：`etf_sheets_sync.py --market HK|US|JP`，只用 GCP_SA_KEY；同步元資訊：ETF_Summary 在 T1:U2（A:R 以外），ETF_Constituents 在 I1:J2（A:G 以外）。
 - 日期：`last_model_update` 是建立日期（模型卡片的 last_model_update）；`holdings_asof` 是持股日期，來源沒有標示就寫「無」；ETF_Constituents 的 `update_date` 也是持股日期。備援與全市場表的持股沒有持股日期。
+- **更新（2026-10-27）**：台股全市場表的日期欄照 Hachi 決定，只放建立日期。`ETF_Summary.last_model_update` 與 `ETF_Constituents.update_date` 都是模型卡片的 `last_model_update`，沒有模型卡片的 ETF 寫「無」。原本同一欄對有卡片的 ETF 放建立日期、對候選 ETF 放 MoneyDJ 持股日期，同一欄兩種意義；改後台股表不再有持股日期。外幣市場的 `holdings_asof` 規則不變，舊寫入結果不回溯改寫。排程的補跑互鎖以 `ETF_Summary` 最新 `last_model_update` 判斷（見 `.claude/workflows/market-etf-pool.md` 補跑支援）；此欄改後不再隨每次同步更新，若互鎖仍依它判斷會與實際同步脫節，待 Hachi 確認是否改以 `最後同步時間` 判斷。
 - APP 尚未讀取。欄位若要改，先改這份文件，再改寫入器。
 
 ## 本機備援與非 Drive 來源
