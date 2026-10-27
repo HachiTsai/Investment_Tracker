@@ -227,3 +227,46 @@ def test_edinet_day_list_is_fetched_once_and_shared(monkeypatch, tmp_path):
     assert len(calls) == 3  # 今天不快取
     edinet.save_days()
     assert str(day) in (tmp_path / "days.json").read_text()
+
+
+def test_edinet_reason_labels_and_status_error(monkeypatch):
+    import datetime
+    import urllib.error
+    import pytest
+    from fetchers import edinet
+    assert edinet._reason(urllib.error.HTTPError("https://x?Subscription-Key=k", 401, "Unauthorized", {}, None)) == "HTTP 401"
+    assert edinet._reason(edinet.EdinetStatusError("400")) == "EDINET status 400"
+    assert edinet._reason(ValueError("Subscription-Key=k")) == "ValueError"
+    monkeypatch.setattr(edinet, "api", lambda path: {"metadata": {"status": "400"}})
+    with pytest.raises(edinet.EdinetStatusError) as info:
+        edinet.list_docs(datetime.date(2026, 10, 21))
+    assert info.value.status == "400" and str(info.value) == "EDINET status 400"
+
+
+def test_edinet_failure_reports_reason_without_leaking_key(monkeypatch, capsys):
+    import urllib.error
+    from fetchers import edinet
+    monkeypatch.setenv("EDINET_API_KEY", "SECRET123")
+    monkeypatch.setattr(edinet, "cached_doc", lambda sec_code: None)
+
+    def denied(sec_code, *args, **kwargs):
+        raise urllib.error.HTTPError(f"{edinet.BASE}/documents.json?Subscription-Key=SECRET123", 401, "Unauthorized", {}, None)
+
+    monkeypatch.setattr(edinet, "find_doc", denied)
+    assert fetch_info("7203.T", {"JP": edinet.fetch}) == {}  # 失敗仍退回 yfinance，行為不變
+    err = capsys.readouterr().err
+    assert err == "EDINET 7203：失敗（HTTP 401）；EDINET_API_KEY 已設定，退回 yfinance\n"
+    assert "SECRET123" not in err and "Subscription-Key" not in err
+
+
+def test_edinet_missing_doc_or_values_are_reported(monkeypatch, capsys):
+    from fetchers import edinet
+    monkeypatch.delenv("EDINET_API_KEY", raising=False)
+    monkeypatch.setattr(edinet, "cached_doc", lambda sec_code: None)
+    monkeypatch.setattr(edinet, "find_doc", lambda sec_code, *args, **kwargs: None)
+    assert edinet.fetch("7203") == {}
+    assert capsys.readouterr().err == "EDINET 7203：近一年查無有價證券報告書；EDINET_API_KEY 未設定，退回 yfinance\n"
+    monkeypatch.setattr(edinet, "report_bytes", lambda code: b"zip")
+    monkeypatch.setattr(edinet, "parse_rows", lambda raw: {})
+    assert edinet.fetch("7203") == {}
+    assert capsys.readouterr().err == "EDINET 7203：報告書無可用數值；EDINET_API_KEY 未設定，退回 yfinance\n"
