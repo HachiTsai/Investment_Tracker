@@ -39,6 +39,23 @@ def _fetch_both(fetch_script: Path, ticker: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+TAIPEI_TZ = datetime.timezone(datetime.timedelta(hours=8))  # 台灣無夏令時間，固定 +08:00
+
+
+def previous_trading_day(day: datetime.date) -> datetime.date:
+    """前一個交易日。以週一至週五近似；國定假日未納入，遇假日會使確認鏈中斷，屬保守方向。"""
+    prev = day - datetime.timedelta(days=1)
+    while prev.weekday() >= 5:
+        prev -= datetime.timedelta(days=1)
+    return prev
+
+
+def trap_confirmed(prev_state: Dict[str, Any], ticker: str, today: datetime.date) -> bool:
+    """前一個交易日的同一標的也觸發高息陷阱條件，本次才確認（升級為陷阱警戒）。"""
+    rec = prev_state.get(ticker) or {}
+    return bool(rec.get("trap")) and rec.get("run_date") == previous_trading_day(today).isoformat()
+
+
 def fetch_macro_telemetry(repo_root: Path) -> Dict[str, Any]:
     """獲取宏觀與前饋數據（呼叫 hkdata.py macro 或優雅降級）。"""
     hkdata_script = repo_root / ".claude" / "skills" / "hk-market-data" / "scripts" / "hkdata.py"
@@ -349,8 +366,9 @@ def evaluate_ticker_posture(
             # 評分類判定須有足夠的成分股財報覆蓋（門檻見 lookthrough_fundamentals.COVERAGE_MIN_PCT），覆蓋不足時不判定
             data_ok = bool(live_data.get("coverage_ok"))
             trap_cond = yield_rate >= 0.08 and (net_score < 50 or div_score < 40)
-            # 優先級 1：高息陷阱斷路 (net/div 評分破底)
-            if trap_cond and data_ok:
+            # 優先級 1：高息陷阱斷路 (net/div 評分破底)；未經次一交易日確認的首日觸發先列為觀察
+            confirmed = live_data.get("trap_confirmed")  # None＝未啟用兩日確認，沿用單日判定
+            if trap_cond and data_ok and confirmed is not False:
                 posture_key = "TRAP_ALERT"
                 posture_label = "🚨 陷阱警戒"
                 posture_name = "高息陷阱斷路保護 (Yield Trap Trip)"
@@ -363,6 +381,13 @@ def evaluate_ticker_posture(
                 posture_name = "資金流速過快警報 (Velocity Trip)"
                 valve_action = "暫緩大額市價單買進，等待資金流速放緩再行佈置"
                 priority = 2
+            # 陷阱條件首次成立（尚未經次一交易日確認）：列為觀察，不升級警報
+            elif trap_cond and data_ok:
+                posture_key = "TRAP_WATCH"
+                posture_label = "🟠 陷阱觀察"
+                posture_name = "高息陷阱條件首次成立，待次一交易日確認 (Trap Watch)"
+                valve_action = "暫不升級為陷阱警戒；次一交易日仍觸發即列為陷阱警戒"
+                priority = 4
             # 高息區間（≥ 8%）的判定依賴評分：覆蓋不足時不判定陷阱，也不落入預設穩健姿態
             elif yield_rate >= 0.08 and not data_ok:
                 posture_key = "DATA_INSUFFICIENT"
@@ -475,8 +500,10 @@ def run_portfolio_patrol(
     mock_macro: Optional[Dict[str, Any]] = None,
     workers: int = DEFAULT_WORKERS,
     filter_tier: Optional[str] = "core",
+    prev_state: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    """執行投資組合全標的巡檢核心主程序。抓價階段以 workers 條執行緒並行，評估與警報維持原順序。"""
+    """執行投資組合全標的巡檢核心主程序。抓價階段以 workers 條執行緒並行，評估與警報維持原順序。
+    prev_state 為前一個交易日的陷阱狀態（由排程傳入）；未提供時沿用單日判定。"""
     models_root = custom_models_dir if custom_models_dir else repo_root / "models"
     tickers = discover_tickers(models_root, filter_tickers, filter_tier=filter_tier)
 
@@ -505,8 +532,16 @@ def run_portfolio_patrol(
     with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
         gathered = list(pool.map(gather, tickers))
 
+    today_tpe = datetime.datetime.now(TAIPEI_TZ).date()
+    trap_state: Dict[str, Any] = {}
     for ticker, (cards, watchdog, live_data) in zip(tickers, gathered):
+        if prev_state is not None:
+            live_data["trap_confirmed"] = trap_confirmed(prev_state, ticker, today_tpe)
         evaluation = evaluate_ticker_posture(cards, live_data)
+        trap_state[ticker] = {
+            "run_date": today_tpe.isoformat(),
+            "trap": evaluation["posture_key"] in ("TRAP_ALERT", "TRAP_WATCH"),
+        }
 
         evaluation["watchdog"] = watchdog
 
@@ -567,4 +602,5 @@ def run_portfolio_patrol(
         "targets": patrol_results,
         "alerts": alerts,
         "is_steady": not has_abnormal_posture and not has_watchdog_warning,
+        "trap_state": trap_state,
     }

@@ -118,6 +118,45 @@ def test_fetch_both_gives_up_after_two_attempts(monkeypatch, tmp_path):
     assert len(calls) == 2
 
 
+def test_previous_trading_day_skips_weekend():
+    import datetime as dt
+    import patrol_evaluator as ev
+
+    assert ev.previous_trading_day(dt.date(2026, 10, 27)) == dt.date(2026, 10, 26)  # 週二 → 週一
+    assert ev.previous_trading_day(dt.date(2026, 10, 26)) == dt.date(2026, 10, 23)  # 週一 → 上週五
+    assert ev.previous_trading_day(dt.date(2026, 10, 25)) == dt.date(2026, 10, 23)  # 週日 → 週五
+
+
+def test_trap_confirmed_needs_previous_trading_day_and_trap_flag():
+    import datetime as dt
+    import patrol_evaluator as ev
+
+    today = dt.date(2026, 10, 27)
+    assert ev.trap_confirmed({"00919": {"run_date": "2026-10-26", "trap": True}}, "00919", today) is True
+    assert ev.trap_confirmed({"00919": {"run_date": "2026-10-23", "trap": True}}, "00919", today) is False
+    assert ev.trap_confirmed({"00919": {"run_date": "2026-10-26", "trap": False}}, "00919", today) is False
+    assert ev.trap_confirmed({}, "00919", today) is False
+
+
+def test_first_day_trap_is_watch_until_confirmed():
+    """陷阱條件首日成立列為觀察；次一交易日仍觸發才升級為陷阱警戒；未啟用兩日確認時沿用單日判定。"""
+    cards = {"ticker_id": "00919", "ticker": {"title": "00919", "currency": "TWD", "strategy_type": "DIVIDEND_INCOME"}, "loops": []}
+    live = {"price": 10.00, "annual_dividend": 0.86, "tax_retention": 0.9923,
+            "scores": {"netScore": 48.2, "divScore": 45.6}, "southbound_2d_net": 0.0, "coverage_ok": True}
+
+    live["trap_confirmed"] = False
+    res = patrol.evaluate_ticker_posture(cards, live)
+    assert res["posture_key"] == "TRAP_WATCH"
+    assert res["posture_label"] == "🟠 陷阱觀察"
+    assert res["priority"] == 4
+
+    live["trap_confirmed"] = True
+    assert patrol.evaluate_ticker_posture(cards, live)["posture_key"] == "TRAP_ALERT"
+
+    del live["trap_confirmed"]
+    assert patrol.evaluate_ticker_posture(cards, live)["posture_key"] == "TRAP_ALERT"
+
+
 def test_discover_tickers(repo_root):
     models_dir = repo_root / "models"
     tickers = patrol.discover_tickers(models_dir)
