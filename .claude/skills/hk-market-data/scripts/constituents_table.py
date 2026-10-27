@@ -143,8 +143,9 @@ def main(argv=None):
     top = max(ok, key=lambda r: r["w"])
     rows_out = [dict(c=r["c"], n=r["n"], w=r["w"], q=r["q"], px=r["px"], ttm=r["ttm"], lfy=r["lfy"], chg=r["chg"], y=r["y"],
                      i26=r["i26"], p25=r["p25"], cmp=r["cmp"]) for r in ok]
+    # 頁首不放資料日期，與台股頁一致（空白時 etf_page 也略去付款日的說明，2026-10-27）
     page = etf_page.render("hk", "00882", 49, rows_out, [dict(c=r["c"], n=r["n"], w=r["w"], px=r["px"]) for r in rows if r.get("fail")],
-                           {c: v for c, v in fin.items() if v}, f"{date.today().isoformat()}（持股 {asof}）", len(ok),
+                           {c: v for c, v in fin.items() if v}, "", len(ok),
                            f'{top["n"]} {top["w"]}%', f"{lfy_unit:.2f}～{ttm_unit:.2f}")
     open(OUT, "w", encoding="utf-8").write(page)
     print(json.dumps(dict(rows=len(ok), fails=fails, fin_fails=fin_fails, fx=round(FX, 4), nav=nav, units=units, ttm_unit=round(ttm_unit, 3), lfy_unit=round(lfy_unit, 3), has26=has26, chg=round(net / base * 100, 1))))
