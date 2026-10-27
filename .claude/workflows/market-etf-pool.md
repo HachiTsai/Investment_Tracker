@@ -148,3 +148,4 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --expor
 - **外幣市場（港股、美股、日股）**：不加排程，需要時在 GitHub Actions 的 Market ETF Sheets Sync 手動執行（workflow_dispatch）：`market` 選 `hk`、`us` 或 `jp`，`etfs` 填 ETF 代號（港股預設 00882；美股、日股需指定）。流程為 `etf_pool.py` 產出 pool.json（`--gate`），再由 `etf_sheets_sync.py --market` 寫入該市場的 Sheet；寫入前過 Core 拒絕與國別後綴掃描，缺 `GCP_SA_KEY` 或 gate 不過就不寫入。
 - **持股來源（2026-10-27）**：美股、日股的持股先到全市場表的 `ETF_Constituents` 找（`etf_drive.py`，只讀），表內沒有才用 Yahoo 前幾大；pool 步驟因此需要 `GCP_SA_KEY` 讀表，沒有時退回 models 卡片備援。
 - **日期**：建立日期（模型卡片的 `last_model_update`）與持股日期（來源標示，沒有就寫「無」）分開；備援與全市場表的持股沒有持股日期，不以執行當天或檔案時間代替。
+- **日股財報金鑰（2026-10-27）**：日股的 EDINET 財報在 GitHub Actions 需要 secret `EDINET_API_KEY`（pool 步驟已傳入）。沒有設定時，日股每檔財報都抓不到，gate 會擋下，不寫 Sheet。

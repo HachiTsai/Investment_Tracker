@@ -114,6 +114,18 @@ def test_edinet_find_doc_picks_latest_hit_and_stops():
     assert len(calls) < 366
 
 
+def test_edinet_key_goes_in_query_only_when_configured(monkeypatch):
+    from fetchers import edinet
+    seen = []
+    monkeypatch.setattr(edinet, "http_json", lambda url: seen.append(url) or {})
+    monkeypatch.delenv("EDINET_API_KEY", raising=False)
+    edinet.api("documents.json?date=2026-10-21&type=2")
+    monkeypatch.setenv("EDINET_API_KEY", " k3y ")
+    edinet.api("documents.json?date=2026-10-21&type=2")
+    assert seen[0] == f"{edinet.BASE}/documents.json?date=2026-10-21&type=2"
+    assert seen[1] == f"{edinet.BASE}/documents.json?date=2026-10-21&type=2&Subscription-Key=k3y"
+
+
 def test_edinet_info_ifrs_and_jgaap():
     from fetchers import edinet
     ifrs = {"TotalNetRevenuesIFRS": 100.0, "OperatingProfitLossIFRS": 10.0,
