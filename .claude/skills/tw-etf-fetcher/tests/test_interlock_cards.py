@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 import etf_model_scaffolder  # noqa: E402
@@ -45,3 +46,17 @@ def test_render_reads_thresholds_from_rules():
     text = etf_model_scaffolder.render_interlock_yml("00999", rules)
     assert "IF yield_pct >= 9.0 AND (netScore < 45 OR divScore < 35)" in text
     assert 'valve_action: "測試處置"' in text
+
+
+def test_handwritten_00882_card_matches_rules_json():
+    card = yaml.safe_load((MODELS / "00882" / "cards" / "interlock_yield_trap.yml").read_text(encoding="utf-8"))
+    rules = etf_model_scaffolder.load_interlock_rules()
+    trap, agg, over = rules["yield_trap"], rules["aggressive"], rules["overvalued"]
+    steps = {step["priority"]: step for step in card["logic_sequence"]}
+    assert steps[1]["valve_action"] == trap["valve_action"]
+    assert steps[1]["condition"] == (
+        f"yield_rate >= {trap['yield_min']} AND (net_score < {trap['net_score_below']} OR div_score < {trap['div_score_below']})"
+    )
+    assert card["entry_thresholds"]["aggressive_entry"] == agg["yield_min"]
+    assert f"net_score >= {agg['net_score_min']} AND div_score >= {agg['div_score_min']}" in steps[3]["condition"]
+    assert card["entry_thresholds"]["expensive_entry"] == over["yield_max"]
