@@ -40,6 +40,9 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 | 交易明細資料庫 | `1yFr6OSW6LKWm5wdoc-QoJFXyUotYEd8_YEl_qR-24ks` | 第一分頁 | `portfolioFeedService.ts` | 排程依 Core 唯讀重建 | 依排程 |
 | 波段觀察 | `1pyGzkgaspYMYdXOPYerkLsxOMwNwa2yOKuNDrOrrhtQ` | Untitled（A 到 X 共 24 欄） | `swingFeedService.ts` | Claude 排程／本機代班（`.claude/workflows/swing-patrol-sheets.md`） | 平日台北 17:00 |
 | 台股ETF成分股資料庫 | `11LXjxIke0u_6-4XbGB4cX3o28It1ool2jBXUtMErIUI` | 個股、ETF持股、摘要 | 目前只供 Artifact 與分析（APP 預備） | Claude 排程（`.claude/workflows/tw-etf-pool.md`） | 每月月初 09:00 |
+| 港股 ETF 成分股資料庫 | `1ND1gcxm-fvkx723V-X72QUuwrJvKobCz_etZpUzWrOI` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（`.claude/workflows/market-etf-pool.md` §5） | 手動 |
+| 美股 ETF 成分股資料庫 | `1qfMn6hbPD4qFmlCAm0fC2zTfEtm9uVjdZYL4YDUrmY4` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（同上） | 手動 |
+| 日股 ETF 成分股資料庫 | `1XtSRy14KdLMv75g9ShAL6jWpa9XmoUpiSY4Srvuycxc` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（同上） | 手動 |
 
 ## 試算表欄位 Schema 與寫入防呆契約
 
@@ -77,6 +80,15 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 - **分頁「個股」**：`code,name,industry,priceTwd,divTtmTwd,yieldTtmPct,pe,pb,roePct,payoutPct,fcfCover,debtPct,period`。
 - **分頁「ETF持股」**：`etf,code,weightPct,shares`。
 - **分頁「摘要」**：A:C 為 `key,value,note`（`asOf`, `etfs`, `stocks`, `note`, `lastUpdated`, `executor`；B 欄一律加 `'` 前綴）。
+
+### 5. 外幣市場 ETF 成分股資料庫（港股、美股、日股）
+
+- 三份 Sheet 與台股全市場表的 ETF_Summary、ETF_Constituents 同名同序；ETF_Summary 比台股多一欄 `coverage`（完整、前幾大、備援），持股完整度寫進 Sheet。
+- ETF_Summary 表頭：`etf_id,etf_name,current_price,exchange,category,benchmark,constituent_count,top1_holding,top2_holding,top3_holding,weighted_roe,net_score,div_score,val_score,fric_score,last_model_update,coverage`。
+- ETF_Constituents 表頭：`etf_id,etf_name,constituent_ticker,constituent_name,weight_pct,shares,update_date`。
+- 拿不到的欄位寫 `-`（外幣市場沒有 ETF 現價、ROE 與評分），不估值補；代號一律純代號，寫入前掃描國別後綴。
+- 寫入者：`etf_sheets_sync.py --market HK|US|JP`，只用 GCP_SA_KEY；同步元資訊放在 R1:S2 與 I1:J2，位於 A:Q 與 A:G 以外。
+- APP 尚未讀取。欄位若要改，先改這份文件，再改寫入器。
 
 ## 本機備援與非 Drive 來源
 

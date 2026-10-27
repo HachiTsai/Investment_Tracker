@@ -5,6 +5,21 @@ on:
     # 每週五台北 17:10 (UTC 09:10, Fri)
     - cron: '10 9 * * 5'
   workflow_dispatch:
+    inputs:
+      market:
+        description: 'tw：全市場台股表（排程預設）；hk、us、jp：外幣市場 Sheet，需同時填 etfs'
+        type: choice
+        options:
+          - tw
+          - hk
+          - us
+          - jp
+        default: tw
+      etfs:
+        description: '外幣市場的 ETF 代號，逗號分隔（港股預設 00882；美股、日股需指定）'
+        type: string
+        default: '00882'
+        required: false
 
 jobs:
   sync-market-etf-sheets:
@@ -19,7 +34,22 @@ jobs:
         run: |
           python -m pip install pytest beautifulsoup4 requests pyyaml yfinance google-auth
       - name: Run Market ETF Sync Pipeline
+        if: github.event_name == 'schedule' || inputs.market == 'tw'
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
           python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --gate --sheet-id 1GIhbRyL-h96ACVjlSSW9YUFMiAItg_SP9Wi0o3WwG70
+      - name: Build foreign-market pool
+        if: inputs.market == 'hk' || inputs.market == 'us' || inputs.market == 'jp'
+        env:
+          MARKET: ${{ inputs.market }}
+          ETFS: ${{ inputs.etfs }}
+        run: |
+          python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py "reports/pool-$MARKET" --market "$MARKET" --etfs "$ETFS" --gate --models-dir models
+      - name: Write foreign-market tables to Google Sheets
+        if: inputs.market == 'hk' || inputs.market == 'us' || inputs.market == 'jp'
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          MARKET: ${{ inputs.market }}
+        run: |
+          python3 .claude/skills/tw-etf-fetcher/scripts/etf_sheets_sync.py --market "${MARKET^^}" --pool-json "reports/pool-$MARKET/pool.json"

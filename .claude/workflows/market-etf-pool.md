@@ -145,3 +145,4 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --expor
 
 - **日常運作**：本任務為「純 Sheet 任務」，日常優先由 **GitHub Actions 自動排程**（`.github/workflows/market-etf.yml`）週五 17:10 自動執行並透過 Google Sheets API 回寫試算表，免除 Claude 雲端 10 分鐘沙盒逾時風險並節省 Token；亦支援 Claude 雲端排程單行呼叫。
 - **本機代班邊界**：本任務無關聯之 Artifact。若遇需手動補跑，可透過 GitHub Actions 一鍵重跑或由 **Antigravity 本機直接執行 `etf_fetcher.py sync-sheets --gate`** 進行同步。
+- **外幣市場（港股、美股、日股）**：不加排程，需要時在 GitHub Actions 的 Market ETF Sheets Sync 手動執行（workflow_dispatch）：`market` 選 `hk`、`us` 或 `jp`，`etfs` 填 ETF 代號（港股預設 00882；美股、日股需指定）。流程為 `etf_pool.py` 產出 pool.json（`--gate`），再由 `etf_sheets_sync.py --market` 寫入該市場的 Sheet；寫入前過 Core 拒絕與國別後綴掃描，缺 `GCP_SA_KEY` 或 gate 不過就不寫入。
