@@ -44,6 +44,25 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 | 美股 ETF 成分股資料庫 | `1qfMn6hbPD4qFmlCAm0fC2zTfEtm9uVjdZYL4YDUrmY4` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（同上） | 手動 |
 | 日股 ETF 成分股資料庫 | `1XtSRy14KdLMv75g9ShAL6jWpa9XmoUpiSY4Srvuycxc` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（同上） | 手動 |
 
+## 排程總表（誰、何時、讀什麼、寫到哪）
+
+整理日期 2026-10-27，規格以各 `.claude/workflows/*.md` 為準；本表只做索引，最後成功時間以執行紀錄為準，不在此寫死。
+
+| 排程 | 執行者 | 時間（台北） | 輸入 | 輸出 | 互鎖 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 波段觀察 Sheet | GitHub Actions `swing-patrol.yml` | 平日 17:00（GitHub 實際可能延遲數小時） | models 卡片、行情 | 波段觀察 Sheet | 比對資料日期，`--force` 補跑 |
+| 全市場 ETF 池 | GitHub Actions `market-etf.yml` | 週五 17:10，亦可手動選 hk／us／jp | TWSE、MoneyDJ、各市場來源 | 全市場與外幣市場 Sheet | 不做同日互鎖，重跑即覆寫 |
+| 每日投資組合巡檢頁 | Claude 雲端 | 平日 08:30 | models 卡片、行情、`trap_state` | Artifact（無 Sheet） | 陷阱狀態兩日確認 |
+| 全標的巡檢簡報 | Claude 雲端或 Antigravity 代班 | 平日 16:30 | models 卡片、行情、宏觀 | 簡報（無 Sheet） | 例外管理分診 |
+| 00882 成分股股利表 | Claude 雲端 | 週五 17:00 | 中信投信、東方財富 | Artifact＋00882 Sheet | 雙棲表固定由雲端寫入 |
+| 台股 ETF 池 | Claude 雲端 | 每月第 1 個營業日 09:00 | MoneyDJ、FinMind、TWSE | Artifact＋台股 ETF Sheet | 雙棲表固定由雲端寫入 |
+
+已知重疊與待驗證：
+
+- 波段計算有兩份：Sheet 由 GitHub Actions 算（`swing_sync.py`），Artifact 由雲端另算（`swing.py --daily-html`），兩者資料日期可能不同。
+- `market-etf.yml` 的週五排程尚未實跑過，首次預期 2026-10-30，之前的執行皆為手動觸發。
+- `swing-patrol.yml` 首次排程觸發為 2026-10-26，晚於 cron 約 7 小時。
+
 ## 試算表欄位 Schema 與寫入防呆契約
 
 ### 1. 00882_成分股股利資料庫 (`1Jq599WzoQUDsooZDhJhyK8uaEMgDiLLCoZthWk2WXtw`)
