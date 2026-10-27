@@ -48,7 +48,7 @@ python3 .claude/skills/portfolio-patrol/scripts/patrol.py --sync-doc <GOOGLE_DOC
 巡檢引擎將自動比對各標的之風控互鎖卡片（`interlock_*.yml`）：
 
 1. **優先級 1：高息陷阱斷路 (`TRAP_ALERT`)**
-   - 條件：殖利率 $\ge 8\%$ 且多空評分崩跌（$\text{netScore} < 50$ 或 $\text{divScore} < 40$）。
+   - 條件：殖利率 $\ge 8\%$ 且多空評分崩跌（$\text{netScore} < 50$ 或 $\text{divScore} < 40$），且前一個交易日同一標的也觸發（兩日確認，見第 8 項）。
    - 處置：頂部大字標記 🚨，強制關閉加碼閥門，股息暫留現金緩衝池，啟動專案持股審查。
 2. **優先級 2：資金流速急流 (`VELOCITY_PAUSE`)**
    - 條件：南向資金 2 日累計淨流出超過 80 億港元。
@@ -68,6 +68,10 @@ python3 .claude/skills/portfolio-patrol/scripts/patrol.py --sync-doc <GOOGLE_DOC
 7. **無資料 (`NO_DIVIDEND_DATA`，以優先級 4 的狀態調整列出)**
    - 條件：收息型或債券型 ETF 的近 12 個月配息為零（配息資料未取得，常見於抓取逾時或來源失敗）。
    - 處置：不歸為成長型，標示「⚪ 無資料」，待下次巡檢取得配息後重新評估。不計入異常跳脫，不觸發互鎖警報。
+
+8. **陷阱觀察 (`TRAP_WATCH`，以優先級 4 的狀態調整列出)**
+   - 條件：高息陷阱條件首次成立（殖利率 $\ge 8\%$ 且多空評分破線），尚未經前一個交易日確認。
+   - 處置：標示「🟠 陷阱觀察」，不升級為陷阱警戒，不計入異常跳脫。次一交易日仍觸發即升級為 `TRAP_ALERT`。
 
 ### 步驟 3：數據心跳時效性把關（Watchdog）
 
