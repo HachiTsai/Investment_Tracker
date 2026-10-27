@@ -31,10 +31,7 @@ python3 $S --json
 # 4. 同步原地更新至 Drive 每日簡報 Google Doc
 python3 $S --sync-doc <GOOGLE_DOC_ID>
 
-# 5. 原地更新 reports/portfolio_briefing.md，自動 commit & push 觸發 Slack 每日簡報
-python3 $S --commit
-
-# 6. 單標的個人深潛試算與 C 引擎複利滾雪球時間線模擬
+# 5. 單標的個人深潛試算與 C 引擎複利滾雪球時間線模擬
 python3 $S --inspect [00882] [--shares 300000] [--dca 50000]
 ```
 

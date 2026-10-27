@@ -59,7 +59,7 @@ flowchart TD
 
 - **工作目錄**：REPO 根目錄。
 - **前置動作**：`git pull origin main`。
-- **產出型態**：**純 Sheet（無 Artifact）**。嚴禁發布或更新任何 Artifact，不碰 `reports/portfolio_briefing.md`。
+- **產出型態**：**純 Sheet（無 Artifact）**。嚴禁發布或更新任何 Artifact。
 - **網路許可網域**（僅雲端沙盒需設）：
   `query1.finance.yahoo.com`, `api.edinet-fsa.go.jp`, `data.sec.gov`, `www.sec.gov`, `api.finmindtrade.com`, `datacenter.eastmoney.com`, `openapi.twse.com.tw`。
 

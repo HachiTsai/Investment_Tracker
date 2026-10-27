@@ -4,7 +4,6 @@
 """
 
 import datetime
-import re
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -109,25 +108,3 @@ def sync_to_google_doc(doc_id: str, markdown_content: str, repo_root: Optional[P
     print(f"📄 [Portfolio Patrol] 巡檢簡報已同步備份至: {report_file}")
     print(f"🔗 [Portfolio Patrol] 目標 Google Doc ID: {doc_id}（支援 Claude 雲端與 Antigravity 共用）")
     return True
-
-
-def update_briefing_file(markdown_block: str, repo_root: Optional[Path] = None) -> Path:
-    """原地更新 reports/portfolio_briefing.md，維持最近 5 日滾動紀錄。"""
-    root = repo_root or Path(__file__).resolve().parents[4]
-    report_file = root / "reports" / "portfolio_briefing.md"
-    report_file.parent.mkdir(parents=True, exist_ok=True)
-
-    today_header = markdown_block.splitlines()[0].strip() if markdown_block else ""
-    existing_text = report_file.read_text(encoding="utf-8") if report_file.exists() else ""
-
-    blocks = re.split(r"(?=# 投資組合每日(?:總裁戰報|巡檢簡報))", existing_text)
-    clean_blocks = []
-    for b in blocks:
-        b = b.strip()
-        if b and not b.startswith(today_header):
-            clean_blocks.append(b)
-
-    final_blocks = [markdown_block.strip()] + clean_blocks[:4]
-    final_content = "\n\n---\n\n".join(final_blocks) + "\n"
-    report_file.write_text(final_content, encoding="utf-8")
-    return report_file
