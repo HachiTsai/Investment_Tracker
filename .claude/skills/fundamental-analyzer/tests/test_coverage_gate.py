@@ -3,6 +3,7 @@
 涵蓋：netScore 輸入判定、ETF 穿透覆蓋率與快取閘門、個股快取閘門、FinMind 空回應不快取、金融業 ROE 補值。
 """
 
+import datetime
 import json
 import sys
 from pathlib import Path
@@ -77,9 +78,49 @@ def test_finmind_empty_response_is_not_cached(tmp_path, monkeypatch):
     assert list(tmp_path.glob("*.json")) == []
 
 
-def test_financial_roe_fills_only_financials(monkeypatch):
+def test_financial_info_marks_financials_and_fills_roe(monkeypatch):
     monkeypatch.setattr(fd, "industries", lambda: {"2881": "金融保險業", "2330": "半導體業"})
     monkeypatch.setattr(fd, "tw_detail", lambda code, *a, **k: {"roe": 9.5})
 
-    assert tw.financial_roe("2881") == {"returnOnEquity": 0.095}
-    assert tw.financial_roe("2330") == {}
+    assert tw.financial_info("2881") == {"sector": "financial", "returnOnEquity": 0.095}
+    assert tw.financial_info("2330") == {}
+
+
+def test_financial_info_marks_sector_even_without_roe(monkeypatch):
+    monkeypatch.setattr(fd, "industries", lambda: {"2881": "金融保險業"})
+
+    def failing_detail(code, *a, **k):
+        raise RuntimeError("FinMind 失敗")
+
+    monkeypatch.setattr(fd, "tw_detail", failing_detail)
+
+    assert tw.financial_info("2881") == {"sector": "financial"}
+
+
+def test_has_netscore_input_ignores_debt_for_financials():
+    assert not fc.has_netscore_input({"sector": "financial", "roe": None, "debt_to_equity": 972.0, "operating_margin": None})
+    assert fc.has_netscore_input({"sector": "financial", "roe": 12.0, "debt_to_equity": None, "operating_margin": None})
+
+
+def test_financial_net_score_excludes_debt_to_equity(monkeypatch):
+    monkeypatch.setattr(fetchers, "fetch_info", lambda symbol: {"sector": "financial", "returnOnEquity": 0.15, "debtToEquity": 972.0})
+    monkeypatch.setattr(fc, "normalize_ticker_for_yf", lambda symbol: "")
+
+    res = fc.calculate_stock_fundamentals("2881.TW", use_cache=False)
+
+    assert res["scores"]["netScore"] == 64.0  # 0.4 × ROE 85 分 + 0.3 × 中性 50 + 0.3 × 中性 50
+    assert res["debt_to_equity"] == 972.0
+    assert res["sector"] == "financial"
+
+
+def test_stale_schema_cache_is_ignored(tmp_path, monkeypatch):
+    monkeypatch.setattr(fc, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(fc, "CACHE_FILE", tmp_path / "stock.json")
+    stale = {"2881.TW": {"cached_at": datetime.date.today().isoformat(), "data": {"scores": {"netScore": 1.0}}}}
+    (tmp_path / "stock.json").write_text(json.dumps(stale), encoding="utf-8")
+    monkeypatch.setattr(fetchers, "fetch_info", lambda symbol: {"sector": "financial", "returnOnEquity": 0.15})
+    monkeypatch.setattr(fc, "normalize_ticker_for_yf", lambda symbol: "")
+
+    res = fc.calculate_stock_fundamentals("2881.TW", use_cache=True)
+
+    assert res["scores"]["netScore"] == 64.0
