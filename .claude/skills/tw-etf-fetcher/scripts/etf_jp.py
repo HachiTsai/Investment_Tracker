@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""日股成分股市場介面（etf_jp）。持股來自 yfinance 的前幾大持股，只有前幾大、不是完整持股：coverage 為 partial，頁面與 pool.json 標示來源與抓取日。
+"""日股成分股市場介面（etf_jp）。持股先到 Drive 全市場表找（etf_drive），表內沒有才用 yfinance 的前幾大持股；後者只有前幾大、不是完整持股，coverage 為 partial。頁面與 pool.json 標示來源，不以抓取日當持股日期。
 股價先 Google Finance、失敗改用 Yahoo Finance，股利來自 Yahoo Finance；財報來自 EDINET 有價證券報告書（合併報表，主要經營指標的近五年數字）。
 每一步獨立失敗：單檔缺資料只讓該欄空白並記在 errs。
 用法：`etf_pool.py outdir --market jp --etfs 1306`（日股沒有模型卡片可自動探索，要用 --etfs 指定，代號為 4 碼）。
@@ -15,6 +15,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SKILLS = os.path.join(HERE, "..", "..")
 for sub in ("fundamental-analyzer", "price-dividend-fetcher"):
     sys.path.insert(0, os.path.join(SKILLS, sub, "scripts"))
+import etf_drive  # noqa: E402
 import etf_market  # noqa: E402
 import etf_page  # noqa: E402
 import fetch as price_fetch  # noqa: E402
@@ -73,8 +74,16 @@ def fetch_holdings(etf: str) -> Dict[str, Any]:
         c = parse_jp_code(sym)
         if c is not None and math.isfinite(w):
             cons.append(dict(symbol=c, name=name, weight_pct=round(w, 2), shares=None))
-    return dict(ticker=code, as_of_date=date.today().isoformat(), source=TOP_SOURCE, total_count=len(cons),
+    return dict(ticker=code, as_of_date=None, source=TOP_SOURCE, total_count=len(cons),
                 total_weight_pct=round(sum(c["weight_pct"] for c in cons), 2), constituents=cons)
+
+
+def holdings(etf: str) -> Dict[str, Any]:
+    """日股持股：先到 Drive 全市場表找（2026-10-27 指示），表內沒有才退回 Yahoo 前幾大。"""
+    try:
+        return etf_drive.holdings(etf)
+    except etf_drive.NotInPool:
+        return fetch_holdings(etf)
 
 
 def _shift(base: date, years: int) -> date:
@@ -203,7 +212,7 @@ def jp_stock(code: str, name: str, industry: Optional[str], today: date) -> Dict
 JP = etf_market.Market(
     code="JP", name="日股", profile="jp", currency="JPY",
     parse_code=parse_jp_code,
-    holdings=lambda etf: fetch_holdings(etf),
+    holdings=lambda etf: holdings(etf),
     stock=lambda code, name, industry, today: jp_stock(code, name, industry, today),
     industry=lambda: {},
     limits=etf_market.Limits(workers=3),

@@ -117,7 +117,7 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --expor
 
 - 執行時間戳記與執行者標籤**不得放置於資料欄位內**。
 - 同步元資訊記錄於：
-  - `ETF_Summary!R1:S2`（`最後同步時間`、`執行者: GitHub Actions`，位於 A:P 以外）
+  - `ETF_Summary!R1:S2`（`最後同步時間`、`執行者: GitHub Actions`，位於 A:P 以外；外幣市場的 A:R 是資料欄，元資訊改放 `T1:U2`）
   - `ETF_Constituents!I1:J2`（`最後同步時間`、`執行者: GitHub Actions`，位於 A:G 以外）
   供使用者直觀核對排程時效，同時保障 APP 讀取既有欄位時零干擾。
 
@@ -146,3 +146,5 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --expor
 - **日常運作**：本任務為「純 Sheet 任務」，日常優先由 **GitHub Actions 自動排程**（`.github/workflows/market-etf.yml`）週五 17:10 自動執行並透過 Google Sheets API 回寫試算表，免除 Claude 雲端 10 分鐘沙盒逾時風險並節省 Token；亦支援 Claude 雲端排程單行呼叫。
 - **本機代班邊界**：本任務無關聯之 Artifact。若遇需手動補跑，可透過 GitHub Actions 一鍵重跑或由 **Antigravity 本機直接執行 `etf_fetcher.py sync-sheets --gate`** 進行同步。
 - **外幣市場（港股、美股、日股）**：不加排程，需要時在 GitHub Actions 的 Market ETF Sheets Sync 手動執行（workflow_dispatch）：`market` 選 `hk`、`us` 或 `jp`，`etfs` 填 ETF 代號（港股預設 00882；美股、日股需指定）。流程為 `etf_pool.py` 產出 pool.json（`--gate`），再由 `etf_sheets_sync.py --market` 寫入該市場的 Sheet；寫入前過 Core 拒絕與國別後綴掃描，缺 `GCP_SA_KEY` 或 gate 不過就不寫入。
+- **持股來源（2026-10-27）**：美股、日股的持股先到全市場表的 `ETF_Constituents` 找（`etf_drive.py`，只讀），表內沒有才用 Yahoo 前幾大；pool 步驟因此需要 `GCP_SA_KEY` 讀表，沒有時退回 models 卡片備援。
+- **日期**：建立日期（模型卡片的 `last_model_update`）與持股日期（來源標示，沒有就寫「無」）分開；備援與全市場表的持股沒有持股日期，不以執行當天或檔案時間代替。

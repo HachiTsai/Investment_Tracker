@@ -3,6 +3,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
+import etf_holdings_scraper  # noqa: E402
 import etf_pool  # noqa: E402
 
 
@@ -22,12 +23,37 @@ def test_discover_keeps_only_tw_stock_etfs(tmp_path):
 
 def test_holdings_fall_back_to_cards(tmp_path, monkeypatch):
     _card(tmp_path, "0050", ["2330.TW"])
+    (tmp_path / "0050" / "cards" / "ticker.yml").write_text('title: "0050"\nlast_model_update: "2026-10-18"\n', encoding="utf-8")
 
     def down(_):
         raise RuntimeError("moneydj down")
     monkeypatch.setattr(etf_pool.etf_table.etf_holdings_scraper, "fetch_etf_holdings", down)
     h = etf_pool.holdings_for("0050", str(tmp_path))
     assert "備援" in h["source"] and h["constituents"][0]["symbol"] == "2330.TW"
+    assert h["as_of_date"] is None and h["model_date"] == "2026-10-18"  # 備援不填持股日期，建立日期取卡片
+
+
+def test_moneydj_holdings_keep_source_date_and_card_model_date(tmp_path, monkeypatch):
+    (tmp_path / "0050" / "cards").mkdir(parents=True)
+    (tmp_path / "0050" / "cards" / "ticker.yml").write_text('last_model_update: "2026-10-18"\n', encoding="utf-8")
+    fresh = dict(ticker="0050", as_of_date="2026-10-21", source="MoneyDJ", total_count=1, total_weight_pct=50.0,
+                 constituents=[dict(symbol="2330.TW", name="台積電", weight_pct=50.0, shares=1)])
+    monkeypatch.setattr(etf_pool.etf_table.etf_holdings_scraper, "fetch_etf_holdings", lambda etf, **_: fresh)
+    h = etf_pool.holdings_for("0050", str(tmp_path))
+    assert h["as_of_date"] == "2026-10-21" and h["model_date"] == "2026-10-18" and h["source"] == "MoneyDJ"
+
+
+def test_card_model_date_is_none_without_a_card_or_a_field(tmp_path):
+    assert etf_pool.card_model_date(str(tmp_path), "0050") is None
+    (tmp_path / "0050" / "cards").mkdir(parents=True)
+    (tmp_path / "0050" / "cards" / "ticker.yml").write_text('title: "x"\n', encoding="utf-8")
+    assert etf_pool.card_model_date(str(tmp_path), "0050") is None
+
+
+def test_moneydj_date_is_only_the_source_date():
+    assert etf_holdings_scraper._data_date("<td>資料日期：2026/10/21</td>") == "2026-10-21"
+    assert etf_holdings_scraper._data_date("<td>沒有日期</td>") is None
+    assert etf_holdings_scraper.fetch_etf_holdings("0050", mock_html="<html></html>")["as_of_date"] is None
 
 
 def test_nav_marks_current_and_as_page_wraps_fragment():
@@ -38,9 +64,11 @@ def test_nav_marks_current_and_as_page_wraps_fragment():
 
 
 def test_index_page_links_each_etf():
-    s = [dict(etf="0050", holdings=50, rows=50, weighted_yield_pct=1.234, holdings_asof="2026-10-21", source="MoneyDJ", no_fin=[])]
+    s = [dict(etf="0050", holdings=50, rows=50, weighted_yield_pct=1.234, model_date="2026-10-18", holdings_asof=None,
+              source="models 持股卡片（備援）", no_fin=[])]
     out = etf_pool.index_page(s, "2026-10-22", 214)
     assert 'href="0050.html"' in out and "214" in out and "1.23" in out
+    assert "<td>2026-10-18</td><td>無</td>" in out  # 建立日期有值；來源沒給持股日期就是無
 
 
 def test_check_gate():

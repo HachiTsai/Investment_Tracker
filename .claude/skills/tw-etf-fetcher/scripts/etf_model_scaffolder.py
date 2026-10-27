@@ -4,6 +4,7 @@
 """
 
 import json
+from datetime import date
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -58,7 +59,7 @@ category: ETF
 strategy_type: {strat}
 manager: "{manager}"
 benchmark: "{benchmark}"
-last_model_update: "{holdings_data.get('as_of_date', '2026-10-18')}"
+last_model_update: "{date.today().isoformat()}"
 """
     (target_cards_dir / "ticker.yml").write_text(ticker_yml, encoding="utf-8")
 

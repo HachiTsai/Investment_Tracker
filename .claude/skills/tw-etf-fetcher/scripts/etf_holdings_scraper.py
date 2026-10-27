@@ -24,7 +24,7 @@ def clean_ticker(ticker: str) -> str:
 
 
 def _data_date(html: str) -> Optional[str]:
-    """MoneyDJ 頁面上的「資料日期：2026/10/21」→ 2026-10-21；找不到回 None（呼叫端退回抓取日）。"""
+    """MoneyDJ 頁面上的「資料日期：2026/10/21」→ 2026-10-21；找不到回 None（不以抓取日代替，呼叫端填無）。"""
     m = re.search(r"資料日期[：:]\s*(\d{4})/(\d{1,2})/(\d{1,2})", html)
     return f"{m.group(1)}-{int(m.group(2)):02d}-{int(m.group(3)):02d}" if m else None
 
@@ -39,7 +39,7 @@ def fetch_etf_holdings(
 ) -> Dict[str, Any]:
     """抓取指定 ETF 之完整成分股、權重與股數（支援本地 24h 快取）。"""
     code = clean_ticker(ticker)
-    as_of_date = datetime.date.today().isoformat()
+    as_of_date = None  # 來源標示的持股日期；沒有就不填，不以抓取日代替（2026-10-27 定義）
 
     # 1. 若有 Mock HTML（單元測試用）
     if mock_html is not None:
@@ -72,7 +72,7 @@ def fetch_etf_holdings(
             html = resp.read().decode("utf-8", errors="ignore")
         constituents = _parse_moneydj_html(html)
         if constituents:
-            res = _build_holdings_result(code, constituents, _data_date(html) or as_of_date, "MoneyDJ")
+            res = _build_holdings_result(code, constituents, _data_date(html), "MoneyDJ")
             if use_cache:
                 try:
                     target_cache_dir.mkdir(parents=True, exist_ok=True)
@@ -211,7 +211,7 @@ def format_holdings_ascii(data: Dict[str, Any], limit: Optional[int] = None) -> 
     lines = []
     lines.append("=" * 72)
     lines.append(f"📊 {ticker} 成分股持股明細 ｜ 共 {count} 檔 (總權重: {weight}%)")
-    lines.append(f"⏱️ 數據日期：{as_of} ｜ 來源：{src}")
+    lines.append(f"⏱️ 持股日期：{as_of or '無'} ｜ 來源：{src}")
     lines.append("-" * 72)
     lines.append(f"{'排名':<6} {'個股代號':<14} {'個股名稱':<18} {'投資權重(%)':<14} {'持有股數'}")
     lines.append("-" * 72)
