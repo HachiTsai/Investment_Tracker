@@ -145,7 +145,7 @@ def cmd_scaffold(args) -> int:
     print(f"   📂 目錄：{target_dir}")
     print("   📄 生成卡片：ticker.yml, constituents.jsonl, loop_dividend_500k.yml, interlock_yield_trap.yml")
     if tier == "core":
-        print("   🚀 提示：該標的已納入「核心團隊」，將參與 portfolio-patrol 與每日戰報巡檢！")
+        print("   🚀 提示：該標的已納入「核心團隊」，將參與 portfolio-patrol 與每日巡檢報告巡檢！")
     else:
         print("   📦 提示：該標的已納入「資料池」（預設不參與每日巡檢）。若欲納入核心團隊，請執行：")
         print(f"      python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py set-tier {code} core")
@@ -186,7 +186,7 @@ def cmd_set_tier(args) -> int:
         new_lines.insert(idx_to_insert, f"tier: {new_tier}")
 
     ticker_file.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
-    label = "核心團隊（將參與每日巡檢與戰報）" if new_tier == "core" else "資料池（僅供穿透分析，不參與每日巡檢）"
+    label = "核心團隊（將參與每日巡檢報告）" if new_tier == "core" else "資料池（僅供穿透分析，不參與每日巡檢）"
     print(f"✅ 已成功將 {code} 的分級調整為：{new_tier}（{label}）")
     return 0
 

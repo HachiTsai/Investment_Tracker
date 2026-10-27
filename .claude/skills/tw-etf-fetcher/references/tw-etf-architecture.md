@@ -66,6 +66,6 @@
 
 ### 3.1 標的分級維護 (Tier Management)
 
-- **核心團隊 (`tier: core`)**：參與每日巡檢 (`patrol.py`) 與波段戰報 (`swing.py`)。未標記 `tier` 之既有卡片向下相容預設視為 `core`。
+- **核心團隊 (`tier: core`)**：參與每日巡檢 (`patrol.py`) 與波段報告 (`swing.py`)。未標記 `tier` 之既有卡片向下相容預設視為 `core`。
 - **資料池 (`tier: pool`)**：僅供全市場穿透分析與 Google Sheet 同步，每日巡檢自動略過，避免 API 超載。
 - **升降級指令**：`python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py set-tier <ticker> <core|pool>`。
