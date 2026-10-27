@@ -97,8 +97,8 @@ ETF_PRICE_SNAPSHOTS: Dict[str, float] = {
 }
 
 
-def fetch_live_etf_price(ticker: str) -> Optional[float]:
-    """自 Yahoo Finance 輕量端點獲取最新收盤/即時市價。"""
+def fetch_live_etf_price(ticker: str, allow_snapshot: bool = True) -> Optional[float]:
+    """自 Yahoo Finance 輕量端點獲取最新收盤/即時市價；allow_snapshot=False 時抓不到就回傳 None，不用快照價。"""
     suffixes = [".TW", ".TWO"]
     for s in suffixes:
         url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}{s}?interval=1d&range=1d"
@@ -112,7 +112,7 @@ def fetch_live_etf_price(ticker: str) -> Optional[float]:
                     return float(p)
         except Exception:
             continue
-    return ETF_PRICE_SNAPSHOTS.get(ticker)
+    return ETF_PRICE_SNAPSHOTS.get(ticker) if allow_snapshot else None
 
 
 def load_yaml_simple(path: Path) -> Dict[str, Any]:
@@ -358,18 +358,21 @@ def generate_flattened_constituents(models: List[Dict[str, Any]]) -> List[Dict[s
 
 
 
-def generate_summary_rows(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """產生全市場 ETF 摘要清單（含基本面穿透評分）。"""
+def _load_aggregate_func() -> Optional[Any]:
+    """載入基本面穿透評分函式（fundamental-analyzer）；匯入失敗回傳 None。"""
     fund_dir = REPO_ROOT / ".claude" / "skills" / "fundamental-analyzer" / "scripts"
     if fund_dir.exists() and str(fund_dir) not in sys.path:
         sys.path.insert(0, str(fund_dir))
-
-    aggregate_func = None
     try:
         from lookthrough_fundamentals import aggregate_etf_fundamentals
-        aggregate_func = aggregate_etf_fundamentals
     except ImportError:
-        pass
+        return None
+    return aggregate_etf_fundamentals
+
+
+def generate_summary_rows(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """產生全市場 ETF 摘要清單（含基本面穿透評分）。"""
+    aggregate_func = _load_aggregate_func()
 
     # 批次並行抓取現價（大幅縮短 240+ 檔標的之抓價耗時）
     tickers = [m["ticker"] for m in models]
@@ -738,14 +741,37 @@ def _etf_title(models_dir: Path, code: str) -> str:
     return "-"
 
 
+def _foreign_live_fields(etf: str, aggregate_func: Optional[Any]) -> Dict[str, str]:
+    """外幣市場的現價與評分，與台股表同一來源與算法；拿不到就寫 "-"，不用快照價，也不用 fallback 的預設分。"""
+    out = dict(current_price="-", weighted_roe="-", net_score="-", div_score="-", val_score="-", fric_score="-")
+    price = fetch_live_etf_price(etf, allow_snapshot=False)
+    if price is not None:
+        out["current_price"] = f"{price:.2f}"
+    if aggregate_func is None:
+        return out
+    try:
+        res = aggregate_func(etf, top_n=10, repo_root=REPO_ROOT)
+    except Exception:
+        return out
+    if res.get("status") != "success":
+        return out
+    if res.get("weighted_roe") is not None:
+        out["weighted_roe"] = f"{res['weighted_roe']}%"
+    sc = res.get("scores", {})
+    out.update(net_score=f"{sc['netScore']:.1f}", div_score=f"{sc['divScore']:.1f}",
+               val_score=f"{sc['valScore']:.1f}", fric_score=f"{sc['fricScore']:.1f}")
+    return out
+
+
 def market_tables(payload: Dict[str, Any], models_dir: Path) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
-    """pool.json（外幣市場）→ ETF_Summary 與 ETF_Constituents 兩張表的列。代號沿用 pool.json 的純代號；拿不到的欄位寫 "-"，不估值補。"""
+    """pool.json（外幣市場）→ ETF_Summary 與 ETF_Constituents 兩張表的列。代號沿用 pool.json 的純代號；現價與評分同台股表的來源，拿不到的欄位寫 "-"，不估值補。"""
     names = {s["code"]: s["name"] for s in payload["stocks"]}
     holds: Dict[str, List[Dict[str, Any]]] = {}
     for h in payload["holdings"]:
         holds.setdefault(h["etf"], []).append(h)
     summaries = {s["etf"]: s for s in payload["summaries"]}
 
+    aggregate_func = _load_aggregate_func()
     summary_rows: List[Dict[str, Any]] = []
     constituent_rows: List[Dict[str, Any]] = []
     for etf in sorted(summaries):
@@ -761,10 +787,12 @@ def market_tables(payload: Dict[str, Any], models_dir: Path) -> Tuple[List[Dict[
             ))
         tops = [f"{_clean_name(names.get(h['code'], h['code']))} ({h['weightPct']:.2f}%)" for h in hs[:3]]
         tops += ["-"] * (3 - len(tops))
+        live = _foreign_live_fields(etf, aggregate_func)
         summary_rows.append(dict(
-            etf_id=etf, etf_name=title, current_price="-", exchange="-", category="ETF", benchmark="-",
-            constituent_count=len(hs), top1_holding=tops[0], top2_holding=tops[1], top3_holding=tops[2],
-            weighted_roe="-", net_score="-", div_score="-", val_score="-", fric_score="-",
+            etf_id=etf, etf_name=title, current_price=live["current_price"], exchange="-", category="ETF",
+            benchmark="-", constituent_count=len(hs), top1_holding=tops[0], top2_holding=tops[1],
+            top3_holding=tops[2], weighted_roe=live["weighted_roe"], net_score=live["net_score"],
+            div_score=live["div_score"], val_score=live["val_score"], fric_score=live["fric_score"],
             last_model_update=s.get("model_date") or "無", coverage=COVERAGE_LABELS.get(s.get("coverage"), "-"),
             holdings_asof=holdings_asof,
         ))

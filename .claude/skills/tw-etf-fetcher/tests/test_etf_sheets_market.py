@@ -33,6 +33,58 @@ def _write_pool(tmp_path, payload):
     return p
 
 
+_REAL_FETCH_PRICE = etf_sheets_sync.fetch_live_etf_price
+
+
+@pytest.fixture(autouse=True)
+def _offline(monkeypatch):
+    """市場表測試不連網：現價與評分預設拿不到，要測的情境在測試內另外設定。"""
+    monkeypatch.setattr(etf_sheets_sync, "fetch_live_etf_price", lambda ticker, allow_snapshot=True: None)
+    monkeypatch.setattr(etf_sheets_sync, "_load_aggregate_func", lambda: None)
+
+
+def test_foreign_price_and_scores_use_tw_source_and_method(monkeypatch, tmp_path):
+    monkeypatch.setattr(etf_sheets_sync, "fetch_live_etf_price",
+                        lambda ticker, allow_snapshot=True: 16.83 if allow_snapshot is False else None)
+
+    def fake_aggregate(etf_id, top_n=10, repo_root=None):
+        return dict(status="success", weighted_roe=12.98,
+                    scores=dict(netScore=69.6, divScore=65.4, valScore=69.8, fricScore=75.0))
+
+    monkeypatch.setattr(etf_sheets_sync, "_load_aggregate_func", lambda: fake_aggregate)
+    row = etf_sheets_sync.market_tables(_payload(), tmp_path)[0][0]
+    assert row["current_price"] == "16.83"
+    assert row["weighted_roe"] == "12.98%"
+    assert [row[k] for k in ("net_score", "div_score", "val_score", "fric_score")] == ["69.6", "65.4", "69.8", "75.0"]
+
+
+def test_foreign_price_and_scores_dash_on_fallback_or_error(monkeypatch, tmp_path):
+    def fallback(etf_id, top_n=10, repo_root=None):
+        return dict(status="fallback", weighted_roe=None,
+                    scores=dict(netScore=60.0, divScore=55.0, valScore=70.0, fricScore=80.0))
+
+    monkeypatch.setattr(etf_sheets_sync, "_load_aggregate_func", lambda: fallback)
+    row = etf_sheets_sync.market_tables(_payload(), tmp_path)[0][0]
+    assert row["weighted_roe"] == "-"
+    assert row["net_score"] == "-" and row["fric_score"] == "-"
+
+    def boom(etf_id, top_n=10, repo_root=None):
+        raise RuntimeError("no fundamentals")
+
+    monkeypatch.setattr(etf_sheets_sync, "_load_aggregate_func", lambda: boom)
+    row = etf_sheets_sync.market_tables(_payload(), tmp_path)[0][0]
+    assert row["net_score"] == "-"
+
+
+def test_live_price_without_snapshot_stays_none_when_quote_fails(monkeypatch):
+    def offline(*args, **kwargs):
+        raise OSError("offline")
+
+    monkeypatch.setattr(etf_sheets_sync.urllib.request, "urlopen", offline)
+    assert _REAL_FETCH_PRICE("0050", allow_snapshot=False) is None
+    assert _REAL_FETCH_PRICE("0050") == etf_sheets_sync.ETF_PRICE_SNAPSHOTS["0050"]
+
+
 def test_market_tables_have_the_tw_columns_plus_coverage(tmp_path):
     summary, cons = etf_sheets_sync.market_tables(_payload(), tmp_path)
     assert list(summary[0]) == etf_sheets_sync.FOREIGN_SUMMARY_FIELDS
