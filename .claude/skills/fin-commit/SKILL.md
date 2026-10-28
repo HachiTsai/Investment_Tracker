@@ -53,6 +53,7 @@ python3 .claude/skills/fin-commit/scripts/committer.py --no-stage --message-file
 - **Markdown lint**：提交前用 `markdown-linter` skill 檢查暫存區的 `.md`，沒通過就不提交。
 
 - **Co-Authored-By: Claude**：已有 Claude 署名時不重複。
+- **排程健康檢查**：`scripts/schedule_health.py` 由 `ci.yml` 的 `schedule-health` 工作在每日台北 20:00 執行（也可手動觸發），確認 `swing-patrol.yml`、`market-etf.yml` 近期排程有如期且成功；只涵蓋 GitHub Actions，雲端排程不在範圍內。
 
 ## 範例：交易紀錄
 

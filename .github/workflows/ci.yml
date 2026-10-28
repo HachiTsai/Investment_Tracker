@@ -4,10 +4,14 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: "0 12 * * *"   # UTC 12:00 = 台北 20:00，排程時只跑 schedule-health
+  workflow_dispatch:
 
 jobs:
   markdown-lint:
     name: markdown-lint
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -47,6 +51,7 @@ jobs:
 
   skill-tests:
     name: skill-tests
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -60,6 +65,21 @@ jobs:
       - run: python -m pip install pytest beautifulsoup4 requests pyyaml yfinance google-auth
       - name: pytest（.claude/skills/*/tests）
         run: python -m pytest -q --durations=15 .claude/skills
+
+  schedule-health:
+    name: schedule-health
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: 排程健康檢查（swing-patrol、market-etf 近期有如期成功）
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .claude/skills/fin-commit/scripts/schedule_health.py
 
   auto-merge:
     name: auto-merge
