@@ -4,7 +4,8 @@
 1. 自 Google Sheets「波段觀察」讀取現況快照 A1:X 組成 prev.json
 2. 執行 swing.py --scan --gate 進行技術面與三週期組合掃描
 3. 判定市場開休市與門檻（全市場休市則正常略過）
-4. 整列覆寫開市標的並精確維持 A:X 24 欄前端契約，將執行元資訊寫於 Z1:AA2
+4. 三週期組合轉為關鍵組合的開市標的（alert）先追加至「告警紀錄」分頁，並列入 GitHub 執行摘要；寫入失敗即停止，不覆寫 A:X
+5. 整列覆寫開市標的並精確維持 A:X 24 欄前端契約，將執行元資訊寫於 Z1:AA2
 """
 
 from __future__ import annotations
@@ -21,6 +22,8 @@ from typing import Any, Dict, List, Optional, Tuple
 REPO_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_SHEET_ID = "1pyGzkgaspYMYdXOPYerkLsxOMwNwa2yOKuNDrOrrhtQ"
 DEFAULT_RANGE = "Untitled!A1:X"
+ALERT_TAB = "告警紀錄"
+ALERT_HEADER = ["偵測時間", "代號", "名稱", "上次組合", "這次組合", "狀態", "收盤", "2xATR停損價"]
 
 try:
     from google_sheets import GoogleSheetsClient
@@ -110,6 +113,55 @@ def merge_sheet_rows(
     return [header] + merged_data_rows
 
 
+def _cell(value: Any) -> Any:
+    return "" if value is None else value
+
+
+def fresh_alerts(scan_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """三週期組合變成關鍵組合，且本次有寫入新資料的標的。休市標的不記，免得每次執行重複記錄。"""
+    return [r for r in scan_results if r.get("alert") and r.get("fresh")]
+
+
+def append_alert_rows(client: GoogleSheetsClient, sheet_id: str, alerts: List[Dict[str, Any]], detected_at: str) -> None:
+    """把告警追加到「告警紀錄」分頁；分頁不存在就先建立並寫入表頭。只動該分頁，不碰 A:X。"""
+    titles = {s["properties"]["title"] for s in client.get_spreadsheet(sheet_id).get("sheets", [])}
+    if ALERT_TAB not in titles:
+        client.batch_update(sheet_id, [{"addSheet": {"properties": {"title": ALERT_TAB}}}])
+    existing = client.get_values(sheet_id, f"{ALERT_TAB}!A:A")
+    if not existing:
+        client.update_values(sheet_id, f"{ALERT_TAB}!A1:H1", [ALERT_HEADER])
+    rows = [
+        [detected_at, f"'{r['ticker']}", _cell(r.get("name")), _cell(r.get("prev_combo")), _cell(r.get("combo")),
+         _cell(r.get("label")), _cell(r.get("close")), _cell(r.get("stop_price"))]
+        for r in alerts
+    ]
+    start = max(len(existing), 1) + 1
+    client.update_values(sheet_id, f"{ALERT_TAB}!A{start}:H{start + len(rows) - 1}", rows)
+
+
+def report_alerts(alerts: List[Dict[str, Any]]) -> None:
+    """告警列在 GitHub Actions 執行頁：warning 註解與執行摘要表格；不在 GitHub 環境時只印到終端機。"""
+    for r in alerts:
+        print(f"::warning title=波段關鍵組合::{r['ticker']} 由 {r.get('prev_combo')} 轉為 {r.get('combo')}")
+    summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not summary_path:
+        return
+    lines = [
+        "## 波段關鍵組合告警",
+        "",
+        "| 代號 | 名稱 | 上次組合 | 這次組合 | 狀態 | 收盤 | 2xATR停損價 |",
+        "| :-- | :-- | :-- | :-- | :-- | --: | --: |",
+    ]
+    for r in alerts:
+        cells = [r["ticker"], r.get("name"), r.get("prev_combo"), r.get("combo"), r.get("label"), r.get("close"), r.get("stop_price")]
+        lines.append("| " + " | ".join(str(_cell(c)) for c in cells) + " |")
+    try:
+        with open(summary_path, "a", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+    except OSError as e:
+        print(f"   ℹ️ 寫入 GitHub 執行摘要失敗：{e}")
+
+
 def run_swing_pipeline(
     sheet_id: str = DEFAULT_SHEET_ID,
     force: bool = False,
@@ -183,10 +235,21 @@ def run_swing_pipeline(
         print("❌ 未產出 /tmp/sheet.json，無法進行同步。", file=sys.stderr)
         return 1
 
+    # 4. 告警先寫入「告警紀錄」分頁，成功後才覆寫 A:X。寫入失敗就停手：prev 未更新，下次執行會再觸發，告警不會悄悄消失。
+    alerts = fresh_alerts(scan_results)
+    if alerts:
+        detected_at = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S (TPE)")
+        try:
+            append_alert_rows(client, sheet_id, alerts, detected_at)
+        except Exception as e:
+            print(f"❌ [Alert Failed] 告警紀錄寫入失敗，未覆寫 A:X：{e}", file=sys.stderr)
+            return 1
+        report_alerts(alerts)
+
     new_sheet_table = json.loads(sheet_out_path.read_text(encoding="utf-8"))
     final_table = merge_sheet_rows(existing_values, new_sheet_table, scan_results)
 
-    # 4. 回寫 Google Sheet
+    # 5. 回寫 Google Sheet
     target_range = f"Untitled!A1:X{len(final_table)}"
     print(f"   📝 正在回寫 Google Sheet（共 {len(final_table)} 列）至 {target_range}...")
     client.update_values(sheet_id, target_range, final_table, value_input_option="USER_ENTERED")
@@ -199,7 +262,7 @@ def run_swing_pipeline(
         print(f"   🧹 清空多餘舊列：{clear_range}")
         client.clear_values(sheet_id, clear_range)
 
-    # 5. 寫入執行元資料至 Z1:AA2（A:X 範圍外）
+    # 6. 寫入執行元資料至 Z1:AA2（A:X 範圍外）
     now_tpe = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S (TPE)")
     meta_values = [
         ["lastUpdated", now_tpe],
