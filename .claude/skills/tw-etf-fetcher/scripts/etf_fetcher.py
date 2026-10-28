@@ -205,6 +205,20 @@ def check_gate(
     return len(reasons) == 0, reasons
 
 
+def _sync_gate(args):
+    """sync-sheets --gate 的門檻：全市場預設 ETF_Summary ≥ 200、ETF_Constituents ≥ 10000；--no-pool 預設 40 與 5000；可用參數覆寫。"""
+    gate_args = {}
+    if getattr(args, "min_etfs", None) is not None:
+        gate_args["min_etfs"] = args.min_etfs
+    elif getattr(args, "no_pool", False):
+        gate_args["min_etfs"] = 40
+    if getattr(args, "min_constituents", None) is not None:
+        gate_args["min_constituents"] = args.min_constituents
+    elif getattr(args, "no_pool", False):
+        gate_args["min_constituents"] = 5000
+    return lambda etf_count, constituents_count: check_gate(etf_count, constituents_count, **gate_args)
+
+
 def cmd_sync_sheets(args) -> int:
     """處理 sync-sheets 子命令。"""
     print("🚀 啟動全市場 ETF 成分股與摘要 Google Sheets 雲端同步...")
@@ -228,6 +242,7 @@ def cmd_sync_sheets(args) -> int:
         include_market_pool=include_pool,
         delay=delay,
         progress_callback=_prog if include_pool else None,
+        gate=_sync_gate(args) if getattr(args, "gate", False) else None,
     )
     if include_pool:
         print()
@@ -239,26 +254,12 @@ def cmd_sync_sheets(args) -> int:
             print(f"   ☁️ 雲端同步成功：試算表 ID [{res['sheet_id']}]")
         else:
             print(f"   ℹ️ {res.get('message', '')}")
-        if getattr(args, "gate", False):
-            min_e = getattr(args, "min_etfs", None)
-            min_c = getattr(args, "min_constituents", None)
-            gate_args = {}
-            if min_e is not None:
-                gate_args["min_etfs"] = min_e
-            elif getattr(args, "no_pool", False):
-                gate_args["min_etfs"] = 40
-            if min_c is not None:
-                gate_args["min_constituents"] = min_c
-            elif getattr(args, "no_pool", False):
-                gate_args["min_constituents"] = 5000
-            ok, reasons = check_gate(res.get("etf_count", 0), res.get("constituents_count", 0), **gate_args)
-            if not ok:
-                print(f"❌ [Gate Failed] {'; '.join(reasons)}", file=sys.stderr)
-                return 1
         return 0
-    else:
-        print(f"❌ 同步失敗：{res.get('message', '未知錯誤')}", file=sys.stderr)
+    if res.get("gate_reasons"):
+        print(f"❌ [Gate Failed] {'; '.join(res['gate_reasons'])}（未上傳雲端，Sheet 保持上次資料）", file=sys.stderr)
         return 1
+    print(f"❌ 同步失敗：{res.get('message', '未知錯誤')}", file=sys.stderr)
+    return 1
 
 
 def main(argv=None) -> int:
@@ -323,7 +324,7 @@ def main(argv=None) -> int:
     p_sync.add_argument("--delay", type=float, default=0.1, help="爬取全市場資料池時的延遲秒數（預設 0.1 秒）")
     p_sync.add_argument("--min-etfs", type=int, help="自訂 Gate 門檻最低 ETF 檔數")
     p_sync.add_argument("--min-constituents", type=int, help="自訂 Gate 門檻最低成分股筆數")
-    p_sync.add_argument("--gate", action="store_true", help="啟用排程健康檢查門檻判定（全市場：ETF_Summary >= 200 且 ETF_Constituents >= 10000）")
+    p_sync.add_argument("--gate", action="store_true", help="啟用排程健康檢查門檻判定，於上傳雲端前判定（全市場：ETF_Summary >= 200 且 ETF_Constituents >= 10000；未通過則不寫入 Sheet）")
     p_sync.set_defaults(func=cmd_sync_sheets)
 
     args = parser.parse_args(argv)

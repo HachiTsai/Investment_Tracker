@@ -382,8 +382,9 @@ def run_sync_pipeline(
     holdings_fetcher: Optional[Callable[[str], Dict[str, Any]]] = None,
     twse_list_fetcher: Optional[Callable[[], List[Dict[str, Any]]]] = None,
     progress_callback: Optional[Callable[[str, int, int], None]] = None,
+    gate: Optional[Callable[[int, int], Tuple[bool, List[str]]]] = None,
 ) -> Dict[str, Any]:
-    """執行全套同步管線流程。"""
+    """執行全套同步管線流程。gate 收到 (ETF 數, 成分股列數)，回傳 (是否通過, 未通過原因)；未通過時不上傳雲端。"""
     models = load_all_market_etfs(
         models_dir=models_dir,
         include_market_pool=include_market_pool,
@@ -442,6 +443,13 @@ def run_sync_pipeline(
         "sheet_id": sheet_id,
         "synced": False,
     }
+
+    # 閘門必須在上傳前判定：未通過時 Sheet 保持上次的好資料，不被覆寫
+    if gate is not None:
+        gate_ok, gate_reasons = gate(len(models), len(constituents_rows))
+        if not gate_ok:
+            result.update(status="error", gate_reasons=gate_reasons, message="；".join(gate_reasons))
+            return result
 
     if export_only or dry_run:
         result["message"] = f"已導出本機 CSV（ETF 數：{len(models)}，成分股數：{len(constituents_rows)}），未上傳雲端。"

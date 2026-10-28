@@ -278,3 +278,16 @@ def test_check_gate():
 
     is_healthy, is_closed, reasons = sw.check_gate(rows_closed, max_errors=5, require_fresh=False)
     assert is_healthy and not is_closed and len(reasons) == 0
+
+
+def test_daily_page_carries_notices_into_head_block():
+    """陷阱狀態未寫回時，警示文字放進頁面的 HEAD 資料，由頁面頂端的警示區顯示；沒有警示時為空清單。"""
+    notice = "陷阱狀態未寫回：明日陷阱判定可能低估，請人工確認"
+    html = sw.render_daily_page([], {}, "2026-10-27", notices=[notice])
+    head = json.loads(html.split("var HEAD=", 1)[1].split(";var DATE", 1)[0])
+    assert head["notices"] == [notice]
+    assert "__DAILY_" not in html
+
+    html_plain = sw.render_daily_page([], {}, "2026-10-27")
+    head_plain = json.loads(html_plain.split("var HEAD=", 1)[1].split(";var DATE", 1)[0])
+    assert head_plain["notices"] == []

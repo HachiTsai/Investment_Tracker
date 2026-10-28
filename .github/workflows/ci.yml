@@ -9,6 +9,7 @@ jobs:
   markdown-lint:
     name: markdown-lint
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
         with:
@@ -47,6 +48,7 @@ jobs:
   skill-tests:
     name: skill-tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -67,6 +69,7 @@ jobs:
       && (startsWith(github.head_ref, 'claude/') || startsWith(github.head_ref, 'agy/'))
       && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: 草稿 PR 先轉為 Ready（雲端工作階段一律先開草稿；已是 Ready 則無動作）
         env:

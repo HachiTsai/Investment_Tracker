@@ -400,6 +400,57 @@ def test_check_gate():
     assert ok_custom
 
 
+def _one_etf_models(tmp_path):
+    m_dir = tmp_path / "models"
+    etf_dir = m_dir / "00878" / "cards"
+    etf_dir.mkdir(parents=True)
+    (etf_dir / "ticker.yml").write_text(
+        "ticker: \"00878\"\ntitle: \"國泰永續高股息\"\nbenchmark: \"MSCI高股息\"\nlast_model_update: \"2026-10-18\"\n",
+        encoding="utf-8",
+    )
+    (etf_dir / "constituents.jsonl").write_text(
+        '{"ticker": "2891.TW", "name": "中信金", "weight_pct": 10.16, "shares": 1000}\n'
+        '{"ticker": "2382.TW", "name": "廣達", "weight_pct": 8.63, "shares": 2000}\n',
+        encoding="utf-8",
+    )
+    return m_dir
+
+
+def test_sync_gate_stops_before_upload_when_counts_are_short(tmp_path, monkeypatch):
+    import etf_sheets_sync
+
+    uploads = []
+    monkeypatch.setattr(etf_sheets_sync, "sync_to_google_sheets", lambda *a, **k: uploads.append(a) or (True, "ok"))
+
+    rc = facade.main([
+        "sync-sheets",
+        "--models-dir", str(_one_etf_models(tmp_path)),
+        "--output-dir", str(tmp_path / "reports"),
+        "--no-pool",
+        "--gate", "--min-etfs", "2",  # 只有 1 檔，未達門檻
+    ])
+    assert rc == 1
+    assert uploads == []  # 閘門未過：Sheet 不被覆寫
+    assert (tmp_path / "reports" / "etf_summary.csv").exists()  # 本機 CSV 仍照常輸出
+
+
+def test_sync_gate_passing_uploads_once(tmp_path, monkeypatch):
+    import etf_sheets_sync
+
+    uploads = []
+    monkeypatch.setattr(etf_sheets_sync, "sync_to_google_sheets", lambda *a, **k: uploads.append(a) or (True, "ok"))
+
+    rc = facade.main([
+        "sync-sheets",
+        "--models-dir", str(_one_etf_models(tmp_path)),
+        "--output-dir", str(tmp_path / "reports"),
+        "--no-pool",
+        "--gate", "--min-etfs", "1", "--min-constituents", "2",
+    ])
+    assert rc == 0
+    assert len(uploads) == 1
+
+
 def test_sync_via_google_api(tmp_path):
     from unittest.mock import MagicMock, patch
     sheet_scripts = Path(__file__).resolve().parents[2] / "price-dividend-fetcher" / "scripts"

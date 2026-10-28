@@ -25,6 +25,7 @@ jobs:
   sync-market-etf-sheets:
     name: Sync Market ETF to Google Sheets
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
