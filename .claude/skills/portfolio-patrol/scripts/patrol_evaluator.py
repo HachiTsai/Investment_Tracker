@@ -49,7 +49,7 @@ TAIPEI_TZ = datetime.timezone(datetime.timedelta(hours=8))  # 台灣無夏令時
 
 
 def previous_trading_day(day: datetime.date) -> datetime.date:
-    """前一個交易日。以週一至週五近似；國定假日未納入，遇假日會使確認鏈中斷，屬保守方向。"""
+    """前一個交易日。以週一至週五近似；國定假日未納入（前一日若是假日，確認時會再往前一個交易日找）。"""
     prev = day - datetime.timedelta(days=1)
     while prev.weekday() >= 5:
         prev -= datetime.timedelta(days=1)
@@ -57,9 +57,13 @@ def previous_trading_day(day: datetime.date) -> datetime.date:
 
 
 def trap_confirmed(prev_state: Dict[str, Any], ticker: str, today: datetime.date) -> bool:
-    """前一個交易日的同一標的也觸發高息陷阱條件，本次才確認（升級為陷阱警戒）。"""
+    """前一個交易日的同一標的也觸發高息陷阱條件，本次才確認（升級為陷阱警戒）。
+    每檔只保留最新一筆紀錄；前一交易日的寫回失敗時，紀錄會停在再前一交易日，因此容許這一個交易日的缺口（假日同樣適用）。
+    連續兩個交易日沒有寫回，紀錄就超出容許範圍，陷阱降為觀察。"""
     rec = prev_state.get(ticker) or {}
-    return bool(rec.get("trap")) and rec.get("run_date") == previous_trading_day(today).isoformat()
+    prev = previous_trading_day(today)
+    prev_prev = previous_trading_day(prev)
+    return bool(rec.get("trap")) and rec.get("run_date") in (prev.isoformat(), prev_prev.isoformat())
 
 
 def fetch_macro_telemetry(repo_root: Path) -> Dict[str, Any]:

@@ -124,6 +124,7 @@ document.getElementById("fvs").textContent=FDB?"最愛已同步到你的帳號":
 document.getElementById("meta").textContent="指標與評分以 "+DATE+" 日線收盤計算　"+mk+"／"+kd+(favOnly?"／最愛":"")+(Q.length?"／搜尋「"+Q.join(" ")+"」":"")+" "+list.length+" 檔";
 var w=[];var al=list.filter(function(r){return r.alert});if(al.length)w.push("三週期組合變化提醒："+al.map(function(r){return esc(r.name)+"（"+esc(r.combo)+"）"}).join("、"));
 if(HEAD.stale.length)w.push("數據過期：需更新 "+esc(HEAD.stale.join("、")));
+(HEAD.notices||[]).forEach(function(n){w.push(esc(n))});
 var er=list.filter(function(r){return r.state==="ERROR"});if(er.length)w.push("抓取失敗 "+er.length+" 檔："+er.map(function(r){return esc(r.ticker)}).join("、"));
 document.getElementById("warn").innerHTML=(w.length?w.map(function(x){return '<div class="warn">'+x+'</div>'}).join(""):"")+(HEAD.macro?'<p class="mac">宏觀指標：'+esc(HEAD.macro)+'</p>':"");
 var cnt={};list.forEach(function(r){cnt[r.label]=(cnt[r.label]||0)+1});

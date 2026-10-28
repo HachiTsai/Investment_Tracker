@@ -133,9 +133,19 @@ def test_trap_confirmed_needs_previous_trading_day_and_trap_flag():
 
     today = dt.date(2026, 10, 27)
     assert ev.trap_confirmed({"00919": {"run_date": "2026-10-26", "trap": True}}, "00919", today) is True
-    assert ev.trap_confirmed({"00919": {"run_date": "2026-10-23", "trap": True}}, "00919", today) is False
     assert ev.trap_confirmed({"00919": {"run_date": "2026-10-26", "trap": False}}, "00919", today) is False
     assert ev.trap_confirmed({}, "00919", today) is False
+
+
+def test_trap_confirmed_tolerates_one_missed_trading_day():
+    """前一交易日寫回失敗或假日時，紀錄停在再前一交易日（10-23 週五），仍可確認；缺口超過一個交易日就不確認。"""
+    import datetime as dt
+    import patrol_evaluator as ev
+
+    today = dt.date(2026, 10, 27)
+    assert ev.trap_confirmed({"00919": {"run_date": "2026-10-23", "trap": True}}, "00919", today) is True
+    assert ev.trap_confirmed({"00919": {"run_date": "2026-10-23", "trap": False}}, "00919", today) is False
+    assert ev.trap_confirmed({"00919": {"run_date": "2026-10-22", "trap": True}}, "00919", today) is False
 
 
 def test_first_day_trap_is_watch_until_confirmed():

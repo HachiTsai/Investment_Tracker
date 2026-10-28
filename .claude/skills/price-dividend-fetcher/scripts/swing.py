@@ -491,8 +491,8 @@ def kind_of(source: str) -> str:
     return "ETF" if "ETF 卡片" in source else "個股"
 
 
-def render_daily_page(rows: List[Dict], patrol: Dict, date: str) -> str:
-    """每日投資組合巡檢頁：波段觀察加評分矩陣，附配置狀態與數據時效，可依地區與類型篩選。"""
+def render_daily_page(rows: List[Dict], patrol: Dict, date: str, notices: Optional[List[str]] = None) -> str:
+    """每日投資組合巡檢頁：波段觀察加評分矩陣，附配置狀態與數據時效，可依地區與類型篩選。notices 為頁面頂端的警示文字（例如陷阱狀態未寫回）。"""
     tpl = (Path(__file__).resolve().parents[1] / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
     keep = ("ticker", "name", "market", "state", "label", "close", "rsi14", "pos_52w_pct", "stop_price", "stop_distance_pct",
             "fib_label", "long", "mid", "short", "combo", "alert", "reason", "trend_score", "macd_score", "vol_score",
@@ -500,7 +500,7 @@ def render_daily_page(rows: List[Dict], patrol: Dict, date: str) -> str:
             "support_20d", "resistance_20d", "chart")
     rows = [r for r in rows if not r.get("source", "").endswith("成分股") and r["ticker"] not in DAILY_EXCLUDE]  # 每日巡檢頁只列觀察清單標的，不含 00882 的港股成分股
     data = [{**{k: r.get(k) for k in keep}, "kind": kind_of(r.get("source", ""))} for r in rows]
-    head = {"macro": patrol.get("macro_feed", ""), "stale": [f["ticker"] for f in patrol.get("fleet", []) if (f.get("watchdog") or {}).get("is_stale")]}
+    head = {"macro": patrol.get("macro_feed", ""), "stale": [f["ticker"] for f in patrol.get("fleet", []) if (f.get("watchdog") or {}).get("is_stale")], "notices": list(notices or [])}
     return (tpl.replace("__DAILY_DATA__", json.dumps(data, ensure_ascii=False))
             .replace("__DAILY_HEAD__", json.dumps(head, ensure_ascii=False)).replace("__DAILY_DATE__", date))
 
@@ -536,6 +536,7 @@ def main(argv=None) -> int:
     p.add_argument("--html", metavar="OUT", help="搭配 --scan：另存 Artifact 頁面（讀 references/swing_watch_template.html）")
     p.add_argument("--patrol", metavar="JSON", help="搭配 --scan：patrol.py --json 輸出檔，併入配置狀態、殖利率與數據時效")
     p.add_argument("--daily-html", metavar="OUT", help="搭配 --scan：另存每日投資組合巡檢頁（讀 references/daily_patrol_template.html）")
+    p.add_argument("--notice", action="append", default=[], metavar="TEXT", help="搭配 --daily-html：頁面頂端的警示文字，可重複（例如陷阱狀態未寫回）")
     p.add_argument("--batch", metavar="卡片:前N大", help="多檔彙總回測，例如 00882:15（讀 models/<卡片>/cards/constituents.jsonl）")
     p.add_argument("--fib-backtest", action="store_true", help="回測各費波那契回檔位置之後 5/10/20 日含息報酬（觀察清單全部標的，抓 5 年日線）")
     p.add_argument("--backtest", action="store_true", help="加跑超跌反彈規則回測（抓 5 年日線）")
@@ -552,7 +553,7 @@ def main(argv=None) -> int:
             print("資料落後（證交所補缺後仍少一天以上）：" + "、".join(lag) + "；該列資料日落後，指標以最後一根日線計算", file=sys.stderr)
         if a.daily_html:
             date = max((r["last_date"] for r in rows if r.get("last_date")), default="")
-            Path(a.daily_html).write_text(render_daily_page(rows, patrol, date), encoding="utf-8")
+            Path(a.daily_html).write_text(render_daily_page(rows, patrol, date, notices=a.notice), encoding="utf-8")
         if a.html:
             date = max((r["last_date"] for r in rows if r.get("last_date")), default="")
             Path(a.html).write_text(render_page(rows, date), encoding="utf-8")
