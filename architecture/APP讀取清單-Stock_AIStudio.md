@@ -3,9 +3,9 @@ type: arch
 title: APP讀取清單-Stock_AIStudio
 domain: 資料系統
 status: 生效
-version: 2
+version: 3
 created: 2026-10-22
-updated: 2026-10-27
+updated: 2026-10-28
 tags: [資料系統, ETF]
 tickers: [00882]
 related: ["[[情資管線與APP整合架構]]"]
@@ -38,7 +38,7 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 | 全市場 ETF 成分股資料庫 | `1GIhbRyL-h96ACVjlSSW9YUFMiAItg_SP9Wi0o3WwG70` | ETF_Summary、ETF_Constituents | `constituentsFeedService.ts`（失敗退回 `allMarketEtfSnapshot`） | Claude 排程／本機代班（`.claude/workflows/market-etf-pool.md`） | 每週五 17:10 |
 | 持股資料庫 | `1CWLwi1tsQoWaEYm0IOK9aH7NEkENgd71sbz6Y_lpRVI` | 第一分頁 | `portfolioFeedService.ts` | 排程依 Core 唯讀重建 | 依排程 |
 | 交易明細資料庫 | `1yFr6OSW6LKWm5wdoc-QoJFXyUotYEd8_YEl_qR-24ks` | 第一分頁 | `portfolioFeedService.ts` | 排程依 Core 唯讀重建 | 依排程 |
-| 波段觀察 | `1pyGzkgaspYMYdXOPYerkLsxOMwNwa2yOKuNDrOrrhtQ` | Untitled（A 到 X 共 24 欄） | `swingFeedService.ts` | Claude 排程／本機代班（`.claude/workflows/swing-patrol-sheets.md`） | 平日台北 17:00 |
+| 波段觀察 | `1pyGzkgaspYMYdXOPYerkLsxOMwNwa2yOKuNDrOrrhtQ` | Untitled（A 到 X 共 24 欄）；告警紀錄（APP 不讀） | `swingFeedService.ts` | GitHub Actions `swing-patrol.yml`（`swing_sync.py`）；Claude 排程／本機代班（`.claude/workflows/swing-patrol-sheets.md`） | 平日台北 17:00 |
 | 台股ETF成分股資料庫 | `11LXjxIke0u_6-4XbGB4cX3o28It1ool2jBXUtMErIUI` | 個股、ETF持股、摘要 | 目前只供 Artifact 與分析（APP 預備） | Claude 排程（`.claude/workflows/tw-etf-pool.md`） | 每月月初 09:00 |
 | 港股 ETF 成分股資料庫 | `1ND1gcxm-fvkx723V-X72QUuwrJvKobCz_etZpUzWrOI` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（`.claude/workflows/market-etf-pool.md` §5） | 手動 |
 | 美股 ETF 成分股資料庫 | `1qfMn6hbPD4qFmlCAm0fC2zTfEtm9uVjdZYL4YDUrmY4` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（同上） | 手動 |
@@ -50,7 +50,7 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 
 | 排程 | 執行者 | 時間（台北） | 輸入 | 輸出 | 互鎖 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 波段觀察 Sheet | GitHub Actions `swing-patrol.yml` | 平日 17:00（GitHub 實際可能延遲數小時） | models 卡片、行情 | 波段觀察 Sheet | 比對資料日期，`--force` 補跑 |
+| 波段觀察 Sheet | GitHub Actions `swing-patrol.yml` | 平日 17:00（GitHub 實際可能延遲數小時） | models 卡片、行情 | 波段觀察 Sheet（A 到 X）；告警紀錄分頁（有關鍵組合轉換時，先於 A 到 X 寫入） | 比對資料日期，`--force` 補跑 |
 | 全市場 ETF 池 | GitHub Actions `market-etf.yml` | 週五 17:10，亦可手動選 hk／us／jp | TWSE、MoneyDJ、各市場來源 | 全市場與外幣市場 Sheet | 不做同日互鎖，重跑即覆寫 |
 | 每日投資組合巡檢頁 | Claude 雲端 | 平日 08:30 | models 卡片、行情、`trap_state` | Artifact（無 Sheet） | 陷阱狀態兩日確認 |
 | 全標的巡檢簡報 | Claude 雲端或 Antigravity 代班 | 平日 16:30 | models 卡片、行情、宏觀 | 簡報（無 Sheet） | 例外管理分診 |
@@ -94,6 +94,11 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
   - 表頭 A 到 X 固定 24 欄：`代號,名稱,市場,來源,狀態,收盤,RSI14,20日線,60日線,量比,52週位置%,20日支撐,20日壓力,2xATR停損價,停損距離%,判定依據,更新日,費波那契位置30日,位置幅度%,長期,中期,短期,費波那契3段,三週期組合`。
   - 防呆：若標的 `state` 為 `ERROR`，僅將第 5 欄改「⚠️ 抓取失敗」、第 16 欄寫原因，其餘保留舊值。
   - 元數據隔離：`lastUpdated` 與 `executor` 放置於獨立元資料分頁或 A:X 以外儲存格（例如 Z1:AA2），嚴禁更動 A:X 欄寬與順序。
+- **分頁「告警紀錄」**（2026-10-28 新增，APP 不讀取）：
+  - 表頭 A 到 H 固定為 `偵測時間,代號,名稱,上次組合,這次組合,狀態,收盤,2xATR停損價`；只追加，不改不刪。
+  - 代號欄加 `'` 前綴存成純文字；寫入者只有 `swing_sync.py`。
+  - 只記本次有寫入新資料（`fresh`）且三週期組合轉為關鍵組合（`alert`）的標的。
+  - 寫入順序：先追加告警，成功後才覆寫 Untitled 的 A 到 X；告警寫入失敗時 A 到 X 不覆寫。
 
 ### 4. 台股ETF成分股資料庫 (`11LXjxIke0u_6-4XbGB4cX3o28It1ool2jBXUtMErIUI`)
 
@@ -136,6 +141,13 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
   2. 暫時性或實驗性之回測 CSV 不得上傳至本清單所列之公開試算表。
 
 ## 變更紀錄
+
+### v3（2026-10-28）
+
+- 變更：波段觀察試算表新增分頁「告警紀錄」（APP 不讀，只追加），登記於讀取清單與第 3 節；排程總表的波段觀察列改列出告警輸出；讀取清單的寫入者欄補上 GitHub Actions 路徑（既有寫入，原表漏列）。
+- 寫入順序：告警先追加，成功後才覆寫 A 到 X；告警寫入失敗時 A 到 X 保持舊值，job 失敗，下次執行再觸發。
+- 原因：`swing.py` 算得出 `alert`，但 `swing_sync.py` 沒有讀取、輸出或保存，寫回後 prev 已更新，告警只會出現一次且沒有紀錄（盤點 F2）。Hachi 2026-10-28 選定「告警紀錄分頁＋GitHub 執行摘要」，並同意寫入失敗時擋住 APP 數字。
+- 未處理：互鎖與 `--force`（盤點 F3）仍與程式不一致，排程總表的互鎖欄與規則 8 維持原文，待另案處理。
 
 ### v2（2026-10-24）
 
