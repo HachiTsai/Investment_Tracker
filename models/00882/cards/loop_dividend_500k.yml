@@ -14,7 +14,7 @@ hierarchy:
 parameters:
   setpoint_sp: 500000.0            # 目標設定值 (SP, 單位 TWD/年)
   target_currency: "TWD"
-  pv_formula: "holding_shares * model_annual_dividend * tax_retention_rate"
+  pv_formula: "holding_shares * annual_dividend"   # annual_dividend：近 12 個月實際配息（毛額，不套用稅率）
   error_formula: "max(0.0, setpoint_sp - pv)"
 
 controllers:
@@ -23,10 +23,9 @@ controllers:
     action: "下期除息實收現金流 100% 執行再投入 (Reinvest)"
     odd_lot_handling: "整張優先，剩餘款項保留於現金緩衝池"
   capital_injection_eval:
-    formula: "error / (current_price * (model_annual_dividend / current_price))"
-    description: "在當前價格與模型殖利率下，一次性補足缺口所需之理論追加本金"
+    formula: "error / (annual_dividend / current_price)"
+    description: "在當前價格與近 12 個月配息殖利率下，一次性補足缺口所需之理論追加本金"
 
 snowball_simulator:
   base_shares: 300000              # 基準持股張數 (300 張，來自最新快照)
   reinvest_frequency_months: 6     # 半年滾動一次 (每年 1 月、7 月)
-  benchmark_target_years: 7.2      # 當前基準下純股息滾動預估達標年限

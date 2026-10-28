@@ -21,7 +21,7 @@
 | **邏輯互鎖 (BLS / Interlocks)** | **多空風控互鎖 (Risk Guardrails)** | **「高息陷阱互鎖」**：IF 殖利率 ≥ 8.0% 且（netScore < 50 或 divScore < 40）THEN 首日列為「陷阱觀察」；前一個交易日同一標的也成立時升級為「陷阱警戒」，處置為暫停額外單筆加碼、維持例行再投入。成分股財報覆蓋率低於 60% 時不判定（列為資料不足）。門檻唯一來源：`portfolio-patrol/references/interlock_rules.json` |
 | **執行器動作 (Actuators: AO/DO)** | **資金調配動作 (Capital Actions)** | 股息 100% 再投入、按部就班分批買進、關閉閥門暫留現金緩衝 |
 | **卡片實體 (Card)** | **投資卡片 (Investment Cards)** | 標的卡片、成分股卡片、控制迴路卡片、風控互鎖卡片 |
-| **兩層對照 (Design vs As-Built)** | **模型推估層 vs 帳本實測層** | **設計推估層**（模型年配 0.86、預扣 36.6%）vs **實帳層**（Core 實際入帳與真實扣繳） |
+| **兩層對照 (Design vs As-Built)** | **模型推估層 vs 帳本實測層** | **設計推估層**（以近 12 個月實際配息推估的年配息）vs **實帳層**（Core 實際入帳與真實扣繳） |
 
 ---
 

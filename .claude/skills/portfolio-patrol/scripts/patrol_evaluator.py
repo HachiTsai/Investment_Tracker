@@ -103,9 +103,9 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
     fail_safe = ticker_info.get("fail_safe", {})
 
     fallback_price = fail_safe.get("fallback_price", 15.20 if ticker == "00882" else 10.00)
-    # 僅 00882 或有在卡片明確定義 fallback_annual_dividend 的標的才保留 fallback
-    fallback_div = fail_safe.get("fallback_annual_dividend", 0.86 if ticker == "00882" else 0.0)
-    tax_retention = calib.get("tax_retention_rate", 0.9923 if ticker == "00882" else 1.0)
+    # 不寫死配息與稅率：卡片沒有 fallback_annual_dividend 時降級為 0（不輸出達成率）；稅率未設定時以毛額計（1.0）
+    fallback_div = fail_safe.get("fallback_annual_dividend", 0.0)
+    tax_retention = calib.get("tax_retention_rate", 1.0)
 
     price = fallback_price
     default_price = fallback_price

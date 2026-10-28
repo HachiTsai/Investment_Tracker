@@ -77,4 +77,4 @@ python3 .claude/skills/hk-market-data/scripts/hkdata.py pdf <披露易PDF網址>
 
 1. **嚴禁 CSV 混入**：上傳至 Google Drive 的檔案必須為原生 Google Workspace 格式（`.gsheet`），不保留中介 `.csv` 或 `.md`。
 2. **禁止修改 Core**：本工作流只操作 `Portfolio_00882/成分股股利資料庫/`，**嚴禁修改 `Investment_Tracker_Core`**。
-3. **保持獨立性**：00882 整體 ETF 的歷年配息由 `00882_股利追蹤.md` 管理；成分股個別調查維持獨立筆記與獨立 Sheet，兩者不混為一談。
+3. **保持獨立性**：00882 整體 ETF 的歷年配息由 `models/00882/profile/actual_payouts.yml` 管理；成分股個別調查維持獨立筆記與獨立 Sheet，兩者不混為一談。
