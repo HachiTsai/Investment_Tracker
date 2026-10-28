@@ -9,10 +9,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 from fin_trend import enrich, add_dividends, add_cashflow, add_valuation, rmb_hint, ttm_dividend, mid_note, valuation_position  # 單季 EPS、年增與訊號（與台股共用）
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tw-etf-fetcher", "scripts"))
 import etf_page  # 頁面渲染與市場設定與台股 ETF 共用
+import nav_composition  # 每日淨值組成（收益平準金、資本平準金），收益平準金分頁用
 from fetchers import eastmoney  # 財報頁沿用 fundamental-analyzer 的東方財富資料層
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "price-dividend-fetcher", "scripts"))
 import fetch as price_fetch  # 股價沿用 price-dividend-fetcher（Google Finance，Yahoo 備援）
 
+POOL_START = date(2024, 6, 14)  # 收益平準金欄位有值的第一天（更早的紀錄是 0）
 B = "https://www.ctbcinvestments.com.tw/API/"
 HDR = {"content-type": "application/json; charset=utf-8", "User-Agent": "Mozilla/5.0", "Referer": "https://www.ctbcinvestments.com.tw/"}
 
@@ -31,6 +33,7 @@ def check_gate(
     fails: list,
     has26: int,
     fin_fails: list,
+    pool_rows: int = 1,
     min_rows: int = 45,
     max_fails: int = 5,
     min_has26: int = 20,
@@ -46,7 +49,24 @@ def check_gate(
         reasons.append(f"2026分紅公告檔數不足：{has26} < {min_has26}")
     if len(fin_fails) > max_fin_fails:
         reasons.append(f"財報失敗檔數超標：{len(fin_fails)} > {max_fin_fails} ({fin_fails})")
+    if pool_rows < 1:
+        reasons.append("收益平準金每日資料抓取失敗，頁面會缺少「收益平準金」分頁")
     return len(reasons) == 0, reasons
+
+
+def fetch_pool(etf: str = "00882", today: date = None) -> dict:
+    """00882 的每日收益平準金與資本平準金（中信投信 product/GetNAV）。失敗只印警告並回空，不擋整頁。"""
+    today = today or date.today()
+    try:
+        client = nav_composition.Client()
+        rows = nav_composition.fetch_nav(client, nav_composition.resolve_fid(client, etf), POOL_START, today)
+        bad = nav_composition.health(rows, today)
+        if bad:
+            raise nav_composition.NavError("；".join(bad))
+    except Exception as e:  # 網路、防護頁、欄位改版都不該讓股利明細頁停更
+        print(f"[Warn] 收益平準金資料不可用：{e}", file=sys.stderr)
+        return {}
+    return dict(rows=[[r["date"], r["nav"], r["income"], r["capital"]] for r in rows], events=nav_composition.distribution_events(rows))
 
 
 def main(argv=None):
@@ -143,18 +163,19 @@ def main(argv=None):
     top = max(ok, key=lambda r: r["w"])
     rows_out = [dict(c=r["c"], n=r["n"], w=r["w"], q=r["q"], px=r["px"], ttm=r["ttm"], lfy=r["lfy"], chg=r["chg"], y=r["y"],
                      i26=r["i26"], p25=r["p25"], cmp=r["cmp"]) for r in ok]
+    pool = fetch_pool()
     # 頁首不放資料日期，與台股頁一致（空白時 etf_page 也略去付款日的說明，2026-10-27）
     page = etf_page.render("hk", "00882", 49, rows_out, [dict(c=r["c"], n=r["n"], w=r["w"], px=r["px"]) for r in rows if r.get("fail")],
                            {c: v for c, v in fin.items() if v}, "", len(ok),
-                           f'{top["n"]} {top["w"]}%', f"{lfy_unit:.2f}～{ttm_unit:.2f}")
+                           f'{top["n"]} {top["w"]}%', f"{lfy_unit:.2f}～{ttm_unit:.2f}", pool=pool)
     open(OUT, "w", encoding="utf-8").write(page)
-    print(json.dumps(dict(rows=len(ok), fails=fails, fin_fails=fin_fails, fx=round(FX, 4), nav=nav, units=units, ttm_unit=round(ttm_unit, 3), lfy_unit=round(lfy_unit, 3), has26=has26, chg=round(net / base * 100, 1))))
+    print(json.dumps(dict(rows=len(ok), fails=fails, fin_fails=fin_fails, fx=round(FX, 4), nav=nav, units=units, ttm_unit=round(ttm_unit, 3), lfy_unit=round(lfy_unit, 3), has26=has26, chg=round(net / base * 100, 1), pool_rows=len(pool.get("rows", [])))))
     if JSON_OUT:
         json.dump(dict(asof=date.today().isoformat(), holdings_asof=asof, fx=round(FX, 4), nav=nav, units=units,
                        ttm_unit=round(ttm_unit, 3), lfy_unit=round(lfy_unit, 3), has26=has26, rows=rows_out, fails=fails),
                   open(JSON_OUT, "w", encoding="utf-8"), ensure_ascii=False)
     if gate_mode:
-        ok_gate, reasons = check_gate(len(ok), fails, has26, fin_fails)
+        ok_gate, reasons = check_gate(len(ok), fails, has26, fin_fails, len(pool.get("rows", [])))
         if not ok_gate:
             print(f"❌ [Gate Failed] {'; '.join(reasons)}", file=sys.stderr)
             return 1

@@ -54,7 +54,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 <main>
 <header><h1>__ETF__ 成分股股利與財報明細</h1>
 __ASOFLINE____NAV__</header>
-<nav class="tabs" aria-label="分頁"><button id="tb-fin" aria-pressed="true">財報</button><button id="tb-div" aria-pressed="false">股利明細</button></nav>
+<nav class="tabs" aria-label="分頁"><button id="tb-fin" aria-pressed="true">財報</button><button id="tb-div" aria-pressed="false">股利明細</button>__POOLTAB__</nav>
 <div id="pg-fin" style="display:contents">
 <section class="sum" id="fsum" aria-label="財報摘要"></section>
 <section><div class="chips" id="chips" aria-label="快速篩選"></div><p style="margin:8px 0 0"><button type="button" class="colbtn" id="colbtn">選擇欄位</button> <span class="mut" id="colinfo"></span></p></section>
@@ -82,7 +82,7 @@ __FXLI__</ul></section>
 <li>__YNOTE__；若含特別股息會偏高，例如 6186 飛鶴、6110 滔搏。</li>
 </ul></section>
 </div>
-</main>
+__POOLPAGE__</main>
 <dialog id="cdlg" aria-label="選擇欄位"><div class="dh"><h2>選擇欄位</h2><button type="button" id="cx">完成</button></div><p class="mut">代號與名稱固定顯示。按群組可一次加入或移除，也可以逐欄勾選；設定會記在這個瀏覽器。</p><p><button type="button" id="call">全部欄位</button> <button type="button" id="cnone">全部取消</button> <button type="button" id="cdef">只看重點欄位</button></p><div class="chips" id="cgrp"></div><div id="clist"></div></dialog>
 <dialog id="hdlg" aria-label="指標說明"><div class="hb"></div><button type="button" data-hx="1">關閉</button></dialog>
 <dialog id="dlg" aria-label="個股財報"><div class="dh"><h2 id="dt"></h2><button id="dx" type="button">關閉</button></div><div class="db" id="dbody"></div></dialog>
@@ -238,4 +238,4 @@ apply();
 function fixh(){document.querySelectorAll('thead').forEach(t=>{const r=t.rows[0];if(r&&r.offsetHeight)t.style.setProperty('--h1',r.offsetHeight+'px')})}
 function tab(f){requestAnimationFrame(fixh);document.getElementById('pg-div').hidden=!f;document.getElementById('pg-fin').hidden=f;document.getElementById('tb-div').setAttribute('aria-pressed',String(f));document.getElementById('tb-fin').setAttribute('aria-pressed',String(!f))}
 document.getElementById('tb-div').onclick=()=>tab(true);document.getElementById('tb-fin').onclick=()=>tab(false);
-</script>
+</script>__POOLJS__

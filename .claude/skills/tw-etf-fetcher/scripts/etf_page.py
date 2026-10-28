@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from etf_market import json_for_script
 
 TEMPLATE = Path(__file__).resolve().parent.parent / "references" / "constituents_template.html"
+POOL_SECTION = Path(__file__).resolve().parent.parent / "references" / "pool_section.html"  # 收益平準金分頁：分頁鈕、頁面、腳本三段
 
 # 頭條數字是成分股殖利率的權重加權平均；說明文字放在 PROFILES，Market.unit_note 可以覆寫（港股 00882 頁的頭條是每單位台幣股利）
 YIELD_NOTE = "成分股近 12 月殖利率的權重加權平均（毛額，未含 ETF 費用與稅，持股以外部位視為 0）"
@@ -62,18 +63,34 @@ def fx_parts(fx: Optional[Dict[str, Any]], cur: str) -> Tuple[str, str]:
     return kp, li
 
 
+def pool_parts(pool: Optional[Dict[str, Any]], etf: str) -> Tuple[str, str, str]:
+    """收益平準金分頁的三段 HTML（分頁鈕、頁面、腳本）。pool 是 {"rows": [[日期, 淨值, 收益平準金, 資本平準金], …],
+    "events": [nav_composition.distribution_events 的結果]}；沒有資料就三段皆空，頁面與沒有這項功能時位元組相同。"""
+    if not pool or not pool.get("rows"):
+        return "", "", ""
+    tab, page, js = POOL_SECTION.read_text(encoding="utf-8").split("\n<!--@@-->\n")
+    rows = pool["rows"]
+    fill = {"__PASOF__": rows[-1][0], "__PFIRST__": rows[0][0], "__PDATA__": json_for_script(dict(rows=rows, events=pool.get("events", []))),
+            "__PETF__": etf}
+    for k, v in fill.items():
+        page, js = page.replace(k, v), js.replace(k, v)
+    return tab.rstrip("\n"), page, js.rstrip("\n")
+
+
 def render(profile: str, etf: str, ncomp: int, data: List[dict], miss: List[dict], fin: Dict[str, Any],
            asof: str, n: int, top: str, unit: str, nav: str = "", unit_note: str = "", partial_total: Optional[float] = None,
-           fx: Optional[Dict[str, Any]] = None) -> str:
+           fx: Optional[Dict[str, Any]] = None, pool: Optional[Dict[str, Any]] = None) -> str:
     """把資料與市場設定代入範本。佔位符皆為 __NAME__，缺任何一個會讓 assert 失敗，避免漏填。
     partial_total 是持股只涵蓋部分基金時的合計權重（%）：整體本益比卡片改寫成「占基金」，不寫成「權重 100%」；完整持股不傳，輸出與原本相同。
     asof 是空白時，頁首不放資料日期，付款日的說明也略去（台股頁，2026-10-27）。
-    fx 是外幣頁的匯率（etf_fx.fetch_rate 的結果）；台股不傳，輸出與沒有這項功能時位元組相同。"""
+    fx 是外幣頁的匯率（etf_fx.fetch_rate 的結果）；台股不傳，輸出與沒有這項功能時位元組相同。
+    pool 是每日淨值組成（見 pool_parts）；只有港股 00882 頁傳入，會多一個「收益平準金」分頁，不傳則輸出不變。"""
     p = PROFILES[profile]
     dump = json_for_script
     page = TEMPLATE.read_text(encoding="utf-8")
     partial = partial_total is not None
     kp_fx, li_fx = fx_parts(fx, p["cur"])
+    pool_tab, pool_page, pool_js = pool_parts(pool, etf)
     pairs = [
         ("__DATA__", dump(data)), ("__MISS__", dump(miss)), ("__FIN__", dump(fin)),
         ("__QNOTE__", p["qnote"]), ("__FXNOTE__", p["fxnote"]), ("__YNOTE__", p["ynote"]), ("__YSRC__", p["ysrc"]),
@@ -85,6 +102,7 @@ def render(profile: str, etf: str, ncomp: int, data: List[dict], miss: List[dict
         ("__WLABEL__", "占基金 " if partial else "權重 "),
         ("__WEXPR__", "pa.w.toFixed(1)" if partial else "(pa.w/tw*100).toFixed(0)"),
         ("__FXKP__", kp_fx), ("__FXLI__", li_fx),
+        ("__POOLTAB__", pool_tab), ("__POOLPAGE__", pool_page), ("__POOLJS__", pool_js),
     ]
     for k, v in pairs:
         page = page.replace(k, v)
