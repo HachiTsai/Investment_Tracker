@@ -36,8 +36,8 @@ flowchart TD
     B --> C{"3. 檢查輸出 JSON (Gate)"}
     C -->|異常| D["終止！不發佈、不寫 Sheet，回報原因"]
     C -->|正常| E["4. 發佈 Artifact (out.html)"]
-    E --> F["5. 寫入 Drive Sheet (00882_成分股股利資料庫)"]
-    F --> G["6. get_values 讀回驗證並簡短回報"]
+    E --> F["5. sheet_contract build 產生寫入內容，MCP update_values 寫入"]
+    F --> G["6. get_values 讀回，sheet_contract verify 逐格校驗並簡短回報"]
 ```
 
 ### 步驟 1：執行成分股運算核心指令
@@ -78,22 +78,31 @@ python3 .claude/skills/hk-market-data/scripts/constituents_table.py out.html pre
 - **Sheet ID**：`1Jq599WzoQUDsooZDhJhyK8uaEMgDiLLCoZthWk2WXtw`（位於 `Project_財商工程/Portfolio_00882/成分股股利資料庫`，公開連結）
 - **資料來源**：`table.json`
 
-#### 分頁寫入契約
+#### 寫入流程（盤點 F9，Hachi 2026-10-28 選定）
+
+寫入內容由腳本產生，雲端用 MCP 寫入，寫完由腳本逐格校驗。`sheet_contract.py` 是寫入規則的單一來源，不手改 payload。
+
+1. **產生寫入內容**：`python3 .claude/skills/hk-market-data/scripts/sheet_contract.py build table.json payload.json`
+   - 腳本會再檢查 `table.json` 的 `gate`（與步驟 2 同一套門檻）與 Core 拒絕；未通過就不產生 payload，回報原因後停止。
+   - `payload.json` 的 `writes` 有兩筆：`成分股!A1:J100` 與 `摘要!A1:C13`。
+2. **寫入**：依 `payload.json` 的兩筆，各呼叫一次 `update_values`（`spreadsheetId`、`range`、`values` 照抄，不帶 `valueInputOption`）。
+3. **讀回**：對同兩個範圍各呼叫一次 `get_values`，把兩次的輸出依序存成 `readback.json`（JSON 陣列，每個元素是一次 get_values 的輸出 `{"range", "values"}`）。
+4. **校驗**：`python3 .claude/skills/hk-market-data/scripts/sheet_contract.py verify payload.json readback.json`，退出碼 0 才算完成。不為 0 時重做步驟 2 至 4 一次；仍不符就回報不一致的格子，不再重試，也不刪列或手動補值。
+
+*限制：`readback.json` 由 session 把 get_values 的輸出存檔，`verify` 確認的是檔案與寫入內容一致；寫入者與時間可在試算表的「版本記錄」核對。*
+
+#### 寫入規則（腳本內建）
 
 1. **分頁「成分股」**：
    - 第一列表頭：`code,name,weightPct,qty,priceHkd,divTtmHkd,divLfyHkd,chgPct,yieldTtmPct,interim2026`
    - 欄位映射：依 `table.json` 的 `rows` 欄位 `c,n,w,q,px,ttm,lfy,chg,y,i26` 一對一寫入。
-   - 規則：`code` 加 `'` 前綴存成文字；`px` 為 null 填空字串。
+   - 規則：`code` 加 `'` 前綴存成文字；`px` 為 null 填空字串；數字欄保持數字。
+   - 列數變少時，第 2 列至第 100 列沒用到的格子寫成空字串，**嚴禁刪列**。
 2. **分頁「摘要」**：
-   - A:C 範圍為 `key,value,note`。
+   - A:C 範圍為 `key,value,note`，C 欄留空。
    - key 依序：`asOf`（今天）、`holdingsAsOf`（`table.json` 的 `holdings_asof` 轉 YYYY-MM-DD）、`ttmUnitTwd`、`lfyUnitTwd`、`has26`、`fxHkdToTwd`、`nav`、`unitsOutstanding`、`rows`、`note`（「推估，不是官方配息；未扣管理費與預扣稅」）、`lastUpdated`、`executor`。
    - B 欄每個值（含日期與數字）**一律加 `'` 前綴存成文字**，避免 B 欄被誤判為純數字欄位而導致 APP 日期解析失敗。
-
-#### 寫入防呆規範
-
-- 列數變少時，把多出的舊列清成空字串，**嚴禁刪列**。
-- 使用 `update_values` 寫入，不帶 `valueInputOption`。
-- 寫完調用 `get_values` 讀回確認。
+3. **寫入目標**：Sheet ID 寫死在腳本內，不接受參數；`Investment_Tracker_Core` 一律拒絕。
 
 ---
 
@@ -101,7 +110,7 @@ python3 .claude/skills/hk-market-data/scripts/constituents_table.py out.html pre
 
 完成後以一至兩行回報：
 
-- 更新日期、年股利合計（`ttm_unit`，TWD／單位，毛額）較上次變化、已公告中期股息檔數、Sheet 是否更新成功；註明是推估。
+- 更新日期、年股利合計（`ttm_unit`，TWD／單位，毛額）較上次變化、已公告中期股息檔數、Sheet 是否更新成功（`verify` 結果）；註明是推估。
 - **計算口徑提示**：2026-10-22 起年股利合計口徑改為「最近兩次定期分配」，若有口徑切換需於回報中特別註明，不視為實際配息波動。
 - 財報分頁來源為東方財富，收益平準金分頁來源為中信投信，兩者都不寫入 Sheet；回報附 `pool_rows` 與最新收益平準金日期。
 - **嚴格禁令**：不修改 REPO 與 Core（`Investment_Tracker_Core` 嚴禁寫入）。

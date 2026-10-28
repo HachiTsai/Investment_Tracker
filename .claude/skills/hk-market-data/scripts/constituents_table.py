@@ -185,15 +185,15 @@ def main(argv=None):
                            f'{top["n"]} {top["w"]}%', f"{lfy_unit:.2f}～{ttm_unit:.2f}", pool=pool)
     open(OUT, "w", encoding="utf-8").write(page)
     print(json.dumps(dict(rows=len(ok), fails=fails, fin_fails=fin_fails, fx=round(FX, 4), nav=nav, units=units, ttm_unit=round(ttm_unit, 3), lfy_unit=round(lfy_unit, 3), has26=has26, chg=round(net / base * 100, 1), pool_rows=len(pool.get("rows", [])))))
+    ok_gate, reasons = check_gate(len(ok), fails, has26, fin_fails, len(pool.get("rows", [])), carry_error=carry_error)
     if JSON_OUT:
         json.dump(dict(asof=date.today().isoformat(), holdings_asof=asof, fx=round(FX, 4), nav=nav, units=units,
-                       ttm_unit=round(ttm_unit, 3), lfy_unit=round(lfy_unit, 3), has26=has26, rows=rows_out, fails=fails),
+                       ttm_unit=round(ttm_unit, 3), lfy_unit=round(lfy_unit, 3), has26=has26, rows=rows_out, fails=fails,
+                       gate=dict(ok=ok_gate, reasons=reasons)),
                   open(JSON_OUT, "w", encoding="utf-8"), ensure_ascii=False)
-    if gate_mode:
-        ok_gate, reasons = check_gate(len(ok), fails, has26, fin_fails, len(pool.get("rows", [])), carry_error=carry_error)
-        if not ok_gate:
-            print(f"❌ [Gate Failed] {'; '.join(reasons)}", file=sys.stderr)
-            return 1
+    if gate_mode and not ok_gate:
+        print(f"❌ [Gate Failed] {'; '.join(reasons)}", file=sys.stderr)
+        return 1
     return 0
 
 
