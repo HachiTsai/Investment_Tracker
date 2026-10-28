@@ -24,6 +24,7 @@
 - **全市場 ETF 資料庫排程工作流**：@[.claude/workflows/market-etf-pool.md](.claude/workflows/market-etf-pool.md)
 - **波段觀察資料庫排程工作流**：@[.claude/workflows/swing-patrol-sheets.md](.claude/workflows/swing-patrol-sheets.md)
 - **每日波段巡檢報告排程工作流**：@[.claude/workflows/daily-portfolio-patrol.md](.claude/workflows/daily-portfolio-patrol.md)
+- **排程登記表**：@[.claude/workflows/schedule-registry.md](.claude/workflows/schedule-registry.md)
 - **情資管線與 APP 整合架構**：@[architecture/情資管線與APP整合架構.md](architecture/情資管線與APP整合架構.md)
 
 ## 憲法：`.claude/` 變更必先掃描 rules
