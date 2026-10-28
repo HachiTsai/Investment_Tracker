@@ -20,7 +20,7 @@
 
 | 網域 | 服務說明 | 連線狀態 | 實務用途與讀取方式 |
 | :--- | :--- | :---: | :--- |
-| `www.ctbcinvestments.com.tw` | 中國信託投信（台灣） | ✅ HTTP 200 | 00882 基金發行商、每日淨值與成分股權重（ETFHoldingWeight API） |
+| `www.ctbcinvestments.com.tw` | 中國信託投信（台灣） | ✅ HTTP 200 | 00882 基金發行商、每日淨值與成分股權重（ETFHoldingWeight API）；每日淨值組成（收益平準金、資本平準金，`product/GetNAV`，需先取 token，網頁會被 WAF 擋但 API 可用，`tw-etf-fetcher` 的 `nav_composition.py`；2026-10-28 實測） |
 | `www.ctbcinvestments.com` | 中國信託投信（國際） | ✅ HTTP 200 | 國際版產品資訊 |
 | `www.abfunds.com.tw` | 聯博投信 | ✅ HTTP 200 | 基金產品資訊 |
 | `www.nomurafunds.com.tw` | 野村投信 | ✅ HTTP 200 | 基金產品資訊 |

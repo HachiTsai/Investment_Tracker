@@ -58,6 +58,7 @@ python3 .claude/skills/hk-market-data/scripts/constituents_table.py out.html pre
 - `fails`：必須為空清單 `[]`。
 - `has26`：$\ge 20$ 檔（已有 2026 中期分紅意向或公告）。
 - `fin_fails`：不超過 5 檔。
+- `pool_rows`：必須大於 0（收益平準金每日資料；腳本 `--gate` 在缺資料或資料落後超過 10 天時已先失敗，此欄供回報核對）。
 
 🚨 **異常處置**：若 `fails` 超過 5 檔、`fin_fails` 超過 5 檔，或連不上目標網域，**立即停止，不發佈 Artifact 也不寫入 Sheet**，回報具體原因。
 
@@ -66,7 +67,7 @@ python3 .claude/skills/hk-market-data/scripts/constituents_table.py out.html pre
 ### 步驟 3：Artifact 發布（Claude 雲端專屬）
 
 - **目標 URL**：`https://claude.ai/artifact/DSbfrxfywurJVo3TVwSzia`（原地更新發布 `out.html`）。
-- **頁面結構**：包含「股利明細」與「財報資料」兩個分頁。
+- **頁面結構**：包含「財報資料」「股利明細」與「收益平準金」三個分頁。「收益平準金」分頁資料來自中信投信 `product/GetNAV`（`tw-etf-fetcher/scripts/nav_composition.py`），顯示每日收益平準金、資本平準金與歷次配息；收益平準金與資本平準金是淨值組成項目，非配息預測。
 
 ### 步驟 4：寫入 Google Drive 試算表
 
@@ -101,7 +102,7 @@ python3 .claude/skills/hk-market-data/scripts/constituents_table.py out.html pre
 
 - 更新日期、年股利合計（`ttm_unit`，TWD／單位，毛額）較上次變化、已公告中期股息檔數、Sheet 是否更新成功；註明是推估。
 - **計算口徑提示**：2026-10-22 起年股利合計口徑改為「最近兩次定期分配」，若有口徑切換需於回報中特別註明，不視為實際配息波動。
-- 財報分頁來源為東方財富，不寫入 Sheet。
+- 財報分頁來源為東方財富，收益平準金分頁來源為中信投信，兩者都不寫入 Sheet；回報附 `pool_rows` 與最新收益平準金日期。
 - **嚴格禁令**：不修改 REPO 與 Core（`Investment_Tracker_Core` 嚴禁寫入）。
 
 ---
