@@ -48,4 +48,5 @@ python3 $S macro                             # 宏觀指標：LPR利率、中債
 - 用法：`python3 .claude/skills/hk-market-data/scripts/constituents_table.py out.html [prev.html] [table.json]`，約 1 分鐘；`prev.html` 是上一版頁面，用來沿用去年欄位（`p25`、`cmp`）；讀不到資料列時 `--gate` 會擋下。輸出的 JSON 摘要有 `rows`、`fails`、`has26`、`pool_rows`（收益平準金每日資料列數，0 代表抓取失敗、頁面缺少該分頁，`--gate` 會擋），`fails`（缺股價或歷次分配的檔，仍會列在財報頁、殖利率留白）超過 5 檔或連不上 google.com／datacenter.eastmoney.com／ctbcinvestments.com.tw 就不要發佈。殖利率欄的分子是這個年化股息（2026-10-22 Hachi 選定），避免中期股息剛除息時「最近 12 個月」含到三次而高估。
 - 頁面第三個分頁「收益平準金」：每日收益平準金與資本平準金走勢、歷次配息表（資料來自中信投信 `product/GetNAV`，由 `tw-etf-fetcher` 的 `nav_composition.py` 抓取；抓取失敗只印警告、頁面缺該分頁，不擋整頁）。
 - 這支腳本只產生頁面與 JSON，不寫 Drive、不碰 Investment_Tracker_Core；寫 Sheet 由排程用 Sheets 工具做，且不得放持股張數、成本、缺口等個人部位數字。
+- 寫 Sheet 的內容由 `scripts/sheet_contract.py` 產生並校驗：`build` 讀 `table.json`（先過 `gate` 與 Core 拒絕）產出 `payload.json`；雲端用 MCP 寫入後，`verify` 比對讀回的 `readback.json`。流程與規則見 `.claude/workflows/hk-00882-dividend.md` 步驟 4。
 - 腳本載入時即連網抓資料，測試只做靜態檢查（編譯、佔位符與範本一致）。
