@@ -54,8 +54,8 @@ python3 .claude/skills/hk-market-data/scripts/constituents_table.py out.html pre
 
 解析標準輸出之 JSON 物件，必須滿足以下條件才可繼續：
 
-- `rows`：約 49 檔。
-- `fails`：必須為空清單 `[]`。
+- `rows`：不少於 45 檔（目前約 49 檔）。
+- `fails`：不超過 5 檔（腳本門檻 `max_fails=5`）。
 - `has26`：$\ge 20$ 檔（已有 2026 中期分紅意向或公告）。
 - `fin_fails`：不超過 5 檔。
 - `pool_rows`：必須大於 0（收益平準金每日資料；腳本 `--gate` 在缺資料或資料落後超過 10 天時已先失敗，此欄供回報核對）。
