@@ -32,8 +32,8 @@
 flowchart TD
     A["1. 讀取 Sheet 現有 A1:X 組成 prev.json"] --> B["2. 執行 swing.py --scan"]
     B --> C{"3. 檢查市場狀態 (Gate)"}
-    C -->|全休市| D["終止！不寫 Sheet，回報今日休市"]
-    C -->|有交易| G["4a. 組合轉關鍵組合者追加至告警紀錄（寫失敗即停止）"]
+    C -->|全休市，或開市標的已入庫| D["終止！不寫 Sheet，回報今日休市或互鎖略過"]
+    C -->|有新資料| G["4a. 組合轉關鍵組合者追加至告警紀錄（寫失敗即停止）"]
     G --> E["4. 整列覆寫更新有開市之標的 (維持 A:X 24欄)"]
     E --> F["5. 簡短回報指標條件與組合變化"]
 ```
@@ -66,6 +66,8 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 -
 4. **互鎖與補跑（`--force`）**：
    - 互鎖機制以各市場最新資料日（`last_date`）比對，若當日資料已成功入庫且數據無異動，預設略過以防重複寫入。
    - **支援手動補跑**：若遇資料異常或需強制重寫，可帶 `--force` 旗標直接穿透互鎖，進行強制整表刷新。
+   - 實作（`swing_sync.py` 的 `apply_interlock`）：逐檔比對，本次 `last_date` 不晚於該列 Q 欄（更新日）即略過，不寫入也不告警；Q 欄無法解讀時照常寫入。若全部開市標的都略過、且沒有抓取失敗的列，只更新 Z1:AA2，狀態記為「互鎖略過（資料日已入庫，維持既有數據）」。
+   - 手動補跑：`swing-patrol.yml` 的 `workflow_dispatch` 勾選 `force` 即帶 `--force`；自動排程不帶。
 
 ### 步驟 4：寫入 Google Drive 試算表
 
@@ -110,8 +112,9 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 -
 
 - 執行時間戳記與執行者標籤**不得放置於 A:X 欄位內**。
 - 同步元資訊統一記錄於 `Untitled!Z1:AA2`（A:X 範圍外）：
-  - 正常開市同步：記錄 `最後同步時間` 與 `執行者: GitHub Actions`。
+  - 正常開市同步：記錄 `lastUpdated`（最後同步時間）與 `executor: GitHub Actions`，與程式及架構文件一致。
   - 週末/假日休市：記錄 `最後巡檢時間` 與 `狀態: 休市略過（維持最新交易日數據）`。
+  - 互鎖略過（資料日已入庫）：記錄 `最後巡檢時間` 與 `狀態: 互鎖略過（資料日已入庫，維持既有數據）`。
   - 確保使用者打開試算表可即時確認排程心跳，同時保障 APP 讀取 A:X 時零干擾。
 
 #### 寫入防呆規範
@@ -143,4 +146,4 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 -
 ## 5. 雙 Agent 協同分工與代班邊界
 
 - **日常運作**：本任務為「純 Sheet 任務」，日常優先由 **GitHub Actions 自動排程**（`.github/workflows/swing-patrol.yml`）於每個交易日 17:00 自動執行並透過 Google Sheets API 回寫試算表，省下大量 Claude 雲端對話 Token；亦支援 Claude 雲端排程單行呼叫。
-- **本機與雲端代班邊界**：本任務無前端 Artifact 綁定。當排程需手動補跑時，可透過 GitHub Actions `workflow_dispatch` 一鍵重跑，或由 **Antigravity 本機執行 `swing_sync.py`** 直寫 Sheet，保障前端 APP 數據心跳不中斷。
+- **本機與雲端代班邊界**：本任務無前端 Artifact 綁定。當排程需手動補跑時，可透過 GitHub Actions `workflow_dispatch` 一鍵重跑（需要強制整表刷新時勾選 `force`），或由 **Antigravity 本機執行 `swing_sync.py`** 直寫 Sheet，保障前端 APP 數據心跳不中斷。

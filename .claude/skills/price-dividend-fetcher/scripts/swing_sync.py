@@ -3,7 +3,7 @@
 由 GitHub Actions 定時或手動觸發，亦可於本機執行：
 1. 自 Google Sheets「波段觀察」讀取現況快照 A1:X 組成 prev.json
 2. 執行 swing.py --scan --gate 進行技術面與三週期組合掃描
-3. 判定市場開休市與門檻（全市場休市則正常略過）
+3. 判定市場開休市與互鎖（全市場休市，或開市標的資料日已入庫，則略過；--force 穿透）
 4. 三週期組合轉為關鍵組合的開市標的（alert）先追加至「告警紀錄」分頁，並列入 GitHub 執行摘要；寫入失敗即停止，不覆寫 A:X
 5. 整列覆寫開市標的並精確維持 A:X 24 欄前端契約，將執行元資訊寫於 Z1:AA2
 """
@@ -15,6 +15,7 @@ from datetime import datetime, timezone, timedelta
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 from typing import Any, Dict, List, Optional, Tuple
@@ -127,6 +128,42 @@ def fresh_alerts(scan_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return [r for r in scan_results if r.get("alert") and r.get("fresh")]
 
 
+_YMD_RE = re.compile(r"(\d{4})[-/](\d{1,2})[-/](\d{1,2})")
+
+
+def _ymd(value: Any) -> Optional[str]:
+    """把更新日統一成 YYYY-MM-DD。Sheet 讀回的是依地區顯示的日期（2026-10-28 或 2026/10/28），認不得就回傳 None。"""
+    m = _YMD_RE.match(str(value or "").strip())
+    if not m:
+        return None
+    return f"{int(m.group(1)):04d}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
+
+
+def apply_interlock(scan_results: List[Dict[str, Any]], existing_rows: List[List[Any]]) -> List[str]:
+    """互鎖：開市標的的 last_date 不晚於 Sheet 該列的更新日（Q 欄），即視為已入庫，改為不寫入、不告警（fresh 設為 False）。
+    更新日無法解讀時照常寫入，寧可重寫也不漏寫。回傳被略過的代號。"""
+    stored = {str(r[0]).strip(): (r[16] if len(r) > 16 else "") for r in existing_rows[1:] if r and r[0]}
+    skipped: List[str] = []
+    unreadable: List[str] = []
+    for r in scan_results:
+        ticker = r.get("ticker")
+        incoming = _ymd(r.get("last_date"))
+        if not r.get("fresh") or incoming is None or ticker not in stored:
+            continue
+        raw = str(stored[ticker] or "").strip()
+        known = _ymd(raw)
+        if known is None:
+            if raw:
+                unreadable.append(raw)
+            continue
+        if known >= incoming:
+            r["fresh"] = False
+            skipped.append(ticker)
+    if unreadable:
+        print(f"   ℹ️ 互鎖：{len(unreadable)} 檔更新日無法解讀（例：{unreadable[0]}），視為未入庫照常寫入")
+    return skipped
+
+
 def append_alert_rows(client: GoogleSheetsClient, sheet_id: str, alerts: List[Dict[str, Any]], detected_at: str) -> None:
     """把告警追加到「告警紀錄」分頁；分頁不存在就先建立並寫入表頭。只動該分頁，不碰 A:X。"""
     titles = {s["properties"]["title"] for s in client.get_spreadsheet(sheet_id).get("sheets", [])}
@@ -165,6 +202,20 @@ def report_alerts(alerts: List[Dict[str, Any]]) -> None:
             f.write("\n".join(lines) + "\n")
     except OSError as e:
         print(f"   ℹ️ 寫入 GitHub 執行摘要失敗：{e}")
+
+
+def _stamp_patrol(client: GoogleSheetsClient, sheet_id: str, status: str) -> str:
+    """休市或互鎖略過時只更新 Z1:AA2 的巡檢時間與狀態（A:X 範圍外），不動標的數據。回傳寫入的時間。"""
+    now_tpe = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S (TPE)")
+    meta_values = [
+        ["最後巡檢時間", now_tpe],
+        ["狀態", status],
+    ]
+    try:
+        client.update_values(sheet_id, "Untitled!Z1:AA2", meta_values, value_input_option="USER_ENTERED")
+    except Exception as e:
+        print(f"   ℹ️ 寫入元資料欄位提示：{e}")
+    return now_tpe
 
 
 def run_swing_pipeline(
@@ -224,16 +275,18 @@ def run_swing_pipeline(
 
     is_all_closed = len(scan_results) > 0 and all(not r.get("fresh", False) for r in scan_results)
     if is_all_closed and not force:
-        now_tpe = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S (TPE)")
-        meta_values = [
-            ["最後巡檢時間", now_tpe],
-            ["狀態", "休市略過（維持最新交易日數據）"],
-        ]
-        try:
-            client.update_values(sheet_id, "Untitled!Z1:AA2", meta_values, value_input_option="USER_ENTERED")
-        except Exception as e:
-            print(f"   ℹ️ 寫入元資料欄位提示：{e}")
+        now_tpe = _stamp_patrol(client, sheet_id, "休市略過（維持最新交易日數據）")
         print(f"ℹ️ [Market Closed] 今日所有市場均為休市，已更新巡檢時間戳記至 Z1:AA2（{now_tpe}），略過覆寫標的數據。")
+        return 0
+
+    # 互鎖：開市標的的資料日已入庫即略過（--force 穿透）。仍有抓取失敗列時照常寫入，讓失敗標記落到 Sheet
+    skipped = [] if force else apply_interlock(scan_results, existing_values)
+    if force:
+        print("⚡ [Force] 已穿透休市與互鎖判定，強制整表刷新。")
+    has_error = any(r.get("state") == "ERROR" for r in scan_results)
+    if skipped and not has_error and not any(r.get("fresh") for r in scan_results):
+        now_tpe = _stamp_patrol(client, sheet_id, "互鎖略過（資料日已入庫，維持既有數據）")
+        print(f"ℹ️ [Interlock] 開市標的資料日已入庫（{len(skipped)} 檔），略過覆寫與告警，已更新巡檢時間戳記至 Z1:AA2（{now_tpe}）。")
         return 0
 
     if not sheet_out_path.exists():
@@ -285,7 +338,7 @@ def run_swing_pipeline(
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Stock_AIStudio 波段觀察 Google Sheets 自動同步管線")
     parser.add_argument("--sheet-id", default=DEFAULT_SHEET_ID, help="目標 Google Sheet ID")
-    parser.add_argument("--force", action="store_true", help="強制覆寫，忽略休市略過機制")
+    parser.add_argument("--force", action="store_true", help="強制整表刷新，穿透休市與互鎖判定（補跑用）")
     args = parser.parse_args(argv)
 
     return run_swing_pipeline(sheet_id=args.sheet_id, force=args.force)

@@ -5,6 +5,11 @@ on:
     # 每個平日台北 17:00 (UTC 09:00, Mon-Fri)
     - cron: '0 9 * * 1-5'
   workflow_dispatch:
+    inputs:
+      force:
+        description: '強制整表刷新：略過休市與互鎖判定（補跑用）'
+        type: boolean
+        default: false
 
 jobs:
   sync-swing-sheets:
@@ -22,5 +27,7 @@ jobs:
       - name: Run Swing Sync Pipeline
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          # 手動執行且勾選 force 才帶 --force；自動排程沒有 inputs，不帶
+          FORCE_FLAG: ${{ inputs.force && '--force' || '' }}
         run: |
-          python3 .claude/skills/price-dividend-fetcher/scripts/swing_sync.py
+          python3 .claude/skills/price-dividend-fetcher/scripts/swing_sync.py ${FORCE_FLAG}
