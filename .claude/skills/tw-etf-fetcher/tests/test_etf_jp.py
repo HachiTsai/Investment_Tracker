@@ -13,6 +13,7 @@ SKILLS = Path(__file__).resolve().parent.parent.parent
 for sub in ("tw-etf-fetcher", "fundamental-analyzer", "price-dividend-fetcher"):
     sys.path.insert(0, str(SKILLS / sub / "scripts"))
 import etf_drive  # noqa: E402
+import etf_fx  # noqa: E402
 import etf_jp  # noqa: E402
 import etf_market  # noqa: E402
 import etf_page  # noqa: E402
@@ -87,6 +88,8 @@ def jp_offline(monkeypatch):
     monkeypatch.setattr(etf_jp.price_fetch, "yahoo_dividends",
                         lambda exch, code, since: dict(DIVS.get(code, dict(ttm_total=0.0, yearly_totals={}))))
     monkeypatch.setattr(edinet, "report_bytes", lambda code: ACME_REPORT if code == "7203" else None)
+    monkeypatch.setattr(etf_fx, "fetch_rate",  # 池流程會取匯率，測試不連 Google Finance
+                        lambda currency, **k: dict(currency=currency, rate=0.21, as_of="2026-01-02", source="測試"))
 
 
 @pytest.mark.parametrize("raw,code", [

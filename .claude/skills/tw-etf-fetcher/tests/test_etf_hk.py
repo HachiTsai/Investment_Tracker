@@ -10,6 +10,7 @@ import pytest
 SKILLS = Path(__file__).resolve().parent.parent.parent
 for sub in ("tw-etf-fetcher", "fundamental-analyzer", "price-dividend-fetcher"):
     sys.path.insert(0, str(SKILLS / sub / "scripts"))
+import etf_fx  # noqa: E402
 import etf_hk  # noqa: E402
 import etf_market  # noqa: E402
 import etf_page  # noqa: E402
@@ -111,6 +112,8 @@ def hk_offline(monkeypatch):
     monkeypatch.setattr(etf_hk.eastmoney, "hk_detail", lambda code, periods=10: dict(FIN))
     monkeypatch.setattr(etf_hk.eastmoney, "hk_cashflow", lambda code: dict(fy="2025", ocf=100.0, capex=20.0, paid=50.0))
     monkeypatch.setattr(etf_hk.eastmoney, "hk_dividends", lambda code, size=20: [dict(d) for d in DIVS])
+    monkeypatch.setattr(etf_fx, "fetch_rate",  # 池流程會取匯率，測試不連 Google Finance
+                        lambda currency, **k: dict(currency=currency, rate=4.15, as_of="2026-01-02", source="測試"))
 
     def yahoo_down(*_, **__):
         raise RuntimeError("Yahoo 斷線")
