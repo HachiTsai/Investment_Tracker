@@ -29,7 +29,7 @@ tickers: [00882]
      - **擁有者與寫入者**：由 AI 檢索港交所披露易公告後回填 00882 專屬成分股派息紀錄（如 `interim2026` 欄位）。
      - **消費者**：Stock_AIStudio 用於 00882 成分股加權股利預估與透視。
    - **【全市場_ETF成分股資料庫】**（Drive ID `1GIhbRyL-h96ACVjlSSW9YUFMiAItg_SP9Wi0o3WwG70`，在 `Project_財商工程/All_Market`）：
-     - **擁有者與寫入者**：由 `tw-etf-fetcher` 技能（`etf_sheets_sync.py`）維護，包含 `ETF_Summary`（27 檔跨市場 ETF 摘要）與 `ETF_Constituents`（約 5,328 列全底層持股明細（2026-10-22 核對））。
+     - **擁有者與寫入者**：由 `tw-etf-fetcher` 技能（`etf_sheets_sync.py`）維護，包含 `ETF_Summary`（281 檔台股 ETF 摘要，2026-10-27 同步時實測）與 `ETF_Constituents`（超過 15,000 列全底層持股明細，2026-10-27 實測）。
      - **消費者**：Stock_AIStudio 前端應用程式，提供免登入 gviz CSV 讀取。
    - **【Investment_Tracker_Core】**（Drive ID `1QBEgUi-kTOuLgj2yGHmP-0g_ug-Sl_M21SN0g93b6xI`）：
      - **擁有者**：Hachi 與 Stock_AIStudio 前端記帳核心。
@@ -65,3 +65,8 @@ tickers: [00882]
 
 - 變更：權責表補連結至 APP 讀取清單，ETF_Constituents 筆數改為實際約 5,328 列。
 - 原因：原表漏登持股、交易明細、波段觀察三份來源。
+
+### 更新（2026-10-28）
+
+- 變更：`ETF_Summary` 由 27 檔改為 281 檔台股 ETF，`ETF_Constituents` 由約 5,328 列改為超過 15,000 列（2026-10-27 同步時唯讀核對）。
+- 原因：舊數字與 Sheet 實際列數不符；閘門門檻（`ETF_Summary` 至少 200 列、`ETF_Constituents` 至少 10,000 列）以實際列數為準。

@@ -13,10 +13,10 @@ flowchart TD
     GHA["GitHub Actions 定期排程"] -->|每週爬取 TWSE + MoneyDJ| Sheet
 
     subgraph GDrive ["Google Drive 雲端資料湖 [Google Drive SSOT Lakehouse]"]
-        Pool["全市場資料池 (Pool, 244 檔)"]
+        Pool["全市場資料池 (Pool, 281 檔)"]
         Sheet["全市場_ETF成份股資料庫 (Google Sheet)"]
         Const["ETF_Constituents 頁籤 (全市場 15,000+ 筆持股)"]
-        Summ["ETF_Summary 頁籤 (244 檔基本面/評分)"]
+        Summ["ETF_Summary 頁籤 (281 檔基本面/評分)"]
 
         Pool --> Sheet
         Sheet --> Const
