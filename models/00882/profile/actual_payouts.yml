@@ -1,0 +1,42 @@
+# 00882 歷年實際配息（每單位，TWD）。只記錄實績，不含推估或情境。
+# 來源：FinLab 配息紀錄，證交所除權息結果表交叉核對（price-dividend-fetcher，查詢日 2026-10-01）。
+# 2026/1 除息日以 Yahoo 股利事件與 NAV 紀錄的 2026-01-19 為準；APP initialData 寫 2026-01-16、發放 2026-02-15，待 Hachi 核對。
+version: 1
+ticker: "00882"
+currency: "TWD"
+frequency: "半年配（1 月、7 月除息）"
+as_of: "2026-10-01"
+payouts:
+  - ex_date: "2026-07-16"
+    pay_date: "2026-08-11"
+    amount: 0.55
+  - ex_date: "2026-01-19"
+    pay_date: "2026-02-23"
+    amount: 0.45
+  - ex_date: "2025-07-16"
+    pay_date: "2025-08-11"
+    amount: 0.55
+  - ex_date: "2025-01-17"
+    pay_date: "2025-02-20"
+    amount: 0.53
+  - ex_date: "2024-07-16"
+    pay_date: "2024-08-09"
+    amount: 0.40
+  - ex_date: "2024-01-17"
+    pay_date: "2024-02-21"
+    amount: 0.26
+  - ex_date: "2023-07-18"
+    pay_date: "2023-08-11"
+    amount: 0.40
+  - ex_date: "2023-01-17"
+    pay_date: "2023-02-20"
+    amount: 0.30
+  - ex_date: "2022-07-18"
+    pay_date: "2022-08-22"
+    amount: 0.85
+  - ex_date: "2022-01-18"
+    pay_date: "2022-02-21"
+    amount: 0.36
+  - ex_date: "2021-07-16"
+    pay_date: "2021-08-20"
+    amount: 0.68

@@ -9,13 +9,10 @@ strategy_type: DIVIDEND_INCOME
 currency: "TWD"
 
 spec:
-  benchmark_rule: "architecture/00882_股利目標模型.md"
   target_loop: "card:loop:dividend_500k"
   interlock_guard: "card:interlock:yield_trap_guard"
 
 calibration:
-  payout_ratio: 0.954             # 2024/1~2026/7 六期實際配發比均值 (88.2%~102.9%)
-  tax_retention_rate: 0.9923       # 實收留存率 (1 - 36.6% 大陸所得門檻 × 2.11% 健保補充保費)
   management_fee_rate: 0.0045      # 經理費 0.45%
   custody_fee_rate: 0.0018         # 保管費 0.18%
 
@@ -26,7 +23,6 @@ thresholds:
 
 fail_safe:
   max_stale_days: 5               # 超過 5 個交易日無新行情，觸發 BAD_PV 故障安全模式
-  fallback_annual_dividend: 0.86  # 降級預設每股年配息基準 (TWD)
 
 provenance:
   issuer: "中信投信"

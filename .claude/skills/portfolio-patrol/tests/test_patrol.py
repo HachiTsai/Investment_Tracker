@@ -234,7 +234,8 @@ def test_load_cards(repo_root):
     assert len(cards["loops"]) >= 1
     assert len(cards["interlocks"]) >= 1
     assert len(cards["constituents"]) >= 1
-    assert cards["ticker"]["calibration"]["payout_ratio"] == pytest.approx(0.954, 0.001)
+    assert "payout_ratio" not in cards["ticker"]["calibration"]
+    assert "fallback_annual_dividend" not in cards["ticker"]["fail_safe"]
 
 
 def test_watchdog_healthy_and_stale():

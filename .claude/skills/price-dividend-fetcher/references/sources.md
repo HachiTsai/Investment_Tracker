@@ -11,7 +11,7 @@
 | 收盤價（最後備援） | 證交所 `https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX` | 台股上市 | 當日全市場收盤表；前兩個來源都失敗時自動改用，輸出標 `price_type: close` |
 | 收盤價（最後備援） | 櫃買中心 `https://www.tpex.org.tw/www/zh-tw/afterTrading/otc?type=EW&response=json` | 台股上櫃 | 不帶日期即最近交易日；證交所找不到代號時接著用，輸出標 `price_type: close` |
 | 配息歷史（海外） | Yahoo Finance chart API，`events=div`、`range=10y` | 美股、日股、港股 | 只有除息日與每單位金額，沒有基準日、發放日；已還原股票分割，金額為交易幣別 |
-| 配息歷史（主） | FinLab `https://finlab.finance/stocks/<代號>/dividend` | 台股 ETF | 研究筆記 `00882_股利追蹤` 使用的來源 |
+| 配息歷史（主） | FinLab `https://finlab.finance/stocks/<代號>/dividend` | 台股 ETF | 00882 實績表 `models/00882/profile/actual_payouts.yml` 使用的來源 |
 | 配息歷史（個股備援） | FinLab 個股頁 `https://finlab.finance/stocks/<代號>` | 台股個股 | 個股沒有 `/dividend` 頁（404），改讀「近期除息紀錄」表；金額四捨五入到 0.1 元，只列近約 6 次 |
 | 配息歷史（台股備援） | 同上 Yahoo Finance | 台股 | FinLab 兩個頁面都讀不到時改用，不做證交所驗證，輸出附 `fallback_reason` |
 | 配息歷史（驗證） | 證交所 `https://www.twse.com.tw/rwd/zh/exRight/TWT49U` | 台股上市 | 官方除權息結果表，取「息」與「權息」；「權息」的金額是權值＋息值，只比對除息日不比金額；與 FinLab 比對近兩個年度 |
@@ -81,7 +81,7 @@
 - **Yahoo 現價與前收**：現價取 `meta.regularMarketPrice`。前收**不能用** `meta.chartPreviousClose`（那是查詢區間起點之前的收盤，5 年區間會差到好幾倍），改取日線中最近一個「早於今日交易日」的收盤，日期以 `meta.gmtoffset` 換成交易所當地日期判斷。
 - **Yahoo 配息**：`events.dividends` 的每筆 `date`（UTC 日期即除息日）與 `amount`。特別股息也會列入，近 12 個月合計與殖利率會因此偏高（例如 HSBC 2026-03-12 的 3.52 港元）；沒有配息的公司回空清單，不算錯誤。
 - **殖利率**：近 12 個月（含今日往前 365 天，以除息日計）配息合計 ÷ 現價，符合 CLAUDE.md 的口徑。FinLab 頁面上的殖利率以前一日收盤計，可能差 0.01–0.05 個百分點。
-- 配息金額是**每單位**，不是實收；實收要依持股數與二代健保扣除計算，見股利目標模型。
+- 配息金額是**每單位**，不是實收；實收要依持股數與二代健保扣除計算，以入帳金額為準。
 
 ## 頁面改版時
 
