@@ -28,6 +28,17 @@ def post(path, body, token="www.ctbcinvestments.com"):
     return r["Data"]
 
 
+def load_prev(path: str) -> tuple:
+    """讀上一版頁面的資料列，供沿用 p25 與 cmp 兩欄。回傳 (以代號為鍵的列, 錯誤訊息)，讀不到資料列時錯誤訊息不為空。"""
+    if not os.path.exists(path):
+        return {}, f"找不到上一版頁面：{path}"
+    m = re.search(r"const D=(\[.*?\]);\n", open(path, encoding="utf-8").read(), flags=re.S)
+    prev = {r["c"]: r for r in json.loads(m.group(1))} if m else {}
+    if not prev:
+        return prev, f"上一版頁面讀不到資料列：{path}"
+    return prev, ""
+
+
 def check_gate(
     rows: int,
     fails: list,
@@ -38,6 +49,7 @@ def check_gate(
     max_fails: int = 5,
     min_has26: int = 20,
     max_fin_fails: int = 5,
+    carry_error: str = "",
 ) -> tuple:
     """排程健康門檻檢核：rows 約 49（>=45）、fails 不超過 5（預設 0 更佳）、has26 >= 20、fin_fails <= 5。"""
     reasons = []
@@ -51,6 +63,8 @@ def check_gate(
         reasons.append(f"財報失敗檔數超標：{len(fin_fails)} > {max_fin_fails} ({fin_fails})")
     if pool_rows < 1:
         reasons.append("收益平準金每日資料抓取失敗，頁面會缺少「收益平準金」分頁")
+    if carry_error:
+        reasons.append(f"上一版頁面無法沿用：{carry_error}")
     return len(reasons) == 0, reasons
 
 
@@ -145,11 +159,12 @@ def main(argv=None):
     fails = [r["c"] for r in rows if r.get("fail")]
     ok = [r for r in rows if not r.get("fail")]
 
-    prev = {}
-    if PREV and os.path.exists(PREV):
-        m = re.search(r"const D=(\[.*?\]);\n", open(PREV, encoding="utf-8").read(), flags=re.S)
-        if m:
-            prev = {r["c"]: r for r in json.loads(m.group(1))}
+    prev, carry_error = load_prev(PREV) if PREV else ({}, "")
+    carry_missing = [r["c"] for r in ok if r["c"] not in prev]
+    if carry_error:
+        print(f"❌ [Carry Failed] {carry_error}，p25 與 cmp 會全部留白", file=sys.stderr)
+    elif carry_missing:
+        print(f"⚠️ [Carry] 上一版沒有這些檔的 p25 與 cmp，留白：{carry_missing}", file=sys.stderr)
     for r in ok:
         r["chg"] = round((r["ttm"] / r["lfy"] - 1) * 100, 1) if r["lfy"] else 0
         r["p25"] = prev.get(r["c"], {}).get("p25", ""); r["cmp"] = prev.get(r["c"], {}).get("cmp", "")
@@ -175,7 +190,7 @@ def main(argv=None):
                        ttm_unit=round(ttm_unit, 3), lfy_unit=round(lfy_unit, 3), has26=has26, rows=rows_out, fails=fails),
                   open(JSON_OUT, "w", encoding="utf-8"), ensure_ascii=False)
     if gate_mode:
-        ok_gate, reasons = check_gate(len(ok), fails, has26, fin_fails, len(pool.get("rows", [])))
+        ok_gate, reasons = check_gate(len(ok), fails, has26, fin_fails, len(pool.get("rows", [])), carry_error=carry_error)
         if not ok_gate:
             print(f"❌ [Gate Failed] {'; '.join(reasons)}", file=sys.stderr)
             return 1

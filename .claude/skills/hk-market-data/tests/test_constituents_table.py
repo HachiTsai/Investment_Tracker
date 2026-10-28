@@ -81,6 +81,31 @@ def test_check_gate_requires_pool_rows():
     assert not ok and any("收益平準金" in r for r in reasons)
 
 
+def test_load_prev_reads_rows(tmp_path):
+    page = tmp_path / "prev.html"
+    page.write_text('const D=[{"c":"0939","p25":"12.3","cmp":"+1.0"}];\n', encoding="utf-8")
+    rows, err = constituents_table.load_prev(str(page))
+    assert err == "" and rows["0939"]["p25"] == "12.3"
+
+
+def test_load_prev_reports_missing_file(tmp_path):
+    rows, err = constituents_table.load_prev(str(tmp_path / "none.html"))
+    assert rows == {} and "找不到上一版頁面" in err
+
+
+def test_load_prev_reports_page_without_rows(tmp_path):
+    page = tmp_path / "prev.html"
+    page.write_text("<html>改版後的頁面</html>", encoding="utf-8")
+    rows, err = constituents_table.load_prev(str(page))
+    assert rows == {} and "讀不到資料列" in err
+
+
+def test_check_gate_blocks_when_carry_fails():
+    assert check_gate(49, [], 25, [], 554)[0]
+    ok, reasons = check_gate(49, [], 25, [], 554, carry_error="上一版頁面讀不到資料列")
+    assert not ok and any("上一版頁面無法沿用" in r for r in reasons)
+
+
 def test_fetch_pool_returns_rows_and_events(monkeypatch):
     from datetime import date
 
