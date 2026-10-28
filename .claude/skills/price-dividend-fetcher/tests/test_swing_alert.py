@@ -19,13 +19,13 @@ ALERT = {
 
 
 def _alert_tab_down(sheet_id, range_name):
-    if range_name.startswith(ALERT_TAB):
+    if range_name.startswith(f"'{ALERT_TAB}'!"):
         raise RuntimeError("Sheets API 暫時失敗")
     return EXISTING
 
 
 def _alert_tab_ready(sheet_id, range_name):
-    if range_name.startswith(ALERT_TAB):
+    if range_name.startswith(f"'{ALERT_TAB}'!"):
         return [["偵測時間"]]
     return EXISTING
 
@@ -52,8 +52,8 @@ def test_append_alert_rows_creates_tab_and_keeps_ticker_as_text():
 
     assert client.batch_update.call_args[0][1][0]["addSheet"]["properties"]["title"] == ALERT_TAB
     header_call, row_call = client.update_values.call_args_list
-    assert header_call[0][1] == f"{ALERT_TAB}!A1:H1"
-    assert row_call[0][1] == f"{ALERT_TAB}!A2:H2"
+    assert header_call[0][1] == f"'{ALERT_TAB}'!A1:H1"
+    assert row_call[0][1] == f"'{ALERT_TAB}'!A2:H2"
     assert row_call[0][2] == [
         ["2026-10-28 15:20:00 (TPE)", "'TPE:2330", "台積電", "長多短回檔", "共振偏多", "🟢 突破", 950.0, 900.0],
     ]
@@ -68,7 +68,7 @@ def test_append_alert_rows_goes_below_existing_rows():
 
     client.batch_update.assert_not_called()
     client.update_values.assert_called_once()
-    assert client.update_values.call_args[0][1] == f"{ALERT_TAB}!A6:H6"
+    assert client.update_values.call_args[0][1] == f"'{ALERT_TAB}'!A6:H6"
 
 
 def test_alert_write_failure_leaves_sheet_untouched():
@@ -86,7 +86,7 @@ def test_alert_is_recorded_before_sheet_overwrite(monkeypatch):
 
     assert _run_with_scan(client, [ALERT]) == 0
     ranges = [c[0][1] for c in client.update_values.call_args_list]
-    assert ranges[0].startswith(f"{ALERT_TAB}!")
+    assert ranges[0].startswith(f"'{ALERT_TAB}'!")
     assert ranges[1].startswith("Untitled!A1:X")
 
 

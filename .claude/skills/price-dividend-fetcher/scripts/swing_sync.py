@@ -117,6 +117,11 @@ def _cell(value: Any) -> Any:
     return "" if value is None else value
 
 
+def _alert_range(a1: str) -> str:
+    """分頁名含中文，範圍一律加單引號（A1 標準寫法），避免 Sheets 解析失敗。"""
+    return f"'{ALERT_TAB}'!{a1}"
+
+
 def fresh_alerts(scan_results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """三週期組合變成關鍵組合，且本次有寫入新資料的標的。休市標的不記，免得每次執行重複記錄。"""
     return [r for r in scan_results if r.get("alert") and r.get("fresh")]
@@ -127,16 +132,16 @@ def append_alert_rows(client: GoogleSheetsClient, sheet_id: str, alerts: List[Di
     titles = {s["properties"]["title"] for s in client.get_spreadsheet(sheet_id).get("sheets", [])}
     if ALERT_TAB not in titles:
         client.batch_update(sheet_id, [{"addSheet": {"properties": {"title": ALERT_TAB}}}])
-    existing = client.get_values(sheet_id, f"{ALERT_TAB}!A:A")
+    existing = client.get_values(sheet_id, _alert_range("A:A"))
     if not existing:
-        client.update_values(sheet_id, f"{ALERT_TAB}!A1:H1", [ALERT_HEADER])
+        client.update_values(sheet_id, _alert_range("A1:H1"), [ALERT_HEADER])
     rows = [
         [detected_at, f"'{r['ticker']}", _cell(r.get("name")), _cell(r.get("prev_combo")), _cell(r.get("combo")),
          _cell(r.get("label")), _cell(r.get("close")), _cell(r.get("stop_price"))]
         for r in alerts
     ]
     start = max(len(existing), 1) + 1
-    client.update_values(sheet_id, f"{ALERT_TAB}!A{start}:H{start + len(rows) - 1}", rows)
+    client.update_values(sheet_id, _alert_range(f"A{start}:H{start + len(rows) - 1}"), rows)
 
 
 def report_alerts(alerts: List[Dict[str, Any]]) -> None:
