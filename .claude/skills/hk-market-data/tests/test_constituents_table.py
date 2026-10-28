@@ -9,6 +9,7 @@ TEMPLATE = ROOT.parent / "tw-etf-fetcher" / "references" / "constituents_templat
 PAGE = ROOT.parent / "tw-etf-fetcher" / "scripts" / "etf_page.py"
 
 sys.path.insert(0, str(SCRIPT.parent))
+import constituents_table
 from constituents_table import check_gate
 
 
@@ -72,3 +73,48 @@ def test_check_gate():
 
     ok, reasons = check_gate(49, [], 25, ["1", "2", "3", "4", "5", "6"])
     assert not ok and any("財報失敗檔數超標" in r for r in reasons)
+
+
+def test_check_gate_requires_pool_rows():
+    assert check_gate(49, [], 25, [], 554)[0]
+    ok, reasons = check_gate(49, [], 25, [], 0)
+    assert not ok and any("收益平準金" in r for r in reasons)
+
+
+def test_fetch_pool_returns_rows_and_events(monkeypatch):
+    from datetime import date
+
+    rows = [dict(date="2026-07-15", nav=15.25, base=15.0, income=1.02, capital=-0.77),
+            dict(date="2026-07-16", nav=14.78, base=15.0, income=0.47, capital=-0.69)]
+    nc = constituents_table.nav_composition
+    monkeypatch.setattr(nc, "Client", lambda: object())
+    monkeypatch.setattr(nc, "resolve_fid", lambda c, etf: "E0014")
+    monkeypatch.setattr(nc, "fetch_nav", lambda c, fid, start, end: rows)
+    got = constituents_table.fetch_pool("00882", date(2026, 7, 17))
+    assert got["rows"][1] == ["2026-07-16", 14.78, 0.47, -0.69] and got["events"][0]["paid"] == 0.55
+
+
+def test_fetch_pool_failure_returns_empty_and_warns(monkeypatch, capsys):
+    from datetime import date
+
+    nc = constituents_table.nav_composition
+
+    def boom(*a, **k):
+        raise nc.NavError("防護頁")
+
+    monkeypatch.setattr(nc, "Client", lambda: object())
+    monkeypatch.setattr(nc, "resolve_fid", boom)
+    assert constituents_table.fetch_pool("00882", date(2026, 7, 17)) == {}
+    assert "收益平準金資料不可用：防護頁" in capsys.readouterr().err
+
+
+def test_fetch_pool_rejects_stale_data(monkeypatch, capsys):
+    from datetime import date
+
+    nc = constituents_table.nav_composition
+    rows = [dict(date="2026-01-02", nav=15.28, base=15.0, income=0.84, capital=-0.56)]
+    monkeypatch.setattr(nc, "Client", lambda: object())
+    monkeypatch.setattr(nc, "resolve_fid", lambda c, etf: "E0014")
+    monkeypatch.setattr(nc, "fetch_nav", lambda c, fid, start, end: rows)
+    assert constituents_table.fetch_pool("00882", date(2026, 10, 28)) == {}
+    assert "落後" in capsys.readouterr().err

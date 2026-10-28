@@ -1,0 +1,74 @@
+<button id="tb-pool" aria-pressed="false">收益平準金</button>
+<!--@@-->
+<div id="pg-pool" hidden style="display:contents">
+<style>
+.ch1 svg{width:100%;height:auto;background:var(--card);border:1px solid var(--line);border-radius:6px;touch-action:pan-y;color:var(--fg)}
+.ch1 .ln{fill:none;stroke-width:2;stroke-linejoin:round}
+#prd{min-height:1.65em;font-variant-numeric:tabular-nums}
+</style>
+<section class="sum" id="psum" aria-label="收益平準金摘要"></section>
+<section><div class="chips" id="prng" aria-label="走勢區間"></div>
+<p class="mut" id="prd" aria-live="polite"></p>
+<div class="ch1" id="pch"></div></section>
+<section><p class="mut">歷次配息（以收益平準金在除息日的降幅偵測）</p><div class="wrap" style="max-height:none"><table class="mini" id="pev"></table></div></section>
+<section><ul class="mut">
+<li>收益平準金與資本平準金是基金淨值組成的兩個項目，每單位新台幣元：淨值 ＝ 面額 15 ＋ 收益平準金 ＋ 資本平準金。收益平準金是尚未分配、累積在淨值裡的收入（扣除費用後）；資本平準金包含已實現與未實現的資本損益，與申購買回產生的資本平準。定義取自中信投信網站「淨值組成項目」說明。</li>
+<li>怎麼讀這張圖：除息日當天收益平準金會下降，降幅就是該次每單位配息（2024/7 至 2026/7 五次都與官方收益分配公告的金額一致）；兩次除息之間的小幅下降是費用扣除，明顯上升是成分股股利入帳，多半集中在 6 月與 9～10 月。資本平準金為負代表基金累積的資本面是虧損，配息只能來自股利與收益平準金。</li>
+<li>這是每日的歷史資料，不是配息預測；每次配息金額由經理公司在評價日（6/30、12/31）後決定。來源：中信投信網站「淨值組成」，資料至 __PASOF__，有紀錄起日 __PFIRST__。</li>
+</ul></section>
+</div>
+<!--@@-->
+<script>
+(function(){
+const P=__PDATA__,ETF="__PETF__";
+const R=P.rows.map(r=>({d:r[0],t:Date.parse(r[0]+'T00:00:00Z'),nav:r[1],inc:r[2],cap:r[3]})),E=P.events,last=R[R.length-1];
+const f=(v,n)=>v==null?'—':Number(v).toFixed(n);
+Object.assign(HELP,{
+pool_inc:{t:"收益平準金",b:"<p>基金淨值裡尚未分配的收入（扣除費用後），每受益權單位的新台幣元。除息時依配息金額下降，之後隨成分股股利入帳慢慢回升。</p><p><b>怎麼看：</b>它是下一次配息的來源池；數字低，代表下一次配息要靠接下來入帳的股利補足。</p>"},
+pool_cap:{t:"資本平準金",b:"<p>基金淨值裡資本損益（已實現與未實現）以及申購買回產生的資本平準，每單位新台幣元。</p><p><b>怎麼看：</b>負值代表資本面累積虧損。依收益分配公告，資本損失不必從可分配收益扣除，所以不影響股利來源的配息，但不能期待靠資本利得配息。</p>"},
+pool_paid:{t:"配息（池子降幅）",b:"<p>除息日當天收益平準金的降幅，等於該次每單位配息。占除息前的比例是配息占當時收益平準金的比重。</p><p><b>限制：</b>只能偵測降幅達 0.10 元以上的除息；比例是歷史觀察，不是經理公司的規則。</p>"}});
+const sm=document.getElementById('psum');
+const ev=E.length?E[E.length-1]:null;
+[[f(last.inc,2)+' 元','最新收益平準金（'+last.d+'）','pool_inc'],
+[ev?f(ev.paid,2)+' 元':'—',ev?'最近一次配息 '+ev.ex_date+'：收益平準金 '+f(ev.pre,2)+' → '+f(ev.post,2):'沒有偵測到配息','pool_paid'],
+[f(last.cap,2)+' 元','資本平準金','pool_cap'],
+[f(last.inc/last.nav*100,1)+'%','收益平準金占淨值（淨值 '+f(last.nav,2)+'）']].forEach(([b,s,k])=>{const d=document.createElement('div');d.innerHTML='<b>'+b+'</b><span>'+s+(k?' <span class="hi" data-help="'+k+'" role="button" aria-label="說明">ⓘ</span>':'')+'</span>';sm.appendChild(d)});
+document.getElementById('pev').innerHTML='<thead><tr><th>除息日</th><th class="n">除息前</th><th class="n">除息後</th><th class="n">配息 <span class="hi" data-help="pool_paid" role="button" aria-label="說明">ⓘ</span></th><th class="n">占除息前</th></tr></thead><tbody>'+(E.length?E.slice().reverse().map(e=>'<tr><td>'+e.ex_date+'</td><td class="n">'+f(e.pre,2)+'</td><td class="n">'+f(e.post,2)+'</td><td class="n">'+f(e.paid,2)+'</td><td class="n">'+(e.ratio==null?'—':f(e.ratio*100,0)+'%')+'</td></tr>').join(''):'<tr><td colspan="5">沒有偵測到配息</td></tr>')+'</tbody>';
+let rng='all';
+const rd=document.getElementById('prd'),ch=document.getElementById('pch');
+function ticks(mn,mx,n){const raw=(mx-mn)/n,mag=Math.pow(10,Math.floor(Math.log10(raw))),m=raw/mag,st=(m<1.5?1:m<3?2:m<7?5:10)*mag,o=[];for(let v=Math.ceil(mn/st)*st;v<=mx+1e-9;v+=st)o.push(+v.toFixed(6));return o}
+function view(){return rng==='all'?R:R.filter(r=>r.t>=last.t-365*864e5)}
+function draw(){
+const rs=view(),W=Math.max(300,Math.min(720,ch.clientWidth||720)),pl=40,pr=10,pt=44,H1=190,H2=150,gap=50,H=pt+H1+gap+H2+30;
+const t0=rs[0].t,t1=rs[rs.length-1].t,x=t=>pl+(W-pl-pr)*(t-t0)/((t1-t0)||1);
+let s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+ETF+' 每日收益平準金與資本平準金走勢，下方表格列出歷次配息">';
+const evs=E.filter(e=>{const t=Date.parse(e.ex_date+'T00:00:00Z');return t>=t0&&t<=t1});
+function pan(key,top,h,title,col,labels){
+const vs=rs.map(r=>r[key]);let mn=Math.min(...vs),mx=Math.max(...vs);const pad=(mx-mn)*.12||.1;mn-=pad;mx+=pad;
+const y=v=>top+h*(mx-v)/(mx-mn);
+let g='<text x="4" y="'+(top-26)+'" font-size="12" fill="currentColor">'+title+'</text>';
+ticks(mn,mx,4).forEach(v=>{g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="currentColor" opacity=".12"/><text x="'+(pl-6)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="11" fill="currentColor" opacity=".7">'+v.toFixed(2)+'</text>'});
+if(mn<0&&mx>0)g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(0)+'" y2="'+y(0)+'" stroke="currentColor" opacity=".35"/>';
+evs.forEach(e=>{const ex=x(Date.parse(e.ex_date+'T00:00:00Z'));g+='<line x1="'+ex+'" x2="'+ex+'" y1="'+top+'" y2="'+(top+h)+'" stroke="currentColor" stroke-dasharray="3 3" opacity=".4"/>'+(labels?'<text x="'+Math.min(Math.max(ex,pl+22),W-pr-22)+'" y="'+(top-6)+'" text-anchor="middle" font-size="11" fill="currentColor">'+(W>520?'配息 ':'')+f(e.paid,2)+'</text>':'')});
+g+='<path class="ln" style="stroke:'+col+'" d="'+rs.map((r,i)=>(i?'L':'M')+x(r.t).toFixed(1)+' '+y(r[key]).toFixed(1)).join('')+'"/>';
+return g}
+s+=pan('inc',pt,H1,'收益平準金（每單位，元）','var(--acc)',true)+pan('cap',pt+H1+gap,H2,'資本平準金（每單位，元）','var(--warn)',false);
+const m0=new Date(t0),span=(t1-t0)/864e5/30.4,step=Math.max(1,Math.ceil(span/Math.floor((W-pl-pr)/62)));
+let d=new Date(Date.UTC(m0.getUTCFullYear(),m0.getUTCMonth()+1,1));
+for(;d.getTime()<=t1;d=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+step,1)))s+='<text x="'+x(d.getTime())+'" y="'+(H-8)+'" text-anchor="middle" font-size="11" fill="currentColor" opacity=".7">'+String(d.getUTCFullYear()).slice(2)+'/'+String(d.getUTCMonth()+1).padStart(2,'0')+'</text>';
+s+='<line id="pcur" y1="'+pt+'" y2="'+(pt+H1+gap+H2)+'" stroke="currentColor" opacity=".5" visibility="hidden"/></svg>';
+ch.innerHTML=s;
+const svg=ch.firstChild,cur=svg.querySelector('#pcur');
+function at(ev){const b=svg.getBoundingClientRect(),px=(ev.clientX-b.left)/b.width*W,t=t0+(px-pl)/(W-pl-pr)*(t1-t0);let bi=0,bd=1/0;rs.forEach((r,i)=>{const dd=Math.abs(r.t-t);if(dd<bd){bd=dd;bi=i}});const r=rs[bi];cur.setAttribute('x1',x(r.t));cur.setAttribute('x2',x(r.t));cur.setAttribute('visibility','visible');rd.textContent=r.d+'　收益平準金 '+f(r.inc,2)+'　資本平準金 '+f(r.cap,2)+'　淨值 '+f(r.nav,2)}
+svg.addEventListener('pointermove',at);svg.addEventListener('pointerdown',at);
+svg.addEventListener('pointerleave',()=>{cur.setAttribute('visibility','hidden');rd.textContent=dflt})}
+const dflt='點或滑過圖表看每天的數字。虛線是除息日。';
+function chips(){const el=document.getElementById('prng');el.innerHTML='';[['all','全部（'+R[0].d.slice(0,7)+' 起）'],['1y','近一年']].forEach(([k,t])=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.setAttribute('aria-pressed',String(rng===k));b.onclick=()=>{rng=k;chips();draw()};el.appendChild(b)})}
+rd.textContent=dflt;chips();draw();
+const fb=document.getElementById('tb-fin'),db=document.getElementById('tb-div'),tb=document.getElementById('tb-pool'),pg=document.getElementById('pg-pool'),of=fb.onclick,od=db.onclick;
+function off(){pg.hidden=true;tb.setAttribute('aria-pressed','false')}
+fb.onclick=()=>{off();of()};db.onclick=()=>{off();od()};
+tb.onclick=()=>{document.getElementById('pg-div').hidden=true;document.getElementById('pg-fin').hidden=true;fb.setAttribute('aria-pressed','false');db.setAttribute('aria-pressed','false');pg.hidden=false;tb.setAttribute('aria-pressed','true');draw()};
+let rz;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(!pg.hidden)draw()},150)});
+})();
+</script>

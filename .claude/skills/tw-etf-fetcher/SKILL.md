@@ -48,6 +48,9 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets
 python3 .claude/skills/tw-etf-fetcher/scripts/etf_table.py 00985A out.html [table.json]
 # 7. 多檔台股 ETF 資料池：成分股去重只抓一次，輸出 index.html＋每檔 ETF 一頁＋pool.json
 python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py outdir [--etfs 0050,0056] [--models-dir models]
+# 6.1 中信投信 ETF 每日淨值組成（收益平準金、資本平準金）：偵測除息並可對照官方配息，--csv 輸出每日表
+python3 .claude/skills/tw-etf-fetcher/scripts/nav_composition.py 00882 --start 2024-06-14 --events --csv out.csv
+python3 .claude/skills/tw-etf-fetcher/scripts/nav_composition.py 00882 --verify 2026-07-16:0.55,2026-01-19:0.45
 # 7.1 港股資料池（目前只支援 00882，必須用 --etfs 指定；持股來自中信投信）
 python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py outdir --market hk --etfs 00882
 # 7.2 美股資料池（持股先查全市場表，表內沒有才用 Yahoo 前幾大，coverage 為 partial；必須用 --etfs 指定）
@@ -90,6 +93,7 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py outdir --market jp --e
 | `etf_market.py` | `Market` 介面、健康門檻與限流、純代號與國別後綴掃描、`guard_sheet_id`（拒絕 Core） |
 | `etf_pool.py`、`etf_table.py` | 資料池與單檔頁的流程（`--market` 切換市場） |
 | `etf_page.py` | 頁面渲染與各市場的頁面設定（`PROFILES`） |
+| `nav_composition.py` | 中信投信 `product/GetNAV` 每日淨值組成：token 重取、重試換網域、欄位加總檢查、除息偵測與官方配息對照、CSV；ETF 代號經 `etf/ETFList` 解析，涵蓋中信投信全部 ETF；港股 00882 頁的「收益平準金」分頁用它（`etf_page.render(pool=…)`，分頁內容在 `references/pool_section.html`） |
 | `etf_fx.py` | 外幣對新台幣匯率（港、美、日） |
 | `etf_sheets_sync.py`、`etf_sheets_io.py` | 寫入各市場的外圍試算表與本機 CSV |
 | `etf_lookthrough.py`、`etf_model_scaffolder.py` | 穿透曝險分析、一鍵生成標的建模卡片 |
