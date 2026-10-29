@@ -319,6 +319,78 @@ def test_refresh_lagging_does_nothing_when_no_laggards(monkeypatch):
     assert slept == []
 
 
+GAP_DAYS = ["2026-10-19", "2026-10-20", "2026-10-21", "2026-10-22", "2026-10-23"]
+
+
+def _gap_row(ticker, dates, label="x"):
+    return {"ticker": ticker, "market": "台股", "last_date": dates[-1], "bar_dates": dates, "label": label}
+
+
+def test_missing_days_flags_middle_gap_when_majority_has_day():
+    rows = [
+        _gap_row("TPE:A", GAP_DAYS),
+        _gap_row("TPE:B", [d for d in GAP_DAYS if d != "2026-10-21"]),
+        _gap_row("TPE:C", GAP_DAYS),
+        _gap_row("TPE:D", GAP_DAYS),
+    ]
+    assert sw.missing_days(rows) == {"TPE:B": ["2026-10-21"]}
+
+
+def test_missing_days_ignores_market_wide_holiday():
+    no_21 = [d for d in GAP_DAYS if d != "2026-10-21"]
+    rows = [_gap_row("TPE:A", no_21), _gap_row("TPE:B", no_21)]
+    assert sw.missing_days(rows) == {}
+
+
+def test_missing_days_ignores_trailing_lag_and_new_listing():
+    rows = [
+        _gap_row("TPE:A", GAP_DAYS),
+        _gap_row("TPE:B", GAP_DAYS[:-1]),  # 尾端落後，交給 lagging_tickers
+        _gap_row("TPE:C", GAP_DAYS[2:]),  # 新掛牌，前段沒有資料不算缺口
+        _gap_row("TPE:D", GAP_DAYS),
+    ]
+    assert sw.missing_days(rows) == {}
+    assert sw.lagging_tickers(rows) == ["TPE:B"]
+
+
+def test_refresh_lagging_adopts_row_that_fills_middle_gap(monkeypatch):
+    rows = [
+        _gap_row("TPE:A", GAP_DAYS),
+        _gap_row("TPE:B", [d for d in GAP_DAYS if d != "2026-10-21"]),
+        _gap_row("TPE:C", GAP_DAYS),
+        _gap_row("TPE:D", GAP_DAYS),
+    ]
+    items = [{"ticker": r["ticker"]} for r in rows]
+    calls = []
+
+    def fake_scan(sub, prev, with_chart=False, now=None):
+        calls.append([it["ticker"] for it in sub])
+        return [_gap_row("TPE:B", GAP_DAYS, label="filled")]
+
+    monkeypatch.setattr(sw, "scan", fake_scan)
+    slept = []
+    out = sw.refresh_lagging(rows, items, None, delays=(30,), sleep=slept.append)
+    assert calls == [["TPE:B"]] and slept == [30]
+    assert out[1]["label"] == "filled"
+    assert sw.missing_days(out) == {}
+
+
+def test_refresh_lagging_keeps_gap_row_when_retry_still_missing(monkeypatch):
+    gap = [d for d in GAP_DAYS if d != "2026-10-21"]
+    rows = [
+        _gap_row("TPE:A", GAP_DAYS),
+        _gap_row("TPE:B", gap, label="old"),
+        _gap_row("TPE:C", GAP_DAYS),
+        _gap_row("TPE:D", GAP_DAYS),
+    ]
+    items = [{"ticker": r["ticker"]} for r in rows]
+    monkeypatch.setattr(sw, "scan", lambda sub, prev, with_chart=False, now=None: [_gap_row("TPE:B", gap, label="still")])
+    slept = []
+    out = sw.refresh_lagging(rows, items, None, delays=(30, 60), sleep=slept.append)
+    assert slept == [30, 60]
+    assert [r["label"] for r in out] == ["x", "old", "x", "x"]
+
+
 def test_check_gate():
     rows_ok = [{"ticker": "2330", "state": "UPTREND", "fresh": True}] * 10
     is_healthy, is_closed, reasons = sw.check_gate(rows_ok, max_errors=5, require_fresh=True)
