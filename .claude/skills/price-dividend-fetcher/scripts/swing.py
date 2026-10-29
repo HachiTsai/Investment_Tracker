@@ -9,6 +9,7 @@ import argparse
 import json
 import sys
 import time
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -39,21 +40,57 @@ def lagging_tickers(rows: List[Dict]) -> List[str]:
 
 
 RESCAN_DELAYS = (30, 60)  # 秒：證交所限流多為短暫，落後標的等候後重抓（每次只重抓落後的代號）
+GAP_BARS = 10  # 中間日缺口只看每檔最近這幾根日線的日期
+
+
+def missing_days(rows: List[Dict]) -> Dict[str, List[str]]:
+    """中間日缺口：同市場超過半數標的有、但某檔在自己的日線區間內缺少的日期（Yahoo 漏掉某天、證交所補缺失敗時會出現）。
+
+    交易日以同市場多數標的為準，不需要假日表：10-26 這類全市場都沒有的日期不會被當成缺口。
+    只看每檔自己最早到最晚的區間，尾端落後由 lagging_tickers 判定，新掛牌的早期日期也不算缺口。
+    """
+    by_market: Dict[str, List[set]] = {}
+    for r in rows:
+        if r.get("bar_dates"):
+            by_market.setdefault(r["market"], []).append(set(r["bar_dates"]))
+    consensus = {}
+    for m, sets in by_market.items():
+        counts = Counter(d for s in sets for d in s)
+        consensus[m] = {d for d, c in counts.items() if c * 2 > len(sets)}
+    out = {}
+    for r in rows:
+        if not r.get("bar_dates"):
+            continue
+        own = set(r["bar_dates"])
+        lo, hi = min(own), max(own)
+        gaps = sorted(d for d in consensus[r["market"]] if lo <= d <= hi and d not in own)
+        if gaps:
+            out[r["ticker"]] = gaps
+    return out
+
+
+def stale_tickers(rows: List[Dict]) -> List[str]:
+    """需要重抓的標的：尾端落後，或中間有日期缺口。"""
+    return list(dict.fromkeys(lagging_tickers(rows) + list(missing_days(rows))))
+
+
+def _quality(row: Dict, gaps: Dict[str, List[str]]) -> Tuple[str, int]:
+    """列的品質：資料日越新越好；同一資料日時，中間缺口越少越好。"""
+    return (row.get("last_date") or "", -len(gaps.get(row["ticker"], [])))
 
 
 def refresh_lagging(rows: List[Dict], items: List[Dict], prev: Optional[Dict[str, Dict]], with_chart: bool = False,
                     delays: Tuple[int, ...] = RESCAN_DELAYS, sleep=time.sleep) -> List[Dict]:
-    """落後標的等待後重抓；只採用資料日更新的新列，其餘維持原列。重抓仍落後就保留原列，由 --scan 的 stderr 提示。"""
+    """落後或有中間缺口的標的等待後重抓；只採用品質較好的新列（資料日較新，或缺口較少），其餘維持原列。重抓仍有問題就保留原列，由 --scan 的 stderr 提示。"""
     for delay in delays:
-        lag = set(lagging_tickers(rows))
+        lag = set(stale_tickers(rows))
         if not lag:
             break
         sleep(delay)
         fresh = {r["ticker"]: r for r in scan([it for it in items if it["ticker"] in lag], prev, with_chart=with_chart)}
-        rows = [
-            fresh[r["ticker"]] if r["ticker"] in lag and (fresh.get(r["ticker"], {}).get("last_date") or "") > (r.get("last_date") or "") else r
-            for r in rows
-        ]
+        candidate = [fresh.get(r["ticker"], r) if r["ticker"] in lag else r for r in rows]
+        before, after = missing_days(rows), missing_days(candidate)
+        rows = [c if r["ticker"] in lag and _quality(c, after) > _quality(r, before) else r for r, c in zip(rows, candidate)]
     return rows
 
 
@@ -458,6 +495,7 @@ def scan(items: List[Dict], prev: Optional[Dict[str, Dict]] = None, now: Optiona
             from swing_scores import score_history
             row["chart"]["hs"] = score_history(bars)
         row["last_date"] = last.strftime("%Y-%m-%d")
+        row["bar_dates"] = [(datetime.fromtimestamp(b["ts"], timezone.utc) + timedelta(hours=MARKET_TZ_HOURS.get(market, 8))).strftime("%Y-%m-%d") for b in bars[-GAP_BARS:]]
         row["fresh"] = row["last_date"] == market_today(market, now)
         if prev is not None:
             old = prev.get(it["ticker"]) or {}
@@ -518,7 +556,7 @@ def render_daily_page(rows: List[Dict], patrol: Dict, date: str, notices: Option
     keep = ("ticker", "name", "market", "state", "label", "close", "rsi14", "pos_52w_pct", "stop_price", "stop_distance_pct",
             "fib_label", "long", "mid", "short", "combo", "alert", "reason", "trend_score", "macd_score", "vol_score",
             "return_score", "return_1y_pct", "total_score", "posture_label", "yield_pct", "watchdog", "last_date", "fresh",
-            "support_20d", "resistance_20d", "chart")
+            "support_20d", "resistance_20d", "chart", "missing_days")
     rows = [r for r in rows if not r.get("source", "").endswith("成分股") and r["ticker"] not in DAILY_EXCLUDE]  # 每日巡檢頁只列觀察清單標的，不含 00882 的港股成分股
     data = [{**{k: r.get(k) for k in keep}, "kind": kind_of(r.get("source", ""))} for r in rows]
     head = {"macro": patrol.get("macro_feed", ""), "stale": [f["ticker"] for f in patrol.get("fleet", []) if (f.get("watchdog") or {}).get("is_stale")], "notices": list(notices or [])}
@@ -569,6 +607,11 @@ def main(argv=None) -> int:
         items = watchlist(a.scan or None, filter_tier=a.tier)
         rows = scan(items, prev, with_chart=bool(a.daily_html))
         rows = refresh_lagging(rows, items, prev, with_chart=bool(a.daily_html))
+        gaps = missing_days(rows)
+        for r in rows:
+            r["missing_days"] = gaps.get(r["ticker"], [])
+        if gaps:
+            print("中間日缺口（同市場多數標的有、該檔缺）：" + "；".join(f"{t} 缺 {'、'.join(d[5:] for d in ds)}" for t, ds in gaps.items()) + "；指標以實際存在的 K 棒計算，缺的那天不計", file=sys.stderr)
         patrol = json.loads(Path(a.patrol).read_text(encoding="utf-8")) if a.patrol else {}
         merge_patrol(rows, patrol)
         lag = lagging_tickers(rows)
