@@ -8,6 +8,7 @@
 import argparse
 import json
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -37,6 +38,25 @@ def lagging_tickers(rows: List[Dict]) -> List[str]:
     return [r["ticker"] for r in rows if r.get("last_date") and r["last_date"] < latest[r["market"]]]
 
 
+RESCAN_DELAYS = (30, 60)  # 秒：證交所限流多為短暫，落後標的等候後重抓（每次只重抓落後的代號）
+
+
+def refresh_lagging(rows: List[Dict], items: List[Dict], prev: Optional[Dict[str, Dict]], with_chart: bool = False,
+                    delays: Tuple[int, ...] = RESCAN_DELAYS, sleep=time.sleep) -> List[Dict]:
+    """落後標的等待後重抓；只採用資料日更新的新列，其餘維持原列。重抓仍落後就保留原列，由 --scan 的 stderr 提示。"""
+    for delay in delays:
+        lag = set(lagging_tickers(rows))
+        if not lag:
+            break
+        sleep(delay)
+        fresh = {r["ticker"]: r for r in scan([it for it in items if it["ticker"] in lag], prev, with_chart=with_chart)}
+        rows = [
+            fresh[r["ticker"]] if r["ticker"] in lag and (fresh.get(r["ticker"], {}).get("last_date") or "") > (r.get("last_date") or "") else r
+            for r in rows
+        ]
+    return rows
+
+
 def fill_gaps_from_twse(bars: List[Dict], code: str, now: Optional[datetime] = None, fetch=None) -> List[Dict]:
     """Yahoo 偶爾漏掉台股某一天的日線（實測 0050 缺 10-21、上一輪缺 10-20）：用證交所 STOCK_DAY 補回近 GAP_WINDOW_DAYS 天內缺的交易日。
 
@@ -55,7 +75,8 @@ def fill_gaps_from_twse(bars: List[Dict], code: str, now: Optional[datetime] = N
     for ym in months:
         try:
             js = json.loads(fetch(TWSE_STOCK_DAY_URL.format(date=ym.replace("-", "") + "01", code=code)))
-        except (ValueError, RuntimeError, OSError):
+        except (ValueError, RuntimeError, OSError) as e:
+            print(f"證交所補缺失敗（{code} {ym}）：{str(e)[:120]}", file=sys.stderr)
             continue
         for row in js.get("data") or []:
             try:
@@ -545,7 +566,9 @@ def main(argv=None) -> int:
     a = p.parse_args(argv)
     if a.scan is not None:
         prev = {r["ticker"]: {"label": r.get("label"), "combo": r.get("combo")} for r in json.loads(Path(a.prev).read_text(encoding="utf-8"))} if a.prev else None
-        rows = scan(watchlist(a.scan or None, filter_tier=a.tier), prev, with_chart=bool(a.daily_html))
+        items = watchlist(a.scan or None, filter_tier=a.tier)
+        rows = scan(items, prev, with_chart=bool(a.daily_html))
+        rows = refresh_lagging(rows, items, prev, with_chart=bool(a.daily_html))
         patrol = json.loads(Path(a.patrol).read_text(encoding="utf-8")) if a.patrol else {}
         merge_patrol(rows, patrol)
         lag = lagging_tickers(rows)
