@@ -263,6 +263,62 @@ def test_lagging_tickers_per_market():
     assert sw.lagging_tickers(rows) == ["B"]
 
 
+def test_fill_gaps_logs_fetch_failure(capsys):
+    def blocked(url):
+        raise RuntimeError("HTTP 307（https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY）")
+    bars = [dict(ts=1, open=1, high=1, low=1, close=1, volume=1, adj=1)]
+    assert sw.fill_gaps_from_twse(bars, "00882", fetch=blocked) == bars
+    err = capsys.readouterr().err
+    assert "證交所補缺失敗（00882" in err and "HTTP 307" in err
+
+
+def test_refresh_lagging_adopts_newer_row_and_rescans_only_laggards(monkeypatch):
+    rows = [
+        {"ticker": "TPE:A", "market": "台股", "last_date": "2026-10-28", "label": "ok"},
+        {"ticker": "TPE:B", "market": "台股", "last_date": "2026-10-27", "label": "old"},
+    ]
+    items = [{"ticker": "TPE:A"}, {"ticker": "TPE:B"}]
+    calls = []
+
+    def fake_scan(sub, prev, with_chart=False, now=None):
+        calls.append([it["ticker"] for it in sub])
+        return [{"ticker": "TPE:B", "market": "台股", "last_date": "2026-10-28", "label": "new"}]
+
+    monkeypatch.setattr(sw, "scan", fake_scan)
+    slept = []
+    out = sw.refresh_lagging(rows, items, None, delays=(30,), sleep=slept.append)
+    assert calls == [["TPE:B"]] and slept == [30]
+    assert [r["label"] for r in out] == ["ok", "new"]
+    assert sw.lagging_tickers(out) == []
+
+
+def test_refresh_lagging_keeps_row_when_retry_still_behind(monkeypatch):
+    rows = [
+        {"ticker": "TPE:A", "market": "台股", "last_date": "2026-10-28", "label": "ok"},
+        {"ticker": "TPE:B", "market": "台股", "last_date": "2026-10-27", "label": "old"},
+    ]
+    items = [{"ticker": "TPE:A"}, {"ticker": "TPE:B"}]
+    monkeypatch.setattr(sw, "scan", lambda sub, prev, with_chart=False, now=None: [
+        {"ticker": "TPE:B", "market": "台股", "last_date": "2026-10-27", "label": "still-old"},
+    ])
+    slept = []
+    out = sw.refresh_lagging(rows, items, None, delays=(30, 60), sleep=slept.append)
+    assert slept == [30, 60]
+    assert out == rows
+    assert sw.lagging_tickers(out) == ["TPE:B"]
+
+
+def test_refresh_lagging_does_nothing_when_no_laggards(monkeypatch):
+    rows = [
+        {"ticker": "TPE:A", "market": "台股", "last_date": "2026-10-28"},
+        {"ticker": "TPE:B", "market": "台股", "last_date": "2026-10-28"},
+    ]
+    monkeypatch.setattr(sw, "scan", lambda *a, **k: (_ for _ in ()).throw(AssertionError("should not rescan")))
+    slept = []
+    assert sw.refresh_lagging(rows, [{"ticker": "TPE:A"}, {"ticker": "TPE:B"}], None, sleep=slept.append) == rows
+    assert slept == []
+
+
 def test_check_gate():
     rows_ok = [{"ticker": "2330", "state": "UPTREND", "fresh": True}] * 10
     is_healthy, is_closed, reasons = sw.check_gate(rows_ok, max_errors=5, require_fresh=True)
