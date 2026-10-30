@@ -24,6 +24,7 @@
 - **全市場 ETF 資料庫排程工作流**：@[.claude/workflows/market-etf-pool.md](.claude/workflows/market-etf-pool.md)
 - **波段觀察資料庫排程工作流**：@[.claude/workflows/swing-patrol-sheets.md](.claude/workflows/swing-patrol-sheets.md)
 - **每日波段巡檢報告排程工作流**：@[.claude/workflows/daily-portfolio-patrol.md](.claude/workflows/daily-portfolio-patrol.md)
+- **Our_Investment 快照版排程工作流**：@[.claude/workflows/ledger-snapshot.md](.claude/workflows/ledger-snapshot.md)
 - **排程登記表**：@[.claude/workflows/schedule-registry.md](.claude/workflows/schedule-registry.md)
 - **情資管線與 APP 整合架構**：@[architecture/情資管線與APP整合架構.md](architecture/情資管線與APP整合架構.md)
 
@@ -112,6 +113,7 @@ scripts/                     共用計算或抓價工具
 | `hk-market-data` | 查港交所公告與 PDF 原文、港股通南向資金、港股報價、00882 產業漲跌、宏觀前饋指標；唯讀 |
 | `portfolio-patrol` | 投資組合全標的自動巡檢與每日簡報，動態遍歷 models/*/cards/ 求值，例外管理（MBE）分診 |
 | `tw-etf-fetcher` | 台股、港股、美股、日股 ETF 的成分股與權重抓取（台股為全市場股號清單與完整持股；港股 00882 經中信投信；美股、日股為前幾大持股，頁面與 Sheet 標示 coverage）、穿透曝險（Look-through）、各市場頁面與資料池（`etf_pool.py`），並支援一鍵生成標的建模卡片；`etf_sheets_sync.py` 把台股全市場表與外幣市場資料池寫入各市場的外圍試算表；市場介面 `etf_market.py` 與共用安全防線（純代號、國別後綴掃描、Core 寫入拒絕）；只讀 Core，寫入僅限外圍試算表 |
+| `ledger-snapshot` | 把互動版交易簿（Our_Investment）衍生成唯讀快照 Artifact，不需連接器，可分享家人；互動版版面更新後重跑即同步；只讀 Our_Investment，不碰 Core |
 | `fundamental-analyzer` | 個股三大財務報表量化體檢（ROE、自由現金流覆蓋、盈餘配發率）與 ETF 穿透加權聚合評分（netScore、divScore、valScore、fricScore）；多市場財報資料層（港股與 A 股東方財富、台股 FinMind＋Yahoo 股市＋證交所 OpenAPI、美股 SEC EDGAR、日股 EDINET，yfinance 為備援），並提供台股成分股明細（`finmind_detail.py`）與港台共用的財報趨勢計算（`fin_trend.py`）；唯讀 |
 
 ## 思考類文件的寫法
@@ -133,7 +135,7 @@ scripts/                     共用計算或抓價工具
 
 ## 投資管理 Skill 開發規範
 
-- **先盤點、擴充優先（Reuse & Extend First）**：建立任何新腳本或技能前，**必須強制盤點現有 8 大核心技能**。若既有領域（抓價殖利率、港股前饋指標、全標的巡檢評估、筆記與情資歸納）已涵蓋，一律**優先擴充現有技能**（以子模組拆分或新增 CLI 參數），嚴禁隨意在頂層 `scripts/` 建立未受技能管轄與測試覆蓋的孤立腳本（Orphan Scripts）。
+- **先盤點、擴充優先（Reuse & Extend First）**：建立任何新腳本或技能前，**必須強制盤點現有 9 大核心技能**。若既有領域（抓價殖利率、港股前饋指標、全標的巡檢評估、筆記與情資歸納）已涵蓋，一律**優先擴充現有技能**（以子模組拆分或新增 CLI 參數），嚴禁隨意在頂層 `scripts/` 建立未受技能管轄與測試覆蓋的孤立腳本（Orphan Scripts）。
 - **新建技能嚴格門檻**：唯有面對「全新領域且現有技能完全無法涵蓋、具備獨特觸發情境與獨立生命週期」之需求時，才獲准於 `.claude/skills/<kebab-case 名稱>/` 建立新技能。
 - **標準目錄結構**：每個技能必須具備 `SKILL.md`、`scripts/`、`references/`、`tests/`。
 - **觸發與規則職責**：`SKILL.md` 的 description 寫清楚何時觸發；規則類內容放 `references/` 作為 SSOT。
