@@ -17,6 +17,7 @@
 | C1 | 每日投資組合巡檢（L6） | Claude 雲端排程 | 平日 08:30 | `daily-portfolio-patrol.md` | Artifact `WLXXvrX7BzLemm9TxqZ6di`，ArtifactData `trap_state` | 無，靠排程串回報 |
 | C2 | 00882 成分股股利表（L7） | Claude 雲端排程 | 週五 17:00 | `hk-00882-dividend.md` | Artifact `DSbfrxfywurJVo3TVwSzia`，Sheet `00882_成分股股利資料庫` | 無，靠排程串回報 |
 | C3 | 台股 ETF 成分股池（L8） | Claude 雲端排程 | 每月第 1 個營業日 09:00（建議） | `tw-etf-pool.md` | Artifact `RoDHVZRr588JCcgzMswsug`，Sheet `台股ETF成分股資料庫` | 無，排程是否已建立待確認 |
+| C4 | Our_Investment 快照版 | Claude 雲端排程 | 每日 21:00（建議） | `ledger-snapshot.md` | Artifact `SBn43iC1bBG2zf2bexgmxZ` | 無，靠排程串回報 |
 | CI | 排程健康檢查（F6） | GitHub Actions `ci.yml`，cron `0 12 * * *` | 每日 20:00 | 本表與 `.claude/skills/fin-commit/scripts/schedule_health.py` | CI 紀錄（成功或紅燈） | 本身即檢查 |
 
 ## 2. 雲端 prompt 原文
@@ -26,6 +27,7 @@
 - C1：`git pull --ff-only origin main，讀取並執行 .claude/workflows/daily-portfolio-patrol.md，完成後依規格回報。`
 - C2：`git pull origin main，讀取並執行 .claude/workflows/hk-00882-dividend.md，完成後依規格回報。`
 - C3：`git pull origin main，讀取並執行 .claude/workflows/tw-etf-pool.md，完成後依規格回報。`
+- C4：`git pull --ff-only origin main，讀取並執行 .claude/workflows/ledger-snapshot.md，完成後依規格回報。`
 - S1（備用）：`git pull origin main，讀取並執行 .claude/workflows/swing-patrol-sheets.md，完成後依規格回報。`
 - S2（備用）：`git pull origin main，讀取並執行 .claude/workflows/market-etf-pool.md，完成後依規格回報。`
 
@@ -37,4 +39,5 @@
 
 ## 4. 異動紀錄
 
+- 2026-10-30：新增 C4（Our_Investment 快照版）。
 - 2026-10-28：建立本表（盤點 F8）。雲端 prompt 皆為單行呼叫，依 Hachi 指示，改流程直接改對應的 `.claude/workflows/*.md`。
