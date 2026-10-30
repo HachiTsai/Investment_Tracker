@@ -498,10 +498,10 @@ def test_growth_etf_zero_dividend_multi_track():
         "tax_retention": 1.0,
         "scores": {"netScore": 75, "divScore": 70},
         "southbound_2d_net": 0.0,
-        "swing": {"state": "NEUTRAL", "label": "⚪ 未觸發條件"},
+        "swing": {"state": "NEUTRAL", "label": "⚪ 無明確型態"},
     }
     res = patrol.evaluate_ticker_posture(mock_cards, live_growth)
-    # 姿態應走成長型專屬配置狀態 (脫離與個股波段未觸發條件完全重複的現狀)
+    # 姿態應走成長型專屬配置狀態 (脫離與個股波段無明確型態完全重複的現狀)
     assert res["posture_key"] == "GROWTH_NEUTRAL"
     assert res["posture_label"] == "🔵 常態配置"
     # 殖利率與達成率應為 None，格式化輸出應為 -
