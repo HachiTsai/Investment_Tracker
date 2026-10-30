@@ -1,0 +1,14 @@
+id: card:ticker:00406A
+type: ticker
+schema_version: 1.0.0
+ticker: "00406A"
+title: "主動中信台灣收益"
+full_name: "中國信託台灣收益成長主動式ETF證券投資信託基金"
+tier: core
+currency: TWD
+exchange: TWSE
+category: ETF
+strategy_type: DIVIDEND_INCOME
+manager: "陳金榮"
+benchmark: "不適用"
+last_model_update: "2026-10-30"
