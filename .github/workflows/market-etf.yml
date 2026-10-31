@@ -53,6 +53,7 @@ jobs:
         if: inputs.market == 'hk' || inputs.market == 'us' || inputs.market == 'jp'
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          EDINET_API_KEY: ${{ secrets.EDINET_API_KEY }}
           MARKET: ${{ inputs.market }}
         run: |
           python3 .claude/skills/tw-etf-fetcher/scripts/etf_sheets_sync.py --market "${MARKET^^}" --pool-json "reports/pool-$MARKET/pool.json"
