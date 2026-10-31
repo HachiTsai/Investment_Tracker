@@ -12,3 +12,13 @@ strategy_type: DIVIDEND_INCOME
 manager: "陳金榮"
 benchmark: "不適用"
 last_model_update: "2026-10-30"
+
+provenance:
+  issuer: "中信投信"
+  index: "不適用（主動式 ETF）"
+  inception_date: "2026-06-02"
+  inception_nav: 10               # 面額 10 元
+  dividend_frequency: "月配（每月 15 日評價）"
+  income_source: "掩護性買權策略之賣出買權權利金（出處：2026-10-30 收益分配公告，11/3 除息一期）"
+  structure: "台股個股＋臺股期貨多方＋每週賣出買權；各項比重為動態資料，不寫入卡片"
+  analysis_note: "research/00406A_配置與配息來源.md"
