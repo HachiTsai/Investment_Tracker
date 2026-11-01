@@ -73,3 +73,29 @@ def test_default_limits_and_gate_keep_the_tw_contract():
 def test_coverage_label_counts_ctbc_as_full_and_tw_skips_the_holdings_floor():
     assert etf_market.coverage_label({"source": etf_market.CTBC_SOURCE}) == "full"
     assert etf_market.Gate().min_holdings == 0
+
+
+def test_classify_constituent_market():
+    from etf_market import classify_constituent as cc, etf_market_hint as hint
+    assert cc("2330", "台積電") == "TW"
+    assert cc("2330.TW", "") == "TW" and cc("6944.TWO", "") == "TW"
+    assert cc("NVDA", "NVIDIA") == "US" and cc("BRK.B", "") == "US"
+    assert cc("7203", "TOYOTA", "JP") == "JP" and cc("285A", "", "JP") == "JP"
+    assert cc("0902", "華能", "HK") == "HK" and cc("1177.HK", "") == "HK"
+    assert cc("600519.SH", "貴州茅臺") == "CN" and cc("300750.SZ", "") == "CN"
+    assert cc("600519", "", "CN") == "CN" and cc("2827", "", "CN") == "HK"
+    assert cc("00645", "富邦日本", "JP") == "TW"  # ETF 持有 ETF
+    assert cc("台股期貨11/26(FITXN*1.TF)", "") == "DERIV" and cc("2026/12東證指數期貨", "") == "DERIV"
+    assert cc("US 10YR NOTE (CBT) DEC26 21-DEC-2026", "") == "DERIV"
+    assert cc("KO 2.5 03/15/51", "") == "BOND" and cc("AT&T INC 3.5% 09/15/2053", "") == "BOND"
+    assert cc("", "現金") == "CASH"
+    assert cc("ASML HOLDING", "") == "OTHER"
+    assert hint("富邦日本", "東證股價指數") == "JP" and hint("元大 S&P500", "") == "US"
+    assert hint("中信中國高股息", "") == "HK" and hint("富邦上証", "上証180指數") == "CN"
+    assert hint("元大台灣50", "臺灣50指數") == "TW"
+
+
+def test_sh_sz_suffix_is_forbidden():
+    from etf_market import find_forbidden_suffix, pure_code
+    assert find_forbidden_suffix("600519.SH 300750.SZ") == ["300750.SZ", "600519.SH"]
+    assert pure_code("600519.SH") == "600519"

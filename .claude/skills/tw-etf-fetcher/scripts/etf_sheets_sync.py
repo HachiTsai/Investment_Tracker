@@ -41,7 +41,7 @@ FOREIGN_SUMMARY_FIELDS = [
     "top1_holding", "top2_holding", "top3_holding", "weighted_roe", "net_score", "div_score", "val_score",
     "fric_score", "last_model_update", "coverage", "holdings_asof",
 ]
-CONSTITUENT_FIELDS = ["etf_id", "etf_name", "constituent_ticker", "constituent_name", "weight_pct", "shares", "update_date"]
+CONSTITUENT_FIELDS = ["etf_id", "etf_name", "constituent_ticker", "constituent_name", "weight_pct", "shares", "update_date", "constituent_market"]
 COVERAGE_LABELS = {"full": "完整", "partial": "前幾大", "fallback": "備援"}
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -242,7 +242,7 @@ def clean_constituent_ticker(ticker: str) -> str:
         return ""
     t = str(ticker).strip()
     t = re.sub(r"^(TPE:|TWO:|HKG:)", "", t, flags=re.IGNORECASE)
-    t = re.sub(r"\.(TW|TWO|US|HK|JP|TF|TX)$", "", t, flags=re.IGNORECASE)
+    t = re.sub(r"\.(TW|TWO|US|HK|JP|TF|TX|SH|SZ)$", "", t, flags=re.IGNORECASE)
     return t.strip()
 
 
@@ -256,6 +256,7 @@ def generate_flattened_constituents(models: List[Dict[str, Any]]) -> List[Dict[s
         etf_id = clean_constituent_ticker(m["ticker"])
         etf_name = m["title"]
         update_date = m["last_model_update"]
+        hint = etf_market.etf_market_hint(m.get("title", ""), m.get("benchmark", ""))
 
         for c in m["constituents"]:
             raw_ticker = c.get("ticker") or c.get("symbol") or c.get("code") or ""
@@ -266,7 +267,7 @@ def generate_flattened_constituents(models: List[Dict[str, Any]]) -> List[Dict[s
                 weight_val = raw_w * 100 if raw_w < 1.0 else raw_w
             weight_val = float(weight_val)
 
-            name_val = re.sub(r"\.(TW|TWO|US|HK|JP|TF|TX)\b", "", c.get("name", ""), flags=re.IGNORECASE)
+            name_val = re.sub(r"\.(TW|TWO|US|HK|JP|TF|TX|SH|SZ)\b", "", c.get("name", ""), flags=re.IGNORECASE)
 
             rows.append({
                 "etf_id": etf_id,
@@ -276,6 +277,7 @@ def generate_flattened_constituents(models: List[Dict[str, Any]]) -> List[Dict[s
                 "weight_pct": f"{weight_val:.2f}",
                 "shares": c.get("shares", ""),
                 "update_date": update_date,
+                "constituent_market": etf_market.classify_constituent(raw_ticker, c.get("name", ""), hint),
             })
 
     return rows
@@ -418,18 +420,15 @@ def run_sync_pipeline(
         "last_model_update",
     ]
 
-    constituents_fields = [
-        "etf_id",
-        "etf_name",
-        "constituent_ticker",
-        "constituent_name",
-        "weight_pct",
-        "shares",
-        "update_date",
-    ]
+    constituents_fields = CONSTITUENT_FIELDS
 
     summary_csv = output_dir / "etf_summary.csv"
     constituents_csv = output_dir / "etf_constituents.csv"
+
+    leaked = etf_market.find_forbidden_suffix(
+        "\n".join(str(v) for r in summary_rows + constituents_rows for v in r.values()))
+    if leaked:
+        return {"status": "error", "message": f"輸出含國別後綴，未寫入任何檔案：{leaked[:5]}", "synced": False}
 
     write_csv(summary_rows, summary_fields, summary_csv)
     write_csv(constituents_rows, constituents_fields, constituents_csv)
@@ -510,6 +509,7 @@ def market_tables(payload: Dict[str, Any], models_dir: Path) -> Tuple[List[Dict[
     summaries = {s["etf"]: s for s in payload["summaries"]}
 
     aggregate_func = _load_aggregate_func()
+    market_hint = str(payload.get("market", "TW"))
     summary_rows: List[Dict[str, Any]] = []
     constituent_rows: List[Dict[str, Any]] = []
     for etf in sorted(summaries):
@@ -522,6 +522,7 @@ def market_tables(payload: Dict[str, Any], models_dir: Path) -> Tuple[List[Dict[
                 etf_id=etf, etf_name=title, constituent_ticker=h["code"],
                 constituent_name=_clean_name(names.get(h["code"], h["code"])), weight_pct=f"{h['weightPct']:.2f}",
                 shares="" if h.get("shares") is None else h["shares"], update_date=holdings_asof,
+                constituent_market=etf_market.classify_constituent(h["code"], names.get(h["code"], ""), market_hint),
             ))
         tops = [f"{_clean_name(names.get(h['code'], h['code']))} ({h['weightPct']:.2f}%)" for h in hs[:3]]
         tops += ["-"] * (3 - len(tops))

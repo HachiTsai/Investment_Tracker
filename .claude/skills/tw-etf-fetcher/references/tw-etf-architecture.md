@@ -47,7 +47,7 @@
 
 依據 `architecture/情資管線與APP整合架構.md` 規範：
 
-- 欄位：`etf_id | etf_name | constituent_ticker | constituent_name | weight_pct | shares | update_date`
+- 欄位：`etf_id | etf_name | constituent_ticker | constituent_name | weight_pct | shares | update_date | constituent_market`（TW／US／JP／HK／CN／DERIV／BOND／CASH／OTHER，見 `etf_market.classify_constituent`）
 
 ---
 

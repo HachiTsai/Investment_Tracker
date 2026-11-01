@@ -93,7 +93,7 @@ def test_market_tables_have_the_tw_columns_plus_coverage(tmp_path):
     assert summary[0]["top1_holding"] == "中遠海控 (50.00%)"
     assert summary[0]["top2_holding"] == "騰訊控股 (30.00%)" and summary[0]["top3_holding"] == "-"
     assert cons[0] == dict(etf_id="00882", etf_name="-", constituent_ticker="1919", constituent_name="中遠海控",
-                           weight_pct="50.00", shares=100, update_date="2026-10-21")
+                           weight_pct="50.00", shares=100, update_date="2026-10-21", constituent_market="HK")
     assert cons[1]["shares"] == ""
 
 
@@ -229,7 +229,7 @@ def test_missing_tabs_are_created_and_the_summary_range_follows_its_width(tmp_pa
     client = instances[0]
     assert [r["addSheet"]["properties"]["title"] for r in client.requests] == ["ETF_Summary", "ETF_Constituents"]
     assert ("ETF_Summary!A1:R2", 2) in client.updates
-    assert ("ETF_Constituents!A1:G3", 3) in client.updates
+    assert ("ETF_Constituents!A1:H3", 3) in client.updates
     assert ("ETF_Summary!S1:S2", 2) in client.updates  # 外幣市場的 S 欄是舊版元資訊，先清掉
     assert ("ETF_Summary!T1:U2", 2) in client.updates  # 同步元資訊放在 A:R 以外
 

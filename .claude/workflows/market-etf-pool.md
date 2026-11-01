@@ -118,7 +118,7 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --expor
 - 執行時間戳記與執行者標籤**不得放置於資料欄位內**。
 - 同步元資訊記錄於：
   - `ETF_Summary!R1:S2`（`最後同步時間`、`執行者: GitHub Actions`，位於 A:P 以外；外幣市場的 A:R 是資料欄，元資訊改放 `T1:U2`）
-  - `ETF_Constituents!I1:J2`（`最後同步時間`、`執行者: GitHub Actions`，位於 A:G 以外）
+  - `ETF_Constituents!K1:L2`（`最後同步時間`、`執行者: GitHub Actions`，位於 A:H 以外；H 欄是 `constituent_market`；舊位置 I1:J2 每次同步先清空）
   供使用者直觀核對排程時效，同時保障 APP 讀取既有欄位時零干擾。
 
 #### 寫入防呆與超連結防護

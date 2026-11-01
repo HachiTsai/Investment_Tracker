@@ -119,7 +119,7 @@ def sync_via_google_api(
                 chunk = constituents_rows[idx : idx + chunk_size]
                 start_row = idx + 1
                 end_row = idx + len(chunk)
-                range_str = f"ETF_Constituents!A{start_row}:G{end_row}"
+                range_str = f"ETF_Constituents!A{start_row}:H{end_row}"
                 print(f"   📤 正在寫入 ETF_Constituents：第 {start_row} 至 {end_row} 列（共 {total_len} 筆）...", flush=True)
                 client.update_values(
                     sheet_id,
@@ -143,7 +143,7 @@ def sync_via_google_api(
             print(f"   ℹ️ 清除 ETF_Constituents 超連結提示：{e}")
 
         # 6. 寫入同步元資訊：ETF_Summary 放在資料欄右側（台股 R1:S2；外幣市場的 A:R 已是資料欄，改放 T1:U2，舊的 S1:S2 先清掉），
-        #    ETF_Constituents 在 I1:J2（資料欄位外側）
+        #    ETF_Constituents 在 K1:L2（H 欄是 constituent_market，I:J 空白隔開；舊版放 I1:J2，先清掉）
         meta_col = chr(ord("A") + summary_width + 1)
         meta_end = chr(ord(meta_col) + 1)
         now_tpe = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S (TPE)")
@@ -167,6 +167,12 @@ def sync_via_google_api(
             client.update_values(
                 sheet_id,
                 "ETF_Constituents!I1:J2",
+                [["", ""], ["", ""]],
+                value_input_option="USER_ENTERED",
+            )
+            client.update_values(
+                sheet_id,
+                "ETF_Constituents!K1:L2",
                 meta_values,
                 value_input_option="USER_ENTERED",
             )
