@@ -14,10 +14,10 @@
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
 | S1 | 波段觀察 Sheet 同步（L1） | GitHub Actions `swing-patrol.yml`，cron `0 9 * * 1-5` | 平日 17:00 | `swing-patrol-sheets.md` | 波段觀察 Sheet A:X，心跳 Z1:AA2 | 每日，容許 96 小時 |
 | S2 | 全市場 ETF 池（台股）Sheet 同步（L2） | GitHub Actions `market-etf.yml`，cron `10 9 * * 5` | 週五 17:10 | `market-etf-pool.md` | 全市場_ETF成分股資料庫 Sheet | 每日，容許 192 小時 |
-| C1 | 每日投資組合巡檢（L6） | Claude 雲端排程 | 平日 08:30 | `daily-portfolio-patrol.md` | Artifact `WLXXvrX7BzLemm9TxqZ6di`，ArtifactData `trap_state` | 無，靠排程串回報 |
-| C2 | 00882 成分股股利表（L7） | Claude 雲端排程 | 週五 17:00 | `hk-00882-dividend.md` | Artifact `DSbfrxfywurJVo3TVwSzia`，Sheet `00882_成分股股利資料庫` | 無，靠排程串回報 |
-| C3 | 台股 ETF 成分股池（L8） | Claude 雲端排程 | 每月第 1 個營業日 09:00（建議） | `tw-etf-pool.md` | Artifact `RoDHVZRr588JCcgzMswsug`，Sheet `台股ETF成分股資料庫` | 無，排程是否已建立待確認 |
-| C4 | Our_Investment 快照版 | Claude 雲端排程 | 每日 21:00（建議） | `ledger-snapshot.md` | Artifact `SBn43iC1bBG2zf2bexgmxZ` | 無，靠排程串回報 |
+| C1 | 每日投資組合巡檢（L6） | Claude 雲端排程 | 每日 08:50 | `daily-portfolio-patrol.md` | Artifact `WLXXvrX7BzLemm9TxqZ6di`，ArtifactData `trap_state` | 無，靠排程串回報 |
+| C2 | 00882 成分股股利表（L7） | Claude 雲端排程 | 週五 16:30 | `hk-00882-dividend.md` | Artifact `DSbfrxfywurJVo3TVwSzia`，Sheet `00882_成分股股利資料庫` | 無，靠排程串回報 |
+| C3 | 台股 ETF 成分股池（L8） | Claude 雲端排程 | 每月 23 日 09:30 | `tw-etf-pool.md` | Artifact `RoDHVZRr588JCcgzMswsug`，Sheet `台股ETF成分股資料庫` | 無，靠排程串回報 |
+| C4 | Our_Investment 快照版 | Claude 雲端排程 | 平日 09:30 | `ledger-snapshot.md` | Artifact `SBn43iC1bBG2zf2bexgmxZ` | 無，靠排程串回報 |
 | CI | 排程健康檢查（F6） | GitHub Actions `ci.yml`，cron `0 12 * * *` | 每日 20:00 | 本表與 `.claude/skills/fin-commit/scripts/schedule_health.py` | CI 紀錄（成功或紅燈） | 本身即檢查 |
 
 ## 2. 雲端 prompt 原文
@@ -35,9 +35,10 @@
 
 - S2 還沒有任何排程紀錄，首次排程為 2026-10-30（週五）。工作流建立後 192 小時內沒有排程紀錄，健康檢查不判定失敗。
 - S1 實測觸發晚於 cron（2026-10-26 UTC 15:58、2026-10-27 UTC 15:13），原因未查。
-- C1 至 C3 的執行紀錄不在 GitHub，目前無法從 repo 驗證；C3 的排程是否已建立，待確認。
+- C1 至 C4 的執行紀錄不在 GitHub，無法從 repo 驗證；2026-11-01 用雲端排程清單核對過觸發時間與開關（見異動紀錄），最近一次執行狀態：C1（11/1）、C2（10/30）、C4（10/30）成功，C3 尚未執行過（首次 2026-11-23）。「成功」只代表排程跑完，不代表產出內容已核對。
 
 ## 4. 異動紀錄
 
+- 2026-11-01：依雲端排程實際設定校正 C1 至 C4 觸發時間（C1 每日 08:50、C2 週五 16:30、C3 每月 23 日 09:30、C4 平日 09:30）；C3 確認已建立。Hachi 同意（討論串 2026-11-01「同意，開PR做」）。
 - 2026-10-30：新增 C4（Our_Investment 快照版）。
 - 2026-10-28：建立本表（盤點 F8）。雲端 prompt 皆為單行呼叫，依 Hachi 指示，改流程直接改對應的 `.claude/workflows/*.md`。

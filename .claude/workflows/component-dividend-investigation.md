@@ -1,6 +1,6 @@
 # 00882 成分股股利調查與 Google Sheets 同步工作流
 
-本工作流為 Antigravity 本地自動化標準作業程序（SOP），負責自港交所披露易檢索 00882 成分股最新分紅公告，產出獨立標的研究筆記，並自動同步至 Google Drive 原生 Google Sheet。
+本工作流為 Antigravity 本地自動化標準作業程序（SOP），負責自港交所披露易檢索 00882 成分股最新分紅公告，產出獨立標的研究筆記，並把情報訊號寫入情報資料庫 Sheet（成分股母表由 C2 雲端排程負責，本流程不寫）。
 
 ---
 
@@ -18,7 +18,7 @@
 flowchart TD
     A["1. hk-market-data 檢索公告"] --> B["2. 提煉事實數據與 PDF 原文"]
     B --> C["3. tool-note-writer 產出 research 筆記"]
-    C --> D["4. gsheets 回填成分股母表與情報訊號入庫"]
+    C --> D["4. 情報訊號入庫（母表由 C2 負責）"]
     D --> E["5. 雙向參照與合規檢查（notes.py check + mdlint.py）"]
 ```
 
@@ -49,12 +49,9 @@ python3 .claude/skills/hk-market-data/scripts/hkdata.py pdf <披露易PDF網址>
 - **遵循六大必填段落**：摘要、論點、依據、風險與反方觀點、追蹤指標、更新紀錄。
 - **事實與觀點分開**：依據段落記錄客觀除息表格與 PDF 原文連結；論點段落記錄對現金流與分紅常態化的解讀。
 
-### 步驟 4：回填成分股母表與提煉情報訊號
+### 步驟 4：提煉情報訊號（不寫成分股母表）
 
-1. **回填母表「00882_成分股股利資料庫」**（ID `1Jq599WzoQUDsooZDhJhyK8uaEMgDiLLCoZthWk2WXtw`，在 `Portfolio_00882/成分股股利資料庫`）：
-   - 讀取分頁「成分股」現有內容。
-   - 將查得的最新分紅數據更新至對應成分股代號列的 `interim2026` 欄位（例如「派息每股0.43元」）。
-   - 維護現有母表單一真實來源，**嚴禁隨意另建孤立試算表**，確保 Stock_AIStudio APP 讀取之資料庫始終保持同步。
+1. **不寫母表「00882_成分股股利資料庫」**：該 Sheet 的「成分股」「摘要」分頁由 `hk-00882-dividend.md`（C2，Claude 雲端每週五）整段覆寫，本工作流手填的 `interim2026` 會被蓋掉，也會與 Artifact 數值不一致。查到的最新分紅只寫進研究筆記與情報資料庫；母表下次由 C2 自動更新。（2026-11-01 Hachi 同意，原為手動回填 `interim2026`）
 
 2. **提煉硬數據至「情報資料庫」**（ID `1BF2xvF0cmyODdN0nXR8QHbOTC3ikqswvSwBboY1cGQo`，在 `Portfolio_00882/情報與趨勢`）：
    - 依據 `references/intel-sheet.md` 規格，將具代表性之重大分紅數據提煉為標準訊號列（`id` 為 `sig-YYYY-MM-DD-流水號`）。

@@ -34,7 +34,7 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 | 來源 | Drive ID | 分頁 | APP 讀取檔 | 寫入者與工作流 | 更新頻率 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | 情報資料庫 | `1BF2xvF0cmyODdN0nXR8QHbOTC3ikqswvSwBboY1cGQo` | 第一分頁（訊號）、評分歷史 | `signalsFeedService.ts` | Claude 排程（風向日報等） | 平日日報 |
-| 00882_成分股股利資料庫 | `1Jq599WzoQUDsooZDhJhyK8uaEMgDiLLCoZthWk2WXtw` | 成分股、摘要 | `constituentsFeedService.ts` | Claude 排程（`.claude/workflows/hk-00882-dividend.md`） | 每週五 17:00 |
+| 00882_成分股股利資料庫 | `1Jq599WzoQUDsooZDhJhyK8uaEMgDiLLCoZthWk2WXtw` | 成分股、摘要 | `constituentsFeedService.ts` | Claude 排程（`.claude/workflows/hk-00882-dividend.md`） | 每週五 16:30 |
 | 全市場 ETF 成分股資料庫 | `1GIhbRyL-h96ACVjlSSW9YUFMiAItg_SP9Wi0o3WwG70` | ETF_Summary、ETF_Constituents | `constituentsFeedService.ts`（失敗退回 `allMarketEtfSnapshot`） | Claude 排程／本機代班（`.claude/workflows/market-etf-pool.md`） | 每週五 17:10 |
 | 持股資料庫 | `1CWLwi1tsQoWaEYm0IOK9aH7NEkENgd71sbz6Y_lpRVI` | 第一分頁 | `portfolioFeedService.ts` | 排程依 Core 唯讀重建 | 依排程 |
 | 交易明細資料庫 | `1yFr6OSW6LKWm5wdoc-QoJFXyUotYEd8_YEl_qR-24ks` | 第一分頁 | `portfolioFeedService.ts` | 排程依 Core 唯讀重建 | 依排程 |
@@ -52,10 +52,10 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | 波段觀察 Sheet | GitHub Actions `swing-patrol.yml` | 平日 17:00（GitHub 實際可能延遲數小時） | models 卡片、行情 | 波段觀察 Sheet（A 到 X）；告警紀錄分頁（有關鍵組合轉換時，先於 A 到 X 寫入） | 比對資料日期，`--force` 補跑 |
 | 全市場 ETF 池 | GitHub Actions `market-etf.yml` | 週五 17:10，亦可手動選 hk／us／jp | TWSE、MoneyDJ、各市場來源 | 全市場與外幣市場 Sheet | 不做同日互鎖，重跑即覆寫 |
-| 每日投資組合巡檢頁 | Claude 雲端 | 平日 08:30 | models 卡片、行情、`trap_state` | Artifact（無 Sheet） | 陷阱狀態兩日確認 |
+| 每日投資組合巡檢頁 | Claude 雲端 | 每日 08:50 | models 卡片、行情、`trap_state` | Artifact（無 Sheet） | 陷阱狀態兩日確認 |
 | 全標的巡檢簡報 | Claude 雲端或 Antigravity 代班 | 平日 16:30 | models 卡片、行情、宏觀 | 簡報（無 Sheet） | 例外管理分診 |
-| 00882 成分股股利表 | Claude 雲端 | 週五 17:00 | 中信投信、東方財富 | Artifact＋00882 Sheet | 雙棲表固定由雲端寫入 |
-| 台股 ETF 池 | Claude 雲端 | 每月第 1 個營業日 09:00 | MoneyDJ、FinMind、TWSE | Artifact＋台股 ETF Sheet | 雙棲表固定由雲端寫入 |
+| 00882 成分股股利表 | Claude 雲端 | 週五 16:30 | 中信投信、東方財富 | Artifact＋00882 Sheet | 雙棲表固定由雲端寫入 |
+| 台股 ETF 池 | Claude 雲端 | 每月 23 日 09:30 | MoneyDJ、FinMind、TWSE | Artifact＋台股 ETF Sheet | 雙棲表固定由雲端寫入 |
 
 已知重疊與待驗證：
 
