@@ -128,6 +128,15 @@ def sync_via_google_api(
                     value_input_option="USER_ENTERED",
                 )
 
+        # 4b. 清除寫入範圍下方的舊列：這次列數比上次少時，尾端舊資料（可能含舊格式的代號）不能留在表裡
+        try:
+            if summary_rows:
+                client.clear_values(sheet_id, f"ETF_Summary!A{len(summary_rows) + 1}:{summary_last_col}")
+            if constituents_rows:
+                client.clear_values(sheet_id, f"ETF_Constituents!A{len(constituents_rows) + 1}:H")
+        except Exception as e:
+            print(f"   ℹ️ 清除尾端舊列提示：{e}")
+
         # 5. 清除 ETF_Constituents 超連結，防止代號（如 2330.TW、NVDA.US）被 Google 誤判為可疑連結
         try:
             client.clear_hyperlinks(
