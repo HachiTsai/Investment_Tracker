@@ -38,6 +38,7 @@ jobs:
         if: github.event_name == 'schedule' || inputs.market == 'tw'
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          EDINET_API_KEY: ${{ secrets.EDINET_API_KEY }}
         run: |
           python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --gate --sheet-id 1GIhbRyL-h96ACVjlSSW9YUFMiAItg_SP9Wi0o3WwG70
       - name: Build foreign-market pool

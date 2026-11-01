@@ -25,7 +25,7 @@ CORE_SHEET_IDS = frozenset({"1QBEgUi-kTOuLgj2yGHmP-0g_ug-Sl_M21SN0g93b6xI"})
 CTBC_SOURCE = "中信投信 ETFHoldingWeight"
 FULL_SOURCES = ("MoneyDJ", CTBC_SOURCE)
 
-SUFFIXES = ("TW", "TWO", "US", "JP", "HK", "TF", "SH", "SZ")
+SUFFIXES = ("TW", "TWO", "US", "JP", "HK", "TF", "TX", "SH", "SZ")
 _SUFFIX_RE = re.compile(r"\.(?:%s)$" % "|".join(SUFFIXES), re.IGNORECASE)
 _PREFIX_RE = re.compile(r"^(?:TPE|TWO|HKG|NYSE|NASDAQ|TYO):", re.IGNORECASE)
 # 只認大寫的國別後綴，與 Drive 的判定對齊；小寫網域（例如 .com.tw）不在此列
@@ -39,6 +39,14 @@ class CoreWriteRefused(RuntimeError):
 def pure_code(raw: str) -> str:
     """'TPE:2330' → '2330'、'2330.TW' → '2330'、'nvda.us' → 'NVDA'。"""
     return _SUFFIX_RE.sub("", _PREFIX_RE.sub("", str(raw).strip())).upper()
+
+
+_STRIP_RE = re.compile(r"\.(?:%s)(?![A-Za-z0-9])" % "|".join(SUFFIXES))
+
+
+def strip_suffixes(text: str) -> str:
+    """去掉文字中任何位置的國別後綴（'FITXN*1.TF)' → 'FITXN*1)'、'ABC.US' → 'ABC'）；只認大寫，與 find_forbidden_suffix 對齊。"""
+    return _STRIP_RE.sub("", str(text))
 
 
 def find_forbidden_suffix(text: str) -> List[str]:

@@ -505,3 +505,8 @@ def test_clean_constituent_ticker():
 
 
 
+
+
+def test_clean_constituent_ticker_strips_suffix_before_bracket():
+    from etf_sheets_sync import clean_constituent_ticker
+    assert clean_constituent_ticker("臺股期貨 202611(FITXN*1.TF)") == "臺股期貨 202611(FITXN*1)"
