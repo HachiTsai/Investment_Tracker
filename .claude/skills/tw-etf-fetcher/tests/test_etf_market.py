@@ -99,3 +99,11 @@ def test_sh_sz_suffix_is_forbidden():
     from etf_market import find_forbidden_suffix, pure_code
     assert find_forbidden_suffix("600519.SH 300750.SZ") == ["300750.SZ", "600519.SH"]
     assert pure_code("600519.SH") == "600519"
+
+
+def test_strip_suffixes_anywhere():
+    from etf_market import strip_suffixes, find_forbidden_suffix
+    assert strip_suffixes("臺股期貨 202611(FITXN*1.TF)") == "臺股期貨 202611(FITXN*1)"
+    assert strip_suffixes("ABC.US 與 XYZ.HK") == "ABC 與 XYZ"
+    assert strip_suffixes("BRK.B") == "BRK.B" and strip_suffixes("a.com.tw") == "a.com.tw"
+    assert find_forbidden_suffix(strip_suffixes("FITXN*1.TF) C.US")) == []

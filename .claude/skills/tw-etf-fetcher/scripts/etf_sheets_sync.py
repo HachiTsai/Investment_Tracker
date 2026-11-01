@@ -243,7 +243,7 @@ def clean_constituent_ticker(ticker: str) -> str:
     t = str(ticker).strip()
     t = re.sub(r"^(TPE:|TWO:|HKG:)", "", t, flags=re.IGNORECASE)
     t = re.sub(r"\.(TW|TWO|US|HK|JP|TF|TX|SH|SZ)$", "", t, flags=re.IGNORECASE)
-    return t.strip()
+    return etf_market.strip_suffixes(t).strip()
 
 
 def generate_flattened_constituents(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
@@ -425,6 +425,10 @@ def run_sync_pipeline(
     summary_csv = output_dir / "etf_summary.csv"
     constituents_csv = output_dir / "etf_constituents.csv"
 
+    for r in summary_rows + constituents_rows:  # 寫檔前整批去掉任何位置的國別後綴（代號與名稱都可能夾帶，例如 FITXN*1.TF)）
+        for k, v in r.items():
+            if isinstance(v, str):
+                r[k] = etf_market.strip_suffixes(v)
     leaked = etf_market.find_forbidden_suffix(
         "\n".join(str(v) for r in summary_rows + constituents_rows for v in r.values()))
     if leaked:
