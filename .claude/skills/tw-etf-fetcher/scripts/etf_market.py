@@ -25,7 +25,7 @@ CORE_SHEET_IDS = frozenset({"1QBEgUi-kTOuLgj2yGHmP-0g_ug-Sl_M21SN0g93b6xI"})
 CTBC_SOURCE = "中信投信 ETFHoldingWeight"
 FULL_SOURCES = ("MoneyDJ", CTBC_SOURCE)
 
-SUFFIXES = ("TW", "TWO", "US", "JP", "HK", "TF")
+SUFFIXES = ("TW", "TWO", "US", "JP", "HK", "TF", "SH", "SZ")
 _SUFFIX_RE = re.compile(r"\.(?:%s)$" % "|".join(SUFFIXES), re.IGNORECASE)
 _PREFIX_RE = re.compile(r"^(?:TPE|TWO|HKG|NYSE|NASDAQ|TYO):", re.IGNORECASE)
 # 只認大寫的國別後綴，與 Drive 的判定對齊；小寫網域（例如 .com.tw）不在此列
@@ -130,3 +130,58 @@ def coverage_label(holdings: Dict[str, Any]) -> str:
     if "備援" in src or "models" in src:
         return "fallback"
     return "partial"
+
+
+# ---- 成分股所屬市場（全市場 ETF 表的 constituent_market 欄）----
+# 代碼：TW 台股、US 美股、JP 日股、HK 港股、CN 陸股（A 股）、DERIV 期貨選擇權、BOND 債券、CASH 現金與應收付、OTHER 無法判定
+CONSTITUENT_MARKETS = ("TW", "US", "JP", "HK", "CN", "DERIV", "BOND", "CASH", "OTHER")
+_RAW_SUFFIX_MARKET = {"TW": "TW", "TWO": "TW", "US": "US", "JP": "JP", "T": "JP", "HK": "HK", "SH": "CN", "SZ": "CN", "SS": "CN", "TF": "DERIV"}
+_RAW_SUFFIX_RE = re.compile(r"\.([A-Za-z]{1,3})$")
+_DERIV_RE = re.compile(r"期貨|選擇權|股票期貨|FIT[A-Z]*\*|\d{4}/\d{1,2}|\s\d{6}$|\(CBT\)|\bFUT")
+_BOND_RE = re.compile(r"^[A-Z0-9.&/-]+ \d+(\.\d+)? \d{2}/\d{2}/\d{2,4}|\s.*(?:\d{1,2}/\d{1,2}/\d{2,4}|\d{1,2}[A-Z]{3}\d{4}|\d%|\bPERP\b)")
+_CASH_RE = re.compile(r"現金|NTD|USD|應收|應付|保證金|款項")
+_HINT_RULES = (  # (市場, 關鍵字)；依序比對 ETF 名稱與追蹤指數，用來判定沒有字母也沒有後綴的純數字代號
+    ("JP", ("日本", "日經", "東証", "東證", "TOPIX", "NIKKEI")),
+    ("HK", ("恒生", "恆生", "港", "中國高股息", "H股")),
+    ("CN", ("滬深", "上証", "上證", "深証", "深證", "A50", "中國", "中小企業")),
+    ("US", ("標普", "S&P", "那斯達克", "NASDAQ", "費城", "美國", "美債")),
+)
+
+
+def etf_market_hint(etf_name: str = "", benchmark: str = "") -> str:
+    """由 ETF 名稱與追蹤指數推出主要曝險市場，只用來解讀純數字代號；沒有線索就是 TW。"""
+    text = f"{etf_name} {benchmark}".upper()
+    for market, keys in _HINT_RULES:
+        if any(k.upper() in text for k in keys):
+            return market
+    return "TW"
+
+
+def classify_constituent(raw_ticker: str, name: str = "", hint: str = "TW") -> str:
+    """成分股所屬市場。raw_ticker 是未去後綴的原始代號（有後綴時直接採信），hint 是 ETF 的曝險市場（解讀純數字代號用）。"""
+    t = str(raw_ticker or "").strip()
+    n = str(name or "").strip()
+    t = re.sub(r"^(?:TPE|TWO|HKG|NYSE|NASDAQ|TYO):", "", t, flags=re.IGNORECASE)
+    if _DERIV_RE.search(t) and "(CBT)" in t:
+        return "DERIV"
+    if _BOND_RE.search(t):
+        return "BOND"
+    m = _RAW_SUFFIX_RE.search(t)
+    if m and m.group(1).upper() in _RAW_SUFFIX_MARKET:
+        return _RAW_SUFFIX_MARKET[m.group(1).upper()]
+    if _DERIV_RE.search(t) or _DERIV_RE.search(n):
+        return "DERIV"
+    if _CASH_RE.search(t) or (not t and _CASH_RE.search(n)):
+        return "CASH"
+    code = t.upper()
+    if re.fullmatch(r"\d{3,6}[A-Z]?", code):
+        if re.fullmatch(r"00\d{3,4}[A-Z]?", code) and hint != "HK":
+            return "TW"  # ETF 持有 ETF（例如 00645）
+        if hint == "CN":
+            return "CN" if len(code) == 6 else "HK"
+        if hint in ("JP", "HK"):
+            return hint
+        return "TW"
+    if re.fullmatch(r"[A-Z]{1,5}([.-][A-Z])?", code):
+        return "US"
+    return "OTHER"

@@ -85,7 +85,9 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 - **分頁「ETF_Constituents」**：
   - 欄位以 CSV 表頭為準；超過 5,000 列時採分批寫入（每批不超過 1,500 列）。
   - 防呆：`constituent_ticker` 加 `'` 前綴。
-  - 元數據隔離：最後同步時間與執行者放置於 I1:J2（A:G 以外儲存格），保障 APP 讀取 A:G 零干擾。
+  - 欄位（2026-11-01 起）：A:G 不變，新增 H 欄 `constituent_market`（成分股所屬市場）：`TW` 台股、`US` 美股、`JP` 日股、`HK` 港股、`CN` 陸股（A 股）、`DERIV` 期貨與選擇權、`BOND` 債券、`CASH` 現金與應收付、`OTHER` 其他地區（歐洲、印度、韓國等）。判定規則在 `etf_market.classify_constituent`：有國別後綴先依後綴；純數字代號依 ETF 名稱與追蹤指數推得的曝險市場解讀（日股 ETF 的 7203 是日股、台股 ETF 的 2330 是台股）。
+  - 元數據隔離：最後同步時間與執行者放置於 K1:L2（A:H 以外，I:J 空白隔開；舊版在 I1:J2，每次同步先清空），保障 APP 讀取 A:H 零干擾。
+  - 代號純化（2026-11-01 起）：除 `.TW`、`.US`、`.HK`、`.JP`、`.TF` 外，`.SH`、`.SZ` 後綴也一併去除（市場資訊改由 `constituent_market` 保留），輸出含國別後綴時整批中止、不寫 Sheet。
   - 連結防護：同步後自動清除全表超連結樣式，防範 Google Drive 將代號誤判為惡意/釣魚連結。
 
 ### 3. 波段觀察 (`1pyGzkgaspYMYdXOPYerkLsxOMwNwa2yOKuNDrOrrhtQ`)
@@ -110,9 +112,9 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 
 - 三份 Sheet 與台股全市場表的 ETF_Summary、ETF_Constituents 欄名同序；ETF_Summary 比台股多兩欄：`coverage`（完整、前幾大、備援）與 `holdings_asof`（持股日期），持股完整度與日期都寫進 Sheet。
 - ETF_Summary 表頭：`etf_id,etf_name,current_price,exchange,category,benchmark,constituent_count,top1_holding,top2_holding,top3_holding,weighted_roe,net_score,div_score,val_score,fric_score,last_model_update,coverage,holdings_asof`。
-- ETF_Constituents 表頭：`etf_id,etf_name,constituent_ticker,constituent_name,weight_pct,shares,update_date`。
+- ETF_Constituents 表頭：`etf_id,etf_name,constituent_ticker,constituent_name,weight_pct,shares,update_date,constituent_market`（外幣市場的 `constituent_market` 一律為該市場代號，持股本身已是純代號）。
 - 拿不到的欄位寫 `-`（外幣市場沒有 ETF 現價、ROE 與評分），不估值補；持股日期拿不到寫「無」；代號一律純代號，寫入前掃描國別後綴。
-- 寫入者：`etf_sheets_sync.py --market HK|US|JP`，只用 GCP_SA_KEY；同步元資訊：ETF_Summary 在 T1:U2（A:R 以外），ETF_Constituents 在 I1:J2（A:G 以外）。
+- 寫入者：`etf_sheets_sync.py --market HK|US|JP`，只用 GCP_SA_KEY；同步元資訊：ETF_Summary 在 T1:U2（A:R 以外），ETF_Constituents 在 K1:L2（A:H 以外）。
 - 日期：`last_model_update` 是建立日期（模型卡片的 last_model_update）；`holdings_asof` 是持股日期，來源沒有標示就寫「無」；ETF_Constituents 的 `update_date` 也是持股日期。備援與全市場表的持股沒有持股日期。
 - **更新（2026-10-27）**：台股全市場表的日期欄照 Hachi 決定，只放建立日期。`ETF_Summary.last_model_update` 與 `ETF_Constituents.update_date` 都是模型卡片的 `last_model_update`，沒有模型卡片的 ETF 寫「無」。原本同一欄對有卡片的 ETF 放建立日期、對候選 ETF 放 MoneyDJ 持股日期，同一欄兩種意義；改後台股表不再有持股日期。外幣市場的 `holdings_asof` 規則不變，舊寫入結果不回溯改寫。排程的補跑互鎖以 `ETF_Summary` 最新 `last_model_update` 判斷（見 `.claude/workflows/market-etf-pool.md` 補跑支援）；此欄改後不再隨每次同步更新，若互鎖仍依它判斷會與實際同步脫節，待 Hachi 確認是否改以 `最後同步時間` 判斷。
 - **更新（2026-10-27，00955）**：外幣市場的現價與評分改與台股表同一來源與算法。現價取 Yahoo 報價（不用快照價）；加權 ROE 與四個評分取 `fundamental-analyzer` 的穿透評分，需要模型卡片的成分股。只採計 `status` 為 `success` 的結果；算不出來、沒有卡片或抓不到報價就寫「-」，不寫 fallback 的預設分。上面「拿不到的欄位寫 `-`（外幣市場沒有 ETF 現價、ROE 與評分）」保留為舊規則。
