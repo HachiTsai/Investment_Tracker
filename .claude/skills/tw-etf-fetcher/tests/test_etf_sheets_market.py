@@ -169,7 +169,7 @@ class FakeSheets:
 
     def __init__(self, titles):
         self.sheets = [{"properties": {"sheetId": i, "title": t}} for i, t in enumerate(titles)]
-        self.requests, self.updates = [], []
+        self.requests, self.updates, self.cleared = [], [], []
 
     def get_spreadsheet(self, sheet_id):
         return {"sheets": self.sheets}
@@ -189,6 +189,9 @@ class FakeSheets:
 
     def update_values(self, sheet_id, range_name, values, value_input_option=None):
         self.updates.append((range_name, len(values)))
+
+    def clear_values(self, sheet_id, range_name):
+        self.cleared.append(range_name)
 
     def clear_hyperlinks(self, **kwargs):
         return None
@@ -259,3 +262,13 @@ def test_tw_summary_rows_do_not_fabricate_scores_or_prices(monkeypatch):
     row = etf_sheets_sync.generate_summary_rows([model])[0]
     assert row["current_price"] == "-" and row["weighted_roe"] == "-"
     assert [row[k] for k in ("net_score", "div_score", "val_score", "fric_score")] == ["-"] * 4
+
+
+def test_stale_tail_rows_are_cleared(tmp_path, fake_sheets):
+    """這次列數比上次少時，寫入範圍下方的舊列要清掉（不碰 H 欄右側的同步元資訊）。"""
+    instances = fake_sheets(["ETF_Summary", "ETF_Constituents"])
+    s, c = _csvs(tmp_path, _payload())
+    ok, msg = etf_sheets_sync.sync_via_google_api(HK_SHEET, s, c, summary_width=len(etf_sheets_sync.FOREIGN_SUMMARY_FIELDS))
+    assert ok, msg
+    cleared = instances[0].cleared
+    assert "ETF_Constituents!A4:H" in cleared and "ETF_Summary!A3:R" in cleared
