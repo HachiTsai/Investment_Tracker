@@ -6,10 +6,12 @@ title: "年被動股利 50 萬 TWD 閉環控制迴路"
 hierarchy:
   role: "master_loop"              # 主目標迴路（ISA-88/95 控制層級：全資產現金流目標）
   slave_units:
-    - "card:ticker:00882"          # 目前唯一的現金流主力貢獻單元
+    - "card:ticker:00882"          # 核心收息主力單元（242 張，見 2026-11-02 快照）
+    - "card:ticker:00406A"         # 現金流衛星導流單元（100 張，月配息跨池養核心）
   future_expansion_units:
-    - "card:ticker:00878"          # 未來預留副迴路單元
-    - "card:ticker:SCHD"           # 美股預留副迴路單元
+    - "card:ticker:00956"          # 日股高息核心預留副迴路單元
+    - "card:ticker:00937B"         # 投等債防禦核心預留副迴路單元
+    - "card:ticker:00945B"         # 非投等債收息預留副迴路單元
 
 parameters:
   setpoint_sp: 500000.0            # 目標設定值 (SP, 單位 TWD/年)
@@ -27,5 +29,5 @@ controllers:
     description: "在當前價格與近 12 個月配息殖利率下，一次性補足缺口所需之理論追加本金"
 
 snowball_simulator:
-  base_shares: 300000              # 基準持股張數 (300 張，來自最新快照)
+  base_shares: 242000              # 基準持股張數 (242 張，來自 2026-11-02 最新快照)
   reinvest_frequency_months: 6     # 半年滾動一次 (每年 1 月、7 月)
