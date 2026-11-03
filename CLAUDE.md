@@ -115,7 +115,7 @@ scripts/                     共用計算或抓價工具
 | `portfolio-patrol` | 投資組合全標的自動巡檢與每日簡報，動態遍歷 models/*/cards/ 求值，例外管理（MBE）分診 |
 | `tw-etf-fetcher` | 台股、港股、美股、日股 ETF 的成分股與權重抓取（台股為全市場股號清單與完整持股；港股 00882 經中信投信；美股、日股為前幾大持股，頁面與 Sheet 標示 coverage）、穿透曝險（Look-through）、各市場頁面與資料池（`etf_pool.py`），並支援一鍵生成標的建模卡片；`etf_sheets_sync.py` 把台股全市場表與外幣市場資料池寫入各市場的外圍試算表；市場介面 `etf_market.py` 與共用安全防線（純代號、國別後綴掃描、Core 寫入拒絕）；只讀 Core，寫入僅限外圍試算表 |
 | `ledger-snapshot` | 把互動版交易簿（Our_Investment）衍生成唯讀快照 Artifact，不需連接器，可分享家人；互動版版面更新後重跑即同步；只讀 Our_Investment，不碰 Core |
-| `fundamental-analyzer` | 個股三大財務報表量化體檢（ROE、自由現金流覆蓋、盈餘配發率）與 ETF 穿透加權聚合評分（netScore、divScore、valScore、fricScore）；多市場財報資料層（港股與 A 股東方財富、台股 FinMind＋Yahoo 股市＋證交所 OpenAPI、美股 SEC EDGAR、日股 EDINET，yfinance 為備援），並提供台股成分股明細（`finmind_detail.py`）與港台共用的財報趨勢計算（`fin_trend.py`）；唯讀 |
+| `fundamental-analyzer` | 個股三大財務報表量化體檢（ROE、自由現金流覆蓋、盈餘配發率）與 ETF 穿透加權聚合評分（netScore、divScore、valScore、fricScore）；多市場財報資料層（港股與 A 股東方財富、台股 FinMind＋Yahoo 股市＋證交所 OpenAPI、美股 SEC EDGAR、日股 EDINET，yfinance 為備援），債券 ETF 改做兩層穿透（`bond_lookthrough.py`：持股結構與信用風險代理，非信評，不套股票分數），並提供台股成分股明細（`finmind_detail.py`）與港台共用的財報趨勢計算（`fin_trend.py`）；唯讀 |
 
 ## 思考類文件的寫法
 
