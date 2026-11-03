@@ -350,7 +350,7 @@ def evaluate_ticker_posture(
         # 收息型 (DIVIDEND_INCOME) 與債券型 (BOND_DEFENSE) 且 annual_div > 0
         yield_rate = annual_div / price if price > 0 else 0.0
         yield_pct = round(yield_rate * 100.0, 2)
-        net_score = scores.get("netScore", 50)
+        net_score = scores.get("netScore")  # 缺值（None）＝無財報輸入：不參與門檻比較，也不以 50 分代入
         div_score = scores.get("divScore", 50)
 
         if strategy_type == "BOND_DEFENSE":
@@ -377,7 +377,9 @@ def evaluate_ticker_posture(
             # 股票高股息收息型 (DIVIDEND_INCOME)
             # 評分類判定須有足夠的成分股財報覆蓋（門檻見 lookthrough_fundamentals.COVERAGE_MIN_PCT），覆蓋不足時不判定
             data_ok = bool(live_data.get("coverage_ok"))
-            trap_cond = yield_rate >= _TRAP["yield_min"] and (net_score < _TRAP["net_score_below"] or div_score < _TRAP["div_score_below"])
+            trap_cond = yield_rate >= _TRAP["yield_min"] and (
+                (net_score is not None and net_score < _TRAP["net_score_below"]) or div_score < _TRAP["div_score_below"]
+            )
             # 優先級 1：高息陷阱斷路 (net/div 評分破底)；未經次一交易日確認的首日觸發先列為觀察
             confirmed = live_data.get("trap_confirmed")  # None＝未啟用兩日確認，沿用單日判定
             if trap_cond and data_ok and confirmed is not False:
@@ -408,7 +410,7 @@ def evaluate_ticker_posture(
                 valve_action = "成分股財報覆蓋率不足，暫不判定高息陷阱，待資料恢復後重新評估"
                 priority = 4
             # 優先級 3：積極進攻
-            elif data_ok and yield_rate >= _AGG["yield_min"] and net_score >= _AGG["net_score_min"] and div_score >= _AGG["div_score_min"]:
+            elif data_ok and yield_rate >= _AGG["yield_min"] and net_score is not None and net_score >= _AGG["net_score_min"] and div_score >= _AGG["div_score_min"]:
                 posture_key = "AGGRESSIVE_ACCUMULATE"
                 posture_label = "🟢 積極進攻"
                 posture_name = "積極增持配置 (Aggressive Accumulate)"

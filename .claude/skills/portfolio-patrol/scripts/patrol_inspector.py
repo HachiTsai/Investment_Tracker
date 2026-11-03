@@ -137,6 +137,11 @@ def inspect_ticker(
     }
 
 
+def _score_text(v: Any) -> str:
+    """評分顯示：缺值（None）顯示 "-"，不以預設分代入。"""
+    return "-" if v is None else str(v)
+
+
 def format_inspect_ascii(report: Dict[str, Any]) -> str:
     """格式化個人深潛終端儀表板。"""
     lines = []
@@ -163,7 +168,7 @@ def format_inspect_ascii(report: Dict[str, Any]) -> str:
     lines.append(f"  • 即時現價    : {sensors['current_price']:.2f} TWD")
     lines.append(f"  • 底層模型配息: {loop['annual_dividend']:.2f} TWD/股")
     lines.append(f"  • 模型殖利率  : {loop['current_yield_pct']:.2f}%")
-    lines.append(f"  • 情報庫評分  : netScore {scores.get('netScore', '-')} ｜ divScore {scores.get('divScore', '-')} ｜ valScore {scores.get('valScore', '-')}")
+    lines.append(f"  • 情報庫評分  : netScore {_score_text(scores.get('netScore'))} ｜ divScore {_score_text(scores.get('divScore'))} ｜ valScore {_score_text(scores.get('valScore'))}")
     lines.append("-" * 72)
 
     lines.append("🛡️ [風控互鎖狀態與策略狀態]")

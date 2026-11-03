@@ -669,3 +669,19 @@ def test_macro_feed_flags_baseline_snapshot():
     snap = {"lpr": {"1Y": 3.0, "source": "中國人民銀行/東方財富 (基準快照)"}}
     assert "非即時" in pe._format_macro_feed(snap)
     assert "非即時" not in pe._format_macro_feed({"lpr": {"1Y": 3.0, "source": "live"}})
+
+
+def test_missing_netscore_is_not_judged_or_compared():
+    """netScore 為 None（無財報輸入）時：不拋錯、不以 50 分代入比較，高息標的歸為資料不足。"""
+    cards = {"ticker_id": "X", "ticker": {"title": "X", "currency": "TWD", "strategy_type": "DIVIDEND_INCOME"}, "loops": []}
+
+    def posture(yld, net, div, coverage_ok):
+        live = {"price": 1.0, "annual_dividend": yld, "tax_retention": 1.0,
+                "scores": {"netScore": net, "divScore": div}, "southbound_2d_net": 0.0, "coverage_ok": coverage_ok}
+        return patrol.evaluate_ticker_posture(cards, live)["posture_key"]
+
+    # 高息且覆蓋不足：資料不足，即使 divScore 低於門檻也不升級為陷阱警戒
+    assert posture(0.10, None, 30.0, False) == "DATA_INSUFFICIENT"
+    assert posture(0.10, None, 60.0, False) == "DATA_INSUFFICIENT"
+    # 非高息：不因缺值而拋錯，也不判定為陷阱
+    assert posture(0.05, None, 60.0, False) != "TRAP_ALERT"
