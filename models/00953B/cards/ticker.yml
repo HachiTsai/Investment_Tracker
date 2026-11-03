@@ -1,0 +1,14 @@
+id: card:ticker:00953B
+type: ticker
+schema_version: 1.0.0
+ticker: "00953B"
+title: "群益優選非投等債"
+full_name: "群益優選收益非投資等級債券ETF證券投資信託基金"
+tier: pool
+currency: TWD
+exchange: TWSE
+category: ETF
+strategy_type: BOND_DEFENSE
+manager: "賴政昇"
+benchmark: "ICE 1-5 年 BB-B 級成熟市場信用優息美元非投資等級債券指數"
+last_model_update: "2026-11-03"
