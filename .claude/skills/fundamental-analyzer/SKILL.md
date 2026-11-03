@@ -18,6 +18,7 @@ description: 基本面財務指標與多維評分演算引擎。負責個股三�
    - 🎯 **`valScore`（估值與安全邊際分）**：由本益比 P/E、股價淨值比 P/B 與當前殖利率折價合成。
    - ⚖️ **`fricScore`（摩擦阻力分）**：考量境外稅率（美股 30%、中港 10%）、二代健保 2.11% 與債券免稅優勢。
 3. **ETF 穿透加權聚合（Look-through Fundamentals）**：讀取 `models/<ticker>/cards/constituents.jsonl`，自動計算 ETF 前十大重倉股之加權 ROE 與加權動態評分矩陣分數。
+3b. **債券 ETF 兩層穿透（`bond_lookthrough.py`）**：債券 ETF 不套股票財報分數，第一層算加權票息、到期年限、發行人集中，第二層以票息利差做信用風險代理分（非信評）；純本地解析，不增加巡檢負擔，詳見 `references/scoring-model.md` 第 5 節。
 4. **全投資組合矩陣掃描**：一鍵掃描全部 27 檔跨市場標的之基本面體質與防禦水位。
 
 ---

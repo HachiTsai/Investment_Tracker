@@ -80,8 +80,8 @@ def aggregate_etf_fundamentals(
     if repo_root is None:
         repo_root = Path(__file__).resolve().parents[4]
 
-    # 檢查快取
-    if mock_constituents is None and mock_stock_fundamentals is None and use_cache:
+    # 檢查快取（債券 ETF 不走快取：本地解析毫秒級，也避免讀到舊版固定預設分）
+    if mock_constituents is None and mock_stock_fundamentals is None and use_cache and "B" not in etf_id.upper():
         cache = _load_etf_cache()
         cached_entry = cache.get(etf_id)
         if cached_entry and isinstance(cached_entry, dict) and cached_entry.get("schema") == CACHE_SCHEMA:
@@ -96,34 +96,37 @@ def aggregate_etf_fundamentals(
 
     constituents = mock_constituents or load_etf_constituents(etf_id, repo_root)
     is_bond = "B" in etf_id.upper()
-    if not constituents or is_bond:
-        # 若為債券 ETF 或無成分股資料，回傳標準債券／預設評分
-        res = {
+    if is_bond:
+        # 債券 ETF：不套股票財報分數，改做持股結構與信用風險代理（bond_lookthrough，純本地字串解析，全部持股也只需毫秒）。
+        # scores 留空：不再寫固定預設分，下游（試算表同步、巡檢）遇空一律寫 "-"。
+        from bond_lookthrough import analyze_bond_etf
+
+        return {
             "etf_id": etf_id,
-            "status": "success" if is_bond else "fallback",
-            "is_bond": is_bond,
+            "status": "bond",
+            "is_bond": True,
+            "covered_holdings_count": len(constituents),
+            "total_weight_covered_pct": round(sum(float(c.get("weight_pct", 0.0)) for c in constituents), 2),
+            "weighted_roe": None,
+            "scores": {},
+            "holdings_breakdown": [],
+            "coverage_pct": None,
+            "coverage_sufficient": False,
+            "bond": analyze_bond_etf(constituents),
+        }
+    if not constituents:
+        return {
+            "etf_id": etf_id,
+            "status": "fallback",
+            "is_bond": False,
             "covered_holdings_count": 0,
             "total_weight_covered_pct": 0.0,
             "weighted_roe": None,
-            "scores": {
-                "netScore": 75.0 if is_bond else 60.0,
-                "divScore": 85.0 if is_bond else 55.0,
-                "valScore": 70.0,
-                "fricScore": 95.0 if is_bond else 80.0,
-            },
+            "scores": {"netScore": 60.0, "divScore": 55.0, "valScore": 70.0, "fricScore": 80.0},
             "holdings_breakdown": [],
             "coverage_pct": None,
             "coverage_sufficient": False,
         }
-        if is_bond and mock_constituents is None and mock_stock_fundamentals is None and use_cache:
-            cache = _load_etf_cache()
-            cache[etf_id] = {
-                "schema": CACHE_SCHEMA,
-                "cached_at": datetime.date.today().isoformat(),
-                "data": res,
-            }
-            _save_etf_cache(cache)
-        return res
 
     # 取前 N 大持股
     selected = constituents[:top_n]
