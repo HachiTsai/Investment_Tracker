@@ -60,7 +60,7 @@
 2. **成分股卡片庫（`models/<ticker>/cards/constituents.jsonl`）**：
    - 記錄全體成分股之個股代號、權重比例與持有股數。
 3. **50 萬被動收入迴路卡片（`models/<ticker>/cards/loop_dividend_500k.yml`）**：
-   - 納入個人整體股利目標收斂體系。
+   - 納入個人整體股利目標收斂體系。收息型（`DIVIDEND_INCOME`）與債券型（`BOND_DEFENSE`）產生；成長型與槓桿反向型不產生。
 4. **高息陷阱互鎖卡片（`models/<ticker>/cards/interlock_yield_trap.yml`）**：
    - 殖利率與多空、股利評分雙條件的高息陷阱互鎖。門檻由 `.claude/skills/portfolio-patrol/references/interlock_rules.json` 產生；00882 為手寫例外（見架構文件 v6）。
 

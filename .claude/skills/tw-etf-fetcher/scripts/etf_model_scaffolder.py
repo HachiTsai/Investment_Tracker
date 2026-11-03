@@ -103,8 +103,8 @@ last_model_update: "{date.today().isoformat()}"
         encoding="utf-8",
     )
 
-    # 3. 產生 loop_dividend_500k.yml (僅高息/收息型 ETF 適用)
-    if strat == "DIVIDEND_INCOME":
+    # 3. 產生 loop_dividend_500k.yml (高息/收息型與債券型 ETF 適用，債券息收納入 50 萬目標)
+    if strat in ("DIVIDEND_INCOME", "BOND_DEFENSE"):
         loop_yml = f"""id: card:loop:passive_income_500k
 type: control_loop
 schema_version: 1.0.0
