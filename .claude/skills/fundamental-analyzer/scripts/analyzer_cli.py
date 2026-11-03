@@ -22,6 +22,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parents[3]
 
 from fundamental_calculator import calculate_stock_fundamentals  # noqa: E402
+from bond_lookthrough import format_bond_ascii  # noqa: E402
 from lookthrough_fundamentals import aggregate_etf_fundamentals  # noqa: E402
 from stock_card import scaffold_stock_card  # noqa: E402
 
@@ -54,6 +55,8 @@ def format_stock_ascii(res: dict) -> str:
 
 def format_etf_ascii(res: dict) -> str:
     """格式化 ETF 穿透聚合基本面 ASCII 儀表板。"""
+    if res.get("is_bond"):
+        return format_bond_ascii(str(res.get("etf_id")), res["bond"])
     scores = res.get("scores", {})
     lines = [
         "=" * 72,
@@ -149,6 +152,11 @@ def cmd_portfolio(args) -> int:
             res = aggregate_etf_fundamentals(ticker, top_n=args.top, repo_root=REPO_ROOT)
             cat = "債券ETF" if res.get("is_bond") else "股票ETF"
         sc = res.get("scores", {})
+        if res.get("is_bond"):
+            b = res.get("bond") or {}
+            l2 = b.get("layer2") or {}
+            print(f"{ticker:<10} {cat:<8} 信用代理分 {l2.get('credit_proxy_score', '-')}（非信評，不與股票分數比較）")
+            continue
         roe_str = f"{res.get('weighted_roe', '-')}%" if res.get("weighted_roe") is not None else "-"
         print(
             f"{ticker:<10} {cat:<8} {roe_str:<10} "
