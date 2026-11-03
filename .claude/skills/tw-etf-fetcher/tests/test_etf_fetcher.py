@@ -510,3 +510,19 @@ def test_clean_constituent_ticker():
 def test_clean_constituent_ticker_strips_suffix_before_bracket():
     from etf_sheets_sync import clean_constituent_ticker
     assert clean_constituent_ticker("臺股期貨 202611(FITXN*1.TF)") == "臺股期貨 202611(FITXN*1)"
+
+
+def test_scaffold_bond_etf_generates_loop_card(tmp_path):
+    """債券型 ETF 也產生 50 萬股利迴路卡片（2026-11-03 Hachi 同意）。"""
+    from etf_model_scaffolder import scaffold_etf_model
+
+    holdings = {"constituents": [{"symbol": "X 1 01/01/30", "name": "bond", "weight_pct": 1.0}]}
+    cards = scaffold_etf_model(
+        ticker="00953B",
+        repo_root=tmp_path,
+        holdings_data=holdings,
+        etf_info={"name": "群益優選非投等債", "full_name": "債券ETF", "manager": "x", "benchmark": "y"},
+        custom_models_dir=tmp_path / "models",
+        strategy_type="BOND_DEFENSE",
+    )
+    assert (cards / "loop_dividend_500k.yml").exists()
