@@ -6,18 +6,16 @@
 import datetime
 from typing import Any, Dict, List, Optional
 
-from . import clean, http_json, ratio
-
-BASE = "https://api.finmindtrade.com/api/v4/data"
+from . import clean, finmind_detail, ratio
 
 
 def load(dataset: str, code: str, start: str) -> Dict[str, Dict[str, float]]:
-    """回傳 {type: {date: value}}。"""
-    data = http_json(f"{BASE}?dataset={dataset}&data_id={code}&start_date={start}").get("data") or []
-    out: Dict[str, Dict[str, float]] = {}
-    for r in data:
-        out.setdefault(r["type"], {})[r["date"]] = r["value"]
-    return out
+    """回傳 {type: {date: value}}。
+
+    走 finmind_detail.get：有 FINMIND_TOKEN 就帶上（提高頻率上限）、同一請求快取 6 小時，避免每次巡檢重複耗用配額。
+    只嘗試一次：配額用盡（402）時退避重試無效，會拖慢整輪巡檢；失敗由 tw.fetch 接住並退回其他來源。
+    """
+    return finmind_detail.series(finmind_detail.get(dataset, code, start, attempts=1))
 
 
 def ttm_from_cumulative(series: Dict[str, float]) -> Optional[float]:

@@ -405,6 +405,10 @@ def calculate_stock_fundamentals(
         },
     }
 
+    # netScore 的三項輸入全缺時（資料來源失敗），不以中性 50 分充數，留空（None），由下游排除或寫 "-"
+    if not has_netscore_input(result):
+        result["scores"]["netScore"] = None
+
     # 寫入快取 (僅在非 mock、有有效數據且 netScore 有輸入時；降級結果不快取)
     if mock_data is None and use_cache and data and has_netscore_input(result):
         cache = _load_cache()

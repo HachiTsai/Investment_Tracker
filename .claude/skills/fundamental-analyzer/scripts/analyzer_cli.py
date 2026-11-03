@@ -27,6 +27,11 @@ from lookthrough_fundamentals import aggregate_etf_fundamentals  # noqa: E402
 from stock_card import scaffold_stock_card  # noqa: E402
 
 
+def _show(v, spec: str) -> str:
+    """分數顯示：缺值（None）顯示 "-"，不以 0 代入。spec 為 format 對齊規格，例如 '>5'。"""
+    return format("-" if v is None else round(v, 1), spec)
+
+
 def format_stock_ascii(res: dict) -> str:
     """格式化個股財報體檢 ASCII 儀表板。"""
     scores = res.get("scores", {})
@@ -34,10 +39,10 @@ def format_stock_ascii(res: dict) -> str:
         "=" * 68,
         f"📊 個股財務體檢與多維評分報告：【{res.get('symbol')}】",
         "=" * 68,
-        f"  💎 綜合財務分 (netScore)  : {scores.get('netScore', 0):>5} / 100",
-        f"  🛡️ 股利持續分 (divScore)  : {scores.get('divScore', 0):>5} / 100",
-        f"  🎯 估值邊際分 (valScore)  : {scores.get('valScore', 0):>5} / 100",
-        f"  ⚖️ 摩擦阻力分 (fricScore) : {scores.get('fricScore', 0):>5} / 100",
+        f"  💎 綜合財務分 (netScore)  : {_show(scores.get('netScore'), '>5')} / 100",
+        f"  🛡️ 股利持續分 (divScore)  : {_show(scores.get('divScore'), '>5')} / 100",
+        f"  🎯 估值邊際分 (valScore)  : {_show(scores.get('valScore'), '>5')} / 100",
+        f"  ⚖️ 摩擦阻力分 (fricScore) : {_show(scores.get('fricScore'), '>5')} / 100",
         "-" * 68,
         "【核心財務指標明細】：",
         f"  • 股東權益報酬率 (ROE)  : {res.get('roe', '-')}%",
@@ -66,10 +71,10 @@ def format_etf_ascii(res: dict) -> str:
         f"  加權 ROE: {res.get('weighted_roe', '-')}%",
         "-" * 72,
         "【穿透聚合動態評分矩陣分數】：",
-        f"  • 綜合財務健康分 (netScore)  : {scores.get('netScore', 0):>5} / 100",
-        f"  • 股利可持續性分 (divScore)  : {scores.get('divScore', 0):>5} / 100",
-        f"  • 估值與安全邊際 (valScore)  : {scores.get('valScore', 0):>5} / 100",
-        f"  • 摩擦阻力評分 (fricScore)   : {scores.get('fricScore', 0):>5} / 100",
+        f"  • 綜合財務健康分 (netScore)  : {_show(scores.get('netScore'), '>5')} / 100",
+        f"  • 股利可持續性分 (divScore)  : {_show(scores.get('divScore'), '>5')} / 100",
+        f"  • 估值與安全邊際 (valScore)  : {_show(scores.get('valScore'), '>5')} / 100",
+        f"  • 摩擦阻力評分 (fricScore)   : {_show(scores.get('fricScore'), '>5')} / 100",
         "-" * 72,
         f"{'個股代號':<10} {'個股名稱':<12} {'權重%':<8} {'ROE%':<8} {'PE':<8} {'財務分':<8} {'股利分':<8}",
         "-" * 72,
@@ -81,8 +86,8 @@ def format_etf_ascii(res: dict) -> str:
         w = f"{h.get('weight_pct', 0.0):.2f}%"
         roe = f"{h.get('roe', '-')}%" if h.get("roe") is not None else "-"
         pe = f"{h.get('pe', '-')}" if h.get("pe") is not None else "-"
-        net_s = f"{h_scores.get('netScore', '-')}"
-        div_s = f"{h_scores.get('divScore', '-')}"
+        net_s = _show(h_scores.get("netScore"), "")
+        div_s = _show(h_scores.get("divScore"), "")
         lines.append(f"{ticker:<10} {name:<12} {w:<8} {roe:<8} {pe:<8} {net_s:<8} {div_s:<8}")
     lines.append("=" * 72)
     return "\n".join(lines)
@@ -160,8 +165,8 @@ def cmd_portfolio(args) -> int:
         roe_str = f"{res.get('weighted_roe', '-')}%" if res.get("weighted_roe") is not None else "-"
         print(
             f"{ticker:<10} {cat:<8} {roe_str:<10} "
-            f"{sc.get('netScore', 0):<10.1f} {sc.get('divScore', 0):<10.1f} "
-            f"{sc.get('valScore', 0):<10.1f} {sc.get('fricScore', 0):<10.1f}"
+            f"{_show(sc.get('netScore'), '<10')} {_show(sc.get('divScore'), '<10')} "
+            f"{_show(sc.get('valScore'), '<10')} {_show(sc.get('fricScore'), '<10')}"
         )
     print("=" * 80)
     return 0

@@ -499,8 +499,12 @@ def _foreign_live_fields(etf: str, aggregate_func: Optional[Any]) -> Dict[str, s
     if res.get("weighted_roe") is not None:
         out["weighted_roe"] = f"{res['weighted_roe']}%"
     sc = res.get("scores", {})
-    out.update(net_score=f"{sc['netScore']:.1f}", div_score=f"{sc['divScore']:.1f}",
-               val_score=f"{sc['valScore']:.1f}", fric_score=f"{sc['fricScore']:.1f}")
+
+    def _f1(v: Any) -> str:  # 缺值（None）寫 "-"，不補預設分
+        return "-" if v is None else f"{float(v):.1f}"
+
+    out.update(net_score=_f1(sc.get("netScore")), div_score=_f1(sc.get("divScore")),
+               val_score=_f1(sc.get("valScore")), fric_score=_f1(sc.get("fricScore")))
     return out
 
 

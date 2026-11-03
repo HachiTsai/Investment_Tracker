@@ -122,7 +122,7 @@ def aggregate_etf_fundamentals(
             "covered_holdings_count": 0,
             "total_weight_covered_pct": 0.0,
             "weighted_roe": None,
-            "scores": {"netScore": 60.0, "divScore": 55.0, "valScore": 70.0, "fricScore": 80.0},
+            "scores": {"netScore": None, "divScore": None, "valScore": None, "fricScore": None},  # 無成分股資料：不回填固定預設分
             "holdings_breakdown": [],
             "coverage_pct": None,
             "coverage_sufficient": False,
@@ -142,6 +142,7 @@ def aggregate_etf_fundamentals(
     weighted_roe = 0.0
     has_roe_count = 0
     covered_w = 0.0  # 有 netScore 輸入的持股權重
+    net_norm_w = 0.0  # 有 netScore 輸入的持股（歸一化後）權重合計，用於 netScore 重新歸一化
 
     for c in selected:
         ticker = c.get("ticker", "")
@@ -154,12 +155,14 @@ def aggregate_etf_fundamentals(
         fund = calculate_stock_fundamentals(ticker, mock_data=mock_data, use_cache=use_cache)
 
         scores = fund["scores"]
-        weighted_net += scores["netScore"] * norm_w
         weighted_div += scores["divScore"] * norm_w
         weighted_val += scores["valScore"] * norm_w
         weighted_fric += scores["fricScore"] * norm_w
 
-        if has_netscore_input(fund):
+        # netScore 只計入有財報輸入的持股，權重在這些持股之間重新歸一化；缺值持股不以 50 分拉低整體分數
+        if has_netscore_input(fund) and scores.get("netScore") is not None:
+            weighted_net += scores["netScore"] * norm_w
+            net_norm_w += norm_w
             covered_w += raw_w
 
         if fund.get("roe") is not None:
@@ -185,7 +188,8 @@ def aggregate_etf_fundamentals(
         "total_weight_covered_pct": round(total_raw_weight, 2),
         "weighted_roe": round(weighted_roe, 2) if has_roe_count > 0 else None,
         "scores": {
-            "netScore": round(weighted_net, 1),
+            # 沒有任何持股有財報輸入時 netScore 留空（None），不回填預設分
+            "netScore": round(weighted_net / net_norm_w, 1) if net_norm_w > 0 else None,
             "divScore": round(weighted_div, 1),
             "valScore": round(weighted_val, 1),
             "fricScore": round(weighted_fric, 1),
