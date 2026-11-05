@@ -487,9 +487,9 @@ h.push('<p class="mac">加權 '+n(I.close,0)+"（"+e(I.date)+"），距 60 日�
 h.push('<p><b>趨緩訊號 '+e(S.calm_count)+" / "+(S.signals||[]).length+'</b> <span class="mac">達 3 項以上可視為急殺階段結束</span></p><div class="g">');
 (S.signals||[]).forEach(function(g){h.push('<div class="sg"><b><span class="d d-'+e(g.status)+'"></span>'+e(g.label)+'</b><span class="v">'+sv(g)+'</span><div class="mac">'+e(g.rule)+(g.date?"｜資料日 "+e(g.date):"")+"</div></div>")});
 h.push("</div>");
-if((S.holdings||[]).length){h.push('<div class="tw2"><table><thead><tr><th>追蹤持股</th><th>現價</th><th>成本</th><th>相對成本</th><th>最近配息</th><th>只靠配息回本</th><th>β</th><th>上漲捕獲</th><th>下跌捕獲</th></tr></thead><tbody>');
-S.holdings.forEach(function(r){var c=r.capture||{};h.push("<tr><td>"+e(r.code)+"</td><td>"+n(r.close,2)+"</td><td>"+n(r.cost,2)+"</td><td>"+n(r.vs_cost_pct,1)+"%</td><td>"+(r.last_div==null?"-":n(r.last_div,3)+"（"+e(r.last_div_date)+"）")+"</td><td>"+(r.months_to_breakeven==null?"-":r.months_to_breakeven===0?"已回本":"約 "+e(r.months_to_breakeven)+" 個月")+"</td><td>"+n(c.beta,2)+"</td><td>"+n(c.up_capture,2)+"</td><td>"+n(c.down_capture,2)+"</td></tr>")});
-h.push('</tbody></table></div><p class="mac">只靠配息回本：假設每期配息維持最近一次金額、價格不變，所需期數；配息可能調整，僅供參考。捕獲率為對加權指數的日報酬比。</p>')}
+if((S.holdings||[]).length){var hc=S.holdings.some(function(r){return r.cost!=null});h.push('<div class="tw2"><table><thead><tr><th>追蹤持股</th><th>現價</th>'+(hc?'<th>成本</th><th>相對成本</th>':'')+'<th>最近配息</th>'+(hc?'<th>只靠配息回本</th>':'')+'<th>β</th><th>上漲捕獲</th><th>下跌捕獲</th></tr></thead><tbody>');
+S.holdings.forEach(function(r){var c=r.capture||{};h.push("<tr><td>"+e(r.code)+"</td><td>"+n(r.close,2)+"</td>"+(hc?"<td>"+n(r.cost,2)+"</td><td>"+(r.vs_cost_pct==null?"-":n(r.vs_cost_pct,1)+"%")+"</td>":"")+"<td>"+(r.last_div==null?"-":n(r.last_div,3)+"（"+e(r.last_div_date)+"）")+"</td>"+(hc?"<td>"+(r.months_to_breakeven==null?"-":r.months_to_breakeven===0?"已回本":"約 "+e(r.months_to_breakeven)+" 個月")+"</td>":"")+"<td>"+n(c.beta,2)+"</td><td>"+n(c.up_capture,2)+"</td><td>"+n(c.down_capture,2)+"</td></tr>")});
+h.push('</tbody></table></div><p class="mac">'+(hc?'只靠配息回本：假設每期配息維持最近一次金額、價格不變，所需期數；配息可能調整，僅供參考。':'')+'捕獲率為對加權指數的日報酬比（β 大於 1 代表漲跌都比大盤大；下跌捕獲高於上漲捕獲代表跌多漲少）。</p>')}
 h.push('<p class="mac">來源：期交所 OpenAPI、證交所三大法人與信用交易統計、Yahoo 日線；抓不到顯示 -。產生於 '+e(S.generated)+"。訊號只描述市場狀態，不構成買賣指示。</p>");
 el.innerHTML=h.join("");el.hidden=false})();
 </script>

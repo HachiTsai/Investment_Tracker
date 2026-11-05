@@ -622,7 +622,7 @@ def main(argv=None) -> int:
     p.add_argument("--daily-html", metavar="OUT", help="搭配 --scan：另存每日投資組合巡檢頁（讀 references/daily_patrol_template.html）")
     p.add_argument("--notice", action="append", default=[], metavar="TEXT", help="搭配 --daily-html：頁面頂端的警示文字，可重複（例如陷阱狀態未寫回）")
     p.add_argument("--stress", action="store_true", help="搭配 --daily-html：加入市場修正追蹤區塊（market_stress.py：期交所、證交所、指數）")
-    p.add_argument("--stress-track", action="append", default=[], metavar="代號:成本", help="搭配 --stress：追蹤持股的回本試算，例如 00406A:8.51，可重複")
+    p.add_argument("--stress-track", action="append", default=[], metavar="代號[:成本]", help="搭配 --stress：追蹤持股，例如 00406A；加 :成本 才算相對成本與回本（巡檢頁是公開連結，排程不給成本），可重複")
     p.add_argument("--batch", metavar="卡片:前N大", help="多檔彙總回測，例如 00882:15（讀 models/<卡片>/cards/constituents.jsonl）")
     p.add_argument("--fib-backtest", action="store_true", help="回測各費波那契回檔位置之後 5/10/20 日含息報酬（觀察清單全部標的，抓 5 年日線）")
     p.add_argument("--backtest", action="store_true", help="加跑超跌反彈規則回測（抓 5 年日線）")
