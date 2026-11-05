@@ -6,7 +6,6 @@
   hkdata.py pdf <港交所PDF網址> [--grep 正規式]
   hkdata.py southbound [--days 10] [--crosscheck]
   hkdata.py ccass 0939 [--date 2026-10-13] [--compare-days 7]
-  hkdata.py quote 0939 1919 [--range 1mo]
   hkdata.py sectors [--announce-days 8]
   hkdata.py macro
 """
@@ -185,26 +184,6 @@ def southbound(days=10, crosscheck=False):
     return res
 
 
-# ---------- 報價（Yahoo Finance） ----------
-def parse_yahoo(payload):
-    r = json.loads(payload)["chart"]
-    if r.get("error"):
-        raise RuntimeError(f"Yahoo：{r['error']}")
-    res = r["result"][0]; m = res["meta"]
-    closes = [c for c in res["indicators"]["quote"][0]["close"] if c is not None]
-    first = closes[0] if closes else None
-    return dict(symbol=m["symbol"], currency=m.get("currency"), price=m.get("regularMarketPrice"),
-                prev_close=closes[-2] if len(closes) >= 2 else m.get("chartPreviousClose"),
-                as_of=datetime.fromtimestamp(m["regularMarketTime"], timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-                range_change_pct=round((m["regularMarketPrice"] / first - 1) * 100, 2) if first else None,
-                high_52w=m.get("fiftyTwoWeekHigh"), low_52w=m.get("fiftyTwoWeekLow"))
-
-
-def quote(code, rng="1mo"):
-    sym = norm(code).zfill(4) + ".HK"
-    return parse_yahoo(http(f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}?range={rng}&interval=1d"))
-
-
 # ---------- 00882 產業漲跌 ----------
 def ctbc(path, body, token="www.ctbcinvestments.com"):
     r = json.loads(http(CTBC + path + "?" + urllib.parse.urlencode({"token": token}), json.dumps(body).encode(),
@@ -346,7 +325,6 @@ def main(argv=None):
     b = sp.add_parser("pdf"); b.add_argument("url"); b.add_argument("--grep")
     c = sp.add_parser("southbound"); c.add_argument("--days", type=int, default=10); c.add_argument("--crosscheck", action="store_true")
     f = sp.add_parser("ccass"); f.add_argument("codes", nargs="+"); f.add_argument("--date"); f.add_argument("--compare-days", type=int, default=7); f.add_argument("--top", type=int, default=10)
-    d = sp.add_parser("quote"); d.add_argument("codes", nargs="+"); d.add_argument("--range", default="1mo")
     e = sp.add_parser("sectors"); e.add_argument("--announce-days", type=int, default=0)
     sp.add_parser("macro")
     o = p.parse_args(argv)
@@ -361,11 +339,11 @@ def main(argv=None):
                 res[norm(code)] = dict(error=str(ex)); rc = 1
         print(json.dumps(dict(fetched_at=now_utc(), results=res), ensure_ascii=False, indent=1))
         return rc
-    if o.cmd in ("announce", "quote"):
+    if o.cmd == "announce":
         res = {}
         for code in o.codes:
             try:
-                res[norm(code)] = announce(code, o.days, o.all) if o.cmd == "announce" else quote(code, o.range)
+                res[norm(code)] = announce(code, o.days, o.all)
             except Exception as ex:
                 res[norm(code)] = dict(error=str(ex)); rc = 1
         res = dict(fetched_at=now_utc(), results=res)
