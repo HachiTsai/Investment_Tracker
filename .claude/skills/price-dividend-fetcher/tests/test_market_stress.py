@@ -113,8 +113,17 @@ def test_build_survives_source_failures():
 
 def test_parse_track():
     assert ms.parse_track(["00406A:8.51"]) == [("00406A", 8.51)]
+    assert ms.parse_track(["00406A"]) == [("00406A", None)]
     with pytest.raises(ValueError):
-        ms.parse_track(["00406A"])
+        ms.parse_track(["00406A:abc"])
+
+
+def test_holding_without_cost_hides_cost_fields():
+    t0 = int(datetime(2026, 1, 20, 9, tzinfo=TW).timestamp())
+    http = fake_http({"00406A.TW": chart([8.6] * 20 + [7.36], divs=[(t0, 0.138)])})
+    h = ms.holding_state("00406A", None, {}, http)
+    assert h["cost"] is None and h["vs_cost_pct"] is None and h["months_to_breakeven"] is None
+    assert h["last_div"] == 0.138
 
 
 def test_daily_page_embeds_stress():

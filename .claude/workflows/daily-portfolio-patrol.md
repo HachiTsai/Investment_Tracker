@@ -71,14 +71,15 @@ python3 .claude/skills/portfolio-patrol/scripts/patrol.py --json --prev-state "<
 在 REPO 根目錄執行：
 
 ```bash
-python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --patrol /tmp/patrol.json --daily-html /tmp/daily.html --stress --stress-track 00406A:8.51 --gate > /tmp/scan.json
+python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --patrol /tmp/patrol.json --daily-html /tmp/daily.html --stress --stress-track 00406A --gate > /tmp/scan.json
 ```
 
 *現場結合技術面指標、動能斜率與巡檢狀態，渲染出完整互動式單檔 HTML。*
 
-- `--stress` 加「市場修正追蹤」區塊（`market_stress.py`）：六個趨緩訊號（外資現貨買賣超、外資台指期淨空單、融資餘額、加權 10 日線、10 日波動、費半 5 日）、修正期第幾天對照歷史類比，以及 `--stress-track 代號:成本` 追蹤持股的回本試算與捕獲率（2026-11-05 Hachi 同意，追蹤 00406A，成本 8.51）。
+- `--stress` 加「市場修正追蹤」區塊（`market_stress.py`）：六個趨緩訊號（外資現貨買賣超、外資台指期淨空單、融資餘額、加權 10 日線、10 日波動、費半 5 日）、修正期第幾天對照歷史類比，以及 `--stress-track 代號` 追蹤持股的現價、最近配息與對加權的 β、捕獲率（2026-11-05 Hachi 同意，追蹤 00406A）。
+- **持股隱私**：本 Artifact 是公開連結，排程只給代號、不給成本（`代號:成本` 只在本機或私人報告用），頁面不出現成本與回本試算（依 `portfolio-control-system.md` 公開邊界隱私）。
 - 期交所、證交所或 Yahoo 任一來源抓不到時，該欄顯示 `-`，不以舊值代替，也不中止發布；區塊整體失敗時頁面不顯示該區塊，其餘照常。
-- 追蹤持股或成本改變時，改這行的 `--stress-track`（可重複）；不再追蹤時拿掉 `--stress-track`，修正期結束後也可拿掉 `--stress`。
+- 追蹤標的改變時，改這行的 `--stress-track`（可重複）；不再追蹤時拿掉 `--stress-track`，修正期結束後也可拿掉 `--stress`。
 
 若步驟 1a 寫回失敗，指令末尾加上 `--notice "陷阱狀態未寫回：明日陷阱判定可能低估，請人工確認"`（可重複使用）。
 

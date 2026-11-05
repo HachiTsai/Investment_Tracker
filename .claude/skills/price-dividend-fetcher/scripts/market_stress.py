@@ -204,16 +204,18 @@ def capture(etf: Dict[str, float], idx: Dict[str, float]) -> Optional[Dict]:
     }
 
 
-def holding_state(code: str, cost: float, idx_adj: Dict[str, float], http: Getter = http_get) -> Dict:
-    """追蹤持股：現價、相對成本、最近一次配息、以最近配息維持估算的回本月數、對加權的捕獲率。"""
+def holding_state(code: str, cost: Optional[float], idx_adj: Dict[str, float], http: Getter = http_get) -> Dict:
+    """追蹤持股：現價、最近一次配息、對加權的捕獲率；給了成本才加相對成本與只靠配息回本期數（公開頁不給成本）。"""
     days, close, adj, divs = yahoo_series(f"{code}.TW", "1y", http)
     last = close[-1]
     last_div = divs[-1][1] if divs else None
-    gap = cost - last
-    months = math.ceil(gap / last_div) if (last_div and gap > 0) else (0 if gap <= 0 else None)
+    months = None
+    if cost is not None:
+        gap = cost - last
+        months = math.ceil(gap / last_div) if (last_div and gap > 0) else (0 if gap <= 0 else None)
     return {
         "code": code, "date": days[-1], "close": round(last, 2), "cost": cost,
-        "vs_cost_pct": round((last / cost - 1) * 100, 1),
+        "vs_cost_pct": round((last / cost - 1) * 100, 1) if cost is not None else None,
         "last_div": last_div, "last_div_date": divs[-1][0] if divs else None,
         "months_to_breakeven": months,
         "capture": capture(dict(zip(days, adj)), idx_adj),
@@ -261,7 +263,7 @@ def _try(fn, *a, **k):
         return None
 
 
-def build(track: List[Tuple[str, float]], http: Getter = http_get, now: Optional[datetime] = None) -> Dict:
+def build(track: List[Tuple[str, Optional[float]]], http: Getter = http_get, now: Optional[datetime] = None) -> Dict:
     """組合市場修正追蹤資料。每個來源獨立失敗，失敗欄位為 None。"""
     today = (now or datetime.now(TW))
     tw = _try(yahoo_series, "^TWII", "2y", http)
@@ -299,19 +301,20 @@ def build(track: List[Tuple[str, float]], http: Getter = http_get, now: Optional
     }
 
 
-def parse_track(items: List[str]) -> List[Tuple[str, float]]:
-    out = []
+def parse_track(items: List[str]) -> List[Tuple[str, Optional[float]]]:
+    """代號 或 代號:成本。公開頁只給代號，成本與回本試算不上公開頁（持股隱私）。"""
+    out: List[Tuple[str, Optional[float]]] = []
     for it in items:
-        code, _, cost = it.partition(":")
-        if not code or _num(cost) is None:
-            raise ValueError(f"--track 格式應為 代號:成本，收到 {it}")
-        out.append((code.strip(), float(cost)))
+        code, sep, cost = it.partition(":")
+        if not code.strip() or (sep and _num(cost) is None):
+            raise ValueError(f"--track 格式應為 代號 或 代號:成本，收到 {it}")
+        out.append((code.strip(), float(cost) if sep else None))
     return out
 
 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="市場修正追蹤（只讀）")
-    p.add_argument("--track", action="append", default=[], metavar="代號:成本", help="追蹤持股，例如 00406A:8.51，可重複")
+    p.add_argument("--track", action="append", default=[], metavar="代號[:成本]", help="追蹤持股，例如 00406A 或 00406A:8.51（成本只在本機用），可重複")
     a = p.parse_args(argv)
     print(json.dumps(build(parse_track(a.track)), ensure_ascii=False, indent=1))
     return 0
