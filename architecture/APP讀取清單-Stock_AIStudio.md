@@ -33,7 +33,7 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 
 | 來源 | Drive ID | 分頁 | APP 讀取檔 | 寫入者與工作流 | 更新頻率 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 情報資料庫 | `1BF2xvF0cmyODdN0nXR8QHbOTC3ikqswvSwBboY1cGQo` | 第一分頁（訊號）、評分歷史 | `signalsFeedService.ts` | Claude 排程（風向日報等） | 平日日報 |
+| 情報資料庫 | `1BF2xvF0cmyODdN0nXR8QHbOTC3ikqswvSwBboY1cGQo` | 第一分頁（訊號）、評分歷史 | `signalsFeedService.ts` | 已停更（風向日報排程 2026-10-26 停用，2026-11-05 Hachi 確認情報頁已下架、Sheet 維持停止） | 已停止 |
 | 00882_成分股股利資料庫 | `1Jq599WzoQUDsooZDhJhyK8uaEMgDiLLCoZthWk2WXtw` | 成分股、摘要 | `constituentsFeedService.ts` | Claude 排程（`.claude/workflows/hk-00882-dividend.md`） | 每週五 16:30 |
 | 全市場 ETF 成分股資料庫 | `1GIhbRyL-h96ACVjlSSW9YUFMiAItg_SP9Wi0o3WwG70` | ETF_Summary、ETF_Constituents | `constituentsFeedService.ts`（失敗退回 `allMarketEtfSnapshot`） | Claude 排程／本機代班（`.claude/workflows/market-etf-pool.md`） | 每週五 17:10 |
 | 持股資料庫 | `1CWLwi1tsQoWaEYm0IOK9aH7NEkENgd71sbz6Y_lpRVI` | 第一分頁 | `portfolioFeedService.ts` | 排程依 Core 唯讀重建 | 依排程 |
