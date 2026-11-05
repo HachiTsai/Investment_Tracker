@@ -5,6 +5,7 @@
 
 import re
 import subprocess
+import threading
 import time
 from typing import Optional, Tuple
 
@@ -67,10 +68,38 @@ def http_get(url: str, referer: Optional[str] = None, attempts: int = 1, ua: str
     raise RuntimeError(err)
 
 
-def twse_get(url: str, http_fn=None) -> str:
-    """證交所請求重試包裝器（證交所防護偶爾攔截，預設重試 3 次）。"""
+# 證交所防護（WAF）在短時間連續請求時回 HTTP 307 加「因為安全性考量」頁面，跟隨轉址也拿不到資料。
+# 2026-11-05 實測：連發約六成被擋，間隔 3 秒約一成。做法是放慢、被擋就等久一點再試，不偽裝瀏覽器。
+TWSE_MIN_INTERVAL = 3.0          # 同一程序內任兩次證交所請求的最小間隔（秒，跨執行緒共用）
+TWSE_BLOCK_BACKOFF = (10, 20, 30)  # 被 307 擋下後第 1、2、3 次重試前的等待（秒）
+_twse_lock = threading.Lock()
+_twse_last = [0.0]
+
+
+def _twse_throttle(sleep=None, clock=time.monotonic) -> None:
+    sleep = sleep or time.sleep
+    with _twse_lock:
+        wait = _twse_last[0] + TWSE_MIN_INTERVAL - clock()
+        if wait > 0:
+            sleep(wait)
+        _twse_last[0] = clock()
+
+
+def twse_get(url: str, http_fn=None, attempts: int = 4, sleep=None) -> str:
+    """證交所請求：全程序節流（每 TWSE_MIN_INTERVAL 秒最多一次），被 307 防護擋下時依 TWSE_BLOCK_BACKOFF 退避重試，其他錯誤等 3 秒倍數。"""
     getter = http_fn or http_get
-    return getter(url, TWSE_REFERER, attempts=3)
+    sleep = sleep or time.sleep
+    err: Optional[RuntimeError] = None
+    for i in range(attempts):
+        if i:
+            blocked = "HTTP 307" in str(err)
+            sleep(TWSE_BLOCK_BACKOFF[min(i - 1, len(TWSE_BLOCK_BACKOFF) - 1)] if blocked else 3 * i)
+        _twse_throttle(sleep)
+        try:
+            return getter(url, TWSE_REFERER, attempts=1)
+        except RuntimeError as e:
+            err = e
+    raise err  # type: ignore[misc]
 
 
 def roc_to_iso(s: str) -> str:

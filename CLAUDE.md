@@ -110,7 +110,7 @@ scripts/                     共用計算或抓價工具
 | `fin-commit` | 所有 commit 的流程與格式檢查 |
 | `tool-note-writer` | 撰寫、修改、搜尋筆記：財商架構 `arch`、標的研究 `research`；並把硬數據歸納到情報資料庫 Sheet |
 | `markdown-linter` | Markdown 格式檢查，與 CI 共用設定 |
-| `price-dividend-fetcher` | 抓台、美、日、港股最新股價（Google Finance，Yahoo、證交所、櫃買備援）與歷史配息（台股 FinLab＋證交所驗證，海外 Yahoo），算近 12 個月殖利率；另含波段觀察（`swing.py`：個股與 ETF 日線指標、狀態、費波那契位置、回測，`swing_levels.py`：短中長期分級原型，`swing_scores.py`：評分矩陣；`--patrol --daily-html` 產出每日投資組合巡檢頁）；唯讀 |
+| `price-dividend-fetcher` | 抓台、美、日、港股最新股價（Google Finance，Yahoo、證交所、櫃買備援）與歷史配息（台股 FinLab＋證交所驗證，海外 Yahoo），算近 12 個月殖利率；另含波段觀察（`swing.py`：個股與 ETF 日線指標、狀態、費波那契位置、回測，`swing_levels.py`：短中長期分級原型，`swing_scores.py`：評分矩陣；`--patrol --daily-html` 產出每日投資組合巡檢頁，`--stress` 加市場修正追蹤區塊）；唯讀 |
 | `hk-market-data` | 查港交所公告與 PDF 原文、港股通南向資金、港股報價、00882 產業漲跌、宏觀前饋指標；唯讀 |
 | `portfolio-patrol` | 投資組合全標的自動巡檢與每日簡報，動態遍歷 models/*/cards/ 求值，例外管理（MBE）分診 |
 | `tw-etf-fetcher` | 台股、港股、美股、日股 ETF 的成分股與權重抓取（台股為全市場股號清單與完整持股；港股 00882 經中信投信；美股、日股為前幾大持股，頁面與 Sheet 標示 coverage）、穿透曝險（Look-through）、各市場頁面與資料池（`etf_pool.py`），並支援一鍵生成標的建模卡片；`etf_sheets_sync.py` 把台股全市場表與外幣市場資料池寫入各市場的外圍試算表；市場介面 `etf_market.py` 與共用安全防線（純代號、國別後綴掃描、Core 寫入拒絕）；只讀 Core，寫入僅限外圍試算表 |

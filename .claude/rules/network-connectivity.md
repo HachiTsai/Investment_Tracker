@@ -1,13 +1,14 @@
 # 外部網路連線與資料來源清單
 
-本專案於本機（Antigravity / macOS）與雲端沙盒環境（Claude Code Web）經實測可通聯之 35 個外部網域及 API 服務清單。
+本專案於本機（Antigravity / macOS）與雲端沙盒環境（Claude Code Web）經實測可通聯之 36 個外部網域及 API 服務清單。
 
 ## 1. 核心證券交易所與主管機關
 
 | 網域 | 服務說明 | 連線狀態 | 實務用途與讀取方式 |
 | :--- | :--- | :---: | :--- |
-| `www.twse.com.tw` | 台灣證券交易所官網 | ✅ HTTP 200 | 台股公告、收盤行情備援 |
+| `www.twse.com.tw` | 台灣證券交易所官網 | ✅ HTTP 200（連續請求會回 307） | 台股公告、收盤行情備援；三大法人買賣金額（`BFI82U`）、信用交易統計融資餘額（`MI_MARGN`）、市場成交資訊加權指數（`FMTQIK`）供巡檢頁市場修正追蹤（`market_stress.py`）。短時間連續請求會被防護擋下，回 HTTP 307 與「因為安全性考量」頁，跟隨轉址也拿不到資料（2026-11-05 實測：連發約六成被擋、間隔 3 秒約一成）；`fetch_common.twse_get` 全程序節流每 3 秒一次、被擋後等 10／20／30 秒重試，不偽裝瀏覽器 |
 | `openapi.twse.com.tw` | 證交所 OpenAPI | ✅ HTTP 200 | 自動化撈取每日收盤價與除權息資訊；上市公司季度損益與資產負債（`fundamental-analyzer` 財報資料層） |
+| `openapi.taifex.com.tw` | 期交所 OpenAPI | ✅ HTTP 200 | 三大法人臺股期貨未平倉淨額（`MarketDataOfMajorInstitutionalTradersDetailsOfFuturesContractsBytheDate`，只有最新一日），供巡檢頁市場修正追蹤（`market_stress.py`；2026-11-05 實測） |
 | `mops.twse.com.tw` | 公開資訊觀測站 | ✅ HTTP 200 | 台股重大訊息、除權息公告 |
 | `www.tpex.org.tw` | 證券櫃檯買賣中心 | ✅ HTTP 200 | 上櫃證券行情與除權息備援 |
 | `www.hkex.com.hk` | 香港交易所官網 | ✅ HTTP 200 | 港股市場公告與交易規則 |
