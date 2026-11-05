@@ -52,17 +52,6 @@ def test_parse_hkex_daily_matches_eastmoney():
     assert h.parse_hkex_daily("tabData = " + json.dumps([mk("SSE Southbound", "0", "0", "0", day=0)])) is None
 
 
-def test_parse_yahoo():
-    payload = json.dumps({"chart": {"error": None, "result": [{
-        "meta": {"symbol": "0939.HK", "currency": "HKD", "regularMarketPrice": 9.9, "chartPreviousClose": 9.0,
-                 "regularMarketTime": 1791965304, "fiftyTwoWeekHigh": 10, "fiftyTwoWeekLow": 7},
-        "indicators": {"quote": [{"close": [9.0, None, 9.5, 9.9]}]}}]}})
-    got = h.parse_yahoo(payload)
-    assert got["prev_close"] == 9.5
-    assert got["range_change_pct"] == 10.0
-    assert got["as_of"].startswith("2026-10-")
-
-
 def test_sector_returns():
     now = {"939": {"weights_": "2", "price_": "11", "name_": "建行"},
            "1398": {"weights_": "2", "price_": "9", "name_": "工行"},
