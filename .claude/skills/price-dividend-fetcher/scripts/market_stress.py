@@ -16,7 +16,7 @@ import urllib.parse
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Dict, List, Optional, Tuple
 
-from fetch_common import YAHOO_UA, http_get
+from fetch_common import YAHOO_UA, http_get, twse_get
 
 TAIFEX_OI_URL = "https://openapi.taifex.com.tw/v1/MarketDataOfMajorInstitutionalTradersDetailsOfFuturesContractsBytheDate"
 TWSE_INST_URL = "https://www.twse.com.tw/rwd/zh/fund/BFI82U?dayDate={date}&type=day&response=json"
@@ -67,7 +67,7 @@ def taifex_futures_oi(http: Getter = http_get) -> Optional[Dict]:
 
 def twse_foreign_net(date: str, http: Getter = http_get) -> Optional[float]:
     """證交所三大法人買賣金額：外資及陸資（不含外資自營商）買賣差額（元）。date 為 YYYYMMDD。"""
-    d = json.loads(http(TWSE_INST_URL.format(date=date), attempts=2))
+    d = json.loads(twse_get(TWSE_INST_URL.format(date=date), http_fn=None if http is http_get else http))
     if d.get("stat") != "OK":
         return None
     for row in d.get("data") or []:
@@ -78,7 +78,7 @@ def twse_foreign_net(date: str, http: Getter = http_get) -> Optional[float]:
 
 def twse_margin_balance(date: str, http: Getter = http_get) -> Optional[float]:
     """證交所信用交易統計：融資金額今日餘額（仟元）。"""
-    d = json.loads(http(TWSE_MARGIN_URL.format(date=date), attempts=2))
+    d = json.loads(twse_get(TWSE_MARGIN_URL.format(date=date), http_fn=None if http is http_get else http))
     if d.get("stat") != "OK":
         return None
     for t in d.get("tables") or []:
@@ -90,7 +90,7 @@ def twse_margin_balance(date: str, http: Getter = http_get) -> Optional[float]:
 
 def twse_index_month(date: str, http: Getter = http_get) -> Dict[str, float]:
     """證交所市場成交資訊：該月每日加權指數收盤，鍵為 YYYY-MM-DD（民國年轉西元）。"""
-    d = json.loads(http(TWSE_INDEX_URL.format(date=date), attempts=2))
+    d = json.loads(twse_get(TWSE_INDEX_URL.format(date=date), http_fn=None if http is http_get else http))
     out: Dict[str, float] = {}
     if d.get("stat") != "OK":
         return out

@@ -107,7 +107,13 @@ def fill_gaps_from_twse(bars: List[Dict], code: str, now: Optional[datetime] = N
     today = (now + tz).strftime("%Y-%m-%d")
     have = {(datetime.fromtimestamp(b["ts"], timezone.utc) + tz).strftime("%Y-%m-%d") for b in bars}
     since = (now + tz - timedelta(days=GAP_WINDOW_DAYS)).strftime("%Y-%m-%d")
-    months = sorted({since[:7], today[:7]})
+    first = min(have)
+    d0 = datetime.strptime(max(since, first), "%Y-%m-%d")
+    missing = [d for d in ((d0 + timedelta(days=k)).strftime("%Y-%m-%d") for k in range(GAP_WINDOW_DAYS + 1))
+               if d < today and d not in have and datetime.strptime(d, "%Y-%m-%d").weekday() < 5]
+    if not missing:
+        return bars  # 窗口內平日都有 K 棒：不打證交所，減少被防護擋下的請求量
+    months = sorted({d[:7] for d in missing})
     added = []
     for ym in months:
         try:

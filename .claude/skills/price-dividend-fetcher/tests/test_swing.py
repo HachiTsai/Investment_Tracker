@@ -461,3 +461,17 @@ def test_daily_page_carries_notices_into_head_block():
     html_plain = sw.render_daily_page([], {}, "2026-10-27")
     head_plain = json.loads(html_plain.split("var HEAD=", 1)[1].split(";var DATE", 1)[0])
     assert head_plain["notices"] == []
+
+
+def test_fill_gaps_skips_twse_when_no_weekday_missing():
+    now = datetime(2026, 11, 5, 8, 0, tzinfo=timezone.utc)  # 台北 16:00 週四
+    start = datetime(2026, 10, 20, tzinfo=timezone.utc)
+    bars = []
+    for k in range(17):
+        d = start + timedelta(days=k)
+        if d.weekday() < 5:
+            bars.append(dict(ts=int(d.timestamp()) + 3600, open=1, high=1, low=1, close=1, volume=1, adj=1))
+
+    def never(url):
+        raise AssertionError("不應呼叫證交所")
+    assert sw.fill_gaps_from_twse(bars, "0050", now=now, fetch=never) == bars

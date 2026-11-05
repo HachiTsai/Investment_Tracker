@@ -7,6 +7,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
+import fetch_common as fc  # noqa: E402
 import market_stress as ms  # noqa: E402
 import swing as sw  # noqa: E402
 
@@ -20,8 +21,14 @@ def chart(closes, start=datetime(2026, 1, 5, 9, tzinfo=TW), divs=None):
                                              "indicators": {"quote": [{"close": closes}], "adjclose": [{"adjclose": closes}]}}]}})
 
 
+@pytest.fixture(autouse=True)
+def no_wait(monkeypatch):
+    monkeypatch.setattr(fc, "TWSE_MIN_INTERVAL", 0.0)
+    monkeypatch.setattr(fc.time, "sleep", lambda s: None)
+
+
 def fake_http(routes):
-    def get(url, **_):
+    def get(url, *_, **__):
         for key, body in routes.items():
             if key in url:
                 if isinstance(body, Exception):
@@ -123,3 +130,37 @@ def test_twse_index_fills_yahoo_lag():
     assert extra == {"2026-11-04": 42948.91, "2026-11-05": 41574.72}
     d, c, a = ms.fill_index_tail(["2026-11-03", "2026-11-04"], [1.0, 2.0], [1.0, 2.0], extra)
     assert d[-1] == "2026-11-05" and c[-1] == 41574.72 and len(d) == 3
+
+
+def test_twse_get_backs_off_longer_when_blocked():
+    calls, waits = [], []
+
+    def flaky(url, referer=None, attempts=1):
+        calls.append(url)
+        if len(calls) < 3:
+            raise RuntimeError("HTTP 307（https://www.twse.com.tw/x）")
+        return "ok"
+    assert fc.twse_get("u", http_fn=flaky, sleep=waits.append) == "ok"
+    assert len(calls) == 3 and waits == [10, 20]
+
+
+def test_twse_get_raises_after_attempts():
+    def down(url, referer=None, attempts=1):
+        raise RuntimeError("HTTP 500（x）")
+    waits = []
+    with pytest.raises(RuntimeError, match="HTTP 500"):
+        fc.twse_get("u", http_fn=down, attempts=3, sleep=waits.append)
+    assert waits == [3, 6]
+
+
+def test_twse_throttle_spaces_requests(monkeypatch):
+    monkeypatch.setattr(fc, "TWSE_MIN_INTERVAL", 3.0)
+    t = [100.0]
+    slept = []
+
+    def sleep(s):
+        slept.append(round(s, 2))
+        t[0] += s
+    monkeypatch.setattr(fc, "_twse_last", [99.0])
+    fc._twse_throttle(sleep, clock=lambda: t[0])
+    assert slept == [2.0]
