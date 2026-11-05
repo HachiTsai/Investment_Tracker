@@ -6,15 +6,24 @@
 
 來源頁是互動版 Artifact 的 HTML。快照保留除「記帳」以外的分頁，拿掉連接器與所有寫入程式，
 並把試算表的值內嵌進頁面。只用標準函式庫；不讀也不寫任何試算表。
-data.json 的格式：{"portfolio": [[...]], "tx": [[...]], "journal": [[...]]}，
-值為 Sheets get_values 回傳的二維陣列（含表頭列）。
+data.json 的格式：{"portfolio": [[...]], "tx": [[...]], "journal": [[...]], "cash": [[...]]}，
+值為 Sheets get_values 回傳的二維陣列。portfolio／tx／journal 含表頭列；cash 是「資金餘額」分頁，無表頭，
+頁面依列序讀值，所以標籤位置要對得上，對不上就中止。
 """
 import argparse
 import json
 import re
 import sys
 
-DATA_KEYS = ('portfolio', 'tx', 'journal')
+DATA_KEYS = ('portfolio', 'tx', 'journal', 'cash')
+# 頁面讀取的欄位：缺了就中止，避免快照悄悄算錯（例如交易表改了欄位順序）。
+REQUIRED_HEADERS = {
+    'portfolio': ('代號', '總市值', '未實現損益'),
+    'tx': ('交易編號', '代號', '日期', '類型', '現金流', '資金來源', '餘額（累計）'),
+    'journal': ('紀錄編號', '代號', '日期', '類別', '內容'),
+}
+# 資金餘額分頁：頁面讀 B2 錨點日、B3 錨點餘額、B5 循環、B6 新資金、B7 合計；這些列的 A 欄標籤要含下列字樣。
+CASH_LABELS = {1: '錨點日期', 2: '錨點餘額', 4: '循環餘額', 5: '新資金餘額', 6: '合計'}
 # Core 的試算表 ID：快照頁永遠不該出現，出現就中止。
 CORE_ID = '1QBEgUi-kTOuLgj2yGHmP-0g_ug-Sl_M21SN0g93b6xI'
 
@@ -51,6 +60,16 @@ def validate_data(data):
         rows = data.get(key)
         if not isinstance(rows, list) or not rows or not isinstance(rows[0], list):
             raise BuildError(f'data.json 缺少 {key} 或格式不對（需含表頭列的二維陣列）')
+    for key, need in REQUIRED_HEADERS.items():
+        head = [str(c).strip() for c in data[key][0]]
+        missing = [h for h in need if h not in head]
+        if missing:
+            raise BuildError(f'{key} 缺少欄位 {missing}：試算表可能改版，請更新快照規格與 build_snapshot.py')
+    rows = data['cash']
+    for i, want in CASH_LABELS.items():
+        label = rows[i][0] if i < len(rows) and rows[i] else ''
+        if want not in str(label):
+            raise BuildError(f'資金餘額 第 {i + 1} 列（A{i + 1}）標籤應含「{want}」：分頁可能改版，頁面讀值會錯位')
 
 
 def build(source, data, stamp):
@@ -65,13 +84,14 @@ def build(source, data, stamp):
     s = _sub(s, '<title>Our_Investment 交易簿</title>', '<title>Our_Investment 快照</title>')
     s = _sub(s, '等待連接 Google Sheets', '讀取快照中')
     s = _sub(s, '連接 Google Sheets 後，這裡會顯示總市值、未實現損益與殖利率。', '這裡會顯示總市值、未實現損益與殖利率。')
-    s = _sub_re(s, r'\n?\s*<p>記帳時手續費自動計算.*?</p>', '')
+    # 只拿掉段落本身、保留縮排，與既有快照頁的空白行一致，讓版本比對只剩資料差異。
+    s = _sub_re(s, r'<p>記帳時手續費自動計算.*?</p>', '')
     # JS 資料層：連接器換成內嵌資料
     embedded = (
         f'  const SNAPSHOT = {json.dumps(data, ensure_ascii=False)};\n'
         f'  const SNAPSHOT_AT = {json.dumps(stamp, ensure_ascii=False)};\n'
         "  const readRange = async (range) => SNAPSHOT[range.startsWith('Portfolio') ? 'portfolio' : "
-        "range.startsWith('Transactions') ? 'tx' : 'journal'];\n"
+        "range.startsWith('Transactions') ? 'tx' : range.startsWith('資金') ? 'cash' : 'journal'];\n"
         "  const describeError = (err) => (err && err.message) || '讀取快照失敗。';\n\n"
     )
     s = _cut(s, '  // The connector is optional.', '  // Sheet cells arrive')
@@ -93,6 +113,7 @@ def build(source, data, stamp):
         r"  \$\('(entry|confirm-yes|confirm-no|new-ticker|ticker-confirm-yes|ticker-confirm-no|remove-ticker|"
         r"remove-select|remove-confirm-yes|remove-confirm-no|refresh)'\)\.addEventListener[^\n]*\n",
         r"  \$\('date'\)\.value = todayISO\(\);\n  setType\('Buy'\);\n",
+        r"  document\.querySelectorAll\('#source-seg button'\)\.forEach\(.*?\n  \}\)\);\n",
     ):
         s = _sub_re(s, pattern, '', re.S)
     # 事後檢查：不可殘留寫入、連接器或 Core

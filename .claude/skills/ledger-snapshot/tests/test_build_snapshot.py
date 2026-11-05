@@ -8,9 +8,19 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / 'scripts'))
 import build_snapshot as bs  # noqa: E402
 
 DATA = {
-    'portfolio': [['代號', '名稱'], ['TPE:00882', '中信中國高股息']],
-    'tx': [['交易編號', '代號']],
-    'journal': [['紀錄編號', '代號']],
+    'portfolio': [['代號', '名稱', '總市值', '未實現損益'], ['TPE:00882', '中信中國高股息', '1', '2']],
+    'tx': [['交易編號', '代號', '日期', '類型', '現金流', '資金來源', '餘額（累計）']],
+    'journal': [['紀錄編號', '代號', '日期', '類別', '內容']],
+    'cash': [
+        ['可投資餘額（測試）'],
+        ['對帳錨點日期（此日之後的交易才計入）', '2026-10-29'],
+        ['錨點餘額（錨點日收盤後的帳面餘額，手填）', '0'],
+        [],
+        ['循環餘額（賣出、股利、再投入、換股）', '0'],
+        ['新資金餘額（入金與以新資金買進）', '0'],
+        ['合計可投資餘額', '0'],
+        ['銀行實際餘額（手填，選填）'],
+    ],
 }
 
 # 與互動版相同的標記，內容縮到最小。
@@ -67,11 +77,20 @@ MINI = '''<title>Our_Investment 交易簿</title>
   $('entry').addEventListener('input', onFormEdit);
   $('refresh').addEventListener('click', () => { load(); });
   $('chips').addEventListener('click', () => {});
+  document.querySelectorAll('#source-seg button').forEach((b) => b.addEventListener('click', () => {
+    state.source = b.dataset.source;
+  }));
   $('date').value = todayISO();
   setType('Buy');
   load();
 })();
 </script>'''
+
+
+def _with(**changes):
+    data = json.loads(json.dumps(DATA))
+    data.update(changes)
+    return data
 
 
 def test_build_strips_entry_and_connector():
@@ -90,6 +109,18 @@ def test_embeds_data_and_stamp():
     assert '快照時間 ${SNAPSHOT_AT}' in out
 
 
+def test_cash_range_is_mapped_to_embedded_cash():
+    out = bs.build(MINI, DATA, 'x')
+    assert "range.startsWith('資金') ? 'cash'" in out
+    assert json.dumps(DATA['cash'], ensure_ascii=False) in out
+
+
+def test_source_toggle_handler_removed():
+    assert "'#source-seg button'" in MINI
+    out = bs.build(MINI, DATA, 'x')
+    assert '#source-seg button' not in out
+
+
 def test_missing_marker_fails_instead_of_partial_output():
     with pytest.raises(bs.BuildError):
         bs.build(MINI.replace('// Milestone map.', '// renamed'), DATA, 'x')
@@ -98,6 +129,32 @@ def test_missing_marker_fails_instead_of_partial_output():
 def test_bad_data_rejected():
     with pytest.raises(bs.BuildError):
         bs.build(MINI, {'portfolio': [['a']], 'tx': []}, 'x')
+
+
+def test_missing_cash_rejected():
+    data = _with()
+    del data['cash']
+    with pytest.raises(bs.BuildError, match='cash'):
+        bs.build(MINI, data, 'x')
+
+
+def test_cash_label_drift_rejected():
+    cash = json.loads(json.dumps(DATA['cash']))
+    cash[6][0] = '總額'
+    with pytest.raises(bs.BuildError, match='合計'):
+        bs.build(MINI, _with(cash=cash), 'x')
+
+
+def test_cash_row_shift_rejected():
+    cash = [DATA['cash'][0]] + DATA['cash'][2:]
+    with pytest.raises(bs.BuildError, match='錨點日期'):
+        bs.build(MINI, _with(cash=cash), 'x')
+
+
+def test_tx_header_drift_rejected():
+    tx = [['交易編號', '代號', '日期', '類型', '餘額（累計）']]
+    with pytest.raises(bs.BuildError, match='現金流'):
+        bs.build(MINI, _with(tx=tx), 'x')
 
 
 def test_core_id_never_in_output():
