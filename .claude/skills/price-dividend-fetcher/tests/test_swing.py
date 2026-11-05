@@ -246,6 +246,48 @@ def test_fill_gaps_from_twse_adds_missing_day_only_before_today():
     assert out[3]["close"] == 108.65
 
 
+def _yahoo_bar(day, close):
+    ts = int(datetime.strptime(day, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp()) + 3600
+    return dict(ts=ts, open=close, high=close, low=close, close=close, volume=1.0, adj=close)
+
+
+def test_drop_unsettled_bar_removes_todays_intraday_bar_before_close():
+    # 2026-11-05 台北 09:40（盤中）：今天的盤中棒要丟掉，前一交易日保留
+    now = datetime(2026, 11, 5, 1, 40, tzinfo=timezone.utc)
+    bars = [_yahoo_bar("2026-11-03", 16.1), _yahoo_bar("2026-11-04", 15.3), _yahoo_bar("2026-11-05", 15.4)]
+    out = sw.drop_unsettled_bar(bars, "台股", now=now)
+    assert [b["close"] for b in out] == [16.1, 15.3]
+
+
+def test_drop_unsettled_bar_keeps_todays_bar_after_close():
+    # 台北 14:30（收盤後）：今天的收盤棒保留，fresh 才能判定
+    now = datetime(2026, 11, 5, 6, 30, tzinfo=timezone.utc)
+    bars = [_yahoo_bar("2026-11-04", 15.3), _yahoo_bar("2026-11-05", 15.4)]
+    assert sw.drop_unsettled_bar(bars, "台股", now=now) == bars
+
+
+def test_drop_unsettled_bar_uses_market_local_date():
+    # 美股：UTC 2026-11-05 15:00 是 ET 上午 11 點（盤中）；美股日線時戳落在 UTC 14:00，ET 日期為 11/05，要丟掉
+    now = datetime(2026, 11, 5, 15, 0, tzinfo=timezone.utc)
+    ts = lambda day: int(datetime.strptime(day + " 14:00", "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc).timestamp())  # noqa: E731
+    bars = [dict(ts=ts("2026-11-04"), close=100.0), dict(ts=ts("2026-11-05"), close=101.0)]
+    out = sw.drop_unsettled_bar(bars, "美股", now=now)
+    assert [b["close"] for b in out] == [100.0]
+
+
+def test_load_ohlcv_does_not_return_intraday_bar(monkeypatch):
+    now = datetime(2026, 11, 5, 1, 40, tzinfo=timezone.utc)
+    ts = lambda day: int(datetime.strptime(day, "%Y-%m-%d").replace(tzinfo=timezone.utc).timestamp()) + 3600  # noqa: E731
+    result = {"timestamp": [ts("2026-11-03"), ts("2026-11-04"), ts("2026-11-05")],
+              "indicators": {"quote": [{"open": [16, 15, 15.4], "high": [16, 15, 15.4], "low": [16, 15, 15.4],
+                                        "close": [16.1, 15.3, 15.4], "volume": [1, 1, 1]}]}}
+    monkeypatch.setattr(sw, "get_yahoo", lambda exch, code, rng: None)
+    monkeypatch.setattr(sw, "yahoo_result", lambda raw, exch, code: result)
+    monkeypatch.setattr(sw, "fill_gaps_from_twse", lambda bars, code, now=None, fetch=None: bars)
+    bars = sw.load_ohlcv("TPE:00882", "1y", now=now)
+    assert [b["close"] for b in bars] == [16.1, 15.3]
+
+
 def test_fill_gaps_from_twse_ignores_fetch_failure():
     def boom(url):
         raise RuntimeError("blocked")

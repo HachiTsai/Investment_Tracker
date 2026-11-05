@@ -137,8 +137,25 @@ def fill_gaps_from_twse(bars: List[Dict], code: str, now: Optional[datetime] = N
     return out
 
 
-def load_ohlcv(ticker: str, rng: str = "2y") -> List[Dict]:
-    """抓日線並丟掉缺值的 K 棒；台股再用證交所補 Yahoo 漏掉的交易日。"""
+MARKET_CLOSE_HOUR = {"台股": 14, "港股": 17, "日股": 16, "美股": 17}  # 當地時間的收盤後緩衝（台股收盤 13:30、港股 16:00、日股 15:30、美股 16:00 ET）
+
+
+def drop_unsettled_bar(bars: List[Dict], market: str, now: Optional[datetime] = None) -> List[Dict]:
+    """盤中尚未收盤時，丟掉市場當地「今天」的日線：Yahoo 會回傳盤中價，不能當收盤價算指標。
+
+    收盤後（當地時間達 MARKET_CLOSE_HOUR）原樣保留，讓 fresh 能判定當日資料；休市日不受影響。
+    """
+    now = now or datetime.now(timezone.utc)
+    tz = timedelta(hours=MARKET_TZ_HOURS.get(market, 8))
+    local = now + tz
+    if local.hour >= MARKET_CLOSE_HOUR.get(market, 14):
+        return bars
+    today = local.strftime("%Y-%m-%d")
+    return [b for b in bars if (datetime.fromtimestamp(b["ts"], timezone.utc) + tz).strftime("%Y-%m-%d") != today]
+
+
+def load_ohlcv(ticker: str, rng: str = "2y", now: Optional[datetime] = None) -> List[Dict]:
+    """抓日線並丟掉缺值與盤中未收盤的 K 棒；台股再用證交所補 Yahoo 漏掉的交易日。"""
     exch, code = parse_ticker(ticker)
     r = yahoo_result(get_yahoo(exch, code, rng), exch, code)
     q = r["indicators"]["quote"][0]
@@ -149,8 +166,9 @@ def load_ohlcv(ticker: str, rng: str = "2y") -> List[Dict]:
         if None not in vals:
             a = adj[i] if adj and adj[i] is not None else vals[3]
             bars.append(dict(ts=ts, open=vals[0], high=vals[1], low=vals[2], close=vals[3], volume=vals[4], adj=a))
+    bars = drop_unsettled_bar(bars, market_of(ticker), now)
     if exch == "TPE":
-        bars = fill_gaps_from_twse(bars, code)
+        bars = fill_gaps_from_twse(bars, code, now=now)
     return bars
 
 
