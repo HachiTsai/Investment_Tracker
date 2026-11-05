@@ -649,7 +649,10 @@ def main(argv=None) -> int:
             stress = None
             if a.stress:
                 import market_stress
-                stress = market_stress.build(market_stress.parse_track(a.stress_track))
+                try:
+                    stress = market_stress.build(market_stress.parse_track(a.stress_track))
+                except (RuntimeError, ValueError, KeyError, IndexError, TypeError, OSError, ZeroDivisionError) as e:
+                    print(f"市場修正追蹤失敗，頁面略過該區塊：{str(e)[:120]}", file=sys.stderr)
             Path(a.daily_html).write_text(render_daily_page(rows, patrol, date, notices=a.notice, stress=stress), encoding="utf-8")
         if a.html:
             date = max((r["last_date"] for r in rows if r.get("last_date")), default="")
