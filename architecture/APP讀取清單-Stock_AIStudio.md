@@ -36,9 +36,7 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 | 情報資料庫 | `INTEL_SHEET_ID` | 第一分頁（訊號）、評分歷史 | `signalsFeedService.ts` | 已停更（風向日報排程 2026-10-26 停用，2026-11-05 Hachi 確認情報頁已下架、Sheet 維持停止） | 已停止 |
 | 00882_成分股股利資料庫 | `DIV_00882_SHEET_ID` | 成分股、摘要 | `constituentsFeedService.ts` | Claude 排程（`.claude/workflows/hk-00882-dividend.md`） | 每週五 16:30 |
 | 全市場 ETF 成分股資料庫 | `MARKET_ETF_SHEET_ID` | ETF_Summary、ETF_Constituents | `constituentsFeedService.ts`（失敗退回 `allMarketEtfSnapshot`） | Claude 排程／本機代班（`.claude/workflows/market-etf-pool.md`） | 每週五 17:10 |
-| 持股資料庫 | `HOLDINGS_SHEET_ID` | 第一分頁 | `portfolioFeedService.ts` | 排程依 Core 唯讀重建 | 依排程 |
-| 交易明細資料庫 | `TX_DETAIL_SHEET_ID` | 第一分頁 | `portfolioFeedService.ts` | 排程依 Core 唯讀重建 | 依排程 |
-| 波段觀察 | `SWING_SHEET_ID` | Untitled（A 到 X 共 24 欄）；告警紀錄（APP 不讀） | `swingFeedService.ts` | GitHub Actions `swing-patrol.yml`（`swing_sync.py`）；Claude 排程／本機代班（`.claude/workflows/swing-patrol-sheets.md`） | 平日台北 17:00 |
+| 波段觀察 | `SWING_SHEET_ID` | Untitled（A 到 X 共 24 欄）；告警紀錄（APP 不讀） | `swingFeedService.ts` | GitHub Actions `swing-patrol.yml`（`swing_sync.py`）；每日巡檢排程（08:50，2026-11-06 起）；本機代班（`.claude/workflows/swing-patrol-sheets.md`） | 平日台北 17:00 |
 | 台股ETF成分股資料庫 | `ETF_TW_SHEET_ID` | 個股、ETF持股、摘要 | 目前只供 Artifact 與分析（APP 預備） | Claude 排程（`.claude/workflows/tw-etf-pool.md`） | 每月月初 09:00 |
 | 港股 ETF 成分股資料庫 | `ETF_HK_SHEET_ID` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（`.claude/workflows/market-etf-pool.md` §5） | 手動 |
 | 美股 ETF 成分股資料庫 | `ETF_US_SHEET_ID` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（同上） | 手動 |
@@ -52,7 +50,7 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | 波段觀察 Sheet | GitHub Actions `swing-patrol.yml` | 平日 17:00（GitHub 實際可能延遲數小時） | models 卡片、行情 | 波段觀察 Sheet（A 到 X）；告警紀錄分頁（有關鍵組合轉換時，先於 A 到 X 寫入） | 比對資料日期，`--force` 補跑 |
 | 全市場 ETF 池 | GitHub Actions `market-etf.yml` | 週五 17:10，亦可手動選 hk／us／jp | TWSE、MoneyDJ、各市場來源 | 全市場與外幣市場 Sheet | 不做同日互鎖，重跑即覆寫 |
-| 每日投資組合巡檢頁 | Claude 雲端 | 每日 08:50 | models 卡片、行情、`trap_state` | Artifact（無 Sheet） | 陷阱狀態兩日確認 |
+| 每日投資組合巡檢頁 | Claude 雲端 | 每日 08:50 | models 卡片、行情、`trap_state` | Artifact，並同步寫入波段觀察 Sheet | 陷阱狀態兩日確認 |
 | 全標的巡檢簡報 | Claude 雲端或 Antigravity 代班 | 平日 16:30 | models 卡片、行情、宏觀 | 簡報（無 Sheet） | 例外管理分診 |
 | 00882 成分股股利表 | Claude 雲端 | 週五 16:30 | 中信投信、東方財富 | Artifact＋00882 Sheet | 雙棲表固定由雲端寫入 |
 | 台股 ETF 池 | Claude 雲端 | 每月 23 日 09:30 | MoneyDJ、FinMind、TWSE | Artifact＋台股 ETF Sheet | 雙棲表固定由雲端寫入 |
