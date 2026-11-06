@@ -280,27 +280,15 @@ def snapshot(bars: List[Dict], stop_atr: float = 2.0) -> Dict:
 
 
 def backtest_oversold(bars: List[Dict], hold_max: int = 20, stop_atr: float = 2.0) -> Dict:
-    """超跌反彈規則：RSI 由 30 以下進場（收盤價），RSI≥50、持有滿 hold_max 日或跌破停損出場。"""
-    closes = [b["close"] for b in bars]
-    rs, at, s120 = rsi(closes), atr(bars), sma(closes, 120)
-    trades, i = [], 1
-    while i < len(bars) - 1:
-        if rs[i] is not None and rs[i] <= 30 and at[i] and (s120[i] is None or closes[i] >= s120[i] * 0.9):
-            entry, stop, j, reason = closes[i], closes[i] - stop_atr * at[i], i + 1, "time"
-            while j < len(bars):
-                if bars[j]["low"] <= stop:
-                    exit_p, reason = min(stop, bars[j]["open"]), "stop"; break  # 跳空開低以開盤價出場，不假設剛好成交在停損價
-                if (rs[j] or 0) >= 50:
-                    exit_p, reason = closes[j], "rsi50"; break
-                if j - i >= hold_max:
-                    exit_p = closes[j]; break
-                j += 1
-            else:
-                break
-            trades.append(round((exit_p / entry - 1) * 100, 2))
-            i = j + 1
-        else:
-            i += 1
+    """超跌反彈規則：RSI 由 30 以下進場（收盤價），RSI≥50、持有滿 hold_max 日或跌破停損出場。
+
+    交給共用回測引擎（backtest.py）執行：現貨 1 倍、不含成本、資料結束仍未出場的部位不列入。
+    """
+    import backtest as bt  # 延遲匯入，避免與 backtest.py 互相匯入
+    ctx = bt.prepare(bars)
+    e, x, s = bt.strategy("oversold", "long", hold_max, stop_atr)
+    res = bt.run(bars, e, x, s, ctx, start=1, drop_open=True)
+    trades = [t["price_ret_pct"] for t in res["trades"]]
     wins = [t for t in trades if t > 0]
     return {
         "rule": f"RSI≤30 進場；RSI≥50／持有滿 {hold_max} 日／跌破 {stop_atr}×ATR 停損出場（不含手續費與證交稅）",
