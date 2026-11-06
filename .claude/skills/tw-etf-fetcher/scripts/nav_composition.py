@@ -13,14 +13,12 @@ import csv
 import json
 import sys
 import time
-import urllib.parse
-import urllib.request
 from datetime import date, datetime, timedelta
 from typing import Any, Callable, Dict, List, Optional
 
+import ctbc_api  # 中信投信節流與 token 共用（見 ctbc_api.py）
+
 HOSTS = ["https://www.ctbcinvestments.com.tw/API/", "https://www.ctbcinvestments.com/API/"]
-HEADERS = {"content-type": "application/json; charset=utf-8", "User-Agent": "Mozilla/5.0",
-           "Referer": "https://www.ctbcinvestments.com.tw/"}
 TOKEN_SEED = "www.ctbcinvestments.com"
 FIDS = {"00882": "E0014"}  # 已知對照；其他中信投信 ETF 由 etf/ETFList 查出
 MIN_DROP = 0.10  # 收益平準金單日降幅達此值才視為配息（日常費用扣除每天只有約 0.01）
@@ -33,14 +31,18 @@ class NavError(RuntimeError):
 
 
 def _http_post(host: str, path: str, body: Dict[str, Any], token: str, timeout: int = 40) -> Any:
-    req = urllib.request.Request(host + path + "?" + urllib.parse.urlencode({"token": token}),
-                                 data=json.dumps(body).encode(), headers=HEADERS, method="POST")
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read().decode("utf-8"))
+    """真正送出請求（先節流，見 ctbc_api）。AuthToken 在同一程序內只取一次，之後直接共用。"""
+    if path == "home/AuthToken" and ctbc_api.cached_token(host):
+        return {"ResultCode": 0, "ResultMsg": "", "Data": {"token": ctbc_api.cached_token(host)}}
+    r = ctbc_api.send(path, body, token, host=host, timeout=timeout)
+    if path == "home/AuthToken" and r.get("ResultCode") == 0 and (r.get("Data") or {}).get("token"):
+        ctbc_api.remember_token(host, r["Data"]["token"])
+    return r
 
 
 class Client:
-    """帶 token 的 API 客戶端：token 失效就重取，網路或網頁防護的非 JSON 回應就退避重試並換下一個網域。"""
+    """帶 token 的 API 客戶端：token 失效就重取，網路錯誤或網頁防護的非 JSON 回應就退避重試並換下一個網域；
+    HTTP 403（防護攔截）不重試，直接失敗，因為重試只會加深封鎖。"""
 
     def __init__(self, post: Callable[..., Any] = _http_post, sleep: Callable[[float], None] = time.sleep,
                  hosts: Optional[List[str]] = None, retries: int = 4, backoff: float = 2.0):
@@ -67,6 +69,8 @@ class Client:
                 self.token = None  # 多半是 token 過期，下一圈重取
             except NavError:
                 raise
+            except ctbc_api.CtbcBlocked as e:  # 網站防護攔截：不重試，立即停止
+                raise NavError(str(e)) from e
             except Exception as e:  # 逾時、連線錯誤、網頁防護的 HTML（JSON 解析失敗）都走這裡
                 last = f"{path}: {type(e).__name__}: {e}"
                 self.token = None
