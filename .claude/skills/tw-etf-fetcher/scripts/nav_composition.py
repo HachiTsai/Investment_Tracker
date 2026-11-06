@@ -18,7 +18,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 import ctbc_api  # 中信投信節流與 token 共用（見 ctbc_api.py）
 
-HOSTS = ["https://www.ctbcinvestments.com.tw/API/", "https://www.ctbcinvestments.com/API/"]
+HOSTS = ctbc_api.HOSTS  # .com 優先、.com.tw 備援（見 ctbc_api）
 TOKEN_SEED = "www.ctbcinvestments.com"
 FIDS = {"00882": "E0014"}  # 已知對照；其他中信投信 ETF 由 etf/ETFList 查出
 MIN_DROP = 0.10  # 收益平準金單日降幅達此值才視為配息（日常費用扣除每天只有約 0.01）
@@ -42,7 +42,7 @@ def _http_post(host: str, path: str, body: Dict[str, Any], token: str, timeout: 
 
 class Client:
     """帶 token 的 API 客戶端：token 失效就重取，網路錯誤或網頁防護的非 JSON 回應就退避重試並換下一個網域；
-    HTTP 403（防護攔截）不重試，直接失敗，因為重試只會加深封鎖。"""
+    HTTP 403（防護攔截）時該網域本程序內不再使用，直接換下一個網域；全部網域都被擋才失敗。"""
 
     def __init__(self, post: Callable[..., Any] = _http_post, sleep: Callable[[float], None] = time.sleep,
                  hosts: Optional[List[str]] = None, retries: int = 4, backoff: float = 2.0):
@@ -60,7 +60,10 @@ class Client:
     def call(self, path: str, body: Dict[str, Any]) -> Any:
         last = "未嘗試"
         for attempt in range(self.retries):
-            host = self.hosts[attempt % len(self.hosts)]
+            hosts = ctbc_api.available_hosts(self.hosts)
+            if not hosts:
+                raise NavError(f"{path}: 所有網域都被網站防護攔截（HTTP 403），停止，不重試")
+            host = hosts[attempt % len(hosts)]
             try:
                 r = self.post(host, path, body, self.token or self._refresh(host))
                 if r.get("ResultCode") == 0:
@@ -69,8 +72,13 @@ class Client:
                 self.token = None  # 多半是 token 過期，下一圈重取
             except NavError:
                 raise
-            except ctbc_api.CtbcBlocked as e:  # 網站防護攔截：不重試，立即停止
-                raise NavError(str(e)) from e
+            except ctbc_api.CtbcBlocked as e:  # 網站防護攔截：該網域不再使用，換下一個網域（不等待）；全部被擋就停止
+                ctbc_api.mark_blocked(host)
+                self.token = None
+                last = f"{path}: {e}"
+                if not ctbc_api.available_hosts(self.hosts):
+                    raise NavError(f"{path}: 所有網域都被網站防護攔截（HTTP 403），停止，不重試") from e
+                continue
             except Exception as e:  # 逾時、連線錯誤、網頁防護的 HTML（JSON 解析失敗）都走這裡
                 last = f"{path}: {type(e).__name__}: {e}"
                 self.token = None

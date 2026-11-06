@@ -24,7 +24,7 @@
   2. 腳本位置：`.claude/skills/hk-market-data/scripts/constituents_table.py`（範本會自動由 references 讀取，若找不到腳本即回報並停止）。
   3. 用 Artifact 工具讀取目前 `https://claude.ai/artifact/DSbfrxfywurJVo3TVwSzia` 之內容，存成本地 `/tmp/prev.html`（或 `prev.html`）。
 - **網路許可網域**（僅雲端沙盒需設）：
-  `ctbcinvestments.com.tw`, `datacenter.eastmoney.com`, `google.com`, `query1.finance.yahoo.com`。
+  `www.ctbcinvestments.com`（中信投信主網域）、`www.ctbcinvestments.com.tw`（備援）, `datacenter.eastmoney.com`, `google.com`, `query1.finance.yahoo.com`。
 
 ---
 

@@ -4,7 +4,10 @@
 同一支程式與標頭在 08:42 還能通過，所以主要判斷為請求頻率或來源 IP 信譽；這裡只處理能控制的部分：
 - 節流：連續兩次請求之間至少間隔 MIN_INTERVAL 秒（與 TWSE 節流同值，見 price-dividend-fetcher/scripts/fetch_common.py）。
 - token：同一程序、同一網域只取一次；回應 ResultCode 非 0 時清掉，下次重取。
-- 被攔截（HTTP 403）：拋出 CtbcBlocked。呼叫端不得在這裡重試，應停止並回報。
+- 被攔截（HTTP 403）：拋出 CtbcBlocked，同一網域不重試。
+- 換網域（2026-11-06 實測，Hachi 同意）：.com.tw 對雲端 IP 整站 403（連 robots.txt），官方 .com 網域同時正常。
+  因此 .com 排第一、.com.tw 為備援。call() 與 active_token() 遇 403 會把該網域記為本程序已封鎖，
+  改用 HOSTS 的下一個網域送一次；全部被擋才拋 CtbcBlocked。
 只用標準函式庫。
 """
 
@@ -14,9 +17,10 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional, Set
 
-HOST = "https://www.ctbcinvestments.com.tw/API/"
+HOST = "https://www.ctbcinvestments.com/API/"  # 主網域（2026-11-06 起 .com.tw 對雲端 IP 403，.com 正常）
+HOSTS = [HOST, "https://www.ctbcinvestments.com.tw/API/"]  # 依序使用；被 403 的網域本程序內不再使用
 HEADERS = {"content-type": "application/json; charset=utf-8", "User-Agent": "Mozilla/5.0",
            "Referer": "https://www.ctbcinvestments.com.tw/"}
 TOKEN_SEED = "www.ctbcinvestments.com"
@@ -25,6 +29,7 @@ MIN_INTERVAL = 3.0  # 秒；連續兩次中信投信請求之間至少間隔這�
 _lock = threading.Lock()
 _last_sent: Optional[float] = None  # 上一次安排送出的時間點（monotonic）
 _tokens: Dict[str, str] = {}  # 網域 → token，只存在本程序
+_blocked: Set[str] = set()  # 本程序內回過 403 的網域
 
 
 class CtbcError(RuntimeError):
@@ -41,6 +46,21 @@ def reset() -> None:
     with _lock:
         _last_sent = None
     _tokens.clear()
+    _blocked.clear()
+
+
+def mark_blocked(host: str) -> None:
+    _blocked.add(host)
+    _tokens.pop(host, None)
+
+
+def is_blocked(host: str) -> bool:
+    return host in _blocked
+
+
+def available_hosts(hosts: Optional[List[str]] = None) -> List[str]:
+    """還沒被 403 的網域，依序。"""
+    return [h for h in (hosts or HOSTS) if h not in _blocked]
 
 
 def cached_token(host: str = HOST) -> Optional[str]:
@@ -95,3 +115,25 @@ def auth_token(host: str = HOST, **kw: Any) -> str:
         raise CtbcError(f"取 token 失敗：{r.get('ResultMsg')}")
     remember_token(host, tok)
     return tok
+
+
+def _on_hosts(fn: Callable[[str], Any], what: str) -> Any:
+    """依序在未封鎖的網域執行 fn(host)；403 就記為封鎖並換下一個（每個網域最多一次），全部被擋才拋 CtbcBlocked。"""
+    last: Optional[CtbcBlocked] = None
+    for host in available_hosts():
+        try:
+            return fn(host)
+        except CtbcBlocked as e:
+            mark_blocked(host)
+            last = e
+    raise CtbcBlocked(f"中信投信 {what}：所有網域都被網站防護攔截（HTTP 403），停止，不重試") from last
+
+
+def active_token(**kw: Any) -> str:
+    """第一個未封鎖網域的 token（被 403 就換下一個網域）。"""
+    return _on_hosts(lambda h: auth_token(h, **kw), "home/AuthToken")
+
+
+def call(path: str, body: Dict[str, Any], **kw: Any) -> Dict[str, Any]:
+    """送出一次請求，token 用同一網域的；被 403 就換下一個網域。回傳完整 JSON（含 ResultCode）。"""
+    return _on_hosts(lambda h: send(path, body, auth_token(h, **kw), host=h, **kw), path)

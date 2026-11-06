@@ -41,8 +41,8 @@ def parse_hk_code(symbol: str) -> Optional[str]:
 def _post(path: str, body: Dict[str, Any], token: str = "www.ctbcinvestments.com") -> Any:
     """中信投信 API 的呼叫（節流與 token 共用見 ctbc_api）。AuthToken 回傳 {"token": …}，其他回傳 Data。"""
     if path == "home/AuthToken":
-        return {"token": ctbc_api.auth_token()}
-    r = ctbc_api.send(path, body, token)
+        return {"token": ctbc_api.active_token()}
+    r = ctbc_api.call(path, body)  # token 參數保留相容；實際用與網域相符的共用 token，被 403 時換網域
     if r.get("ResultCode") != 0:
         raise RuntimeError(f"{path}: {r.get('ResultMsg')}")
     return r["Data"]
