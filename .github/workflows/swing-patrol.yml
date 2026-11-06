@@ -27,6 +27,7 @@ jobs:
       - name: Run Swing Sync Pipeline
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          DRIVE_IDS: ${{ secrets.DRIVE_IDS }}
           # 手動執行且勾選 force 才帶 --force；自動排程沒有 inputs，不帶
           FORCE_FLAG: ${{ inputs.force && '--force' || '' }}
         run: |

@@ -38,15 +38,17 @@ jobs:
         if: github.event_name == 'schedule' || inputs.market == 'tw'
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          DRIVE_IDS: ${{ secrets.DRIVE_IDS }}
           EDINET_API_KEY: ${{ secrets.EDINET_API_KEY }}
         run: |
-          python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --gate --sheet-id 1GIhbRyL-h96ACVjlSSW9YUFMiAItg_SP9Wi0o3WwG70
+          python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --gate
       - name: Build foreign-market pool
         if: inputs.market == 'hk' || inputs.market == 'us' || inputs.market == 'jp'
         env:
           MARKET: ${{ inputs.market }}
           ETFS: ${{ inputs.etfs }}
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          DRIVE_IDS: ${{ secrets.DRIVE_IDS }}
           EDINET_API_KEY: ${{ secrets.EDINET_API_KEY }}
         run: |
           python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py "reports/pool-$MARKET" --market "$MARKET" --etfs "$ETFS" --gate --models-dir models
@@ -54,6 +56,7 @@ jobs:
         if: inputs.market == 'hk' || inputs.market == 'us' || inputs.market == 'jp'
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          DRIVE_IDS: ${{ secrets.DRIVE_IDS }}
           EDINET_API_KEY: ${{ secrets.EDINET_API_KEY }}
           MARKET: ${{ inputs.market }}
         run: |

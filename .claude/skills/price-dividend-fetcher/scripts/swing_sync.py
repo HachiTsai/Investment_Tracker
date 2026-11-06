@@ -21,7 +21,6 @@ import sys
 from typing import Any, Dict, List, Optional, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
-DEFAULT_SHEET_ID = "1pyGzkgaspYMYdXOPYerkLsxOMwNwa2yOKuNDrOrrhtQ"
 DEFAULT_RANGE = "Untitled!A1:X"
 ALERT_TAB = "告警紀錄"
 ALERT_HEADER = ["偵測時間", "代號", "名稱", "上次組合", "這次組合", "狀態", "收盤", "2xATR停損價"]
@@ -31,6 +30,8 @@ try:
 except ImportError:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from google_sheets import GoogleSheetsClient
+
+import etf_market  # noqa: E402  google_sheets 已把 tw-etf-fetcher/scripts 放進路徑
 
 
 def extract_prev_from_sheet(sheet_values: List[List[Any]]) -> List[Dict[str, Any]]:
@@ -219,11 +220,13 @@ def _stamp_patrol(client: GoogleSheetsClient, sheet_id: str, status: str) -> str
 
 
 def run_swing_pipeline(
-    sheet_id: str = DEFAULT_SHEET_ID,
+    sheet_id: str = "",
     force: bool = False,
     client: Optional[GoogleSheetsClient] = None,
 ) -> int:
     """執行波段觀察排程與雲端 Sheet 回寫完整管線。"""
+    if not sheet_id:
+        sheet_id = etf_market.drive_id("SWING_SHEET_ID")
     print(f"🚀 [Swing Sync] 啟動波段觀察同步管線（目標 Sheet ID: {sheet_id}）...")
     client = client or GoogleSheetsClient()
 
@@ -337,7 +340,7 @@ def run_swing_pipeline(
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="Stock_AIStudio 波段觀察 Google Sheets 自動同步管線")
-    parser.add_argument("--sheet-id", default=DEFAULT_SHEET_ID, help="目標 Google Sheet ID")
+    parser.add_argument("--sheet-id", default="", help="目標 Google Sheet ID（預設取 DRIVE_IDS 的 SWING_SHEET_ID）")
     parser.add_argument("--force", action="store_true", help="強制整表刷新，穿透休市與互鎖判定（補跑用）")
     args = parser.parse_args(argv)
 

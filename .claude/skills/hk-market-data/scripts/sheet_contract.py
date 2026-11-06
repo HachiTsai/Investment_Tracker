@@ -16,7 +16,6 @@ from decimal import Decimal
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tw-etf-fetcher", "scripts"))
 import etf_market  # noqa: E402  Core 拒絕與寫入防線，與台股 ETF 寫入共用
 
-SHEET_ID = "1Jq599WzoQUDsooZDhJhyK8uaEMgDiLLCoZthWk2WXtw"  # 00882_成分股股利資料庫，寫死不接受參數
 TAB_CONSTITUENTS = "成分股"
 TAB_SUMMARY = "摘要"
 HEADER_CONSTITUENTS = ["code", "name", "weightPct", "qty", "priceHkd", "divTtmHkd", "divLfyHkd", "chgPct", "yieldTtmPct", "interim2026"]
@@ -89,12 +88,13 @@ def build_payload(table):
         raise ContractError("gate 未通過，不寫入：" + "；".join(gate.get("reasons", [])))
     if len(table["rows"]) + 1 > LAST_ROW:
         raise ContractError(f"成分股 {len(table['rows'])} 檔超過分頁上限（第 {LAST_ROW} 列）")
-    etf_market.guard_sheet_id(SHEET_ID)
+    sheet_id = etf_market.drive_id("DIV_00882_SHEET_ID")  # 00882_成分股股利資料庫，不接受參數
+    etf_market.guard_sheet_id(sheet_id)
     constituents = [HEADER_CONSTITUENTS] + [_constituent_row(row) for row in table["rows"]]
     constituents += [[""] * len(HEADER_CONSTITUENTS) for _ in range(LAST_ROW - len(constituents))]
     summary = _summary_rows(table)
     return dict(
-        spreadsheetId=SHEET_ID,
+        spreadsheetId=sheet_id,
         writes=[
             dict(range=f"{TAB_CONSTITUENTS}!A1:J{LAST_ROW}", values=constituents),
             dict(range=f"{TAB_SUMMARY}!A1:C{len(summary)}", values=summary),
@@ -157,7 +157,7 @@ def _build_cli(table_path, payload_path):
         table = json.load(f)
     try:
         payload = build_payload(table)
-    except (ContractError, KeyError, ValueError, etf_market.CoreWriteRefused) as e:
+    except (ContractError, KeyError, ValueError, etf_market.CoreWriteRefused, etf_market.DriveIdMissing) as e:
         print(f"❌ [Contract] {e}", file=sys.stderr)
         return 1
     with open(payload_path, "w", encoding="utf-8") as f:

@@ -53,7 +53,7 @@ python3 .claude/skills/hk-market-data/scripts/hkdata.py pdf <披露易PDF網址>
 
 1. **不寫母表「00882_成分股股利資料庫」**：該 Sheet 的「成分股」「摘要」分頁由 `hk-00882-dividend.md`（C2，Claude 雲端每週五）整段覆寫，本工作流手填的 `interim2026` 會被蓋掉，也會與 Artifact 數值不一致。查到的最新分紅只寫進研究筆記與情報資料庫；母表下次由 C2 自動更新。（2026-11-01 Hachi 同意，原為手動回填 `interim2026`）
 
-2. **提煉硬數據至「情報資料庫」**（ID `1BF2xvF0cmyODdN0nXR8QHbOTC3ikqswvSwBboY1cGQo`，在 `Portfolio_00882/情報與趨勢`）：
+2. **提煉硬數據至「情報資料庫」**（ID `INTEL_SHEET_ID`（鍵名，實際 ID 在 `DRIVE_IDS`），在 `Portfolio_00882/情報與趨勢`）：
    - 依據 `references/intel-sheet.md` 規格，將具代表性之重大分紅數據提煉為標準訊號列（`id` 為 `sig-YYYY-MM-DD-流水號`）。
    - 事實放 `hardFacts`/`extractedMetrics`，推論放 `objectiveReasoning`（標「此為推論」），出處標記港交所公告原文。
    - 使用 `gsheets` 寫入 `Untitled` 分頁，並依規則刷新 `評分歷史` 分頁。

@@ -100,7 +100,7 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --expor
 依據 `architecture/APP讀取清單-Stock_AIStudio.md` 之資料庫註冊表規範：
 
 - **試算表名稱**：`全市場_ETF成分股資料庫`
-- **Sheet ID**：`1GIhbRyL-h96ACVjlSSW9YUFMiAItg_SP9Wi0o3WwG70`（Stock_AIStudio 讀取，欄位名與欄序固定不可改）
+- **Sheet ID**：`MARKET_ETF_SHEET_ID`（鍵名，實際 ID 在 `DRIVE_IDS`）（Stock_AIStudio 讀取，欄位名與欄序固定不可改）
 
 #### 分頁寫入契約
 

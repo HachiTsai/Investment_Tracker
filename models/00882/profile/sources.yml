@@ -5,7 +5,7 @@ name: "中信中國高股息"
 
 sources:
   drive_constituent_sheet:
-    id: "1Jq599WzoQUDsooZDhJhyK8uaEMgDiLLCoZthWk2WXtw"
+    id_key: "DIV_00882_SHEET_ID"  # 實際 ID 在環境變數 DRIVE_IDS，不放進 git
     name: "00882_成分股股利資料庫"
     tabs:
       constituents: "成分股"
@@ -13,7 +13,7 @@ sources:
     schedule_maintainer: "claude_cloud_weekly_friday"
 
   drive_intel_sheet:
-    id: "1BF2xvF0cmyODdN0nXR8QHbOTC3ikqswvSwBboY1cGQo"
+    id_key: "INTEL_SHEET_ID"  # 實際 ID 在環境變數 DRIVE_IDS，不放進 git
     name: "情報資料庫"
     tabs:
       signals: "Untitled"

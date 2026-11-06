@@ -16,8 +16,8 @@
 
 | 來源 | 位置 | 權限 |
 | --- | --- | --- |
-| Investment_Tracker_Core（試算表，**真實資料源**） | Drive ID `1QBEgUi-kTOuLgj2yGHmP-0g_ug-Sl_M21SN0g93b6xI` | **嚴禁修改**（APP 後台資料庫，見上節；**服務帳號不得授權**） |
-| Project_財商工程（資料夾，快照與報告） | Drive ID `1HCnLX7B1szkAEB0XWpji63ifuexEd1pZ` | 可讀；新增檔案前先確認 |
+| Investment_Tracker_Core（試算表，**真實資料源**） | ID 見 `DRIVE_IDS` 的 `CORE_SHEET_ID` | **嚴禁修改**（APP 後台資料庫，見上節；**服務帳號不得授權**） |
+| Project_財商工程（資料夾，快照與報告） | ID 見 `DRIVE_IDS` 的 `PROJECT_FOLDER_ID` | 可讀；新增檔案前先確認 |
 | 外圍自動化試算表（波段觀察、全市場 ETF 成分股資料庫） | 見 `architecture/APP讀取清單-Stock_AIStudio.md` | 僅限 Hachi 手動授權 `GCP_SA_KEY` 服務帳號寫入（不含 Core） |
 | 股價 | Google Finance（Yahoo、證交所、櫃買備援） | 公開網頁唯讀 |
 
@@ -28,6 +28,14 @@ Core 試算表主要分頁：
 - `Stock_Journal`：Note_ID, Ticker, Date, Category（Ex-Dividend / News / Comment）, Content
 - `Exchange_Rates`：Currency, Rate_To_TWD, Last_Updated
 - `Temp_Calc`：暫存計算
+
+## 2.1 Drive／Sheet ID 不放進 git（2026-11-06 Hachi 同意）
+
+- 所有 Drive 資料夾與試算表 ID 放在環境變數 `DRIVE_IDS`（一段 JSON 物件），GitHub Actions 讀 Secret `DRIVE_IDS`，雲端環境設定同名同內容，本機放不進 git 的設定檔。REPO 內的文件、程式、設定只寫鍵名。
+- 鍵名：`CORE_SHEET_ID`、`PROJECT_FOLDER_ID`、`OUR_INVESTMENT_SHEET_ID`、`INTEL_SHEET_ID`、`DIV_00882_SHEET_ID`、`HOLDINGS_SHEET_ID`、`TX_DETAIL_SHEET_ID`、`SWING_SHEET_ID`、`MARKET_ETF_SHEET_ID`、`ETF_TW_SHEET_ID`、`ETF_HK_SHEET_ID`、`ETF_US_SHEET_ID`、`ETF_JP_SHEET_ID`。
+- 程式一律用 `etf_market.drive_id(鍵名)` 取值；缺鍵丟 `DriveIdMissing`，訊息只寫鍵名，不印 ID。
+- Core 拒絕採 fail closed：`guard_sheet_id` 在 `DRIVE_IDS` 沒設、格式錯誤或沒有 `CORE_SHEET_ID` 時，一律拒絕寫入。
+- 測試用假值：`.claude/skills/conftest.py` 設定 `TEST_` 開頭的假 ID，不連網。
 
 ## 3. 計算口徑
 

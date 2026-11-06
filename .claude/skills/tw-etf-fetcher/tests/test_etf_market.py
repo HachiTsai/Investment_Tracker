@@ -9,8 +9,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 import etf_market  # noqa: E402
 
-CORE_ID = "1QBEgUi-kTOuLgj2yGHmP-0g_ug-Sl_M21SN0g93b6xI"
-PUBLIC_ID = "1GIhbRyL-h96ACVjlSSW9YUFMiAItg_SP9Wi0o3WwG70"
+CORE_ID = "TEST_CORE_SHEET_ID"
+PUBLIC_ID = "TEST_MARKET_ETF_SHEET_ID"
 
 
 @pytest.mark.parametrize("raw,code", [
@@ -30,6 +30,25 @@ def test_guard_refuses_core_and_allows_public_sheet():
     with pytest.raises(etf_market.CoreWriteRefused):
         etf_market.guard_sheet_id(CORE_ID)
     assert etf_market.guard_sheet_id(PUBLIC_ID) == PUBLIC_ID
+
+
+def test_guard_fails_closed_without_drive_ids(monkeypatch):
+    monkeypatch.delenv("DRIVE_IDS", raising=False)
+    with pytest.raises(etf_market.CoreWriteRefused):
+        etf_market.guard_sheet_id(PUBLIC_ID)
+    monkeypatch.setenv("DRIVE_IDS", "not json")
+    with pytest.raises(etf_market.CoreWriteRefused):
+        etf_market.guard_sheet_id(PUBLIC_ID)
+    monkeypatch.setenv("DRIVE_IDS", '{"SWING_SHEET_ID": "x"}')  # 缺 CORE_SHEET_ID
+    with pytest.raises(etf_market.CoreWriteRefused):
+        etf_market.guard_sheet_id(PUBLIC_ID)
+
+
+def test_drive_id_missing_key_does_not_print_ids(monkeypatch):
+    monkeypatch.setenv("DRIVE_IDS", '{"SWING_SHEET_ID": "secret-value"}')
+    with pytest.raises(etf_market.DriveIdMissing) as e:
+        etf_market.drive_id("CORE_SHEET_ID")
+    assert "secret-value" not in str(e.value)
 
 
 def test_json_for_script_escapes_markup_and_round_trips():

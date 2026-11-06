@@ -13,8 +13,8 @@ for sub in ("tw-etf-fetcher", "price-dividend-fetcher"):
 import etf_market  # noqa: E402
 import etf_sheets_sync  # noqa: E402
 
-CORE = "1QBEgUi-kTOuLgj2yGHmP-0g_ug-Sl_M21SN0g93b6xI"
-HK_SHEET = etf_sheets_sync.MARKET_SHEET_IDS["HK"]
+CORE = "TEST_CORE_SHEET_ID"
+HK_SHEET = etf_sheets_sync.market_sheet_ids()["HK"]
 
 
 def _payload(market="HK", stock_name="中遠海控", coverage="full"):
@@ -142,7 +142,7 @@ def test_core_sheet_is_refused(tmp_path):
 
 def test_each_market_writes_only_to_its_own_sheet(tmp_path):
     res = etf_sheets_sync.run_market_sheets_pipeline(_write_pool(tmp_path, _payload("HK")), tmp_path,
-                                                     etf_sheets_sync.MARKET_SHEET_IDS["US"], tmp_path, dry_run=True)
+                                                     etf_sheets_sync.market_sheet_ids()["US"], tmp_path, dry_run=True)
     assert res["status"] == "error" and "只能寫入" in res["message"]
 
 
@@ -242,7 +242,7 @@ def test_tw_keeps_its_original_summary_range_and_creates_nothing(tmp_path, fake_
     s, c = tmp_path / "s.csv", tmp_path / "c.csv"
     s.write_text("a,b\n1,2\n", encoding="utf-8")
     c.write_text("a,b\n1,2\n", encoding="utf-8")
-    ok, msg = etf_sheets_sync.sync_via_google_api(etf_sheets_sync.DEFAULT_SHEET_ID, s, c)
+    ok, msg = etf_sheets_sync.sync_via_google_api(etf_sheets_sync.default_sheet_id(), s, c)
     assert ok, msg
     assert instances[0].requests == []
     assert ("ETF_Summary!A1:P2", 2) in instances[0].updates

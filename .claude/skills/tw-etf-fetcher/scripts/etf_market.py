@@ -11,6 +11,7 @@
 - gate_reasons：排程健康門檻判定（ETF 數量、缺價與財報、列數下限），資料池與全市場試算表共用同一套規則。
 """
 import json
+import os
 import re
 from dataclasses import dataclass
 from datetime import date
@@ -18,8 +19,9 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 SCHEMA_VERSION = 1
 
-# Investment_Tracker_Core 是 APP 後台資料庫，程式不得寫入（規則見 .claude/rules/core-database.md）
-CORE_SHEET_IDS = frozenset({"1QBEgUi-kTOuLgj2yGHmP-0g_ug-Sl_M21SN0g93b6xI"})
+# Drive／Sheet ID 不放進 git：環境變數 DRIVE_IDS 放一段 JSON（鍵名見 .claude/rules/core-database.md），
+# GitHub Secrets 與雲端環境設定同名同內容。
+DRIVE_IDS_ENV = "DRIVE_IDS"
 
 # 持股來源：MoneyDJ 與中信投信 ETFHoldingWeight 是官方完整持股（coverage full）；repo 內的 models 卡片只是備援
 CTBC_SOURCE = "中信投信 ETFHoldingWeight"
@@ -33,7 +35,33 @@ _FORBIDDEN_RE = re.compile(r"[A-Za-z0-9]+\.(?:%s)(?![A-Za-z0-9])" % "|".join(SUF
 
 
 class CoreWriteRefused(RuntimeError):
-    """要寫入的目標是 Investment_Tracker_Core。"""
+    """要寫入的目標是 Investment_Tracker_Core，或無法確認目標不是 Core。"""
+
+
+class DriveIdMissing(RuntimeError):
+    """環境變數 DRIVE_IDS 沒設、不是 JSON 物件，或缺少要用的鍵。"""
+
+
+def drive_ids() -> Dict[str, str]:
+    """解析環境變數 DRIVE_IDS；沒設或格式錯誤回空字典（讓呼叫端各自決定怎麼拒絕）。"""
+    raw = os.environ.get(DRIVE_IDS_ENV, "").strip()
+    if not raw:
+        return {}
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    return {str(k): str(v).strip() for k, v in data.items() if str(v).strip()}
+
+
+def drive_id(key: str) -> str:
+    """取一個 ID；缺少就丟 DriveIdMissing，訊息只寫鍵名，不印任何 ID。"""
+    value = drive_ids().get(key)
+    if not value:
+        raise DriveIdMissing(f"環境變數 {DRIVE_IDS_ENV} 沒有 {key}（沒設或格式錯誤），見 .claude/rules/core-database.md")
+    return value
 
 
 def pure_code(raw: str) -> str:
@@ -55,8 +83,12 @@ def find_forbidden_suffix(text: str) -> List[str]:
 
 
 def guard_sheet_id(sheet_id: str) -> str:
-    """寫入前檢查目標試算表：Core 一律拒絕，其餘原樣回傳。"""
-    if str(sheet_id).strip() in CORE_SHEET_IDS:
+    """寫入前檢查目標試算表：Core 一律拒絕，其餘原樣回傳。
+    DRIVE_IDS 沒有 CORE_SHEET_ID 時無法確認目標，一律拒絕（fail closed）。"""
+    core = drive_ids().get("CORE_SHEET_ID")
+    if not core:
+        raise CoreWriteRefused(f"{DRIVE_IDS_ENV} 沒有 CORE_SHEET_ID，無法確認目標不是 Investment_Tracker_Core，拒絕寫入")
+    if str(sheet_id).strip() == core:
         raise CoreWriteRefused("目標是 Investment_Tracker_Core，嚴禁寫入（見 .claude/rules/core-database.md）")
     return sheet_id
 

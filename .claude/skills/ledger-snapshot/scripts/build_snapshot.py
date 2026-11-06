@@ -24,8 +24,18 @@ REQUIRED_HEADERS = {
 }
 # 資金餘額分頁：頁面讀 B2 錨點日、B3 錨點餘額、B5 循環、B6 新資金、B7 合計；這些列的 A 欄標籤要含下列字樣。
 CASH_LABELS = {1: '錨點日期', 2: '錨點餘額', 4: '循環餘額', 5: '新資金餘額', 6: '合計'}
-# Core 的試算表 ID：快照頁永遠不該出現，出現就中止。
-CORE_ID = '1QBEgUi-kTOuLgj2yGHmP-0g_ug-Sl_M21SN0g93b6xI'
+# Core 的試算表 ID：快照頁永遠不該出現，出現就中止。ID 取自環境變數 DRIVE_IDS 的 CORE_SHEET_ID（不放進 git）；
+# 沒設時略過這項檢查（其餘寫入與連接器關鍵字檢查照舊）。
+def _core_id():
+    import json as _json
+    import os as _os
+    try:
+        return str(_json.loads(_os.environ.get('DRIVE_IDS', '{}')).get('CORE_SHEET_ID', '')).strip()
+    except (ValueError, AttributeError):
+        return ''
+
+
+CORE_ID = _core_id()
 
 
 class BuildError(Exception):
@@ -117,7 +127,10 @@ def build(source, data, stamp):
     ):
         s = _sub_re(s, pattern, '', re.S)
     # 事後檢查：不可殘留寫入、連接器或 Core
-    for banned in ('callSheet', 'writeRange', 'update_values', "window.claude", CORE_ID, '<section data-view="entry"'):
+    banned_list = ['callSheet', 'writeRange', 'update_values', "window.claude", '<section data-view="entry"']
+    if CORE_ID:
+        banned_list.append(CORE_ID)
+    for banned in banned_list:
         if banned in s:
             raise BuildError(f'快照殘留不該出現的內容：{banned}')
     return s

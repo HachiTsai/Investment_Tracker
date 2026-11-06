@@ -74,7 +74,7 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 -
 依據 `architecture/APP讀取清單-Stock_AIStudio.md` 之資料庫註冊表規範：
 
 - **試算表名稱**：`波段觀察`
-- **Sheet ID**：`1pyGzkgaspYMYdXOPYerkLsxOMwNwa2yOKuNDrOrrhtQ`
+- **Sheet ID**：`SWING_SHEET_ID`（鍵名，實際 ID 在 `DRIVE_IDS`）
 - **分頁名稱**：`Untitled`
 
 #### 欄位鐵律（A 到 X 共 24 欄，欄序嚴格固定）
