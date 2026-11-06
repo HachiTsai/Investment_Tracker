@@ -421,6 +421,12 @@ def test_inspect_ticker(repo_root):
     assert "500,000 TWD/年" in ascii_out
 
 
+def test_inspect_ticker_requires_shares(repo_root):
+    """持股數不存放於 REPO：未帶 shares 且卡片無 base_shares 時要明確中止。"""
+    with pytest.raises(ValueError, match="--shares"):
+        patrol.inspect_ticker(ticker="00882", repo_root=repo_root, price_override=15.20)
+
+
 
 def test_stock_card_patrol(repo_root, tmp_path, monkeypatch):
     import patrol_evaluator as ev

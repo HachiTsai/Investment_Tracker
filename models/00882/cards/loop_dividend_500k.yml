@@ -29,5 +29,5 @@ controllers:
     description: "在當前價格與近 12 個月配息殖利率下，一次性補足缺口所需之理論追加本金"
 
 snowball_simulator:
-  base_shares: 242000              # 基準持股張數 (242 張，來自 2026-11-02 最新快照)
+  # base_shares 不存放於 REPO（持股數屬個人財務資料）；個股深潛請用 --shares 帶入
   reinvest_frequency_months: 6     # 半年滾動一次 (每年 1 月、7 月)

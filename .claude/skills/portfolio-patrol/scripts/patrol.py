@@ -93,7 +93,7 @@ def main(argv=None) -> int:
         metavar="TICKER",
         help="單標的個人深潛運算與滾雪球時間線模擬（預設 00882）",
     )
-    parser.add_argument("--shares", type=float, help="個人持股股數（預設由卡片讀取，例如 300000 股 / 300 張）")
+    parser.add_argument("--shares", type=float, help="個人持股股數（--inspect 必填；持股數不存放於 REPO）")
     parser.add_argument("--price", type=float, help="手動指定/覆蓋標的市價（TWD）")
     parser.add_argument("--dca", type=float, default=0.0, help="每年預計額外定期定額投入本金（TWD）")
     parser.add_argument("--prev-state", metavar="PATH", help="前一個交易日的陷阱狀態 JSON（啟用兩日確認；由排程從 Artifact 資料庫讀取後傳入）")
@@ -103,14 +103,18 @@ def main(argv=None) -> int:
     # 1. 單標的深度試算模式
     if args.inspect:
         custom_models_dir = Path(args.models_dir) if args.models_dir else None
-        inspect_data = inspect_ticker(
-            ticker=args.inspect,
-            repo_root=REPO_ROOT,
-            shares=args.shares,
-            price_override=args.price,
-            dca=args.dca,
-            custom_models_dir=custom_models_dir,
-        )
+        try:
+            inspect_data = inspect_ticker(
+                ticker=args.inspect,
+                repo_root=REPO_ROOT,
+                shares=args.shares,
+                price_override=args.price,
+                dca=args.dca,
+                custom_models_dir=custom_models_dir,
+            )
+        except ValueError as exc:
+            print(f"❌ {exc}")
+            return 2
         if args.json:
             print(json.dumps(inspect_data, ensure_ascii=False, indent=2))
         else:
