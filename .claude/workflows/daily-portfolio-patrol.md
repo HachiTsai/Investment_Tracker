@@ -20,7 +20,7 @@
 
 - **工作目錄**：REPO 根目錄。
 - **前置動作**：`git pull --ff-only origin main`。
-- **產出型態**：**純 Artifact（無 Sheet）**。
+- **產出型態**：Artifact，另在步驟 5 同步寫入波段觀察 Sheet（供 Stock_AIStudio APP 波段頁讀取，2026-11-06 Hachi 同意）。
 - **陷阱狀態**：`ArtifactData` 的 `trap_state` 集合，用於兩日確認（步驟 0 與 1a）。排程需要此工具；本 Artifact 已宣告 `db` 能力。
 - **唯讀保護約束**：
   - 嚴禁寫入 `Investment_Tracker_Core`。
@@ -97,6 +97,14 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 -
 - **發布模式**：先 read 該 artifact 再以 `/tmp/daily.html` 原地更新，**嚴禁建立新的 Artifact**。
 - **Capabilities 鐵律**：發布時**必須省略 capabilities**（沿用既有 capabilities：Firecrawl、db、user；若覆蓋或帶入 capabilities 會導致即時報價與我的最愛等互動功能損壞）。
 
+### 步驟 5：同步波段觀察 Sheet（供 APP 讀取）
+
+Artifact 發布成功後，依 `.claude/workflows/swing-patrol-sheets.md` 的步驟 1 到 4（讀 prev、`swing.py --scan`、Gate、寫告警紀錄與 A:X 整列覆寫）把同一批掃描結果寫入波段觀察 Sheet（`SWING_SHEET_ID`）。
+
+- 寫入前先過 Core 拒絕（`guard_sheet_id`），只寫波段觀察 Sheet，嚴禁碰 Core。
+- 與 GitHub Actions `swing-patrol.yml`（平日 17:00）共用資料日互鎖：同一資料日已入庫就略過，不重複覆寫。
+- 同步失敗不影響 Artifact，只在回報中註明「Sheet 未同步」與原因。
+
 ---
 
 ## 4. 執行回報規範
@@ -104,7 +112,7 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 -
 完成後僅需極簡的一句話回報：
 
 ```text
-資料日：YYYY-MM-DD，標的檔數：X 檔，ERROR：Y 檔。Artifact 更新成功。
+資料日：YYYY-MM-DD，標的檔數：X 檔，ERROR：Y 檔。Artifact 更新成功，波段 Sheet 已同步（或未同步與原因）。
 ```
 
 ---
