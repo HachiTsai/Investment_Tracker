@@ -102,7 +102,7 @@ python3 .claude/skills/hk-market-data/scripts/constituents_table.py out.html pre
    - A:C 範圍為 `key,value,note`，C 欄留空。
    - key 依序：`asOf`（今天）、`holdingsAsOf`（`table.json` 的 `holdings_asof` 轉 YYYY-MM-DD）、`ttmUnitTwd`、`lfyUnitTwd`、`has26`、`fxHkdToTwd`、`nav`、`unitsOutstanding`、`rows`、`note`（「推估，不是官方配息；未扣管理費與預扣稅」）、`lastUpdated`、`executor`。
    - B 欄每個值（含日期與數字）**一律加 `'` 前綴存成文字**，避免 B 欄被誤判為純數字欄位而導致 APP 日期解析失敗。
-3. **寫入目標**：Sheet ID 寫死在腳本內，不接受參數；`Investment_Tracker_Core` 一律拒絕。
+3. **寫入目標**：Sheet ID 由環境變數 `DRIVE_IDS` 的鍵 `DIV_00882_SHEET_ID` 取得（見 `.claude/rules/core-database.md` §2.1），腳本不接受參數；目標是 `Investment_Tracker_Core`，或 `DRIVE_IDS` 缺 `CORE_SHEET_ID` 時，`guard_sheet_id` 一律拒絕寫入（fail closed）。
 
 ---
 
