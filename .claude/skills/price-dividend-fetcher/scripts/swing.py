@@ -425,7 +425,7 @@ def stock_profile(ticker: str) -> Dict:
             "returns_total": rets["total"], "returns_price": rets["price"]}
 
 
-def watchlist(universe: Optional[str] = None, filter_tier: Optional[str] = "core") -> List[Dict]:
+def watchlist(universe: Optional[str] = None, filter_tier: Optional[str] = "core", extra: Optional[List[Dict]] = None) -> List[Dict]:
     """觀察清單：models 內指定分級（預設 core: 核心團隊）的 category: STOCK 與 ETF 卡片，加上選填的 ETF 成分股前 N 大（卡片:N）。"""
     root = Path(__file__).resolve().parents[4] / "models"
     items = []
@@ -447,6 +447,10 @@ def watchlist(universe: Optional[str] = None, filter_tier: Optional[str] = "core
         for row, t in zip(rows, card_universe(name, int(top or 15))):
             if all(i["ticker"] != t for i in items):
                 items.append({"ticker": t, "name": row["name"], "source": f"{name} 成分股"})
+    # 全市場 ETF：卡片已有的不重複加，來源欄用「全市場 ETF」，和口袋名單（卡片、成分股）區分
+    for e in extra or []:
+        if all(i["ticker"] != e["ticker"] for i in items):
+            items.append({"ticker": e["ticker"], "name": e.get("name", ""), "source": "全市場 ETF"})
     return items
 
 
@@ -577,6 +581,9 @@ def render_daily_page(rows: List[Dict], patrol: Dict, date: str, notices: Option
             .replace("__DAILY_HEAD__", json.dumps(head, ensure_ascii=False)).replace("__DAILY_DATE__", date))
 
 
+GATE_MAX_ERRORS = 10  # 全市場 ETF 納入後清單約 150 檔，容許的抓取失敗數由 5 放寬到 10
+
+
 def check_gate(
     rows: List[Dict],
     max_errors: int = 5,
@@ -584,7 +591,7 @@ def check_gate(
 ) -> Tuple[bool, bool, List[str]]:
     """排程健康門檻檢核。
     回傳：(is_healthy, is_market_closed, reasons)
-    - is_healthy: 是否健康（ERROR <= 5 檔）
+    - is_healthy: 是否健康（ERROR 不超過 max_errors 檔）
     - is_market_closed: 是否為休市狀態（所有市場無 fresh）
     - reasons: 說明訊息
     """
@@ -614,12 +621,14 @@ def main(argv=None) -> int:
     p.add_argument("--batch", metavar="卡片:前N大", help="多檔彙總回測，例如 00882:15（讀 models/<卡片>/cards/constituents.jsonl）")
     p.add_argument("--fib-backtest", action="store_true", help="回測各費波那契回檔位置之後 5/10/20 日含息報酬（觀察清單全部標的，抓 5 年日線）")
     p.add_argument("--backtest", action="store_true", help="加跑超跌反彈規則回測（抓 5 年日線）")
-    p.add_argument("--gate", action="store_true", help="啟用排程健康檢查門檻判定（--scan 模式下 ERROR <= 5 檔）")
+    p.add_argument("--gate", action="store_true", help="啟用排程健康檢查門檻判定（--scan 模式下 ERROR <= 10 檔）")
+    p.add_argument("--extra-tickers", metavar="JSON", help="搭配 --scan：額外的全市場 ETF 清單檔 [{\"ticker\":\"TPE:0050\",\"name\":\"...\"}]，卡片已有的不重複")
     p.add_argument("--tier", choices=["core", "pool", "all"], default="core", help="波段掃描標的分級（預設 core: 核心團隊）")
     a = p.parse_args(argv)
     if a.scan is not None:
         prev = {r["ticker"]: {"label": r.get("label"), "combo": r.get("combo")} for r in json.loads(Path(a.prev).read_text(encoding="utf-8"))} if a.prev else None
-        items = watchlist(a.scan or None, filter_tier=a.tier)
+        extra = json.loads(Path(a.extra_tickers).read_text(encoding="utf-8")) if a.extra_tickers else None
+        items = watchlist(a.scan or None, filter_tier=a.tier, extra=extra)
         rows = scan(items, prev, with_chart=bool(a.daily_html))
         rows = refresh_lagging(rows, items, prev, with_chart=bool(a.daily_html))
         gaps = missing_days(rows)
@@ -651,7 +660,7 @@ def main(argv=None) -> int:
         print(json.dumps(rows_out, ensure_ascii=False, indent=1))
         if getattr(a, "gate", False):
             require_fresh = bool(a.sheet and not a.daily_html)
-            is_healthy, is_market_closed, reasons = check_gate(rows, max_errors=5, require_fresh=require_fresh)
+            is_healthy, is_market_closed, reasons = check_gate(rows, max_errors=GATE_MAX_ERRORS, require_fresh=require_fresh)
             if not is_healthy:
                 print(f"❌ [Gate Failed] {'; '.join(reasons)}", file=sys.stderr)
                 return 1

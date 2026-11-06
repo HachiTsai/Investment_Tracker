@@ -1,6 +1,6 @@
 # Stock_AIStudioAPP 波段觀察資料庫排程工作流
 
-本工作流為 Stock_AIStudio APP 波段觀察資料庫之標準作業程序（SOP），規格收斂於 Git REPO 作為單一真實來源（SSOT），於平日港股與台股盤後定時執行，為前端戰情頁提供 24 欄位階、動能與停損防禦資訊。
+本工作流為 Stock_AIStudio APP 波段觀察資料庫之標準作業程序（SOP），規格收斂於 Git REPO 作為單一真實來源（SSOT），於平日港股與台股盤後定時執行，為前端波段觀察頁提供 24 欄位階、動能與停損防禦資訊。
 
 ---
 
@@ -48,13 +48,15 @@ flowchart TD
 
 ### 步驟 2：執行波段掃描核心指令
 
+掃描範圍有兩層（2026-11-06 Hachi 同意）：口袋名單（models 卡片、00882 前 15 大成分股，來源欄為「ETF 卡片」「個股卡片」「00882 成分股」）加全市場 ETF（來源欄為「全市場 ETF」）。全市場 ETF 清單由 `swing_sync.py` 讀全市場 ETF 成分股資料庫（`MARKET_ETF_SHEET_ID`）`ETF_Summary` 的 A、B 欄（只讀），只留台股 ETF 代號、排除查不到資料者（`MARKET_EXCLUDED`，與 Stock_AIStudio 雷達矩陣快照同步）、取前 100 檔，寫成 `/tmp/extra_tickers.json`；讀不到就只掃口袋名單。卡片已有的代號不重複。
+
 在 REPO 根目錄執行：
 
 ```bash
-python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --prev /tmp/prev.json --sheet /tmp/sheet.json --gate > /tmp/scan.json
+python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --tier all --extra-tickers /tmp/extra_tickers.json --prev /tmp/prev.json --sheet /tmp/sheet.json --gate > /tmp/scan.json
 ```
 
-*若指令執行失敗即停止，不寫入任何資料，於回報中貼出錯誤原因。*
+*若指令執行失敗即停止，不寫入任何資料，於回報中貼出錯誤原因。Gate 容許的抓取失敗數為 10 檔（`GATE_MAX_ERRORS`）。*
 
 ### 步驟 3：健康檢查與市場狀態判定（Gatekeeper）
 
