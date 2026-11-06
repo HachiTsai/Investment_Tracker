@@ -147,16 +147,68 @@ def test_nav_http_post_shares_one_token_across_calls(monkeypatch):
     assert sent == ["home/AuthToken"]  # 第二次直接共用，不再送出請求
 
 
-def test_client_stops_at_block_without_retrying():
+def test_client_switches_host_once_then_stops_when_all_blocked():
     calls = []
 
     def post(host, path, body, token, timeout=40):
-        calls.append(path)
+        calls.append((host, path))
         if path == "home/AuthToken":
             return ok({"token": "t"})
         raise ctbc_api.CtbcBlocked("防護攔截")
 
-    client = nc.Client(post=post, sleep=lambda s: None)
-    with pytest.raises(nc.NavError, match="防護攔截"):
+    client = nc.Client(post=post, sleep=lambda s: None, hosts=["https://a/", "https://b/"])
+    with pytest.raises(nc.NavError, match="所有網域都被"):
         client.call("product/GetNAV", {})
-    assert calls == ["home/AuthToken", "product/GetNAV"]  # 只嘗試一次，不重試、不換網域
+    # 每個網域各試一次，不在同網域重試
+    assert calls == [("https://a/", "home/AuthToken"), ("https://a/", "product/GetNAV"),
+                     ("https://b/", "home/AuthToken"), ("https://b/", "product/GetNAV")]
+
+
+def test_client_uses_second_host_when_first_blocked():
+    calls = []
+
+    def post(host, path, body, token, timeout=40):
+        calls.append(host)
+        if host == "https://a/":
+            raise ctbc_api.CtbcBlocked("防護攔截")
+        return ok({"token": "t"}) if path == "home/AuthToken" else ok([1])
+
+    slept = []
+    client = nc.Client(post=post, sleep=slept.append, hosts=["https://a/", "https://b/"])
+    assert client.call("product/GetNAV", {}) == [1]
+    assert calls == ["https://a/", "https://b/", "https://b/"]
+    assert slept == []  # 換網域不退避等待
+    assert client.call("product/GetNAV", {}) == [1]
+    assert "https://a/" not in calls[3:]  # 被擋的網域本程序內不再使用
+
+
+def test_call_falls_back_to_second_host_with_its_own_token():
+    clock = FakeClock()
+    tw, com = ctbc_api.HOSTS  # tw＝第一個網域（被擋），com＝備援
+
+    def opener(req, timeout=40):
+        opener.calls.append(req.full_url)
+        if req.full_url.startswith(tw):
+            raise http403(req.full_url)
+        if "AuthToken" in req.full_url:
+            return FakeResp(ok({"token": "com-tok"}))
+        return FakeResp(ok({"x": 1}))
+
+    opener.calls = []
+    assert ctbc_api.HOST == ctbc_api.HOSTS[0] and ctbc_api.HOSTS[0].startswith("https://www.ctbcinvestments.com/")
+    r = ctbc_api.call("etf/ETFHoldingWeight", {}, sleep=clock.sleep, clock=clock, opener=opener)
+    assert r["Data"] == {"x": 1}
+    assert opener.calls == [tw + "home/AuthToken?token=www.ctbcinvestments.com",
+                            com + "home/AuthToken?token=www.ctbcinvestments.com",
+                            com + "etf/ETFHoldingWeight?token=com-tok"]
+    assert ctbc_api.is_blocked(tw) and not ctbc_api.is_blocked(com)
+    assert ctbc_api.active_token(sleep=clock.sleep, clock=clock, opener=opener) == "com-tok"
+    assert len(opener.calls) == 3  # 已封鎖的網域不再送，token 共用
+
+
+def test_call_raises_blocked_when_every_host_blocked():
+    clock = FakeClock()
+    op = opener_for([http403("x")])
+    with pytest.raises(ctbc_api.CtbcBlocked, match="所有網域"):
+        ctbc_api.call("etf/ETFList", {}, sleep=clock.sleep, clock=clock, opener=op)
+    assert len(op.calls) == len(ctbc_api.HOSTS)  # 每個網域只送一次
