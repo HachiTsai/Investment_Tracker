@@ -6,7 +6,7 @@
 
 ## 1. 觸發時機與排程
 
-- **排程頻率**：每個平日 17:00（台北時間）。
+- **排程頻率**：每個平日 17:23（台北時間；GitHub 實際觸發可能延遲數小時，見 `schedule-registry.md` 第 3 節）。
 - **觸發平台**：GitHub Actions 自動排程（亦支援 Claude 雲端排程或 Antigravity 本機手動執行）。
 - **自動排程工作流**：`.github/workflows/swing-patrol.yml`
 - **雲端排程 Prompt（單行呼叫，備用）**：
@@ -147,5 +147,5 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 -
 
 ## 5. 雙 Agent 協同分工與代班邊界
 
-- **日常運作**：本任務為「純 Sheet 任務」，日常優先由 **GitHub Actions 自動排程**（`.github/workflows/swing-patrol.yml`）於每個交易日 17:00 自動執行並透過 Google Sheets API 回寫試算表，省下大量 Claude 雲端對話 Token；亦支援 Claude 雲端排程單行呼叫。
+- **日常運作**：本任務為「純 Sheet 任務」，日常優先由 **GitHub Actions 自動排程**（`.github/workflows/swing-patrol.yml`）於每個平日 17:23 自動執行並透過 Google Sheets API 回寫試算表，省下大量 Claude 雲端對話 Token；亦支援 Claude 雲端排程單行呼叫。
 - **本機與雲端代班邊界**：本任務無前端 Artifact 綁定。當排程需手動補跑時，可透過 GitHub Actions `workflow_dispatch` 一鍵重跑（需要強制整表刷新時勾選 `force`），或由 **Antigravity 本機執行 `swing_sync.py`** 直寫 Sheet，保障前端 APP 數據心跳不中斷。

@@ -5,7 +5,7 @@ on:
     branches: [main]
   pull_request:
   schedule:
-    - cron: "0 12 * * *"   # UTC 12:00 = 台北 20:00，排程時只跑 schedule-health
+    - cron: "17 12 * * *"   # UTC 12:17 = 台北 20:17（避開整點），排程時只跑 schedule-health
   workflow_dispatch:
 
 jobs:

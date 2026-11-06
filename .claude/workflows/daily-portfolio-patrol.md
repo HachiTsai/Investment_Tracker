@@ -20,7 +20,7 @@
 
 - **工作目錄**：REPO 根目錄。
 - **前置動作**：`git pull --ff-only origin main`。
-- **產出型態**：Artifact。波段觀察 Sheet 由 GitHub Actions 平日 17:00 寫入（範圍為口袋名單加全市場 ETF），巡檢不寫 Sheet（2026-11-06 Hachi 同意改回）。
+- **產出型態**：Artifact。波段觀察 Sheet 由 GitHub Actions 平日 17:23 寫入（範圍為口袋名單加全市場 ETF），巡檢不寫 Sheet（2026-11-06 Hachi 同意改回）。
 - **陷阱狀態**：`ArtifactData` 的 `trap_state` 集合，用於兩日確認（步驟 0 與 1a）。排程需要此工具；本 Artifact 已宣告 `db` 能力。
 - **唯讀保護約束**：
   - 嚴禁寫入 `Investment_Tracker_Core`。
@@ -32,12 +32,14 @@
 
 ```mermaid
 flowchart TD
-    A["1. git pull --ff-only origin main"] --> B["2. 讀取陷阱狀態後執行 patrol.py --json --prev-state > /tmp/patrol.json"]
-    B --> C["3. 執行 swing.py --scan ... --daily-html /tmp/daily.html"]
-    C --> D{"4. 檢查 ERROR 檔數 (Gate)"}
+    A["前置：git pull --ff-only origin main"] --> S0["步驟 0：讀取陷阱狀態 prev_state.json"]
+    S0 --> B["步驟 1：patrol.py --json --prev-state > /tmp/patrol.json"]
+    B --> B1["步驟 1a：寫回陷阱狀態（失敗不中止，加 --notice）"]
+    B1 --> C["步驟 2：swing.py --scan ... --daily-html /tmp/daily.html"]
+    C --> D{"步驟 3：檢查 ERROR 檔數 (Gate)"}
     D -->|異常 (>5檔)| E["終止！不覆寫 Artifact，回報失敗原因"]
-    D -->|正常| F["5. 原地更新發布至 Artifact (WLXXvrX7...)"]
-    F --> G["6. 簡短一句話回報"]
+    D -->|正常| F["步驟 4：原地更新發布至 Artifact (WLXXvrX7...)"]
+    F --> G["簡短一句話回報"]
 ```
 
 ### 步驟 0：讀取前次陷阱狀態（兩日確認）
@@ -104,7 +106,7 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 -
 完成後僅需極簡的一句話回報：
 
 ```text
-資料日：YYYY-MM-DD，標的檔數：X 檔，ERROR：Y 檔。Artifact 更新成功，波段 Sheet 已同步（或未同步與原因）。
+資料日：YYYY-MM-DD，標的檔數：X 檔，ERROR：Y 檔。Artifact 更新成功；陷阱狀態已寫回（或未寫回與原因）。
 ```
 
 ---

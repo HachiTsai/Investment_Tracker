@@ -2,8 +2,8 @@ name: Market ETF Sheets Sync
 
 on:
   schedule:
-    # 每週五台北 17:10 (UTC 09:10, Fri)
-    - cron: '10 9 * * 5'
+    # 每週五台北 17:37 (UTC 09:37, Fri)；避開整點與十分整，GitHub 排程擁擠時延遲較大
+    - cron: '37 9 * * 5'
   workflow_dispatch:
     inputs:
       market:
