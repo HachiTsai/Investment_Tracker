@@ -55,6 +55,21 @@ python3 -m pytest -q .claude/skills/price-dividend-fetcher/tests
 
 測試使用內嵌的樣本，不需要網路。
 
+## 共用回測引擎（`scripts/backtest.py`）
+
+規則可插拔（進場、出場、停損各自是函式）、成本模型（各市場手續費、交易稅、滑價，幣安合約另計資金費率）、槓桿與逐倉清算、可做空、資金曲線與風險指標（勝率、清算次數、最大回撤、最長連虧、與買進持有比較）。`swing.py` 的超跌反彈回測已改由此引擎執行（結果與舊版逐筆相同）；費波那契與三週期分級是「位置之後 N 日報酬」的統計，不是交易模擬，維持原樣。
+
+```bash
+python3 .claude/skills/price-dividend-fetcher/scripts/backtest.py NASDAQ:TQQQ --strategy trend --side both --compare --margin-pct 1 --capital 15000
+python3 .claude/skills/price-dividend-fetcher/scripts/backtest.py BINANCE:TQQQUSDT --strategy discipline --compare --capital 15000
+python3 .claude/skills/price-dividend-fetcher/scripts/backtest.py TPE:0050 --strategy oversold --range 10y --trades
+```
+
+- 策略：`trend`（收盤站上 N 日線且均線 5 日上彎做多、反之做空，跌破或站回均線出場）、`discipline`（交易紀律預設：順勢、單筆保證金 1%、2×ATR 停損、虧損後冷卻 1 根，槓桿超過 5 倍會警告）、`bbmid`（布林中線 ±1% 進場、持有 N 根，對照組）、`oversold`（RSI≤30）。
+- 代號：股票同上方格式；`BINANCE:<合約>` 讀幣安 USDⓈ-M 合約公開 K 線與資金費率（`www.binance.com/fapi`，不需帳號）。美股代幣化合約（如 `TQQQUSDT`）上市時間短，樣本少時要看 `period` 與 `bars`。
+- 成本預設在 `COSTS`（保守假設，非券商實際費率），可用 `--fee-bps`、`--slip-bps`、`--sell-tax-bps` 覆寫；台股 ETF 證交稅用 `--sell-tax-bps 10`。
+- 限制：日線看不到盤中路徑，同一根同時碰停損與清算一律算清算；策略報酬用未還原收盤價、不含配息；股票加槓桿是以合約口徑模擬。回測只代表過去，不是買賣指示。
+
 ## 個股波段指標（`scripts/swing.py`）
 
 5 天到 4 週波段用的日線指標（均線、RSI、MACD、ATR、布林、量能、52 週位置）與狀態判定，另有超跌反彈規則回測。只用標準函式庫、唯讀 Yahoo；只描述條件，不構成買賣指示，波段部位與股利再投入部位分開看。

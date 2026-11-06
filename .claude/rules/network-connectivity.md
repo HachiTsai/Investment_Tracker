@@ -1,6 +1,6 @@
 # 外部網路連線與資料來源清單
 
-本專案於本機（Antigravity / macOS）與雲端沙盒環境（Claude Code Web）經實測可通聯之 36 個外部網域及 API 服務清單。
+本專案於本機（Antigravity / macOS）與雲端沙盒環境（Claude Code Web）經實測可通聯之 37 個外部網域及 API 服務清單。
 
 ## 1. 核心證券交易所與主管機關
 
@@ -52,6 +52,7 @@
 | `api.finmindtrade.com` | FinMind 開放資料 API | ✅ HTTP 200 | 台股（上市與上櫃）現金流量表、資產負債表、損益表歷年季度，另有現金股利歷次分配（`TaiwanStockDividend`）、股價淨值比（`TaiwanStockPER`）、產業別（`TaiwanStockInfo`）；匿名有頻率限制（`fundamental-analyzer` 台股主來源，成分股明細頁快取 6 小時並可用 `FINMIND_TOKEN` 提高上限；2026-10-21 實測） |
 | `tw.stock.yahoo.com` | Yahoo 股市（台灣） | ✅ HTTP 200 | 台股現金流量表頁，資料嵌在網頁 JSON，非官方、改版即失效（`fundamental-analyzer` 台股備援；2026-10-21 實測） |
 | `mops.twse.com.tw` 報表端點、`goodinfo.tw` | MOPS 財報查詢、Goodinfo | ❌ 被擋 | MOPS 對非瀏覽器請求回「安全性考量無法呈現」，Goodinfo 被 Cloudflare 擋（403），不採用（2026-10-21 實測） |
+| `www.binance.com` | 幣安（`/fapi/v1` 合約公開行情） | ✅ HTTP 200 | USDⓈ-M 合約日線 K 線（`klines`）、資金費率（`fundingRate`）、合約清單（`exchangeInfo`，含美股代幣化合約如 `TQQQUSDT`），供 `price-dividend-fetcher` 的 `backtest.py`；不需帳號。`api.binance.com`、`fapi.binance.com` 在雲端沙盒回 HTTP 451（地區限制），不採用（2026-11-06 實測） |
 | `webb-site.com` | Webb-site | ✅ HTTP 200 | 港股 CCASS 股權集中度與股東持股變動 |
 | `www.webb-site.com` | Webb-site 完整域名 | ✅ HTTP 200 | 同上 |
 
