@@ -14,7 +14,7 @@
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
 | S1 | 波段觀察 Sheet 同步（L1） | GitHub Actions `swing-patrol.yml`，cron `23 9 * * 1-5` | 平日 17:23 | `swing-patrol-sheets.md` | 波段觀察 Sheet A:X（口袋名單加全市場 ETF 前 100 檔），心跳 Z1:AA2 | 每日，容許 96 小時 |
 | S2 | 全市場 ETF 池（台股）Sheet 同步（L2） | GitHub Actions `market-etf.yml`，cron `37 9 * * 5` | 週五 17:37 | `market-etf-pool.md` | 全市場_ETF成分股資料庫 Sheet | 每日，容許 192 小時 |
-| C1 | 每日投資組合巡檢（L6） | Claude 雲端排程 | 每日 08:50 | `daily-portfolio-patrol.md` | Artifact `WLXXvrX7BzLemm9TxqZ6di`，ArtifactData `trap_state` | 無，靠排程串回報 |
+| C1 | 每日投資組合巡檢（L6） | Claude 雲端排程 | 週二至週六 08:50 | `daily-portfolio-patrol.md` | Artifact `WLXXvrX7BzLemm9TxqZ6di`，ArtifactData `trap_state` | 無，靠排程串回報 |
 | C2 | 00882 成分股股利表（L7） | Claude 雲端排程 | 週五 16:30 | `hk-00882-dividend.md` | Artifact `DSbfrxfywurJVo3TVwSzia`，Sheet `00882_成分股股利資料庫` | 無，靠排程串回報 |
 | C3 | 台股 ETF 成分股池（L8） | Claude 雲端排程 | 每月 23 日 09:30 | `tw-etf-pool.md` | Artifact `RoDHVZRr588JCcgzMswsug`，Sheet `台股ETF成分股資料庫` | 無，靠排程串回報 |
 | C4 | Our_Investment 快照版 | Claude 雲端排程 | 平日 09:30 | `ledger-snapshot.md` | Artifact `SBn43iC1bBG2zf2bexgmxZ` | 無，靠排程串回報 |
@@ -36,12 +36,11 @@
 - GitHub 排程實際觸發明顯晚於 cron：S1 2026-10-30 至 11-05 的 5 次排程建立於台北 23:43 至隔日 03:19；S2 2026-10-30 建立於台北 23:49（cron 為 17:10）。原因在 GitHub 排程端，未查明；2026-11-06 起 cron 改到非整點（S1 `:23`、S2 `:37`、CI `:17`），觀察延遲是否縮短。判斷 Sheet 是否已更新時看 run 的建立時間，不要假設設定時間已完成。
 - S2 已於 2026-10-30 首次排程成功（原「尚無排程紀錄」已解除）。
 - C1 至 C4 的執行紀錄不在 GitHub，無法從 repo 驗證；2026-11-01 用雲端排程清單核對過觸發時間與開關（見異動紀錄）。「成功」只代表排程跑完，不代表產出內容已核對。
-- C1 每日觸發（含週末）：週六 08:50 已能取得週五台港美日收盤，週日、週一的資料日與週六相同。是否改為週二至週六由 Hachi 在雲端排程設定決定。
 - 一致性檢查：`fin-commit/tests/test_workflow_consistency.py` 在每次 PR 的 CI 比對本表與 `.github/workflows/*.yml` 的 cron、台北時間、規格檔是否存在、規格檔的排程時間與 prompt，以及各規格檔引用的腳本路徑是否存在；不一致即 CI 失敗。
 
 ## 4. 異動紀錄
 
-- 2026-11-06：S1、S2、CI 的 cron 改到非整點（17:23、17:37、20:17），新增 workflow 一致性測試；修正每日巡檢回報範本、成分股股利調查注意事項、全市場 ETF 列數敘述等過時內容。Hachi 同意（討論串「檢查 PR 217 與 218 修正」2026-11-06「同意，另外讓這些workflow時常被檢視與跟上每次的變化」）。
+- 2026-11-06：C1 由每日改為週二至週六 08:50（雲端排程 `CRON_TZ=Asia/Taipei 50 8 * * 2-6`，Hachi 已在雲端設定修改），週日、週一的資料日與週六相同。S1、S2、CI 的 cron 改到非整點（17:23、17:37、20:17），新增 workflow 一致性測試；修正每日巡檢回報範本、成分股股利調查注意事項、全市場 ETF 列數敘述等過時內容。Hachi 同意（討論串「檢查 PR 217 與 218 修正」2026-11-06「同意，另外讓這些workflow時常被檢視與跟上每次的變化」）。
 - 2026-11-06：S1 掃描範圍加入全市場 ETF（前 100 檔台股 ETF，與雷達矩陣同一份清單），工作逾時由 15 分鐘放寬為 30 分鐘；C1 巡檢不再寫波段觀察 Sheet（先前同日加入的步驟 5 撤回）。Hachi 同意（討論串 2026-11-06「1 同意」）。
 
 - 2026-11-01：依雲端排程實際設定校正 C1 至 C4 觸發時間（C1 每日 08:50、C2 週五 16:30、C3 每月 23 日 09:30、C4 平日 09:30）；C3 確認已建立。Hachi 同意（討論串 2026-11-01「同意，開PR做」）。
