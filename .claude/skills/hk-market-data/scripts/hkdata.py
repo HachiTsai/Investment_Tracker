@@ -9,12 +9,14 @@
   hkdata.py sectors [--announce-days 8]
   hkdata.py macro
 """
-import argparse, html, json, re, subprocess, sys, tempfile, urllib.parse, urllib.request
+import argparse, html, json, os, re, subprocess, sys, tempfile, urllib.parse, urllib.request
 from datetime import date, datetime, timedelta, timezone
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tw-etf-fetcher", "scripts"))
+import ctbc_api  # noqa: E402  中信投信節流與 token 共用（見 tw-etf-fetcher/scripts/ctbc_api.py）
 
 UA = {"User-Agent": "Mozilla/5.0"}
 HKEXNEWS = "https://www1.hkexnews.hk"
-CTBC = "https://www.ctbcinvestments.com.tw/API/"
 KEYS = re.compile(r"RESULT|DIVIDEND|PROFIT WARNING|PROFIT ALERT|DISTRIBUTION|業績|股息|盈利", re.I)
 SB_TYPES = {"006": "港股通合計", "002": "港股通（滬）", "004": "港股通（深）"}
 # 00882 成分股產業分組：Claude 依主業歸類（官方未提供），持股變動時更新
@@ -186,8 +188,10 @@ def southbound(days=10, crosscheck=False):
 
 # ---------- 00882 產業漲跌 ----------
 def ctbc(path, body, token="www.ctbcinvestments.com"):
-    r = json.loads(http(CTBC + path + "?" + urllib.parse.urlencode({"token": token}), json.dumps(body).encode(),
-                        {"content-type": "application/json; charset=utf-8", "Referer": "https://www.ctbcinvestments.com.tw/"}))
+    """中信投信 API（節流與 token 共用見 ctbc_api）。AuthToken 回傳 {"token": …}，其他回傳 Data。"""
+    if path == "home/AuthToken":
+        return {"token": ctbc_api.auth_token()}
+    r = ctbc_api.send(path, body, token)
     if r.get("ResultCode") != 0:
         raise RuntimeError(f"中信投信 {path}：{r.get('ResultMsg')}")
     return r["Data"]

@@ -10,8 +10,6 @@ import json
 import os
 import re
 import sys
-import urllib.parse
-import urllib.request
 from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -19,15 +17,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SKILLS = os.path.join(HERE, "..", "..")
 for sub in ("fundamental-analyzer", "price-dividend-fetcher"):
     sys.path.insert(0, os.path.join(SKILLS, sub, "scripts"))
+import ctbc_api  # noqa: E402  中信投信節流與 token 共用
 import etf_market  # noqa: E402
 import etf_page  # noqa: E402
 import fetch as price_fetch  # noqa: E402
 from fetchers import eastmoney  # noqa: E402
 from fin_trend import add_cashflow, add_dividends, add_valuation, enrich, mid_note, rmb_hint, ttm_dividend, valuation_position  # noqa: E402
 
-CTBC_URL = "https://www.ctbcinvestments.com.tw/API/"
-CTBC_HEADERS = {"content-type": "application/json; charset=utf-8", "User-Agent": "Mozilla/5.0",
-                "Referer": "https://www.ctbcinvestments.com.tw/"}
 FIDS = {"00882": "E0014"}  # 中信投信 ETF 代號 → ETFHoldingWeight 的基金代碼；沒有對照的 ETF 不抓
 
 # 港股代號要帶市場標記：CTBC 的「1919 HK」、Google Finance 的「HKG:1919」或「1919.HK」；裸數字不算，避免與台股混淆
@@ -43,10 +39,10 @@ def parse_hk_code(symbol: str) -> Optional[str]:
 
 
 def _post(path: str, body: Dict[str, Any], token: str = "www.ctbcinvestments.com") -> Any:
-    """中信投信 API 的呼叫方式與 hk-market-data 的 00882 頁相同。"""
-    req = urllib.request.Request(CTBC_URL + path + "?" + urllib.parse.urlencode({"token": token}),
-                                 data=json.dumps(body).encode(), headers=CTBC_HEADERS, method="POST")
-    r = json.load(urllib.request.urlopen(req, timeout=40))
+    """中信投信 API 的呼叫（節流與 token 共用見 ctbc_api）。AuthToken 回傳 {"token": …}，其他回傳 Data。"""
+    if path == "home/AuthToken":
+        return {"token": ctbc_api.auth_token()}
+    r = ctbc_api.send(path, body, token)
     if r.get("ResultCode") != 0:
         raise RuntimeError(f"{path}: {r.get('ResultMsg')}")
     return r["Data"]

@@ -94,6 +94,7 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py outdir --market jp --e
 | `etf_pool.py`、`etf_table.py` | 資料池與單檔頁的流程（`--market` 切換市場） |
 | `etf_page.py` | 頁面渲染與各市場的頁面設定（`PROFILES`） |
 | `nav_composition.py` | 中信投信 `product/GetNAV` 每日淨值組成：token 重取、重試換網域、欄位加總檢查、除息偵測與官方配息對照、CSV；ETF 代號經 `etf/ETFList` 解析，涵蓋中信投信全部 ETF；港股 00882 頁的「收益平準金」分頁用它（`etf_page.render(pool=…)`，分頁內容在 `references/pool_section.html`） |
+| `ctbc_api.py` | 中信投信 API 共用請求層：每次送出前節流（連續請求至少間隔 3 秒）、同一程序同一網域只取一次 token、被網站防護攔截（HTTP 403）時拋出 `CtbcBlocked` 且不重試；`nav_composition.py`、`etf_hk.py`，以及 hk-market-data 的 `constituents_table.py`、`hkdata.py` 都經由它送出請求 |
 | `etf_fx.py` | 外幣對新台幣匯率（港、美、日） |
 | `etf_sheets_sync.py`、`etf_sheets_io.py` | 寫入各市場的外圍試算表與本機 CSV |
 | `etf_lookthrough.py`、`etf_model_scaffolder.py` | 穿透曝險分析、一鍵生成標的建模卡片 |
