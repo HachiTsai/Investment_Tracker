@@ -48,6 +48,20 @@ def get_credentials():
     return creds
 
 
+def _raise_for_status(resp: Any) -> None:
+    """同 raise_for_status，失敗時把 Google 回的錯誤 status 與 message 附在訊息後（不含金鑰），日誌才看得出權限、停用或額度。"""
+    try:
+        resp.raise_for_status()
+    except requests.HTTPError as e:
+        detail = ""
+        try:
+            err = resp.json().get("error", {})
+            detail = f"{err.get('status', '')} {err.get('message', '')}".strip()
+        except Exception:  # noqa: BLE001
+            pass
+        raise requests.HTTPError(f"{e} [{detail}]" if detail else str(e), response=getattr(e, "response", None)) from e
+
+
 class GoogleSheetsClient:
     """輕量 Google Sheets v4 REST API 客戶端。"""
 
@@ -72,7 +86,7 @@ class GoogleSheetsClient:
         """讀取指定範圍之二維陣列值。"""
         url = f"{SHEETS_API_BASE}/{sheet_id}/values/{range_name}"
         resp = requests.get(url, headers=self.headers, timeout=30)
-        resp.raise_for_status()
+        _raise_for_status(resp)
         return resp.json().get("values", [])
 
     def update_values(
@@ -86,7 +100,7 @@ class GoogleSheetsClient:
         etf_market.guard_sheet_id(sheet_id)
         url = f"{SHEETS_API_BASE}/{sheet_id}/values/{range_name}?valueInputOption={value_input_option}"
         resp = requests.put(url, headers=self.headers, json={"values": values}, timeout=60)
-        resp.raise_for_status()
+        _raise_for_status(resp)
         return resp.json()
 
     def batch_update_values(
@@ -103,7 +117,7 @@ class GoogleSheetsClient:
             "data": data,
         }
         resp = requests.post(url, headers=self.headers, json=body, timeout=120)
-        resp.raise_for_status()
+        _raise_for_status(resp)
         return resp.json()
 
     def clear_values(self, sheet_id: str, range_name: str) -> Dict[str, Any]:
@@ -111,14 +125,14 @@ class GoogleSheetsClient:
         etf_market.guard_sheet_id(sheet_id)
         url = f"{SHEETS_API_BASE}/{sheet_id}/values/{range_name}:clear"
         resp = requests.post(url, headers=self.headers, json={}, timeout=30)
-        resp.raise_for_status()
+        _raise_for_status(resp)
         return resp.json()
 
     def get_spreadsheet(self, sheet_id: str) -> Dict[str, Any]:
         """讀取試算表整體元資料（包含各分頁名稱與 sheetId）。"""
         url = f"{SHEETS_API_BASE}/{sheet_id}?fields=sheets.properties"
         resp = requests.get(url, headers=self.headers, timeout=30)
-        resp.raise_for_status()
+        _raise_for_status(resp)
         return resp.json()
 
     def batch_update(self, sheet_id: str, requests_list: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -126,7 +140,7 @@ class GoogleSheetsClient:
         etf_market.guard_sheet_id(sheet_id)
         url = f"{SHEETS_API_BASE}/{sheet_id}:batchUpdate"
         resp = requests.post(url, headers=self.headers, json={"requests": requests_list}, timeout=60)
-        resp.raise_for_status()
+        _raise_for_status(resp)
         return resp.json()
 
     def clear_hyperlinks(
