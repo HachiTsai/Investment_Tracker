@@ -22,6 +22,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_RANGE = "Untitled!A1:X"
+MARKET_UNIVERSE_MAX = 100  # 全市場 ETF 納入波段觀察的檔數上限，與 Stock_AIStudio 雷達矩陣快照同一份清單
+# 報價來源查不到資料的代號（疑似已下市或槓桿／期貨型），與 Stock_AIStudio scripts/fetch-etf-data.ts 的 EXCLUDED_IDS 同步
+MARKET_EXCLUDED = {"0054", "0058", "0059", "0060", "00649", "00658L", "00659R", "00667"}
+_TW_CODE = re.compile(r"^\d{4,6}[A-Z]?$")
 ALERT_TAB = "告警紀錄"
 ALERT_HEADER = ["偵測時間", "代號", "名稱", "上次組合", "這次組合", "狀態", "收盤", "2xATR停損價"]
 
@@ -32,6 +36,31 @@ except ImportError:
     from google_sheets import GoogleSheetsClient
 
 import etf_market  # noqa: E402  google_sheets 已把 tw-etf-fetcher/scripts 放進路徑
+
+
+def market_universe(summary_rows: List[List[Any]], limit: int = MARKET_UNIVERSE_MAX) -> List[Dict[str, str]]:
+    """全市場 ETF 清單：ETF_Summary 的 A 欄代號、B 欄名稱，只留台股 ETF 代號並排除查不到資料者，取前 limit 檔（純函式）。"""
+    out: List[Dict[str, str]] = []
+    seen = set()
+    for row in summary_rows:
+        code = str(row[0]).strip().upper() if row else ""
+        if not _TW_CODE.match(code) or code in MARKET_EXCLUDED or code in seen:
+            continue
+        seen.add(code)
+        out.append({"ticker": f"TPE:{code}", "name": str(row[1]).strip() if len(row) > 1 else ""})
+        if len(out) >= limit:
+            break
+    return out
+
+
+def load_market_universe(client: Any) -> List[Dict[str, str]]:
+    """讀全市場 ETF 成分股資料庫的 ETF_Summary（只讀）；讀不到就回空清單，只掃口袋名單。"""
+    try:
+        rows = client.get_values(etf_market.drive_id("MARKET_ETF_SHEET_ID"), "ETF_Summary!A2:B")
+    except Exception as e:  # noqa: BLE001
+        print(f"   ⚠️ 讀不到全市場 ETF 清單，本次只掃口袋名單：{e}")
+        return []
+    return market_universe(rows)
 
 
 def extract_prev_from_sheet(sheet_values: List[List[Any]]) -> List[Dict[str, Any]]:
@@ -247,6 +276,11 @@ def run_swing_pipeline(
     scan_out_path = Path("/tmp/scan.json")
     swing_script = REPO_ROOT / ".claude/skills/price-dividend-fetcher/scripts/swing.py"
 
+    universe = load_market_universe(client)
+    extra_path = Path("/tmp/extra_tickers.json")
+    extra_path.write_text(json.dumps(universe, ensure_ascii=False), encoding="utf-8")
+    print(f"   🌐 全市場 ETF 納入 {len(universe)} 檔")
+
     cmd = [
         sys.executable,
         str(swing_script),
@@ -254,6 +288,8 @@ def run_swing_pipeline(
         "00882:15",
         "--tier",
         "all",
+        "--extra-tickers",
+        str(extra_path),
         "--prev",
         str(prev_json_path),
         "--sheet",

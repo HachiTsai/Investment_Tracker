@@ -117,3 +117,22 @@ def test_force_bypasses_interlock_and_overwrites_ingested_rows(monkeypatch):
     first_write = client.update_values.call_args_list[0][0]
     assert first_write[1] == "Untitled!A1:X2"
     assert first_write[2][1][4] == "新狀態"  # 強制補跑：整列以本次結果覆寫
+
+
+def test_market_universe_filters_and_limits():
+    from swing_sync import market_universe
+
+    rows = [["0050", "元大台灣50"], ["0054", "已下市"], ["00667", "排除"], ["TPE:0056", "帶前綴"], ["00679B", "債券"], ["0050", "重複"], [], ["00878", "高股息"]]
+    out = market_universe(rows)
+    assert [o["ticker"] for o in out] == ["TPE:0050", "TPE:00679B", "TPE:00878"]
+    assert len(market_universe(rows, limit=2)) == 2
+
+
+def test_watchlist_extra_dedups_cards():
+    import swing as sw
+
+    base = sw.watchlist(None, filter_tier="all")
+    first = base[0]["ticker"]
+    items = sw.watchlist(None, filter_tier="all", extra=[{"ticker": first, "name": "重複"}, {"ticker": "TPE:99999", "name": "新"}])
+    assert sum(1 for i in items if i["ticker"] == first) == 1
+    assert items[-1] == {"ticker": "TPE:99999", "name": "新", "source": "全市場 ETF"}

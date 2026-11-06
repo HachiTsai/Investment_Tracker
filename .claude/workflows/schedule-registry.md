@@ -12,7 +12,7 @@
 
 | ID | 流程 | 平台 | 觸發（台北） | 規格（SSOT） | 產出 | 健康檢查 |
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
-| S1 | 波段觀察 Sheet 同步（L1） | GitHub Actions `swing-patrol.yml`，cron `0 9 * * 1-5` | 平日 17:00 | `swing-patrol-sheets.md` | 波段觀察 Sheet A:X，心跳 Z1:AA2 | 每日，容許 96 小時 |
+| S1 | 波段觀察 Sheet 同步（L1） | GitHub Actions `swing-patrol.yml`，cron `0 9 * * 1-5` | 平日 17:00 | `swing-patrol-sheets.md` | 波段觀察 Sheet A:X（口袋名單加全市場 ETF 前 100 檔），心跳 Z1:AA2 | 每日，容許 96 小時 |
 | S2 | 全市場 ETF 池（台股）Sheet 同步（L2） | GitHub Actions `market-etf.yml`，cron `10 9 * * 5` | 週五 17:10 | `market-etf-pool.md` | 全市場_ETF成分股資料庫 Sheet | 每日，容許 192 小時 |
 | C1 | 每日投資組合巡檢（L6） | Claude 雲端排程 | 每日 08:50 | `daily-portfolio-patrol.md` | Artifact `WLXXvrX7BzLemm9TxqZ6di`，ArtifactData `trap_state` | 無，靠排程串回報 |
 | C2 | 00882 成分股股利表（L7） | Claude 雲端排程 | 週五 16:30 | `hk-00882-dividend.md` | Artifact `DSbfrxfywurJVo3TVwSzia`，Sheet `00882_成分股股利資料庫` | 無，靠排程串回報 |
@@ -38,6 +38,8 @@
 - C1 至 C4 的執行紀錄不在 GitHub，無法從 repo 驗證；2026-11-01 用雲端排程清單核對過觸發時間與開關（見異動紀錄），最近一次執行狀態：C1（11/1）、C2（10/30）、C4（10/30）成功，C3 尚未執行過（首次 2026-11-23）。「成功」只代表排程跑完，不代表產出內容已核對。
 
 ## 4. 異動紀錄
+
+- 2026-11-06：S1 掃描範圍加入全市場 ETF（前 100 檔台股 ETF，與雷達矩陣同一份清單），工作逾時由 15 分鐘放寬為 30 分鐘；C1 巡檢不再寫波段觀察 Sheet（先前同日加入的步驟 5 撤回）。Hachi 同意（討論串 2026-11-06「1 同意」）。
 
 - 2026-11-01：依雲端排程實際設定校正 C1 至 C4 觸發時間（C1 每日 08:50、C2 週五 16:30、C3 每月 23 日 09:30、C4 平日 09:30）；C3 確認已建立。Hachi 同意（討論串 2026-11-01「同意，開PR做」）。
 - 2026-10-30：新增 C4（Our_Investment 快照版）。
