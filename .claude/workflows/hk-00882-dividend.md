@@ -32,12 +32,13 @@
 
 ```mermaid
 flowchart TD
-    A["1. git pull & 讀取舊版 Artifact 存為 prev.html"] --> B["2. 執行 constituents_table.py"]
-    B --> C{"3. 檢查輸出 JSON (Gate)"}
+    A["前置：git pull & 讀取舊版 Artifact 存為 prev.html"] --> B["步驟 1：執行 constituents_table.py"]
+    B --> C{"步驟 2：檢查輸出 JSON (Gate)"}
     C -->|異常| D["終止！不發佈、不寫 Sheet，回報原因"]
-    C -->|正常| E["4. 發佈 Artifact (out.html)"]
-    E --> F["5. sheet_contract build 產生寫入內容，MCP update_values 寫入"]
-    F --> G["6. get_values 讀回，sheet_contract verify 逐格校驗並簡短回報"]
+    C -->|正常| E["步驟 3：sheet_contract build（gate、DRIVE_IDS、Core 拒絕）"]
+    E -->|失敗| D
+    E -->|通過| F["步驟 4：發佈 Artifact (out.html)"]
+    F --> G["步驟 5：update_values 寫入，get_values 讀回，sheet_contract verify 逐格校驗並簡短回報"]
 ```
 
 ### 步驟 1：執行成分股運算核心指令
@@ -61,16 +62,25 @@ python3 .claude/skills/hk-market-data/scripts/constituents_table.py out.html pre
 - `pool_rows`：必須大於 0（收益平準金每日資料；腳本 `--gate` 在缺資料或資料落後超過 10 天時已先失敗，此欄供回報核對）。
 - 上一版頁面（`prev.html`）：必須可讀並含資料列，供沿用 `p25` 與 `cmp` 兩欄；讀不到時 `--gate` 會擋下。個別成分股在上一版沒有資料（例如新納入的檔）會留白，並在執行輸出中列出代號，不擋下。
 
-🚨 **異常處置**：若 `fails` 超過 5 檔、`fin_fails` 超過 5 檔、上一版頁面讀不到，或連不上目標網域，**立即停止，不發佈 Artifact 也不寫入 Sheet**，回報具體原因。
+🚨 **異常處置**：若 `fails` 超過 5 檔、`fin_fails` 超過 5 檔、上一版頁面讀不到，或連不上目標網域，**立即停止，不發佈 Artifact 也不寫入 Sheet**，回報具體原因。步驟 3 的 build 失敗（例如 `DRIVE_IDS` 缺少 `DIV_00882_SHEET_ID`、目標是 Core）同樣停止，不發佈、不寫入。
 
 *說明：`fails` 代表缺股價或歷次分配的成分股，這些檔會留在網頁財報分頁，但不會寫進 Sheet；殖利率分子是已除息之最近兩次定期分配（季度分配取 4 次，年度分配取 1 次，不含特別分配）。*
 
-### 步驟 3：Artifact 發布（Claude 雲端專屬）
+### 步驟 3：寫入內容前置檢查（build，先於發布）
 
+先產生寫入內容，把可能失敗的前置檢查放在對外發布之前。若先發布 Artifact、後寫入 Sheet 才失敗，兩邊會不一致，這是本流程要避免的情況。
+
+- **指令**：`python3 .claude/skills/hk-market-data/scripts/sheet_contract.py build table.json payload.json`
+- 腳本會檢查 `table.json` 的 `gate`（與步驟 2 同一套門檻）、`DRIVE_IDS` 是否含 `DIV_00882_SHEET_ID`，以及 Core 拒絕。任一項不通過就不產生 payload，回報原因後停止，**不發佈 Artifact、不寫入 Sheet**。
+- 通過後 `payload.json` 原樣保留，步驟 5 直接使用，不重新產生。
+
+### 步驟 4：Artifact 發布（Claude 雲端專屬）
+
+- **前提**：步驟 3 的 build 已通過。
 - **目標 URL**：`https://claude.ai/artifact/DSbfrxfywurJVo3TVwSzia`（原地更新發布 `out.html`）。
 - **頁面結構**：包含「財報資料」「股利明細」與「收益平準金」三個分頁。「收益平準金」分頁資料來自中信投信 `product/GetNAV`（`tw-etf-fetcher/scripts/nav_composition.py`），顯示每日收益平準金、資本平準金與歷次配息；收益平準金與資本平準金是淨值組成項目，非配息預測。
 
-### 步驟 4：寫入 Google Drive 試算表
+### 步驟 5：寫入 Google Drive 試算表
 
 依據 `architecture/APP讀取清單-Stock_AIStudio.md` 之資料庫註冊表規範：
 
@@ -82,12 +92,10 @@ python3 .claude/skills/hk-market-data/scripts/constituents_table.py out.html pre
 
 寫入內容由腳本產生，雲端用 MCP 寫入，寫完由腳本逐格校驗。`sheet_contract.py` 是寫入規則的單一來源，不手改 payload。
 
-1. **產生寫入內容**：`python3 .claude/skills/hk-market-data/scripts/sheet_contract.py build table.json payload.json`
-   - 腳本會再檢查 `table.json` 的 `gate`（與步驟 2 同一套門檻）與 Core 拒絕；未通過就不產生 payload，回報原因後停止。
-   - `payload.json` 的 `writes` 有兩筆：`成分股!A1:J100` 與 `摘要!A1:C13`。
+1. **寫入內容**：沿用步驟 3 產生的 `payload.json`，不重新產生、不手改（`writes` 有兩筆：`成分股!A1:J100` 與 `摘要!A1:C13`）。
 2. **寫入**：依 `payload.json` 的兩筆，各呼叫一次 `update_values`（`spreadsheetId`、`range`、`values` 照抄，不帶 `valueInputOption`）。
 3. **讀回**：對同兩個範圍各呼叫一次 `get_values`，把兩次的輸出依序存成 `readback.json`（JSON 陣列，每個元素是一次 get_values 的輸出 `{"range", "values"}`）。
-4. **校驗**：`python3 .claude/skills/hk-market-data/scripts/sheet_contract.py verify payload.json readback.json`，退出碼 0 才算完成。不為 0 時重做步驟 2 至 4 一次；仍不符就回報不一致的格子，不再重試，也不刪列或手動補值。
+4. **校驗**：`python3 .claude/skills/hk-market-data/scripts/sheet_contract.py verify payload.json readback.json`，退出碼 0 才算完成。不為 0 時重做第 2 至 4 項一次；仍不符就回報不一致的格子，不再重試，也不刪列或手動補值。
 
 *限制：`readback.json` 由 session 把 get_values 的輸出存檔，`verify` 確認的是檔案與寫入內容一致；寫入者與時間可在試算表的「版本記錄」核對。*
 
