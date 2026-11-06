@@ -77,6 +77,12 @@ MINI = '''<title>Our_Investment 交易簿</title>
   $('entry').addEventListener('input', onFormEdit);
   $('refresh').addEventListener('click', () => { load(); });
   $('chips').addEventListener('click', () => {});
+  document.querySelectorAll('#xfer-seg button').forEach((b) => b.addEventListener('click', () => {
+    state.xfer = b.dataset.xfer;
+    document.querySelectorAll('#xfer-seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    clearConfirm();
+    renderPreview();
+  }));
   document.querySelectorAll('#source-seg button').forEach((b) => b.addEventListener('click', () => {
     state.source = b.dataset.source;
   }));
@@ -119,6 +125,13 @@ def test_source_toggle_handler_removed():
     assert "'#source-seg button'" in MINI
     out = bs.build(MINI, DATA, 'x')
     assert '#source-seg button' not in out
+
+
+def test_transfer_direction_listener_removed():
+    assert "'#xfer-seg button'" in MINI and 'state.xfer = b.dataset.xfer' in MINI
+    out = bs.build(MINI, DATA, 'x')
+    assert '#xfer-seg' not in out and 'state.xfer' not in out
+    assert "$('chips').addEventListener" in out  # 其他監聽器不受影響
 
 
 def test_missing_marker_fails_instead_of_partial_output():

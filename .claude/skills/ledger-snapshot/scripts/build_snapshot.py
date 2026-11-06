@@ -114,6 +114,8 @@ def build(source, data, stamp):
         r"remove-select|remove-confirm-yes|remove-confirm-no|refresh)'\)\.addEventListener[^\n]*\n",
         r"  \$\('date'\)\.value = todayISO\(\);\n  setType\('Buy'\);\n",
         r"  document\.querySelectorAll\('#source-seg button'\)\.forEach\(.*?\n  \}\)\);\n",
+        # 調撥方向按鈕（記帳表單的一部分）：快照沒有這個元件，監聽器也要拿掉。
+        r"  document\.querySelectorAll\('#xfer-seg button'\)\.forEach\(.*?\n  \}\)\);\n",
     ):
         s = _sub_re(s, pattern, '', re.S)
     # 事後檢查：不可殘留寫入、連接器或 Core
