@@ -13,10 +13,10 @@ flowchart TD
     GHA["GitHub Actions 定期排程"] -->|每週爬取 TWSE + MoneyDJ| Sheet
 
     subgraph GDrive ["Google Drive 雲端資料湖 [Google Drive SSOT Lakehouse]"]
-        Pool["全市場資料池 (Pool, 281 檔)"]
+        Pool["全市場資料池 (Pool，台股全市場 ETF)"]
         Sheet["全市場_ETF成份股資料庫 (Google Sheet)"]
-        Const["ETF_Constituents 頁籤 (全市場 15,000+ 筆持股)"]
-        Summ["ETF_Summary 頁籤 (281 檔基本面/評分)"]
+        Const["ETF_Constituents 頁籤 (全市場穿透持股)"]
+        Summ["ETF_Summary 頁籤 (各 ETF 基本面/評分)"]
 
         Pool --> Sheet
         Sheet --> Const
@@ -27,7 +27,7 @@ flowchart TD
     Promo -.-> Core
 
     subgraph GitRepo ["Git 倉庫 [Git Repo: Investment_Tracker]"]
-        Core["核心團隊 (Core Team, 44 檔)"]
+        Core["核心團隊 (Core Team，models/ 卡片)"]
         Models["models/ 實體卡片庫"]
         Patrol["每日巡檢引擎 (patrol.py)"]
         Loop["DCS 迴路控制 (50萬股利)"]
@@ -44,7 +44,7 @@ flowchart TD
 
 ## 1. 觸發時機與排程
 
-- **排程頻率**：每週五 17:10（台北時間）。
+- **排程頻率**：每週五 17:37（台北時間；GitHub 實際觸發可能延遲數小時，見 `schedule-registry.md` 第 3 節）。
 - **觸發平台**：GitHub Actions 自動排程（亦支援 Claude 雲端排程或 Antigravity 本機手動執行）。
 - **自動排程工作流**：`.github/workflows/market-etf.yml`
 - **雲端排程 Prompt（單行呼叫，備用）**：
@@ -110,7 +110,7 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --expor
    - `etf_id` 強制加 `'` 前綴存成文字。
 2. **分頁「ETF_Constituents」**：
    - 欄位以 CSV 表頭為準。
-   - 由於資料量達 5,000 列以上，**採分批寫入（每批不超過 1,500 列）**。
+   - 由於資料量達 10,000 列以上（步驟 2 門檻），**採分批寫入（每批不超過 1,500 列）**。
    - `constituent_ticker` 與代號欄強制加 `'` 前綴存成文字。
 
 #### 元資料存放規範（最後同步時間 R1:S2 與 I1:J2）
@@ -143,7 +143,7 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --expor
 
 ## 5. 雙 Agent 協同分工與代班邊界
 
-- **日常運作**：本任務為「純 Sheet 任務」，日常優先由 **GitHub Actions 自動排程**（`.github/workflows/market-etf.yml`）週五 17:10 自動執行並透過 Google Sheets API 回寫試算表，免除 Claude 雲端 10 分鐘沙盒逾時風險並節省 Token；亦支援 Claude 雲端排程單行呼叫。
+- **日常運作**：本任務為「純 Sheet 任務」，日常優先由 **GitHub Actions 自動排程**（`.github/workflows/market-etf.yml`）週五 17:37 自動執行並透過 Google Sheets API 回寫試算表，免除 Claude 雲端 10 分鐘沙盒逾時風險並節省 Token；亦支援 Claude 雲端排程單行呼叫。
 - **本機代班邊界**：本任務無關聯之 Artifact。若遇需手動補跑，可透過 GitHub Actions 一鍵重跑或由 **Antigravity 本機直接執行 `etf_fetcher.py sync-sheets --gate`** 進行同步。
 - **外幣市場（港股、美股、日股）**：不加排程，需要時在 GitHub Actions 的 Market ETF Sheets Sync 手動執行（workflow_dispatch）：`market` 選 `hk`、`us` 或 `jp`，`etfs` 填 ETF 代號（港股預設 00882；美股、日股需指定）。流程為 `etf_pool.py` 產出 pool.json（`--gate`），再由 `etf_sheets_sync.py --market` 寫入該市場的 Sheet；寫入前過 Core 拒絕與國別後綴掃描，缺 `GCP_SA_KEY` 或 gate 不過就不寫入。
 - **持股來源（2026-10-27）**：美股、日股的持股先到全市場表的 `ETF_Constituents` 找（`etf_drive.py`，只讀），表內沒有才用 Yahoo 前幾大；pool 步驟因此需要 `GCP_SA_KEY` 讀表，沒有時退回 models 卡片備援。

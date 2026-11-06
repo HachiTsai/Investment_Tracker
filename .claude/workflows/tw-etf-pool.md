@@ -30,12 +30,12 @@
 
 ```mermaid
 flowchart TD
-    A["1. git pull origin main"] --> B["2. 執行 etf_pool.py out"]
-    B --> C{"3. 檢查輸出 JSON (Gate)"}
+    A["前置：git pull origin main"] --> B["步驟 1：執行 etf_pool.py out"]
+    B --> C{"步驟 2：檢查輸出 JSON (Gate)"}
     C -->|異常| D["終止！不發佈、不寫 Sheet，回報原因"]
-    C -->|正常| E["4. 發佈 Artifact (多頁 HTML)"]
-    E --> F["5. 寫入 Drive Sheet (台股ETF成分股資料庫)"]
-    F --> G["6. get_values 讀回驗證並簡短回報"]
+    C -->|正常| E["步驟 3：發佈 Artifact (多頁 HTML)"]
+    E --> F["步驟 4：寫入 Drive Sheet (台股ETF成分股資料庫)"]
+    F --> G["get_values 讀回驗證並簡短回報"]
 ```
 
 ### 步驟 1：執行資料池核心運算

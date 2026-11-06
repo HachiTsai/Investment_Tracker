@@ -2,8 +2,8 @@ name: Swing Patrol Sheets Sync
 
 on:
   schedule:
-    # 每個平日台北 17:00 (UTC 09:00, Mon-Fri)
-    - cron: '0 9 * * 1-5'
+    # 每個平日台北 17:23 (UTC 09:23, Mon-Fri)；避開整點，GitHub 整點排程擁擠、延遲較大
+    - cron: '23 9 * * 1-5'
   workflow_dispatch:
     inputs:
       force:
