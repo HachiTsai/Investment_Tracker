@@ -101,7 +101,7 @@ notes.py check                               # 檢查全部筆記格式
 `export-sheet` 把某標的的筆記（`research/`、`trends/`）拆成固定分頁的 JSON，每格只放一個值，供排程用 Sheets `update_values` 寫入 Drive，取代手工整理。
 
 ```bash
-notes.py export-sheet --ticker 00882 --exclude 00882_舊經濟風向
+notes.py export-sheet --ticker 00882
 ```
 
 - 輸出 `{"head": <commit>, "tabs": {分頁名: [[表頭], [列]...]}}`；分頁為 `來源說明`（B2 固定為 HEAD commit，用來判斷是否需要同步）、`筆記清單`、`歷年配息`、`逐次配息`、`每單位情境`、`成分股中期息`、`摘要論點風險`、`追蹤指標`。

@@ -48,7 +48,7 @@
 
 ## 目前狀態
 
-目前持股見 `portfolio/snapshots/` 最新快照；本檔不重複列數字，避免每次重算都要改。
+目前持股見 Drive 的 Portfolio_00882 與 Portfolio_00406A 文件（個人持股與成本不放 REPO）；本檔不重複列數字，避免每次重算都要改。
 
 ## ⛔ 嚴禁修改 Investment_Tracker_Core
 
@@ -91,7 +91,6 @@ architecture/                財商工程架構：目標、配置、現金流、
 research/                    標的研究與投資論點，檔名 <代號>_<主題>.md
 trends/                      趨勢覺察，檔名 <主題>.md
 journal/                     投資日誌、決策回顧，檔名 <主題>.md
-portfolio/snapshots/         持股快照，檔名 YYYY-MM-DD.md
 portfolio/transactions/      交易紀錄
 scripts/                     共用計算或抓價工具
 .claude/skills/<skill>/      投資管理 skill

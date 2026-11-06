@@ -67,8 +67,14 @@ def inspect_ticker(
     setpoint_sp = float(loop_params.get("setpoint_sp", 500000.0))
     snowball_cfg = first_loop.get("snowball_simulator", {})
 
-    base_shares = float(snowball_cfg.get("base_shares", 300000.0))
-    eval_shares = shares if shares is not None else base_shares
+    # 持股數不存放於 REPO：未帶 --shares 時，僅在卡片明確指定 base_shares 才使用，否則中止
+    base_shares = snowball_cfg.get("base_shares")
+    if shares is not None:
+        eval_shares = shares
+    elif base_shares:
+        eval_shares = float(base_shares)
+    else:
+        raise ValueError(f"{ticker} 缺少持股數：請用 --shares 帶入（持股數不存放於 REPO）")
 
     # 即時行情
     live_data = fetch_ticker_live_data(ticker, cards, repo_root)
