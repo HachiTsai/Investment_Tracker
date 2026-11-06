@@ -22,13 +22,12 @@
 
 ## 2. 雲端 prompt 原文
 
-雲端排程設定中的 prompt 必須與下列逐字一致。S1、S2 的雲端 prompt 是備用，GitHub Actions 失敗時可手動補跑。
+雲端排程設定中的 prompt 必須與下列逐字一致。S2 的雲端 prompt 是備用（S1 的 Claude 排程已於 2026-11-06 由 Hachi 刪除），GitHub Actions 失敗時可手動補跑。
 
 - C1：`git pull --ff-only origin main，讀取並執行 .claude/workflows/daily-portfolio-patrol.md，完成後依規格回報。`
 - C2：`git pull origin main，讀取並執行 .claude/workflows/hk-00882-dividend.md，完成後依規格回報。`
 - C3：`git pull origin main，讀取並執行 .claude/workflows/tw-etf-pool.md，完成後依規格回報。`
 - C4：`git pull --ff-only origin main，讀取並執行 .claude/workflows/ledger-snapshot.md，完成後依規格回報。`
-- S1（備用）：`git pull origin main，讀取並執行 .claude/workflows/swing-patrol-sheets.md，完成後依規格回報。`
 - S2（備用）：`git pull origin main，讀取並執行 .claude/workflows/market-etf-pool.md，完成後依規格回報。`
 
 ## 3. 待驗證（2026-11-06）
