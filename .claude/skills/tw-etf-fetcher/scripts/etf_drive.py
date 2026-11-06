@@ -13,9 +13,16 @@ from typing import Any, Dict, List
 HERE = os.path.dirname(os.path.abspath(__file__))
 SKILLS = os.path.join(HERE, "..", "..")
 sys.path.insert(0, os.path.join(SKILLS, "price-dividend-fetcher", "scripts"))
+sys.path.insert(0, HERE)
 
-# 與 etf_sheets_sync.DEFAULT_SHEET_ID 相同；環境變數 ETF_CONSTITUENTS_SHEET_ID 可覆寫
-POOL_SHEET_ID = os.environ.get("ETF_CONSTITUENTS_SHEET_ID", "1GIhbRyL-h96ACVjlSSW9YUFMiAItg_SP9Wi0o3WwG70")
+import etf_market  # noqa: E402
+
+
+def pool_sheet_id() -> str:
+    """全市場 ETF 成分股資料庫的 ID：環境變數 ETF_CONSTITUENTS_SHEET_ID 優先，否則取 DRIVE_IDS 的 MARKET_ETF_SHEET_ID。"""
+    return os.environ.get("ETF_CONSTITUENTS_SHEET_ID") or etf_market.drive_id("MARKET_ETF_SHEET_ID")
+
+
 # 來源名稱不含「備援」或「models」，coverage 判為 partial，美股與日股採用
 SOURCE = "全市場 ETF 成分股資料庫（Drive）"
 
@@ -25,10 +32,11 @@ class NotInPool(LookupError):
 
 
 @functools.lru_cache(maxsize=None)
-def _tables(sheet_id: str = POOL_SHEET_ID) -> tuple:
+def _tables(sheet_id: str = "") -> tuple:
     """整張表只讀一次，整段程序共用。使用 GCP_SA_KEY（與寫入同一把服務帳號）。"""
     from google_sheets import GoogleSheetsClient  # 延後匯入：只有實際讀表時才需要 requests 與認證
 
+    sheet_id = sheet_id or pool_sheet_id()
     client = GoogleSheetsClient()
     return client.get_values(sheet_id, "ETF_Summary!A:Z"), client.get_values(sheet_id, "ETF_Constituents!A:G")
 

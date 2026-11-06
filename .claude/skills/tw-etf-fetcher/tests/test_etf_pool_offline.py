@@ -74,7 +74,7 @@ def test_core_sheet_is_refused_before_any_network_call(tmp_path, monkeypatch):
         raise AssertionError("寫入 Core 時不得連網")
 
     monkeypatch.setattr("urllib.request.urlopen", no_network)
-    core = next(iter(etf_market.CORE_SHEET_IDS))
+    core = etf_market.drive_id("CORE_SHEET_ID")
     ok, msg = sync_to_google_sheets(core, tmp_path / "summary.csv", tmp_path / "constituents.csv")
     assert ok is False and "Investment_Tracker_Core" in msg
 

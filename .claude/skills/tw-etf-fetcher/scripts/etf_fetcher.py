@@ -36,7 +36,7 @@ from etf_list_scraper import fetch_twse_etf_list, filter_etfs, format_etf_list_a
 from etf_lookthrough import calculate_lookthrough, format_lookthrough_ascii  # noqa: E402
 import etf_market  # noqa: E402
 from etf_model_scaffolder import scaffold_etf_model  # noqa: E402
-from etf_sheets_sync import DEFAULT_SHEET_ID, run_sync_pipeline  # noqa: E402
+from etf_sheets_sync import run_sync_pipeline  # noqa: E402
 
 
 def cmd_list(args) -> int:
@@ -315,7 +315,7 @@ def main(argv=None) -> int:
 
     # sync-sheets
     p_sync = subparsers.add_parser("sync-sheets", help="將全市場 ETF 成分股與摘要同步至 Google Sheets")
-    p_sync.add_argument("--sheet-id", default=DEFAULT_SHEET_ID, help="目標 Google Sheet ID")
+    p_sync.add_argument("--sheet-id", default=None, help="目標 Google Sheet ID（預設取 DRIVE_IDS 的 MARKET_ETF_SHEET_ID）")
     p_sync.add_argument("--models-dir", help="指定 models 目錄（預設 REPO/models）")
     p_sync.add_argument("--output-dir", help="指定 CSV 輸出目錄（預設 REPO/reports）")
     p_sync.add_argument("--export-only", action="store_true", help="僅產出本機 CSV，不上傳雲端")

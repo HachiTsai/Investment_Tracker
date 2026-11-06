@@ -69,7 +69,7 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py out --gate
 依據 `architecture/APP讀取清單-Stock_AIStudio.md` 之資料庫註冊表規範：
 
 - **試算表名稱**：`台股ETF成分股資料庫`
-- **Sheet ID**：`11LXjxIke0u_6-4XbGB4cX3o28It1ool2jBXUtMErIUI`（位於 `All_Market/Taiwan`）
+- **Sheet ID**：`ETF_TW_SHEET_ID`（鍵名，實際 ID 在 `DRIVE_IDS`）（位於 `All_Market/Taiwan`）
 - **資料來源**：`out/pool.json`
 
 #### 分頁寫入契約

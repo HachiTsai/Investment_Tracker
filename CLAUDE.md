@@ -63,8 +63,8 @@
 
 | 來源 | 位置 | 權限 |
 | --- | --- | --- |
-| Investment_Tracker_Core（試算表，**真實資料源**） | Drive ID `1QBEgUi-kTOuLgj2yGHmP-0g_ug-Sl_M21SN0g93b6xI` | **嚴禁修改**（APP 後台資料庫，見上節） |
-| Project_財商工程（資料夾，快照與報告） | Drive ID `1HCnLX7B1szkAEB0XWpji63ifuexEd1pZ` | 可讀；新增檔案前先確認 |
+| Investment_Tracker_Core（試算表，**真實資料源**） | ID 見 `DRIVE_IDS` 的 `CORE_SHEET_ID` | **嚴禁修改**（APP 後台資料庫，見上節） |
+| Project_財商工程（資料夾，快照與報告） | ID 見 `DRIVE_IDS` 的 `PROJECT_FOLDER_ID` | 可讀；新增檔案前先確認 |
 | 股價 | Google Finance | — |
 
 Core 試算表分頁：

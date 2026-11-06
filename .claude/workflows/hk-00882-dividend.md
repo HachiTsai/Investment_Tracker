@@ -75,7 +75,7 @@ python3 .claude/skills/hk-market-data/scripts/constituents_table.py out.html pre
 依據 `architecture/APP讀取清單-Stock_AIStudio.md` 之資料庫註冊表規範：
 
 - **試算表名稱**：`00882_成分股股利資料庫`
-- **Sheet ID**：`1Jq599WzoQUDsooZDhJhyK8uaEMgDiLLCoZthWk2WXtw`（位於 `Project_財商工程/Portfolio_00882/成分股股利資料庫`，公開連結）
+- **Sheet ID**：`DIV_00882_SHEET_ID`（鍵名，實際 ID 在 `DRIVE_IDS`）（位於 `Project_財商工程/Portfolio_00882/成分股股利資料庫`，公開連結）
 - **資料來源**：`table.json`
 
 #### 寫入流程（盤點 F9，Hachi 2026-10-28 選定）

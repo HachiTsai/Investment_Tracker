@@ -22,18 +22,19 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-# 預設 SSOT 試算表 ID（Project_財商工程/All_Market/全市場_ETF成分股資料庫）
-DEFAULT_SHEET_ID = os.environ.get(
-    "ETF_CONSTITUENTS_SHEET_ID",
-    "1GIhbRyL-h96ACVjlSSW9YUFMiAItg_SP9Wi0o3WwG70",
-)
+def default_sheet_id() -> str:
+    """預設 SSOT 試算表 ID（Project_財商工程/All_Market/全市場_ETF成分股資料庫）。
+    環境變數 ETF_CONSTITUENTS_SHEET_ID 優先，否則取 DRIVE_IDS 的 MARKET_ETF_SHEET_ID；兩者都沒有就丟 DriveIdMissing。"""
+    return os.environ.get("ETF_CONSTITUENTS_SHEET_ID") or etf_market.drive_id("MARKET_ETF_SHEET_ID")
 
-# 外幣市場的外圍試算表（2026-10-26 建立，服務帳號為編輯者）；寫入前一律先過 guard_sheet_id
-MARKET_SHEET_IDS = {
-    "HK": "1ND1gcxm-fvkx723V-X72QUuwrJvKobCz_etZpUzWrOI",
-    "US": "1qfMn6hbPD4qFmlCAm0fC2zTfEtm9uVjdZYL4YDUrmY4",
-    "JP": "1XtSRy14KdLMv75g9ShAL6jWpa9XmoUpiSY4Srvuycxc",
-}
+
+# 外幣市場的外圍試算表（2026-10-26 建立，服務帳號為編輯者）；寫入前一律先過 guard_sheet_id。
+# ID 取自 DRIVE_IDS 的 ETF_<市場>_SHEET_ID；沒有的市場不在字典內（寫入時被當成不支援）。
+def market_sheet_ids() -> Dict[str, str]:
+    ids = etf_market.drive_ids()
+    return {m: ids[f"ETF_{m}_SHEET_ID"] for m in ("HK", "US", "JP") if ids.get(f"ETF_{m}_SHEET_ID")}
+
+
 # 外幣市場的兩張表與台股同名同序；ETF_Summary 多兩欄：coverage（持股完整度）與 holdings_asof（持股日期）。
 # last_model_update 在外幣市場是建立日期（模型卡片的日期），持股日期只放 holdings_asof，來源沒有就寫「無」
 FOREIGN_SUMMARY_FIELDS = [
@@ -561,10 +562,11 @@ def run_market_sheets_pipeline(
         return dict(status="error", message=str(e), synced=False)
     payload = json.loads(pool_json.read_text(encoding="utf-8"))
     market = str(payload.get("market", ""))
-    if payload.get("schema_version") != etf_market.SCHEMA_VERSION or market not in MARKET_SHEET_IDS:
+    market_ids = market_sheet_ids()
+    if payload.get("schema_version") != etf_market.SCHEMA_VERSION or market not in market_ids:
         return dict(status="error", message=f"pool.json 不是外幣市場的 schema（market={market!r}），不寫入", synced=False)
-    if sheet_id != MARKET_SHEET_IDS[market]:
-        return dict(status="error", message=f"{market} 只能寫入 {MARKET_SHEET_IDS[market]}，拒絕寫入 {sheet_id}", synced=False)
+    if sheet_id != market_ids[market]:
+        return dict(status="error", message=f"{market} 只能寫入它自己的試算表（DRIVE_IDS 的 ETF_{market}_SHEET_ID），拒絕寫入其他目標", synced=False)
 
     summary_rows, constituent_rows = market_tables(payload, models_dir)
     if not summary_rows or not constituent_rows:
@@ -610,7 +612,7 @@ def main(argv=None) -> int:
         res = run_market_sheets_pipeline(
             pool_json=Path(args.pool_json),
             output_dir=Path(args.output_dir),
-            sheet_id=args.sheet_id or MARKET_SHEET_IDS[args.market],
+            sheet_id=args.sheet_id or market_sheet_ids().get(args.market, ""),
             models_dir=Path(args.models_dir),
             dry_run=args.dry_run or args.export_only,
         )
@@ -627,7 +629,7 @@ def main(argv=None) -> int:
     res = run_sync_pipeline(
         models_dir=Path(args.models_dir),
         output_dir=Path(args.output_dir),
-        sheet_id=args.sheet_id or DEFAULT_SHEET_ID,
+        sheet_id=args.sheet_id or default_sheet_id(),
         export_only=args.export_only,
         dry_run=args.dry_run,
     )

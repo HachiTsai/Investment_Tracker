@@ -241,7 +241,7 @@ def test_format_columns_as_text():
 
 
 def test_core_sheet_is_refused_by_every_write_method():
-    core = "1QBEgUi-kTOuLgj2yGHmP-0g_ug-Sl_M21SN0g93b6xI"
+    core = "TEST_CORE_SHEET_ID"
     client = GoogleSheetsClient(token="fake-token")
     writes = [
         lambda: client.update_values(core, "Sheet1!A1", [["a"]]),

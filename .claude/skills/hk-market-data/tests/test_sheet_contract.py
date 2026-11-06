@@ -7,7 +7,7 @@ SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 import sheet_contract as sc  # noqa: E402
 
-CORE_ID = "1QBEgUi-kTOuLgj2yGHmP-0g_ug-Sl_M21SN0g93b6xI"
+CORE_ID = "TEST_CORE_SHEET_ID"
 
 
 def _row(code, px=8.3, w=3.65, q=30698000):
@@ -48,7 +48,7 @@ def _as_readback(payload):
 def test_payload_layout_matches_contract():
     payload = sc.build_payload(_table())
     con, summary = payload["writes"]
-    assert payload["spreadsheetId"] == sc.SHEET_ID
+    assert payload["spreadsheetId"] == "TEST_DIV_00882_SHEET_ID"
     assert con["range"] == "成分股!A1:J100" and len(con["values"]) == 100
     assert all(len(row) == 10 for row in con["values"])
     assert con["values"][0] == sc.HEADER_CONSTITUENTS
@@ -87,7 +87,7 @@ def test_build_refuses_table_without_gate(tmp_path):
 
 
 def test_build_refuses_core_sheet(tmp_path, monkeypatch):
-    monkeypatch.setattr(sc, "SHEET_ID", CORE_ID)
+    monkeypatch.setenv("DRIVE_IDS", '{"CORE_SHEET_ID": "%s", "DIV_00882_SHEET_ID": "%s"}' % (CORE_ID, CORE_ID))
     out = tmp_path / "payload.json"
     table = _write(tmp_path / "table.json", _table())
     assert sc.main(["build", table, str(out)]) == 1

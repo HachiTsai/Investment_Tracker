@@ -23,7 +23,7 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 4. **排程對齊**：所有寫入 Sheet 之定時任務，必須在 `.claude/workflows/*.md` 具備標準工作流規格。
 5. **不刪列防呆原則**：新資料列數少於舊資料時，把多出的舊列清成空字串，嚴禁直接刪列。
 6. **文字型別強制鎖定**：代號（`ticker`, `code`, `etf_id`）與日期值強制加 `'` 前綴存成純文字，防 Google Sheets 自動轉型造成 APP 解析破版。
-7. **波段觀察 A:X 欄位鐵律**：`波段觀察`（`1pyGzkgas...`）之 A 到 X 共 24 欄欄序由前端 APP 寫死讀取，**絕對禁止在 A 到 X 範圍增刪或調整欄位**；元數據（`lastUpdated`、`executor`）必須放置於獨立分頁或 A:X 以外儲存格。
+7. **波段觀察 A:X 欄位鐵律**：`波段觀察`（`SWING_SHEET_ID`）之 A 到 X 共 24 欄欄序由前端 APP 寫死讀取，**絕對禁止在 A 到 X 範圍增刪或調整欄位**；元數據（`lastUpdated`、`executor`）必須放置於獨立分頁或 A:X 以外儲存格。
 8. **互鎖與強制補跑（`--force`）**：定時排程比對資料最新日期，相同則略過以防重複寫入；若遇資料修復需重新入庫，必須支援 `--force` 旗標以穿透互鎖。
 9. **雙 Agent 代班邊界**：
    - 純資料表（全市場 ETF、波段觀察）支援 Antigravity 本機直寫代班。
@@ -33,16 +33,16 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 
 | 來源 | Drive ID | 分頁 | APP 讀取檔 | 寫入者與工作流 | 更新頻率 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 情報資料庫 | `1BF2xvF0cmyODdN0nXR8QHbOTC3ikqswvSwBboY1cGQo` | 第一分頁（訊號）、評分歷史 | `signalsFeedService.ts` | 已停更（風向日報排程 2026-10-26 停用，2026-11-05 Hachi 確認情報頁已下架、Sheet 維持停止） | 已停止 |
-| 00882_成分股股利資料庫 | `1Jq599WzoQUDsooZDhJhyK8uaEMgDiLLCoZthWk2WXtw` | 成分股、摘要 | `constituentsFeedService.ts` | Claude 排程（`.claude/workflows/hk-00882-dividend.md`） | 每週五 16:30 |
-| 全市場 ETF 成分股資料庫 | `1GIhbRyL-h96ACVjlSSW9YUFMiAItg_SP9Wi0o3WwG70` | ETF_Summary、ETF_Constituents | `constituentsFeedService.ts`（失敗退回 `allMarketEtfSnapshot`） | Claude 排程／本機代班（`.claude/workflows/market-etf-pool.md`） | 每週五 17:10 |
-| 持股資料庫 | `1CWLwi1tsQoWaEYm0IOK9aH7NEkENgd71sbz6Y_lpRVI` | 第一分頁 | `portfolioFeedService.ts` | 排程依 Core 唯讀重建 | 依排程 |
-| 交易明細資料庫 | `1yFr6OSW6LKWm5wdoc-QoJFXyUotYEd8_YEl_qR-24ks` | 第一分頁 | `portfolioFeedService.ts` | 排程依 Core 唯讀重建 | 依排程 |
-| 波段觀察 | `1pyGzkgaspYMYdXOPYerkLsxOMwNwa2yOKuNDrOrrhtQ` | Untitled（A 到 X 共 24 欄）；告警紀錄（APP 不讀） | `swingFeedService.ts` | GitHub Actions `swing-patrol.yml`（`swing_sync.py`）；Claude 排程／本機代班（`.claude/workflows/swing-patrol-sheets.md`） | 平日台北 17:00 |
-| 台股ETF成分股資料庫 | `11LXjxIke0u_6-4XbGB4cX3o28It1ool2jBXUtMErIUI` | 個股、ETF持股、摘要 | 目前只供 Artifact 與分析（APP 預備） | Claude 排程（`.claude/workflows/tw-etf-pool.md`） | 每月月初 09:00 |
-| 港股 ETF 成分股資料庫 | `1ND1gcxm-fvkx723V-X72QUuwrJvKobCz_etZpUzWrOI` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（`.claude/workflows/market-etf-pool.md` §5） | 手動 |
-| 美股 ETF 成分股資料庫 | `1qfMn6hbPD4qFmlCAm0fC2zTfEtm9uVjdZYL4YDUrmY4` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（同上） | 手動 |
-| 日股 ETF 成分股資料庫 | `1XtSRy14KdLMv75g9ShAL6jWpa9XmoUpiSY4Srvuycxc` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（同上） | 手動 |
+| 情報資料庫 | `INTEL_SHEET_ID` | 第一分頁（訊號）、評分歷史 | `signalsFeedService.ts` | 已停更（風向日報排程 2026-10-26 停用，2026-11-05 Hachi 確認情報頁已下架、Sheet 維持停止） | 已停止 |
+| 00882_成分股股利資料庫 | `DIV_00882_SHEET_ID` | 成分股、摘要 | `constituentsFeedService.ts` | Claude 排程（`.claude/workflows/hk-00882-dividend.md`） | 每週五 16:30 |
+| 全市場 ETF 成分股資料庫 | `MARKET_ETF_SHEET_ID` | ETF_Summary、ETF_Constituents | `constituentsFeedService.ts`（失敗退回 `allMarketEtfSnapshot`） | Claude 排程／本機代班（`.claude/workflows/market-etf-pool.md`） | 每週五 17:10 |
+| 持股資料庫 | `HOLDINGS_SHEET_ID` | 第一分頁 | `portfolioFeedService.ts` | 排程依 Core 唯讀重建 | 依排程 |
+| 交易明細資料庫 | `TX_DETAIL_SHEET_ID` | 第一分頁 | `portfolioFeedService.ts` | 排程依 Core 唯讀重建 | 依排程 |
+| 波段觀察 | `SWING_SHEET_ID` | Untitled（A 到 X 共 24 欄）；告警紀錄（APP 不讀） | `swingFeedService.ts` | GitHub Actions `swing-patrol.yml`（`swing_sync.py`）；Claude 排程／本機代班（`.claude/workflows/swing-patrol-sheets.md`） | 平日台北 17:00 |
+| 台股ETF成分股資料庫 | `ETF_TW_SHEET_ID` | 個股、ETF持股、摘要 | 目前只供 Artifact 與分析（APP 預備） | Claude 排程（`.claude/workflows/tw-etf-pool.md`） | 每月月初 09:00 |
+| 港股 ETF 成分股資料庫 | `ETF_HK_SHEET_ID` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（`.claude/workflows/market-etf-pool.md` §5） | 手動 |
+| 美股 ETF 成分股資料庫 | `ETF_US_SHEET_ID` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（同上） | 手動 |
+| 日股 ETF 成分股資料庫 | `ETF_JP_SHEET_ID` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（同上） | 手動 |
 
 ## 排程總表（誰、何時、讀什麼、寫到哪）
 
@@ -65,7 +65,7 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 
 ## 試算表欄位 Schema 與寫入防呆契約
 
-### 1. 00882_成分股股利資料庫 (`1Jq599WzoQUDsooZDhJhyK8uaEMgDiLLCoZthWk2WXtw`)
+### 1. 00882_成分股股利資料庫 (`DIV_00882_SHEET_ID`)
 
 - **分頁「成分股」**：
   - 表頭（第 1 列）：`code,name,weightPct,qty,priceHkd,divTtmHkd,divLfyHkd,chgPct,yieldTtmPct,interim2026`
@@ -75,7 +75,7 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
   - key 依序：`asOf,holdingsAsOf,ttmUnitTwd,lfyUnitTwd,has26,fxHkdToTwd,nav,unitsOutstanding,rows,note,lastUpdated,executor`。
   - 防呆：B 欄每個值（含日期與數字）一律加 `'` 前綴。
 
-### 2. 全市場 ETF 成分股資料庫 (`1GIhbRyL-h96ACVjlSSW9YUFMiAItg_SP9Wi0o3WwG70`)
+### 2. 全市場 ETF 成分股資料庫 (`MARKET_ETF_SHEET_ID`)
 
 - **分頁「ETF_Summary」**：
   - 表頭：`etf_id,etf_name,current_price,exchange,category,benchmark,constituent_count,top1_holding,top2_holding,top3_holding,weighted_roe,net_score,div_score,val_score,fric_score,last_model_update`
@@ -90,7 +90,7 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
   - 代號純化（2026-11-01 起）：除 `.TW`、`.US`、`.HK`、`.JP`、`.TF` 外，`.SH`、`.SZ` 後綴也一併去除（市場資訊改由 `constituent_market` 保留），輸出含國別後綴時整批中止、不寫 Sheet。
   - 連結防護：同步後自動清除全表超連結樣式，防範 Google Drive 將代號誤判為惡意/釣魚連結。
 
-### 3. 波段觀察 (`1pyGzkgaspYMYdXOPYerkLsxOMwNwa2yOKuNDrOrrhtQ`)
+### 3. 波段觀察 (`SWING_SHEET_ID`)
 
 - **分頁「Untitled」**：
   - 表頭 A 到 X 固定 24 欄：`代號,名稱,市場,來源,狀態,收盤,RSI14,20日線,60日線,量比,52週位置%,20日支撐,20日壓力,2xATR停損價,停損距離%,判定依據,更新日,費波那契位置30日,位置幅度%,長期,中期,短期,費波那契3段,三週期組合`。
@@ -102,7 +102,7 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
   - 只記本次有寫入新資料（`fresh`）且三週期組合轉為關鍵組合（`alert`）的標的。
   - 寫入順序：先追加告警，成功後才覆寫 Untitled 的 A 到 X；告警寫入失敗時 A 到 X 不覆寫。
 
-### 4. 台股ETF成分股資料庫 (`11LXjxIke0u_6-4XbGB4cX3o28It1ool2jBXUtMErIUI`)
+### 4. 台股ETF成分股資料庫 (`ETF_TW_SHEET_ID`)
 
 - **分頁「個股」**：`code,name,industry,priceTwd,divTtmTwd,yieldTtmPct,pe,pb,roePct,payoutPct,fcfCover,debtPct,period`。
 - **分頁「ETF持股」**：`etf,code,weightPct,shares`。

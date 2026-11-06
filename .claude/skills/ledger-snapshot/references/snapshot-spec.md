@@ -6,7 +6,7 @@
 | :--- | :--- |
 | 互動版（來源） | Artifact `TU6Yi51nEe9s783qoDukSs`，用 Google Sheets 連接器讀寫 Our_Investment |
 | 快照版（產物） | Artifact `SBn43iC1bBG2zf2bexgmxZ`，資料內嵌，沒有連接器 |
-| 資料來源 | Our_Investment（試算表 ID `1uIWpKYkHljK6fy-P3ddkmMRqm0hN2X-oI-aCga8Kko0`），不是 Core |
+| 資料來源 | Our_Investment（試算表，ID 見 `DRIVE_IDS` 的 `OUR_INVESTMENT_SHEET_ID`），不是 Core |
 
 ## 2. 資料範圍（data.json）
 
