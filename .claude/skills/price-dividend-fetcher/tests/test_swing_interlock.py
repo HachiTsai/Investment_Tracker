@@ -136,3 +136,16 @@ def test_watchlist_extra_dedups_cards():
     items = sw.watchlist(None, filter_tier="all", extra=[{"ticker": first, "name": "重複"}, {"ticker": "TPE:99999", "name": "新"}])
     assert sum(1 for i in items if i["ticker"] == first) == 1
     assert items[-1] == {"ticker": "TPE:99999", "name": "新", "source": "全市場 ETF"}
+
+
+def test_http_error_includes_google_detail():
+    import pytest
+    import requests
+    from unittest.mock import MagicMock
+    from google_sheets import _raise_for_status
+
+    resp = MagicMock()
+    resp.raise_for_status.side_effect = requests.HTTPError("403 Client Error")
+    resp.json.return_value = {"error": {"status": "PERMISSION_DENIED", "message": "The caller does not have permission"}}
+    with pytest.raises(requests.HTTPError, match="PERMISSION_DENIED The caller does not have permission"):
+        _raise_for_status(resp)
