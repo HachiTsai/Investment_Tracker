@@ -173,3 +173,22 @@ def test_twse_throttle_spaces_requests(monkeypatch):
     monkeypatch.setattr(fc, "_twse_last", [99.0])
     fc._twse_throttle(sleep, clock=lambda: t[0])
     assert slept == [2.0]
+
+
+def test_holding_tail_filled_from_twse_when_yahoo_lags():
+    """Yahoo 個股日線晚一天（00406A 缺 11-06）：以證交所收盤價補在尾端，且不補今天（可能是盤中）。"""
+    start = datetime(2026, 11, 2, 9, tzinfo=TW)
+    twse = json.dumps({"stat": "OK", "data": [
+        ["115/11/05", "1", "1", "1", "1", "1", "7.36", "1", "1"],
+        ["115/11/06", "1", "1", "1", "1", "1", "7.10", "1", "1"],
+        ["115/11/07", "1", "1", "1", "1", "1", "7.20", "1", "1"]]})
+    http = fake_http({"00406A.TW": chart([8.0, 7.9, 7.8, 7.36], start=start), "STOCK_DAY": twse})
+    h = ms.holding_state("00406A", None, {}, http, now=datetime(2026, 11, 7, 9, 12, tzinfo=TW))
+    assert h["date"] == "2026-11-06" and h["close"] == 7.10
+
+
+def test_holding_tail_unchanged_when_twse_fails():
+    start = datetime(2026, 11, 2, 9, tzinfo=TW)
+    http = fake_http({"00406A.TW": chart([8.0, 7.9, 7.8, 7.36], start=start), "STOCK_DAY": RuntimeError("HTTP 307")})
+    h = ms.holding_state("00406A", None, {}, http, now=datetime(2026, 11, 7, 9, 12, tzinfo=TW))
+    assert h["date"] == "2026-11-05" and h["close"] == 7.36

@@ -16,7 +16,7 @@ import urllib.parse
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Dict, List, Optional, Tuple
 
-from fetch_common import YAHOO_UA, http_get, twse_get
+from fetch_common import TWSE_STOCK_DAY_URL, YAHOO_UA, http_get, twse_get
 
 TAIFEX_OI_URL = "https://openapi.taifex.com.tw/v1/MarketDataOfMajorInstitutionalTradersDetailsOfFuturesContractsBytheDate"
 TWSE_INST_URL = "https://www.twse.com.tw/rwd/zh/fund/BFI82U?dayDate={date}&type=day&response=json"
@@ -106,6 +106,36 @@ def fill_index_tail(days: List[str], close: List[float], adj: List[float], extra
     """Yahoo 指數常晚一天：把證交所有、Yahoo 還沒有的最新交易日補在尾端。"""
     tail = sorted(k for k in extra if not days or k > days[-1])
     return days + tail, close + [extra[k] for k in tail], adj + [extra[k] for k in tail]
+
+
+def twse_stock_month(code: str, date: str, http: Getter = http_get) -> Dict[str, float]:
+    """證交所個股日成交資訊：該月每日收盤價，鍵為 YYYY-MM-DD。date 為 YYYYMMDD（取該月）。"""
+    d = json.loads(twse_get(TWSE_STOCK_DAY_URL.format(date=date[:6] + "01", code=code), http_fn=None if http is http_get else http))
+    out: Dict[str, float] = {}
+    if d.get("stat") != "OK":
+        return out
+    for row in d.get("data") or []:
+        y, m, dd = str(row[0]).split("/")
+        v = _num(row[6])
+        if v is not None:
+            out[f"{int(y) + 1911:04d}-{int(m):02d}-{int(dd):02d}"] = v
+    return out
+
+
+def fill_holding_tail(code: str, days: List[str], close: List[float], adj: List[float], now: datetime,
+                      http: Getter = http_get) -> Tuple[List[str], List[float], List[float]]:
+    """Yahoo 個股日線常晚一天（00406A 實測缺 11-06）：把證交所有、Yahoo 還沒有的交易日補在尾端。
+    還原收盤沿用最後一根的 adj/close 比（補的日子在最近一次除息之後）；證交所抓不到就原樣回傳。"""
+    today = now.strftime("%Y-%m-%d")
+    if not days or days[-1] >= today:
+        return days, close, adj
+    months = sorted({days[-1][:7].replace("-", "") + "01", today[:7].replace("-", "") + "01"})
+    extra: Dict[str, float] = {}
+    for m in months:
+        extra.update(_try(twse_stock_month, code, m, http) or {})
+    tail = sorted(k for k in extra if k > days[-1] and k < today)
+    ratio = adj[-1] / close[-1] if close[-1] else 1.0
+    return days + tail, close + [extra[k] for k in tail], adj + [extra[k] * ratio for k in tail]
 
 
 def yahoo_series(sym: str, rng: str = "2y", http: Getter = http_get) -> Tuple[List[str], List[float], List[float], List[Tuple[str, float]]]:
@@ -204,9 +234,11 @@ def capture(etf: Dict[str, float], idx: Dict[str, float]) -> Optional[Dict]:
     }
 
 
-def holding_state(code: str, cost: Optional[float], idx_adj: Dict[str, float], http: Getter = http_get) -> Dict:
+def holding_state(code: str, cost: Optional[float], idx_adj: Dict[str, float], http: Getter = http_get,
+                  now: Optional[datetime] = None) -> Dict:
     """追蹤持股：現價、最近一次配息、對加權的捕獲率；給了成本才加相對成本與只靠配息回本期數（公開頁不給成本）。"""
     days, close, adj, divs = yahoo_series(f"{code}.TW", "1y", http)
+    days, close, adj = fill_holding_tail(code, days, close, adj, now or datetime.now(TW), http)
     last = close[-1]
     last_div = divs[-1][1] if divs else None
     months = None
@@ -285,7 +317,7 @@ def build(track: List[Tuple[str, Optional[float]]], http: Getter = http_get, now
     margin = [margin_d[d] for d in margin_keys]
     fut = _try(taifex_futures_oi, http)
     idx_adj = dict(zip(tw[0], tw[2])) if tw else {}
-    holdings = [h for h in (_try(holding_state, code, cost, idx_adj, http) for code, cost in track) if h]
+    holdings = [h for h in (_try(holding_state, code, cost, idx_adj, http, today) for code, cost in track) if h]
     iso = lambda d: f"{d[:4]}-{d[4:6]}-{d[6:]}" if d else None  # noqa: E731
     dates = {"spot": iso(spot_keys[-1] if spot_keys else None), "fut": iso(fut.get("date") if fut else None),
              "margin": iso(margin_keys[-1] if margin_keys else None), "ma10": idx.get("date") if idx else None,
