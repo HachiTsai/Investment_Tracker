@@ -73,11 +73,12 @@ python3 .claude/skills/portfolio-patrol/scripts/patrol.py --json --prev-state "<
 在 REPO 根目錄執行：
 
 ```bash
-python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --patrol /tmp/patrol.json --daily-html /tmp/daily.html --stress --stress-track 00406A --gate > /tmp/scan.json
+python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --patrol /tmp/patrol.json --daily-html /tmp/daily.html --alerts-from-sheet --stress --stress-track 00406A --gate > /tmp/scan.json
 ```
 
 *現場結合技術面指標、動能斜率與巡檢狀態，渲染出完整互動式單檔 HTML。*
 
+- `--alerts-from-sheet` 讀波段觀察 Sheet「告警紀錄」分頁（公開連結 gviz CSV，唯讀，`DRIVE_IDS` 的 `SWING_SHEET_ID`），把最近一個偵測日的關鍵組合轉換點亮在頁面的「三週期組合變化提醒」；該檔目前組合已變回、或最近一批告警距今超過 4 天就不點亮。讀不到時只在 stderr 說明，不中止發布；執行回報要附上 stderr 的「告警紀錄：點亮 N 檔」或讀取失敗原因，讓 Hachi 看得出有沒有讀到（2026-11-09 Hachi 同意）。
 - `--stress` 加「市場修正追蹤」區塊（`market_stress.py`）：六個趨緩訊號（外資現貨買賣超、外資台指期淨空單、融資餘額、加權 10 日線、10 日波動、費半 5 日）、修正期第幾天對照歷史類比，以及 `--stress-track 代號` 追蹤持股的現價、最近配息與對加權的 β、捕獲率（2026-11-05 Hachi 同意，追蹤 00406A）。
 - **持股隱私**：本 Artifact 是公開連結，排程只給代號、不給成本（`代號:成本` 只在本機或私人報告用），頁面不出現成本與回本試算（依 `portfolio-control-system.md` 公開邊界隱私）。
 - 期交所、證交所或 Yahoo 任一來源抓不到時，該欄顯示 `-`，不以舊值代替，也不中止發布；區塊整體失敗時頁面不顯示該區塊，其餘照常。

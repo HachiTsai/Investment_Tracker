@@ -559,6 +559,68 @@ def merge_patrol(rows: List[Dict], patrol: Dict) -> List[Dict]:
     return rows
 
 
+SHEET_ALERT_TAB = "告警紀錄"  # 與 swing_sync.ALERT_TAB 同名；波段觀察 Sheet 由 GitHub Actions 的 swing_sync.py 寫入
+SHEET_ALERT_MAX_AGE_DAYS = 4  # 最近一批告警距今超過 4 天（含週末與連假）就不再點亮，避免顯示過期提醒
+
+
+def parse_sheet_alerts(csv_text: str, today: str, max_age_days: int = SHEET_ALERT_MAX_AGE_DAYS) -> Dict[str, Dict]:
+    """解析「告警紀錄」分頁 CSV（表頭：偵測時間、代號、名稱、上次組合、這次組合…），取最近一個偵測日的告警。
+
+    回傳 {代號: {"prev_combo":..,"combo":..,"date":..}}；最近偵測日早於 today 超過 max_age_days 天時回傳空字典。
+    """
+    import csv
+    import io
+    rows = list(csv.reader(io.StringIO(csv_text)))
+    if len(rows) < 2:
+        return {}
+    recs = []
+    for r in rows[1:]:
+        if len(r) < 5 or len(r[0]) < 10 or not r[1].strip():
+            continue
+        recs.append((r[0][:10], r[1].strip().lstrip("'"), r[3].strip(), r[4].strip()))
+    if not recs:
+        return {}
+    latest = max(d for d, *_ in recs)
+    try:
+        age = (datetime.strptime(today, "%Y-%m-%d") - datetime.strptime(latest, "%Y-%m-%d")).days
+    except ValueError:
+        return {}
+    if age < 0 or age > max_age_days:
+        return {}
+    return {t: {"prev_combo": pc or None, "combo": c or None, "date": d} for d, t, pc, c in recs if d == latest}
+
+
+def fetch_sheet_alerts(sheet_id: str, timeout: int = 20) -> str:
+    """以公開連結（gviz CSV，免登入、唯讀）讀波段觀察 Sheet 的「告警紀錄」分頁。"""
+    import urllib.parse
+    import urllib.request
+    url = (f"https://docs.google.com/spreadsheets/d/{urllib.parse.quote(sheet_id)}/gviz/tq?tqx=out:csv&sheet="
+           + urllib.parse.quote(SHEET_ALERT_TAB))
+    with urllib.request.urlopen(url, timeout=timeout) as r:
+        return r.read().decode("utf-8")
+
+
+def apply_sheet_alerts(rows: List[Dict], alerts: Dict[str, Dict]) -> List[str]:
+    """把 Sheet 最近一批告警點亮到巡檢列：只在該列目前組合仍等於告警時的組合才標 alert（組合已變回就不再提醒）。回傳點亮的代號。"""
+    lit = []
+    for r in rows:
+        a = alerts.get(r.get("ticker"))
+        if a and not r.get("alert") and a.get("combo") and r.get("combo") == a["combo"]:
+            r["alert"] = True
+            r["prev_combo"] = a.get("prev_combo")
+            lit.append(r["ticker"])
+    return lit
+
+
+def _swing_sheet_id() -> Optional[str]:
+    """從環境變數 DRIVE_IDS 取 SWING_SHEET_ID；缺少時回傳 None（訊息只寫鍵名，不印 ID）。"""
+    import os
+    try:
+        return json.loads(os.environ.get("DRIVE_IDS", "") or "{}").get("SWING_SHEET_ID") or None
+    except (ValueError, AttributeError):
+        return None
+
+
 DAILY_EXCLUDE = {"HKG:1919"}  # 每日巡檢頁不列的標的（Hachi 2026-10-21 指示拿掉中遠海控；卡片與其他流程不受影響）
 
 
@@ -616,6 +678,7 @@ def main(argv=None) -> int:
     p.add_argument("--patrol", metavar="JSON", help="搭配 --scan：patrol.py --json 輸出檔，併入配置狀態、殖利率與數據時效")
     p.add_argument("--daily-html", metavar="OUT", help="搭配 --scan：另存每日投資組合巡檢頁（讀 references/daily_patrol_template.html）")
     p.add_argument("--notice", action="append", default=[], metavar="TEXT", help="搭配 --daily-html：頁面頂端的警示文字，可重複（例如陷阱狀態未寫回）")
+    p.add_argument("--alerts-from-sheet", action="store_true", help="搭配 --daily-html：讀波段觀察 Sheet「告警紀錄」分頁（公開連結唯讀，DRIVE_IDS 的 SWING_SHEET_ID），點亮最近一個偵測日的關鍵組合轉換提醒")
     p.add_argument("--stress", action="store_true", help="搭配 --daily-html：加入市場修正追蹤區塊（market_stress.py：期交所、證交所、指數）")
     p.add_argument("--stress-track", action="append", default=[], metavar="代號[:成本]", help="搭配 --stress：追蹤持股，例如 00406A；加 :成本 才算相對成本與回本（巡檢頁是公開連結，排程不給成本），可重複")
     p.add_argument("--batch", metavar="卡片:前N大", help="多檔彙總回測，例如 00882:15（讀 models/<卡片>/cards/constituents.jsonl）")
@@ -643,6 +706,17 @@ def main(argv=None) -> int:
             print("資料落後（證交所補缺後仍少一天以上）：" + "、".join(lag) + "；該列資料日落後，指標以最後一根日線計算", file=sys.stderr)
         if a.daily_html:
             date = max((r["last_date"] for r in rows if r.get("last_date")), default="")
+            if a.alerts_from_sheet:
+                sid = _swing_sheet_id()
+                if not sid:
+                    print("告警紀錄未讀取：DRIVE_IDS 缺 SWING_SHEET_ID，巡檢頁不顯示關鍵組合轉換提醒", file=sys.stderr)
+                else:
+                    try:
+                        today = market_today("台股")
+                        lit = apply_sheet_alerts(rows, parse_sheet_alerts(fetch_sheet_alerts(sid), today))
+                        print(f"告警紀錄：點亮 {len(lit)} 檔" + (f"（{'、'.join(lit)}）" if lit else ""), file=sys.stderr)
+                    except (OSError, ValueError) as e:
+                        print(f"告警紀錄讀取失敗，巡檢頁不顯示關鍵組合轉換提醒：{str(e)[:120]}", file=sys.stderr)
             stress = None
             if a.stress:
                 import market_stress
