@@ -45,6 +45,16 @@ MINI = '''<title>Our_Investment 交易簿</title>
 </nav>
 <script>
 (() => {
+  // Only the Our_Investment spreadsheet. Investment_Tracker_Core is never referenced here.
+  const SHEET_ID = 'TEST_OUR_INVESTMENT_SHEET_ID';
+  const SERVER = 'Google Sheets';
+  const RANGES = {
+    portfolio: 'Portfolio!A1:S50',
+    portfolioCodes: 'Portfolio!A1:A50',
+    tx: 'Transactions!A1:R200',
+    cash: '資金餘額!A1:B8',
+    journal: 'Stock_Journal!A1:E300',
+  };
   // The connector is optional.
   const mcpReady = window.claude;
   async function callSheet() {}
@@ -170,10 +180,37 @@ def test_tx_header_drift_rejected():
         bs.build(MINI, _with(tx=tx), 'x')
 
 
-def test_core_id_never_in_output():
-    poisoned = MINI + f'\n<!-- {bs.CORE_ID} -->'
+def test_sheet_constants_stripped_ranges_kept():
+    out = bs.build(MINI, DATA, 'x')
+    for gone in ('SHEET_ID', 'TEST_OUR_INVESTMENT_SHEET_ID', 'SERVER', 'Investment_Tracker_Core', 'portfolioCodes'):
+        assert gone not in out
+    assert 'const RANGES = {' in out and "portfolio: 'Portfolio!A1:S50'" in out
+
+
+def test_core_id_never_in_output(monkeypatch):
+    monkeypatch.setattr(bs, 'FORBIDDEN_IDS', ['TEST_CORE_SHEET_ID'])
     with pytest.raises(bs.BuildError):
-        bs.build(poisoned, DATA, 'x')
+        bs.build(MINI + '\n<!-- TEST_CORE_SHEET_ID -->', DATA, 'x')
+
+
+def test_our_investment_id_never_in_output(monkeypatch):
+    monkeypatch.setattr(bs, 'FORBIDDEN_IDS', ['TEST_OUR_INVESTMENT_SHEET_ID'])
+    with pytest.raises(bs.BuildError):
+        bs.build(MINI + '\n<!-- TEST_OUR_INVESTMENT_SHEET_ID -->', DATA, 'x')
+
+
+def test_leftover_connector_token_rejected():
+    with pytest.raises(bs.BuildError, match='SHEET_ID'):
+        bs.build(MINI + '\n<!-- SHEET_ID -->', DATA, 'x')
+
+
+def test_cli_fails_closed_without_drive_ids(tmp_path, monkeypatch):
+    src, data, out = tmp_path / 's.html', tmp_path / 'd.json', tmp_path / 'o.html'
+    src.write_text(MINI, encoding='utf8')
+    data.write_text(json.dumps(DATA, ensure_ascii=False), encoding='utf8')
+    monkeypatch.delenv('DRIVE_IDS', raising=False)
+    assert bs.main(['--source', str(src), '--data', str(data), '--stamp', 't', '--out', str(out)]) == 1
+    assert not out.exists()
 
 
 def test_cli_roundtrip(tmp_path):
