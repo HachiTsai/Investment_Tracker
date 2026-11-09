@@ -65,6 +65,7 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 -
    - **支援手動補跑**：若遇資料異常或需強制重寫，可帶 `--force` 旗標直接穿透互鎖，進行強制整表刷新。
    - 實作（`swing_sync.py` 的 `apply_interlock`）：逐檔比對，本次 `last_date` 不晚於該列 Q 欄（更新日）即略過，不寫入也不告警；Q 欄無法解讀時照常寫入。若全部開市標的都略過、且沒有抓取失敗的列，只更新 Z1:AA2，狀態記為「互鎖略過（資料日已入庫，維持既有數據）」。
    - 手動補跑：`swing-patrol.yml` 的 `workflow_dispatch` 勾選 `force` 即帶 `--force`；自動排程不帶。
+   - 漏跑自動補跑：`ci.yml` 每日的排程健康檢查（`schedule_health.py --dispatch`）發現最近一個 cron 時點過 12 小時仍沒有成功執行，就以 `force=true` 補送一次 `workflow_dispatch`（2026-11-09 Hachi 同意，Issue #232）。
 
 ### 步驟 4：寫入 Google Drive 試算表
 

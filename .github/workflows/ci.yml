@@ -72,14 +72,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      actions: read
+      actions: write   # --dispatch 漏跑時補送 workflow_dispatch（swing-patrol）；Issue #232
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - name: 排程健康檢查（swing-patrol、market-etf 近期有如期成功）
+      - name: 排程健康檢查（swing-patrol、market-etf 近期有如期成功；swing-patrol 漏跑自動補送）
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python3 .claude/skills/fin-commit/scripts/schedule_health.py
+        run: python3 .claude/skills/fin-commit/scripts/schedule_health.py --dispatch
 
   auto-merge:
     name: auto-merge
