@@ -15,7 +15,7 @@ from fundamental_calculator import calculate_stock_fundamentals, has_netscore_in
 
 ETF_CACHE_FILE = Path.home() / ".cache" / "investment_tracker" / "etf_fundamentals.json"
 CACHE_TTL_DAYS = 7
-CACHE_SCHEMA = 2  # 快取格式版本，與 fundamental_calculator 同步遞增（v3）
+CACHE_SCHEMA = 3  # 快取格式版本：v3 起快取鍵納入計算範圍（全持股或前 N 大），舊快取自動失效
 COVERAGE_MIN_PCT = 60.0  # 有 netScore 輸入的權重占比低於此值＝資料不足：不判定、不快取
 
 
@@ -37,6 +37,28 @@ def _save_etf_cache(cache: Dict[str, Any]) -> None:
             json.dump(cache, f, ensure_ascii=False, indent=2)
     except Exception:
         pass
+
+
+def _cache_key(etf_id: str, top_n: Optional[int]) -> str:
+    """快取鍵含計算範圍，避免全持股與前 N 大的結果互相覆蓋。"""
+    return f"{etf_id}:{'all' if not top_n or top_n <= 0 else f'top{top_n}'}"
+
+
+POOL_TOP_N = 10  # 口袋名單（非核心）排程只算前 N 大，控制每日抓取量
+
+
+def scope_top_n(etf_id: str, repo_root: Path) -> Optional[int]:
+    """排程用的計算範圍：核心標的（ticker.yml tier: core）算全部成分股，其餘前 POOL_TOP_N 大。
+
+    巡檢與試算表同步共用，確保 APP（讀試算表）與巡檢頁的同一檔分數一致。
+    """
+    card = Path(repo_root) / "models" / etf_id / "cards" / "ticker.yml"
+    try:
+        lines = card.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return POOL_TOP_N
+    is_core = any(ln.split("#")[0].replace(" ", "") == "tier:core" for ln in lines)
+    return None if is_core else POOL_TOP_N
 
 
 def load_etf_constituents(etf_id: str, repo_root: Path) -> List[Dict[str, Any]]:
@@ -70,20 +92,24 @@ def load_etf_constituents(etf_id: str, repo_root: Path) -> List[Dict[str, Any]]:
 
 def aggregate_etf_fundamentals(
     etf_id: str,
-    top_n: int = 10,
+    top_n: Optional[int] = None,
     repo_root: Optional[Path] = None,
     mock_constituents: Optional[List[Dict[str, Any]]] = None,
     mock_stock_fundamentals: Optional[Dict[str, Dict[str, Any]]] = None,
     use_cache: bool = True,
 ) -> Dict[str, Any]:
-    """計算 ETF 穿透加權基本面評分。"""
+    """計算 ETF 穿透加權基本面評分。
+
+    top_n：None 或 0 以下＝全部成分股（預設）；正整數＝只算前 N 大重倉。
+    use_cache=False：ETF 與個股快取都不讀不寫，強制重算。
+    """
     if repo_root is None:
         repo_root = Path(__file__).resolve().parents[4]
 
     # 檢查快取（債券 ETF 不走快取：本地解析毫秒級，也避免讀到舊版固定預設分）
     if mock_constituents is None and mock_stock_fundamentals is None and use_cache and "B" not in etf_id.upper():
         cache = _load_etf_cache()
-        cached_entry = cache.get(etf_id)
+        cached_entry = cache.get(_cache_key(etf_id, top_n))
         if cached_entry and isinstance(cached_entry, dict) and cached_entry.get("schema") == CACHE_SCHEMA:
             c_date_str = cached_entry.get("cached_at")
             if c_date_str:
@@ -128,8 +154,9 @@ def aggregate_etf_fundamentals(
             "coverage_sufficient": False,
         }
 
-    # 取前 N 大持股
-    selected = constituents[:top_n]
+    # 取計算範圍：全持股或前 N 大（不可直接切 [:0]，否則變空清單）
+    selected = constituents if not top_n or top_n <= 0 else constituents[:top_n]
+    fund_total_weight = sum(float(c.get("weight_pct", 0.0)) for c in constituents)
     total_raw_weight = sum(float(c.get("weight_pct", 0.0)) for c in selected)
     if total_raw_weight <= 0:
         total_raw_weight = 1.0
@@ -197,11 +224,15 @@ def aggregate_etf_fundamentals(
         "holdings_breakdown": holdings_breakdown,
         "coverage_pct": coverage_pct,
         "coverage_sufficient": coverage_pct >= COVERAGE_MIN_PCT,
+        # 以全基金權重為分母：計算範圍占全基金多少、其中有財報輸入的又占多少（coverage_pct 的分母只算計算範圍）
+        "holdings_total_count": len(constituents),
+        "selected_fund_weight_pct": round(total_raw_weight / fund_total_weight * 100.0, 1) if fund_total_weight > 0 else None,
+        "fund_coverage_pct": round(covered_w / fund_total_weight * 100.0, 1) if fund_total_weight > 0 else None,
     }
 
     if mock_constituents is None and mock_stock_fundamentals is None and use_cache and result["coverage_sufficient"]:
         cache = _load_etf_cache()
-        cache[etf_id] = {
+        cache[_cache_key(etf_id, top_n)] = {
             "schema": CACHE_SCHEMA,
             "cached_at": datetime.date.today().isoformat(),
             "data": result,

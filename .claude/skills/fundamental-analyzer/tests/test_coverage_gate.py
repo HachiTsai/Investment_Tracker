@@ -56,7 +56,7 @@ def test_etf_at_coverage_is_cached(tmp_path, monkeypatch):
 
     assert res["coverage_pct"] == 100.0
     assert res["coverage_sufficient"] is True
-    assert "00919" in json.loads((tmp_path / "etf.json").read_text(encoding="utf-8"))
+    assert "00919:top10" in json.loads((tmp_path / "etf.json").read_text(encoding="utf-8"))
 
 
 def test_stock_degraded_result_is_not_cached(tmp_path, monkeypatch):

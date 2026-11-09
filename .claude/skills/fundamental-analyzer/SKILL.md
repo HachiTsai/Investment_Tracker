@@ -31,9 +31,9 @@ python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py stock 2330.T
 python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py stock NVDA --json
 python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py stock 7203.T
 
-# 2. 查詢指定 ETF 穿透加權基本面評分
-python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py etf 00878 --top 10
+# 2. 查詢指定 ETF 穿透加權基本面評分（預設全部成分股；--top N 只算前 N 大；--no-cache 不讀不寫快取、強制重算）
 python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py etf 0050
+python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py etf 00878 --top 10 --no-cache
 
 # 3. 掃描全投資組合標的基本面評分矩陣
 python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py portfolio
@@ -45,7 +45,8 @@ python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py portfolio
 
 1. **嚴禁修改 Core**：本技能僅作為分析運算工具，絕不寫入 `Investment_Tracker_Core`。
 2. **客觀量化無情緒**：所有結論必由數學公式與財報硬數據推導，不預設立場。
-3. **離線單元測試保證**：全套單元測試內建 Mock 機制，無網路環境亦可驗證。
+3. **穿透計算範圍一致**：手動 CLI 預設全部成分股；排程（巡檢 `patrol_evaluator.py`、試算表同步 `etf_sheets_sync.py`）共用 `scope_top_n`：`ticker.yml` 為 `tier: core` 的核心標的算全部成分股，其餘前 10 大。ETF 快取鍵含計算範圍（`<代號>:all`、`<代號>:top10`），不同範圍不互相覆蓋。`coverage_pct` 分母為計算範圍（互鎖判定用），另輸出 `fund_coverage_pct`、`selected_fund_weight_pct` 以全基金權重為分母供參考。
+4. **離線單元測試保證**：全套單元測試內建 Mock 機制，無網路環境亦可驗證。
 
 ## 建立個股卡片
 

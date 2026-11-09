@@ -179,8 +179,9 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
         if str(fund_script_dir) not in sys.path:
             sys.path.insert(0, str(fund_script_dir))
         try:
-            from lookthrough_fundamentals import aggregate_etf_fundamentals
-            agg = aggregate_etf_fundamentals(ticker, top_n=10, repo_root=repo_root)
+            from lookthrough_fundamentals import aggregate_etf_fundamentals, scope_top_n
+            # 核心標的算全部成分股、口袋名單前 10 大；與試算表同步共用同一規則
+            agg = aggregate_etf_fundamentals(ticker, top_n=scope_top_n(ticker, repo_root), repo_root=repo_root)
             if agg and "scores" in agg:
                 scores = agg["scores"]
                 coverage_ok = bool(agg.get("coverage_sufficient"))

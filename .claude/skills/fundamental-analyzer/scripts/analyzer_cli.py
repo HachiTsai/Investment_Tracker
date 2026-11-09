@@ -7,7 +7,7 @@
   python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py stock NVDA --json
 
   # 2. 查詢單一 ETF 穿透聚合基本面與評分
-  python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py etf 00878 --top 10
+  python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py etf 00878 [--top 10] [--no-cache]
 
   # 3. 掃描全投資組合標的之加權基本面矩陣
   python3 .claude/skills/fundamental-analyzer/scripts/analyzer_cli.py portfolio
@@ -67,7 +67,9 @@ def format_etf_ascii(res: dict) -> str:
         "=" * 72,
         f"🏛️ ETF 穿透加權基本面評分：【{res.get('etf_id')}】",
         "=" * 72,
-        f"  覆蓋成分股檔數: 前 {res.get('covered_holdings_count')} 大重倉 ｜ 覆蓋總權重: {res.get('total_weight_covered_pct')}%",
+        f"  計算成分股: {res.get('covered_holdings_count')} / {res.get('holdings_total_count', '-')} 檔"
+        f" ｜ 占全基金權重: {_show(res.get('selected_fund_weight_pct'), '')}%"
+        f" ｜ 有財報輸入權重（全基金）: {_show(res.get('fund_coverage_pct'), '')}%",
         f"  加權 ROE: {res.get('weighted_roe', '-')}%",
         "-" * 72,
         "【穿透聚合動態評分矩陣分數】：",
@@ -123,7 +125,7 @@ def cmd_scaffold_stock(args) -> int:
 def cmd_etf(args) -> int:
     """處理 etf 命令。"""
     models_dir = Path(args.models_dir) if args.models_dir else REPO_ROOT
-    res = aggregate_etf_fundamentals(args.etf_id, top_n=args.top, repo_root=models_dir)
+    res = aggregate_etf_fundamentals(args.etf_id, top_n=args.top, repo_root=models_dir, use_cache=not args.no_cache)
     if args.json:
         print(json.dumps(res, ensure_ascii=False, indent=2))
     else:
@@ -154,7 +156,7 @@ def cmd_portfolio(args) -> int:
             res["weighted_roe"] = res.get("roe")
             cat = "個股"
         else:
-            res = aggregate_etf_fundamentals(ticker, top_n=args.top, repo_root=REPO_ROOT)
+            res = aggregate_etf_fundamentals(ticker, top_n=args.top, repo_root=REPO_ROOT, use_cache=not args.no_cache)
             cat = "債券ETF" if res.get("is_bond") else "股票ETF"
         sc = res.get("scores", {})
         if res.get("is_bond"):
@@ -203,14 +205,16 @@ def main(argv=None) -> int:
 
     p_etf = subparsers.add_parser("etf", help="查詢 ETF 穿透聚合基本面與評分")
     p_etf.add_argument("etf_id", help="ETF 代號（例如 00878, 0050）")
-    p_etf.add_argument("--top", type=int, default=10, help="計算前 N 大重倉成分股（預設 10）")
+    p_etf.add_argument("--top", type=int, default=None, help="只算前 N 大重倉成分股（預設全部成分股）")
+    p_etf.add_argument("--no-cache", action="store_true", help="不讀不寫 ETF 與個股快取，強制重算")
     p_etf.add_argument("--models-dir", help="指定 REPO 根目錄")
     p_etf.add_argument("--json", action="store_true", help="輸出 JSON 格式")
     p_etf.set_defaults(func=cmd_etf)
 
     # portfolio
     p_port = subparsers.add_parser("portfolio", help="全投資組合標的基本面評分矩陣")
-    p_port.add_argument("--top", type=int, default=10, help="每檔 ETF 計算前 N 大重倉股")
+    p_port.add_argument("--top", type=int, default=None, help="每檔 ETF 只算前 N 大重倉股（預設全部成分股）")
+    p_port.add_argument("--no-cache", action="store_true", help="不讀不寫 ETF 與個股快取，強制重算")
     p_port.add_argument("--models-dir", help="指定 models 目錄")
     p_port.set_defaults(func=cmd_portfolio)
 
