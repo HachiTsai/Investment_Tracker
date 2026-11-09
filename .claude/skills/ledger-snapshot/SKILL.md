@@ -8,9 +8,11 @@ description: 把互動版交易簿（Our_Investment）衍生成唯讀快照 Arti
 - **核心腳本**：`scripts/build_snapshot.py`（只用 Python 標準函式庫）。讀互動版頁面 HTML，拿掉記帳分頁、連接器與所有寫入程式，把試算表的值內嵌進頁面，輸出快照 HTML。
 - **規範**：`references/snapshot-spec.md`（資料範圍、保留與移除的部分、隱私）。
 - **排程流程**：`.claude/workflows/ledger-snapshot.md`。
-- **唯讀保護**：只讀 Our_Investment，嚴禁碰觸 `Investment_Tracker_Core`；腳本與測試都會擋掉輸出中出現 Core 的 ID。
+- **唯讀保護**：只讀 Our_Investment，嚴禁碰觸 `Investment_Tracker_Core`；腳本與測試都會擋掉輸出中出現 Core 與 Our_Investment 的 ID，以及連接器常數名。缺 `DRIVE_IDS` 的 `CORE_SHEET_ID` 或 `OUR_INVESTMENT_SHEET_ID` 時不輸出（fail closed）。
 
 ## 用法
+
+執行前需要環境變數 `DRIVE_IDS`（含 `CORE_SHEET_ID`、`OUR_INVESTMENT_SHEET_ID`）。測試由 `.claude/skills/conftest.py` 提供假值。
 
 ```bash
 python3 .claude/skills/ledger-snapshot/scripts/build_snapshot.py \

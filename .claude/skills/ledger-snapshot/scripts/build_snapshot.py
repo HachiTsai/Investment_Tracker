@@ -5,13 +5,15 @@
   python3 build_snapshot.py --source ledger.html --data data.json --stamp "2026-10-30 22:45" --out snap.html
 
 來源頁是互動版 Artifact 的 HTML。快照保留除「記帳」以外的分頁，拿掉連接器與所有寫入程式，
-並把試算表的值內嵌進頁面。只用標準函式庫；不讀也不寫任何試算表。
+並把試算表的值內嵌進頁面，連接器的試算表 ID 常數也一併拿掉。只用標準函式庫；不讀也不寫任何試算表。
+輸出頁不含任何試算表 ID；缺 DRIVE_IDS 的 CORE_SHEET_ID 或 OUR_INVESTMENT_SHEET_ID 時不輸出。
 data.json 的格式：{"portfolio": [[...]], "tx": [[...]], "journal": [[...]], "cash": [[...]]}，
 值為 Sheets get_values 回傳的二維陣列。portfolio／tx／journal 含表頭列；cash 是「資金餘額」分頁，無表頭，
 頁面依列序讀值，所以標籤位置要對得上，對不上就中止。
 """
 import argparse
 import json
+import os
 import re
 import sys
 
@@ -24,18 +26,18 @@ REQUIRED_HEADERS = {
 }
 # 資金餘額分頁：頁面讀 B2 錨點日、B3 錨點餘額、B5 循環、B6 新資金、B7 合計；這些列的 A 欄標籤要含下列字樣。
 CASH_LABELS = {1: '錨點日期', 2: '錨點餘額', 4: '循環餘額', 5: '新資金餘額', 6: '合計'}
-# Core 的試算表 ID：快照頁永遠不該出現，出現就中止。ID 取自環境變數 DRIVE_IDS 的 CORE_SHEET_ID（不放進 git）；
-# 沒設時略過這項檢查（其餘寫入與連接器關鍵字檢查照舊）。
-def _core_id():
-    import json as _json
-    import os as _os
+# 快照頁不該出現任何試算表 ID：Core（禁止寫入的後台）與 Our_Investment（快照的來源，快照本身不需要它）。
+# ID 取自環境變數 DRIVE_IDS（不放進 git），只在記憶體中比對，不印出。
+def _drive_id(key):
     try:
-        return str(_json.loads(_os.environ.get('DRIVE_IDS', '{}')).get('CORE_SHEET_ID', '')).strip()
+        return str(json.loads(os.environ.get('DRIVE_IDS', '{}')).get(key, '')).strip()
     except (ValueError, AttributeError):
         return ''
 
 
-CORE_ID = _core_id()
+FORBIDDEN_IDS = [i for i in (_drive_id('CORE_SHEET_ID'), _drive_id('OUR_INVESTMENT_SHEET_ID')) if i]
+# 連接器的常數名與 Core 的分頁名稱，也不該出現在快照頁原始碼中。
+FORBIDDEN_TOKENS = ('SHEET_ID', 'spreadsheetId', 'Investment_Tracker_Core')
 
 
 class BuildError(Exception):
@@ -107,6 +109,9 @@ def build(source, data, stamp):
     s = _cut(s, '  // The connector is optional.', '  // Sheet cells arrive')
     s = _sub(s, '  // Sheet cells arrive', embedded + '  // Sheet cells arrive')
     s = _cut(s, '  const COPY = {', '  const state = {')
+    # JS 常數：連接器的試算表 ID 與服務名稱拿掉；RANGES 保留，頁面靠它的鍵決定讀哪一份內嵌資料。
+    s = _cut(s, '  // Only the Our_Investment spreadsheet.', '  const RANGES = {')
+    s = _sub_re(s, r"    (portfolioCodes|txIds|journalIds|txTickers|journalTickers): '[^']*',\n", '')
     # JS：拿掉記帳、新增與移除標的的程式
     s = _cut(s, '  function renderTickers() {', '  function renderAll')
     s = _cut(s, '  // Entry form', '  // Milestone map.')
@@ -130,8 +135,7 @@ def build(source, data, stamp):
         s = _sub_re(s, pattern, '', re.S)
     # 事後檢查：不可殘留寫入、連接器或 Core
     banned_list = ['callSheet', 'writeRange', 'update_values', "window.claude", '<section data-view="entry"']
-    if CORE_ID:
-        banned_list.append(CORE_ID)
+    banned_list += list(FORBIDDEN_TOKENS) + FORBIDDEN_IDS
     for banned in banned_list:
         if banned in s:
             raise BuildError(f'快照殘留不該出現的內容：{banned}')
@@ -145,6 +149,11 @@ def main(argv=None):
     ap.add_argument('--stamp', required=True, help='快照時間（台北），例：2026-10-30 22:45')
     ap.add_argument('--out', required=True, help='輸出的快照 HTML')
     args = ap.parse_args(argv)
+    # fail closed：沒有這兩個 ID 就無法確認快照不含 ID，一律不輸出（訊息只列鍵名，不印 ID）。
+    missing = [k for k in ('CORE_SHEET_ID', 'OUR_INVESTMENT_SHEET_ID') if not _drive_id(k)]
+    if missing:
+        print(f'失敗：環境變數 DRIVE_IDS 缺少 {missing}，無法確認快照不含試算表 ID，不輸出', file=sys.stderr)
+        return 1
     try:
         with open(args.source, encoding='utf8') as f:
             source = f.read()

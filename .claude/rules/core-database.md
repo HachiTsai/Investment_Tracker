@@ -33,8 +33,9 @@ Core 試算表主要分頁：
 
 - 所有 Drive 資料夾與試算表 ID 放在環境變數 `DRIVE_IDS`（一段 JSON 物件），GitHub Actions 讀 Secret `DRIVE_IDS`，雲端環境設定同名同內容，本機放不進 git 的設定檔。REPO 內的文件、程式、設定只寫鍵名。
 - 鍵名：`CORE_SHEET_ID`、`PROJECT_FOLDER_ID`、`OUR_INVESTMENT_SHEET_ID`、`INTEL_SHEET_ID`、`DIV_00882_SHEET_ID`、`HOLDINGS_SHEET_ID`、`TX_DETAIL_SHEET_ID`、`SWING_SHEET_ID`、`MARKET_ETF_SHEET_ID`、`ETF_TW_SHEET_ID`、`ETF_HK_SHEET_ID`、`ETF_US_SHEET_ID`、`ETF_JP_SHEET_ID`。
-- 程式一律用 `etf_market.drive_id(鍵名)` 取值；缺鍵丟 `DriveIdMissing`，訊息只寫鍵名，不印 ID。
+- 程式取值：可用 `etf_market.drive_id(鍵名)`，缺鍵丟 `DriveIdMissing`。只用標準函式庫的技能（如 `ledger-snapshot`）可自行解析 `DRIVE_IDS`，但須採同樣的 fail closed：缺鍵就中止。訊息只寫鍵名，不印 ID（2026-11-09 Hachi 同意）。
 - Core 拒絕採 fail closed：`guard_sheet_id` 在 `DRIVE_IDS` 沒設、格式錯誤或沒有 `CORE_SHEET_ID` 時，一律拒絕寫入。
+- 快照產物不得含試算表 ID：Artifact 快照頁的原始碼不得出現 Core 與 Our_Investment 的 ID、連接器常數名（如 `SHEET_ID`）與 Core 分頁名稱。建置腳本在輸出前檢查，出現即中止（2026-11-09 Hachi 同意）。
 - 測試用假值：`.claude/skills/conftest.py` 設定 `TEST_` 開頭的假 ID，不連網。
 
 ## 3. 計算口徑

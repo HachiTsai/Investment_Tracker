@@ -21,6 +21,7 @@
 - **工作目錄**：REPO 根目錄；前置動作 `git pull --ff-only origin main`。
 - **需要的工具**：Artifact（讀取與發布）、Google Sheets 的 `get_values`。
 - **唯讀保護約束**：只讀 Our_Investment，嚴禁碰觸 `Investment_Tracker_Core`；不寫任何試算表。
+- **必要環境變數**：`DRIVE_IDS` 須含 `CORE_SHEET_ID` 與 `OUR_INVESTMENT_SHEET_ID`（雲端環境同名設定）。缺任一鍵，建置腳本會中止、不發布（2026-11-09 Hachi 同意）。
 
 ---
 
@@ -35,9 +36,10 @@
      --source <步驟 1 的檔案> --data data.json --stamp "<台北時間 YYYY-MM-DD HH:MM>" --out snapshot.html
    ```
 
-   腳本失敗（找不到標記、資料格式不對）就不發布，回報錯誤訊息，並說明互動版哪裡改版了。
+   腳本失敗（找不到標記、資料格式不對、`DRIVE_IDS` 缺鍵、快照含試算表 ID）就不發布，回報錯誤訊息；標記失效時說明互動版哪裡改版了。
 4. **發布**：用 Artifact 以 `file_path` 為 `snapshot.html`、`url` 為 `https://claude.ai/artifact/SBn43iC1bBG2zf2bexgmxZ` 發布，不傳 `capabilities`（快照沒有連接器），`label` 寫「定時更新 YYYY-MM-DD」。
-5. **回報**：一行說明快照時間、持股檔數、交易與日誌筆數，以及發布連結。
+5. **發布後檢查**：用 Artifact `read` 讀回 `https://claude.ai/artifact/SBn43iC1bBG2zf2bexgmxZ`，存成檔案後確認不含 `SHEET_ID`，也不含 `DRIVE_IDS` 內的兩個 ID（只回報有無，不印 ID）。檢查失敗就回報，不宣告成功。
+6. **回報**：一行說明快照時間、持股檔數、交易與日誌筆數，以及發布連結。
 
 ---
 
@@ -45,4 +47,5 @@
 
 - 資料或來源頁讀不到：不發布，保留上一版快照，回報原因。
 - 腳本標記失效：不發布，回報；由開發者更新 `build_snapshot.py` 與測試後再跑。
+- `DRIVE_IDS` 缺鍵，或快照含試算表 ID：不發布，回報；線上版本維持原狀，不手動覆寫。
 - 不用舊值、預設值或手寫數字代替抓不到的資料。
