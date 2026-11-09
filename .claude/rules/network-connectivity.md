@@ -1,6 +1,6 @@
 # 外部網路連線與資料來源清單
 
-本專案於本機（Antigravity / macOS）與雲端沙盒環境（Claude Code Web）經實測可通聯之 37 個外部網域及 API 服務清單。
+本專案於本機（Antigravity / macOS）與雲端沙盒環境（Claude Code Web）經實測可通聯之 38 個外部網域及 API 服務清單。
 
 ## 1. 核心證券交易所與主管機關
 
@@ -66,5 +66,6 @@
 | `*.frame.claudeusercontent.com` | Claude 沙盒內嵌網域 | ✅ 可解析/連線 | Claude Code 網頁端預覽與資料渲染 |
 | `*.frame.staging.claudeusercontent.com` | Claude 預發沙盒網域 | ✅ 可解析/連線 | Claude 預發環境 |
 | `sheets.googleapis.com` | Google Sheets API v4 | ✅ HTTPS 443 | 供 GitHub Actions 與本機排程透過 `GCP_SA_KEY` 服務帳號直寫外圍公開／協作試算表（嚴禁對 Core 授權） |
+| `docs.google.com` | Google 試算表公開連結（gviz CSV） | ✅ HTTP 200 | 每日巡檢頁讀波段觀察 Sheet「告警紀錄」分頁（`swing.py --alerts-from-sheet`），只讀公開連結、不帶憑證，ID 取自 `DRIVE_IDS` 的 `SWING_SHEET_ID`；讀不到不中止發布（2026-11-09 實測，Hachi 同意） |
 | `oauth2.googleapis.com` | Google OAuth 2.0 憑證端點 | ✅ HTTPS 443 | 供 `google-auth` 以服務帳號私鑰簽發並刷新存取權杖（Access Token） |
 | `api.github.com` | GitHub REST API | ✅ HTTP 200 | 排程健康檢查（`fin-commit/scripts/schedule_health.py`）讀取工作流的排程執行紀錄與建立時間；CI 內以 `GITHUB_TOKEN`（`actions: read`）呼叫，沙盒經代理注入（2026-10-28 實測） |
