@@ -297,6 +297,15 @@ def _load_aggregate_func() -> Optional[Any]:
     return aggregate_etf_fundamentals
 
 
+def _scope_top_n(etf_id: str) -> Optional[int]:
+    """穿透計算範圍，與巡檢共用 lookthrough_fundamentals.scope_top_n（核心全持股、其餘前 10 大）；匯入失敗退回前 10 大。"""
+    try:
+        from lookthrough_fundamentals import scope_top_n
+    except ImportError:
+        return 10
+    return scope_top_n(etf_id, REPO_ROOT)
+
+
 def generate_summary_rows(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """產生全市場 ETF 摘要清單（含基本面穿透評分）。"""
     aggregate_func = _load_aggregate_func()
@@ -338,7 +347,7 @@ def generate_summary_rows(models: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         # 只收穿透計算成功的評分；失敗或 fallback 一律寫 "-"，不補預設分
         if aggregate_func:
             try:
-                res = aggregate_func(ticker, top_n=10, repo_root=REPO_ROOT)
+                res = aggregate_func(ticker, top_n=_scope_top_n(ticker), repo_root=REPO_ROOT)
                 if res.get("status") == "success":
                     sc = res.get("scores", {})
                     if res.get("weighted_roe") is not None:
@@ -492,7 +501,7 @@ def _foreign_live_fields(etf: str, aggregate_func: Optional[Any]) -> Dict[str, s
     if aggregate_func is None:
         return out
     try:
-        res = aggregate_func(etf, top_n=10, repo_root=REPO_ROOT)
+        res = aggregate_func(etf, top_n=_scope_top_n(etf), repo_root=REPO_ROOT)
     except Exception:
         return out
     if res.get("status") != "success":
