@@ -46,3 +46,9 @@ def test_sheet_id_from_drive_ids(monkeypatch):
     assert swing._swing_sheet_id() is None
     monkeypatch.delenv("DRIVE_IDS")
     assert swing._swing_sheet_id() is None
+
+
+def test_parse_sheet_last_updated_handles_both_labels():
+    assert swing.parse_sheet_last_updated('"lastUpdated","2026-11-06 15:50:42 (TPE)"\n"executor","GitHub Actions"\n') == "2026-11-06 15:50:42 (TPE)"
+    assert swing.parse_sheet_last_updated('"最後巡檢時間","2026-11-07 01:02:03 (TPE)"\n"狀態","休市略過"\n') == "2026-11-07 01:02:03 (TPE)"
+    assert swing.parse_sheet_last_updated("") is None

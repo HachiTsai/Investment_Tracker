@@ -560,7 +560,29 @@ def merge_patrol(rows: List[Dict], patrol: Dict) -> List[Dict]:
 
 
 SHEET_ALERT_TAB = "告警紀錄"  # 與 swing_sync.ALERT_TAB 同名；波段觀察 Sheet 由 GitHub Actions 的 swing_sync.py 寫入
+SHEET_MAIN_TAB = "Untitled"  # 與 swing_sync 寫入 Z1:AA2 的分頁同名
 SHEET_ALERT_MAX_AGE_DAYS = 4  # 最近一批告警距今超過 4 天（含週末與連假）就不再點亮，避免顯示過期提醒
+
+
+def parse_sheet_last_updated(csv_text: str) -> Optional[str]:
+    """波段觀察 Sheet 主分頁 Z1:AA2 的第一列（swing_sync 寫入「最後巡檢時間／lastUpdated」與時間）取時間字串；
+    休市或互鎖略過的執行也會更新，所以能看出排程有沒有跑。讀不到回傳 None。"""
+    import csv
+    import io
+    for r in csv.reader(io.StringIO(csv_text)):
+        if len(r) >= 2 and r[1].strip()[:4].isdigit():
+            return r[1].strip()
+    return None
+
+
+def fetch_sheet_last_updated(sheet_id: str, timeout: int = 20) -> Optional[str]:
+    """以公開連結（gviz CSV，唯讀）讀主分頁 Untitled!Z1:AA2 的最後更新時間。"""
+    import urllib.parse
+    import urllib.request
+    url = (f"https://docs.google.com/spreadsheets/d/{urllib.parse.quote(sheet_id)}/gviz/tq?tqx=out:csv"
+           f"&sheet={SHEET_MAIN_TAB}&range=Z1:AA2")
+    with urllib.request.urlopen(url, timeout=timeout) as r:
+        return parse_sheet_last_updated(r.read().decode("utf-8"))
 
 
 def parse_sheet_alerts(csv_text: str, today: str, max_age_days: int = SHEET_ALERT_MAX_AGE_DAYS) -> Dict[str, Dict]:
@@ -715,6 +737,8 @@ def main(argv=None) -> int:
                         today = market_today("台股")
                         lit = apply_sheet_alerts(rows, parse_sheet_alerts(fetch_sheet_alerts(sid), today))
                         print(f"告警紀錄：點亮 {len(lit)} 檔" + (f"（{'、'.join(lit)}）" if lit else ""), file=sys.stderr)
+                        # 排程漏跑時告警會靜默失效，回報附上 Sheet 最後更新時間讓人眼也看得到（Issue #232）
+                        print(f"波段 Sheet 最後更新：{fetch_sheet_last_updated(sid) or '讀不到'}", file=sys.stderr)
                     except (OSError, ValueError) as e:
                         print(f"告警紀錄讀取失敗，巡檢頁不顯示關鍵組合轉換提醒：{str(e)[:120]}", file=sys.stderr)
             stress = None
