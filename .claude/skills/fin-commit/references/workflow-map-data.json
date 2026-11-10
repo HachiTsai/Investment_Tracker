@@ -270,11 +270,11 @@
    "id": "C5",
    "plat": "cld",
    "name": "工作流對應地圖",
-   "when": "週五 23:00",
+   "when": "週五 23:10",
    "dow": [
     5
    ],
-   "time": "23:00",
+   "time": "23:10",
    "trigger": [
     "Claude 雲端排程，單行 prompt（待 Hachi 建立）",
     "Hachi 說「更新工作流地圖」手動觸發"
@@ -520,7 +520,7 @@
   },
   {
    "id": "C5",
-   "title": "C5 工作流對應地圖（週五 23:00）",
+   "title": "C5 工作流對應地圖（週五 23:10）",
    "src": "sequenceDiagram\n  autonumber\n  participant CL as Claude 雲端排程\n  participant RP as repo 登記表與規格\n  participant WM as workflow_map.py\n  participant MA as 地圖 Artifact\n  CL->>RP: git pull\n  CL->>WM: build map.html\n  WM->>RP: 讀登記表、cron、規格、技能清單\n  WM-->>CL: JSON（sha、drift）\n  alt 退出碼不為 0 或工作流數量不對\n    CL-->>CL: 不發布，回報原因\n  else 成功\n    CL->>MA: read 後原地發布\n    CL-->>CL: 回報 drift 條列\n  end\n"
   }
  ]
