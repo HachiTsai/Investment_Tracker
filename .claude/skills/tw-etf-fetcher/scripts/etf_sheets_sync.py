@@ -468,6 +468,15 @@ def run_sync_pipeline(
         result["message"] = f"已導出本機 CSV（ETF 數：{len(models)}，成分股數：{len(constituents_rows)}），未上傳雲端。"
         return result
 
+    if not sheet_id:
+        # 呼叫端（etf_fetcher.py sync-sheets）沒帶 --sheet-id 時取 DRIVE_IDS 的 MARKET_ETF_SHEET_ID；
+        # 2026-11-06 ID 移出 git 後這裡漏了預設值，Sheet ID 變成 None（11-10 Actions 404）
+        try:
+            sheet_id = default_sheet_id()
+        except etf_market.DriveIdMissing as e:
+            result.update(status="error", message=str(e))
+            return result
+        result["sheet_id"] = sheet_id
     success, msg = sync_to_google_sheets(sheet_id, summary_csv, constituents_csv)
     result["synced"] = success
     result["message"] = msg
