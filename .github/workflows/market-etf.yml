@@ -25,7 +25,8 @@ jobs:
   sync-market-etf-sheets:
     name: Sync Market ETF to Google Sheets
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 2026-11-10 由 15 放寬為 30：PR #229 核心標的改算全持股後，評分階段由約 5 分鐘增至超過 10 分鐘（11-09 手動執行逾時）
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
