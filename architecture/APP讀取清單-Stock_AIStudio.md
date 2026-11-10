@@ -37,7 +37,7 @@ Stock_AIStudio 以免登入 gviz CSV 讀取的 Drive 試算表盤點與寫入規
 | 00882_成分股股利資料庫 | `DIV_00882_SHEET_ID` | 成分股、摘要 | `constituentsFeedService.ts` | Claude 排程（`.claude/workflows/hk-00882-dividend.md`） | 每週五 16:30 |
 | 全市場 ETF 成分股資料庫 | `MARKET_ETF_SHEET_ID` | ETF_Summary、ETF_Constituents | `constituentsFeedService.ts`（失敗退回 `allMarketEtfSnapshot`） | Claude 排程／本機代班（`.claude/workflows/market-etf-pool.md`） | 每週五 17:10 |
 | 波段觀察 | `SWING_SHEET_ID` | Untitled（A 到 X 共 24 欄）；告警紀錄（APP 不讀） | `swingFeedService.ts` | GitHub Actions `swing-patrol.yml`（`swing_sync.py`）；本機代班（`.claude/workflows/swing-patrol-sheets.md`） | 平日台北 17:00 |
-| 台股ETF成分股資料庫 | `ETF_TW_SHEET_ID` | 個股、ETF持股、摘要 | 目前只供 Artifact 與分析（APP 預備） | Claude 排程（`.claude/workflows/tw-etf-pool.md`） | 每月月初 09:00 |
+| 台股ETF成分股資料庫 | `ETF_TW_SHEET_ID` | 個股、ETF持股、摘要 | 目前只供 Artifact 與分析（APP 預備） | Claude 排程（`.claude/workflows/tw-etf-pool.md`） | 每週六 09:40（名單同每日巡檢 core 卡片） |
 | 港股 ETF 成分股資料庫 | `ETF_HK_SHEET_ID` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（`.claude/workflows/market-etf-pool.md` §5） | 手動 |
 | 美股 ETF 成分股資料庫 | `ETF_US_SHEET_ID` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（同上） | 手動 |
 | 日股 ETF 成分股資料庫 | `ETF_JP_SHEET_ID` | ETF_Summary、ETF_Constituents | 尚未接入 APP | 手動 GitHub Actions（同上） | 手動 |

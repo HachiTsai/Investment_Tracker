@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """台股 ETF 成分股資料池：多檔 ETF 的成分股去重後各抓一次，產出每檔 ETF 一頁與一個索引頁（同一個 Artifact 的多頁）。
 
-用法：python3 etf_pool.py <輸出資料夾> [--market TW|HK|US|JP] [--etfs 0050,0056,...] [--models-dir models]
-不給 --etfs 時，掃描 models/*/cards/constituents.jsonl，成分股有 5 檔以上台股個股的 ETF 都納入。港股、美股與日股沒有這種卡片，要用 --etfs 指定（例如 --market HK --etfs 00882、--market US --etfs VOO、--market JP --etfs 1306）。
+用法：python3 etf_pool.py <輸出資料夾> [--market TW|HK|US|JP] [--etfs 0050,0056,...] [--tier core|pool|all] [--models-dir models]
+不給 --etfs 時，掃描 models/*/cards/constituents.jsonl，成分股有 5 檔以上台股個股的 ETF 都納入；加 --tier core 只取卡片 tier 為 core 的 ETF（與每日巡檢同一份名單）。港股、美股與日股沒有這種卡片，要用 --etfs 指定（例如 --market HK --etfs 00882、--market US --etfs VOO、--market JP --etfs 1306）。
 輸出：index.html、<代號>.html（每檔 ETF）、pool.json（個股與持股兩張表，供寫入 Drive Sheet）、summary 印在標準輸出。
 寫檔前掃描國別後綴（.TW 等），出現就中止且不寫任何檔案；超過市場總時間上限也中止、不寫任何檔案。
 外幣市場（港股、美股、日股）會先抓一次外幣對新台幣匯率（Google Finance），抓不到就中止、不寫任何檔案；台股不抓匯率。
 """
 import argparse
+import dataclasses
 import html
 import json
 import os
@@ -30,11 +31,27 @@ import etf_us  # noqa: E402
 TW_CODE = re.compile(r"\d{4}\.(TW|TWO)")
 
 
-def discover(models_dir: str, min_stocks: int = 5) -> List[str]:
+_TIER = re.compile(r'^tier:\s*"?(\w+)"?', re.MULTILINE)
+
+
+def card_tier(models_dir: str, etf: str) -> str:
+    """模型卡片的分級（ticker.yml 的 tier）；沒有卡片或沒有這個欄位時視為 core，與每日巡檢（swing.watchlist）相同。"""
+    path = os.path.join(models_dir, etf, "cards", "ticker.yml")
+    if not os.path.exists(path):
+        return "core"
+    with open(path, encoding="utf-8") as f:
+        m = _TIER.search(f.read())
+    return m.group(1).lower() if m else "core"
+
+
+def discover(models_dir: str, min_stocks: int = 5, tier: Optional[str] = None) -> List[str]:
+    """成分股有 min_stocks 檔以上台股個股的 ETF；tier 為 core 或 pool 時只取該分級的卡片，None 或 all 不篩。"""
     out = []
     for name in sorted(os.listdir(models_dir)):
         path = os.path.join(models_dir, name, "cards", "constituents.jsonl")
         if not os.path.exists(path):
+            continue
+        if tier and tier != "all" and card_tier(models_dir, name) != tier:
             continue
         rows = [json.loads(line) for line in open(path, encoding="utf-8") if line.strip()]
         if sum(1 for r in rows if TW_CODE.fullmatch(r.get("ticker", ""))) >= min_stocks:
@@ -175,19 +192,27 @@ def pool_payload(etfs: List[str], holds: Dict[str, Any], pool: Dict[str, Dict[st
     return payload
 
 
+def pool_gate(gate: etf_market.Gate, tier: str, explicit_etfs: bool) -> etf_market.Gate:
+    """依名單來源調整 ETF 數量下限：只取某分級（例如 core，約 4 檔）時，下限改為至少 1 檔；全部卡片或手動指定時照市場預設。"""
+    if tier != "all" and not explicit_etfs:
+        return dataclasses.replace(gate, min_pool_etfs=1)
+    return gate
+
+
 def main(argv: List[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("outdir")
     ap.add_argument("--market", default="TW", type=str.upper, choices=sorted(markets()), help="市場：TW 台股（預設）、HK 港股（目前只支援 00882）、US 美股（Yahoo 前幾大持股，部分持股）、JP 日股（Yahoo 前幾大持股，部分持股，財報來自 EDINET）")
     ap.add_argument("--etfs", default="")
     ap.add_argument("--models-dir", default="models")
+    ap.add_argument("--tier", choices=["core", "pool", "all"], default="all", help="不給 --etfs 時只取這個分級的卡片：core 與每日巡檢同一份名單，all（預設）全部")
     ap.add_argument("--gate", action="store_true", help="啟用排程健康檢查門檻判定，未達門檻回傳退出碼 1")
     a = ap.parse_args(argv[1:])
     t0 = time.time()
     market = markets()[a.market]
     if a.market != "TW" and not a.etfs:
         ap.error(f"{market.name}沒有模型卡片可自動探索，請用 --etfs 指定 ETF 代號")
-    etfs = [e.strip().upper() for e in a.etfs.split(",") if e.strip()] or discover(a.models_dir)
+    etfs = [e.strip().upper() for e in a.etfs.split(",") if e.strip()] or discover(a.models_dir, tier=a.tier)
     today = date.today()
     deadline = time.monotonic() + market.limits.max_seconds  # 總時間上限從開始抓取起算
     try:
@@ -239,7 +264,8 @@ def main(argv: List[str]) -> int:
     print(json.dumps(dict(etfs=len(etfs), stocks=len(pool), seconds=round(time.time() - t0), no_price=no_price,
                           no_fin=no_fin, etfs_with_errors=bad), ensure_ascii=False))
     if a.gate:
-        ok, reasons = check_gate(len(etfs), no_price, no_fin, bad, market.gate,
+        gate = pool_gate(market.gate, a.tier, bool(a.etfs))
+        ok, reasons = check_gate(len(etfs), no_price, no_fin, bad, gate,
                                  holdings_counts={s["etf"]: s["holdings"] for s in summaries})
         if not ok:
             print(f"❌ [Gate Failed] {'; '.join(reasons)}", file=sys.stderr)

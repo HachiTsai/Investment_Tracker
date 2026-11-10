@@ -463,6 +463,23 @@ def test_daily_page_carries_notices_into_head_block():
     assert head_plain["notices"] == []
 
 
+
+def test_daily_page_links_tw_etf_detail_only_for_etfs_with_tw_constituents(tmp_path):
+    """給了明細頁網址才放連結；只有成分股有 5 檔以上台股個股的台股 ETF 卡片列進 codes（00882 港股成分股、個股不列）。"""
+    models = tmp_path / "repo" / "models"
+    for code, tickers in (("00919", [f"{2300 + i}.TW" for i in range(6)]), ("00882", [f"{i}.HK" for i in range(6)])):
+        (models / code / "cards").mkdir(parents=True)
+        (models / code / "cards" / "constituents.jsonl").write_text("\n".join(json.dumps({"ticker": t}) for t in tickers), encoding="utf-8")
+    rows = [{"ticker": "TPE:00919", "source": "ETF 卡片"}, {"ticker": "TPE:00882", "source": "ETF 卡片"},
+            {"ticker": "TPE:2356", "source": "個股卡片"}]
+    assert sw.tw_detail_codes(rows, models_dir=models) == ["00919"]
+    url = "https://claude.ai/artifact/RoDHVZRr588JCcgzMswsug"
+    html = sw.render_daily_page(rows, {}, "2026-11-09", etf_detail_url=url)  # 頁面用 repo 的 models：00919 有台股成分股卡片、00882 是港股
+    head = json.loads(html.split("var HEAD=", 1)[1].split(";var DATE", 1)[0])
+    assert head["etf_detail"] == {"url": url, "codes": ["00919"]}
+    plain = sw.render_daily_page(rows, {}, "2026-11-09")
+    assert "etf_detail" not in json.loads(plain.split("var HEAD=", 1)[1].split(";var DATE", 1)[0])
+
 def test_fill_gaps_skips_twse_when_no_weekday_missing():
     now = datetime(2026, 11, 5, 8, 0, tzinfo=timezone.utc)  # 台北 16:00 週四
     start = datetime(2026, 10, 20, tzinfo=timezone.utc)
