@@ -89,3 +89,25 @@ def test_check_gate():
 
     ok, reasons = etf_pool.check_gate(17, [], [], {"0050": 1})
     assert not ok and any("存在異常 ETF" in r for r in reasons)
+
+
+def _tier(tmp_path, etf, tier):
+    (tmp_path / etf / "cards" / "ticker.yml").write_text(f'title: "{etf}"\ntier: {tier}\n', encoding="utf-8")
+
+
+def test_discover_filters_by_tier(tmp_path):
+    for etf, tier in (("0050", "pool"), ("00919", "core"), ("00918", "core")):
+        _card(tmp_path, etf, [f"{2300 + i}.TW" for i in range(6)])
+        _tier(tmp_path, etf, tier)
+    _card(tmp_path, "00999", [f"{2300 + i}.TW" for i in range(6)])  # 沒有 ticker.yml：與巡檢相同，視為 core
+    assert etf_pool.discover(str(tmp_path), tier="core") == ["00918", "00919", "00999"]
+    assert etf_pool.discover(str(tmp_path), tier="pool") == ["0050"]
+    assert etf_pool.discover(str(tmp_path), tier="all") == etf_pool.discover(str(tmp_path)) == ["0050", "00918", "00919", "00999"]
+
+
+def test_pool_gate_lowers_etf_minimum_only_for_tier_discovery():
+    base = etf_pool.etf_table.TW.gate
+    assert etf_pool.pool_gate(base, "core", False).min_pool_etfs == 1
+    assert etf_pool.pool_gate(base, "core", False).max_pool_missing == base.max_pool_missing
+    assert etf_pool.pool_gate(base, "all", False) is base
+    assert etf_pool.pool_gate(base, "core", True) is base

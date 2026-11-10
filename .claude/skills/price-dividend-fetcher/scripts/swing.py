@@ -7,6 +7,7 @@
 """
 import argparse
 import json
+import re
 import sys
 import time
 from collections import Counter
@@ -650,9 +651,29 @@ def kind_of(source: str) -> str:
     return "ETF" if "ETF 卡片" in source else "個股"
 
 
+TW_STOCK = re.compile(r"\d{4}\.(TW|TWO)")
+
+
+def tw_detail_codes(rows: List[Dict], min_stocks: int = 5, models_dir: Optional[Path] = None) -> List[str]:
+    """頁面上有台股成分股明細的 ETF 代號：台股 ETF 卡片的成分股有 min_stocks 檔以上台股個股，與 tw-etf-fetcher 的 etf_pool.discover 同一條規則。"""
+    root = Path(models_dir) if models_dir else Path(__file__).resolve().parents[4] / "models"
+    out = []
+    for r in rows:
+        exch, _, code = str(r.get("ticker", "")).partition(":")
+        if exch != "TPE" or kind_of(r.get("source", "")) != "ETF":
+            continue
+        path = root / code / "cards" / "constituents.jsonl"
+        if not path.exists():
+            continue
+        tickers = [json.loads(ln).get("ticker", "") for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        if sum(1 for t in tickers if TW_STOCK.fullmatch(t)) >= min_stocks:
+            out.append(code)
+    return out
+
+
 def render_daily_page(rows: List[Dict], patrol: Dict, date: str, notices: Optional[List[str]] = None,
-                      stress: Optional[Dict] = None) -> str:
-    """每日投資組合巡檢頁：波段觀察加評分矩陣，附配置狀態與數據時效，可依地區與類型篩選。notices 為頁面頂端的警示文字（例如陷阱狀態未寫回）；stress 為 market_stress.build 的市場修正追蹤資料。"""
+                      stress: Optional[Dict] = None, etf_detail_url: Optional[str] = None) -> str:
+    """每日投資組合巡檢頁：波段觀察加評分矩陣，附配置狀態與數據時效，可依地區與類型篩選。notices 為頁面頂端的警示文字（例如陷阱狀態未寫回）；stress 為 market_stress.build 的市場修正追蹤資料；etf_detail_url 給了就在頁首與有明細的 ETF 視窗放台股 ETF 成分股明細頁連結。"""
     tpl = (Path(__file__).resolve().parents[1] / "references" / "daily_patrol_template.html").read_text(encoding="utf-8")
     keep = ("ticker", "name", "market", "state", "label", "close", "rsi14", "pos_52w_pct", "stop_price", "stop_distance_pct",
             "fib_label", "long", "mid", "short", "combo", "alert", "reason", "trend_score", "macd_score", "vol_score",
@@ -661,6 +682,8 @@ def render_daily_page(rows: List[Dict], patrol: Dict, date: str, notices: Option
     rows = [r for r in rows if not r.get("source", "").endswith("成分股") and r["ticker"] not in DAILY_EXCLUDE]  # 每日巡檢頁只列觀察清單標的，不含 00882 的港股成分股
     data = [{**{k: r.get(k) for k in keep}, "kind": kind_of(r.get("source", ""))} for r in rows]
     head = {"macro": patrol.get("macro_feed", ""), "stale": [f["ticker"] for f in patrol.get("fleet", []) if (f.get("watchdog") or {}).get("is_stale")], "notices": list(notices or []), "stress": stress}
+    if etf_detail_url:
+        head["etf_detail"] = {"url": etf_detail_url, "codes": tw_detail_codes(rows)}
     return (tpl.replace("__DAILY_DATA__", json.dumps(data, ensure_ascii=False))
             .replace("__DAILY_HEAD__", json.dumps(head, ensure_ascii=False)).replace("__DAILY_DATE__", date))
 
@@ -701,6 +724,7 @@ def main(argv=None) -> int:
     p.add_argument("--daily-html", metavar="OUT", help="搭配 --scan：另存每日投資組合巡檢頁（讀 references/daily_patrol_template.html）")
     p.add_argument("--notice", action="append", default=[], metavar="TEXT", help="搭配 --daily-html：頁面頂端的警示文字，可重複（例如陷阱狀態未寫回）")
     p.add_argument("--alerts-from-sheet", action="store_true", help="搭配 --daily-html：讀波段觀察 Sheet「告警紀錄」分頁（公開連結唯讀，DRIVE_IDS 的 SWING_SHEET_ID），點亮最近一個偵測日的關鍵組合轉換提醒")
+    p.add_argument("--etf-detail", metavar="URL", help="搭配 --daily-html：頁首與台股 ETF 視窗放台股 ETF 成分股明細頁的連結（tw-etf-pool 的 Artifact 網址）")
     p.add_argument("--stress", action="store_true", help="搭配 --daily-html：加入市場修正追蹤區塊（market_stress.py：期交所、證交所、指數）")
     p.add_argument("--stress-track", action="append", default=[], metavar="代號[:成本]", help="搭配 --stress：追蹤持股，例如 00406A；加 :成本 才算相對成本與回本（巡檢頁是公開連結，排程不給成本），可重複")
     p.add_argument("--batch", metavar="卡片:前N大", help="多檔彙總回測，例如 00882:15（讀 models/<卡片>/cards/constituents.jsonl）")
@@ -748,7 +772,7 @@ def main(argv=None) -> int:
                     stress = market_stress.build(market_stress.parse_track(a.stress_track))
                 except (RuntimeError, ValueError, KeyError, IndexError, TypeError, OSError, ZeroDivisionError) as e:
                     print(f"市場修正追蹤失敗，頁面略過該區塊：{str(e)[:120]}", file=sys.stderr)
-            Path(a.daily_html).write_text(render_daily_page(rows, patrol, date, notices=a.notice, stress=stress), encoding="utf-8")
+            Path(a.daily_html).write_text(render_daily_page(rows, patrol, date, notices=a.notice, stress=stress, etf_detail_url=a.etf_detail), encoding="utf-8")
         if a.html:
             date = max((r["last_date"] for r in rows if r.get("last_date")), default="")
             Path(a.html).write_text(render_page(rows, date), encoding="utf-8")

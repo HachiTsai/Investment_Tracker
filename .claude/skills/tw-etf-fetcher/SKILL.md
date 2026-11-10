@@ -47,7 +47,8 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets
 # 6. 產生 ETF 成分股「股利與財報明細」頁（持股、財報、配息、估值一頁看完）
 python3 .claude/skills/tw-etf-fetcher/scripts/etf_table.py 00985A out.html [table.json]
 # 7. 多檔台股 ETF 資料池：成分股去重只抓一次，輸出 index.html＋每檔 ETF 一頁＋pool.json
-python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py outdir [--etfs 0050,0056] [--models-dir models]
+python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py outdir [--etfs 0050,0056] [--tier core|pool|all] [--models-dir models]
+# --tier core：只取 tier: core 的卡片，與每日巡檢同一份名單（排程用；ETF 數下限自動改為 1）
 # 6.1 中信投信 ETF 每日淨值組成（收益平準金、資本平準金）：偵測除息並可對照官方配息，--csv 輸出每日表
 python3 .claude/skills/tw-etf-fetcher/scripts/nav_composition.py 00882 --start 2024-06-14 --events --csv out.csv
 python3 .claude/skills/tw-etf-fetcher/scripts/nav_composition.py 00882 --verify 2026-07-16:0.55,2026-01-19:0.45

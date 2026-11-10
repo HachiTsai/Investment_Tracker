@@ -6,7 +6,7 @@
 
 ## 1. 觸發時機與排程
 
-- **排程頻率**：每月 1 次，台北每月 23 日 09:30 執行（以雲端排程設定為準）。
+- **排程頻率**：每週六台北 09:40 執行（雲端排程 `CRON_TZ=Asia/Taipei 40 9 * * 6`；2026-11-10 Hachi 由每月 23 日改為週更，名單跟著每日巡檢後新加的核心標的最慢一週出現）。
 - **觸發平台**：Claude 雲端排程。
 - **雲端排程 Prompt（單行呼叫）**：
 
@@ -43,16 +43,16 @@ flowchart TD
 在 REPO 根目錄執行：
 
 ```bash
-python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py out --gate
+python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py out --tier core --gate
 ```
 
-*耗時約 1～2 分鐘，無需背景執行。輸出包含 `out/index.html`、`out/<代號>.html`、`out/pool.json` 與標準輸出之狀態 JSON。*
+*`--tier core`：只取卡片 `tier: core` 且成分股有 5 檔以上台股個股的 ETF，與每日巡檢同一份名單（2026-11-10 Hachi 同意；當時為 00406A、00918、00919、00985A）。巡檢加減核心標的時，下次執行自動跟上。耗時約 1 分鐘，無需背景執行。輸出包含 `out/index.html`、`out/<代號>.html`、`out/pool.json` 與標準輸出之狀態 JSON。*
 
 ### 步驟 2：健康檢查門檻判定（Gatekeeper）
 
 解析標準輸出之 JSON 物件，必須滿足以下條件才可繼續：
 
-- `etfs`：約 17 檔。
+- `etfs`：至少 1 檔，且等於 core 卡片中有台股成分股的 ETF 數（`--tier core` 時腳本的 ETF 數下限自動改為 1）。
 - `no_price` 與 `no_fin`：合計不超過 10 檔。
 - `etfs_with_errors`：必須為空字典 `{}`。
 
