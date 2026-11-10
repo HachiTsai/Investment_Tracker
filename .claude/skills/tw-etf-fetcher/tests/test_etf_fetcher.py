@@ -449,6 +449,26 @@ def test_sync_gate_passing_uploads_once(tmp_path, monkeypatch):
     ])
     assert rc == 0
     assert len(uploads) == 1
+    # 沒帶 --sheet-id 時取 DRIVE_IDS 的 MARKET_ETF_SHEET_ID（2026-11-10 Actions 曾以 None 呼叫而 404）
+    assert uploads[0][0] == "TEST_MARKET_ETF_SHEET_ID"
+
+
+def test_sync_without_sheet_id_and_missing_key_does_not_upload(tmp_path, monkeypatch):
+    import etf_sheets_sync
+
+    uploads = []
+    monkeypatch.setattr(etf_sheets_sync, "sync_to_google_sheets", lambda *a, **k: uploads.append(a) or (True, "ok"))
+    monkeypatch.delenv("ETF_CONSTITUENTS_SHEET_ID", raising=False)
+    monkeypatch.setenv("DRIVE_IDS", json.dumps({"CORE_SHEET_ID": "TEST_CORE_SHEET_ID"}))
+
+    rc = facade.main([
+        "sync-sheets",
+        "--models-dir", str(_one_etf_models(tmp_path)),
+        "--output-dir", str(tmp_path / "reports"),
+        "--no-pool",
+    ])
+    assert rc == 1
+    assert uploads == []
 
 
 def test_sync_via_google_api(tmp_path):
