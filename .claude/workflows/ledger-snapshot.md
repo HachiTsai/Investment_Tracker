@@ -28,7 +28,7 @@
 ## 3. 執行步驟
 
 1. **取最新互動版**：用 Artifact `read` 讀 `https://claude.ai/artifact/TU6Yi51nEe9s783qoDukSs`，記下結果給的完整頁面檔案路徑（不要依賴上次的檔案）。
-2. **讀資料**：用 `get_values` 讀 Our_Investment（`OUR_INVESTMENT_SHEET_ID`）的 `Portfolio!A1:S50`、`Transactions!A1:R200`、`Stock_Journal!A1:E300`、`資金餘額!A1:B8`，依 `.claude/skills/ledger-snapshot/references/snapshot-spec.md` 第 2 節存成 `data.json`（存在暫存目錄，不進 git）。任一範圍讀不到，整次中止並回報。
+2. **讀資料**：用 `get_values` 讀 Our_Investment（`OUR_INVESTMENT_SHEET_ID`）的 `Portfolio!A1:U50`、`Transactions!A1:R200`、`Stock_Journal!A1:E300`、`資金餘額!A1:B8`，依 `.claude/skills/ledger-snapshot/references/snapshot-spec.md` 第 2 節存成 `data.json`（存在暫存目錄，不進 git）。任一範圍讀不到，整次中止並回報。
 3. **產生快照**：
 
    ```bash
