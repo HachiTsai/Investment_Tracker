@@ -25,6 +25,7 @@
 - **波段觀察資料庫排程工作流**：@[.claude/workflows/swing-patrol-sheets.md](.claude/workflows/swing-patrol-sheets.md)
 - **每日波段巡檢報告排程工作流**：@[.claude/workflows/daily-portfolio-patrol.md](.claude/workflows/daily-portfolio-patrol.md)
 - **Our_Investment 快照版排程工作流**：@[.claude/workflows/ledger-snapshot.md](.claude/workflows/ledger-snapshot.md)
+- **工作流對應地圖排程工作流**：@[.claude/workflows/workflow-map.md](.claude/workflows/workflow-map.md)
 - **排程登記表**：@[.claude/workflows/schedule-registry.md](.claude/workflows/schedule-registry.md)
 - **情資管線與 APP 整合架構**：@[architecture/情資管線與APP整合架構.md](architecture/情資管線與APP整合架構.md)
 - **專職投資人協作定位**：@[architecture/專職投資人協作定位.md](architecture/專職投資人協作定位.md)
