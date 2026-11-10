@@ -1,0 +1,86 @@
+<title>工作流工廠</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap">
+<style>:root{color-scheme:dark}#app{box-sizing:border-box;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}</style>
+<style>
+html,body{margin:0;height:100%;background:#0F1A3A;color:#E8EEFF;font-family:"Noto Sans TC",system-ui,"PingFang TC","Microsoft JhengHei",sans-serif}
+#app{display:flex;flex-direction:column;height:100%}
+#chips{display:flex;gap:8px;flex-wrap:wrap;padding:8px 12px}
+.c{font:inherit;font-size:15px;border:1px solid #3A4A78;background:#16244F;color:#C9D6F5;border-radius:16px;padding:2px 12px;cursor:pointer}
+.c.on{background:#FF8A3D;color:#14224A;border-color:#FF8A3D;font-weight:700}
+#s{width:100%;flex:1;min-height:0}
+#cap{padding:8px 14px 10px;font-size:20px;line-height:1.4;min-height:30px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.gear{transform-box:fill-box;transform-origin:center;animation:spin 5s linear infinite}
+@keyframes puff{0%{transform:translateY(0);opacity:.8}100%{transform:translateY(-36px);opacity:0}}
+.puff{animation:puff 2.4s linear infinite}
+@keyframes belt{to{stroke-dashoffset:-32}}
+.bd{animation:belt .8s linear infinite}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+<div id="app"><div id="chips"></div><svg id="s" viewBox="0 0 1664 600" preserveAspectRatio="xMidYMid meet" role="img" aria-label="工廠平面圖：左側觸發，中間九台技能機台，右側產出倉庫"></svg><div id="cap"></div></div>
+<script>
+var NS="http://www.w3.org/2000/svg",s=document.getElementById("s");
+function E(t,a,p,tx){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);if(tx!=null)e.textContent=tx;(p||s).appendChild(e);return e}
+/*@@FDATA@@*/
+var CX=[480,740,1000],CY=[90,270,450];
+var TR={gha:{x:110,y:90,w:170,h:100,c:"#2F6BFF",n:"GitHub 排程"},cld:{x:110,y:270,w:170,h:100,c:"#FF8A3D",n:"Claude 排程"},man:{x:110,y:450,w:170,h:100,c:"#7B5CFA",n:"手動與會話"}};
+var M=SK.map(function(k,i){return {x:CX[i%3],y:CY[Math.floor(i/3)],w:170,h:100}});
+var ON=O.map(function(o,i){return {x:1545,y:26+i*38,w:230,h:30}});
+for(var gx=0;gx!=27;gx++)E("line",{x1:gx*64,y1:0,x2:gx*64,y2:600,stroke:"#16244F","stroke-width":2});
+for(var gy=0;gy!=10;gy++)E("line",{x1:0,y1:gy*64,x2:1664,y2:gy*64,stroke:"#16244F","stroke-width":2});
+[["進料口",110],["機台（技能）",740],["倉庫（產出）",1545]].forEach(function(z){E("text",{x:z[1],y:596,"text-anchor":"middle",fill:"#8FA3D8","font-size":22},null,z[0])});
+function link(a,b){var p1,p2;
+ if(a.x==b.x){if(b.y>a.y){p1=[a.x,a.y+a.h/2];p2=[b.x,b.y-b.h/2]}else{p1=[a.x,a.y-a.h/2];p2=[b.x,b.y+b.h/2]}return [p1,p2]}
+ if(b.x>a.x){p1=[a.x+a.w/2,a.y];p2=[b.x-b.w/2,b.y]}else{p1=[a.x-a.w/2,a.y];p2=[b.x+b.w/2,b.y]}
+ var mx=(p1[0]+p2[0])/2;return [p1,[mx,p1[1]],[mx,p2[1]],p2]}
+function len(pts){var L=0;for(var i=1;i!=pts.length;i++)L+=Math.abs(pts[i][0]-pts[i-1][0])+Math.abs(pts[i][1]-pts[i-1][1]);return L}
+function routes(w){var base=[TR[w[1]]].concat(w[4].map(function(i){return M[i]})),outs=w[6].length?w[6]:[-1],r=[];
+ outs.forEach(function(o){var nodes=o==-1?base:base.concat([ON[o]]),pts=[],cut=0;
+  for(var i=1;i!=nodes.length;i++){var seg=link(nodes[i-1],nodes[i]);if(i==nodes.length-1)if(o!=-1)cut=len(pts.concat(seg.slice(0,1)));pts=pts.concat(i==1?seg:seg.slice(1))}
+  if(o==-1)cut=len(pts)+1;
+  r.push({pts:pts,L:len(pts),cut:cut||len(pts)*0.6,w:w})});return r}
+var R=W.map(routes);
+var belts=E("g",{});
+var ov=E("g",{});
+var tn={},mn=[],onn=[];
+Object.keys(TR).forEach(function(k){var t=TR[k],g=E("g",{},null);E("rect",{x:t.x-85,y:t.y-50,width:170,height:100,rx:14,fill:t.c,stroke:"#0F1A3A","stroke-width":4},g);
+ if(k=="gha"){E("circle",{cx:t.x,cy:t.y-14,r:17,fill:"none",stroke:"#fff","stroke-width":4},g);E("path",{d:"M"+t.x+" "+(t.y-14)+"V"+(t.y-26)+"M"+t.x+" "+(t.y-14)+"L"+(t.x+9)+" "+(t.y-8),stroke:"#fff","stroke-width":4,fill:"none"},g)}
+ else if(k=="cld")E("polygon",{points:(t.x+4)+","+(t.y-34)+" "+(t.x-14)+","+(t.y-12)+" "+t.x+","+(t.y-12)+" "+(t.x-6)+","+(t.y+6)+" "+(t.x+14)+","+(t.y-18)+" "+(t.x+2)+","+(t.y-18),fill:"#fff"},g);
+ else E("polygon",{points:(t.x-10)+","+(t.y-32)+" "+(t.x-10)+","+(t.y+4)+" "+(t.x-2)+","+(t.y-4)+" "+(t.x+6)+","+(t.y+8)+" "+(t.x+11)+","+(t.y+5)+" "+(t.x+3)+","+(t.y-7)+" "+(t.x+14)+","+(t.y-7),fill:"#fff"},g);
+ E("text",{x:t.x,y:t.y+34,"text-anchor":"middle",fill:"#fff","font-size":24,"font-weight":700},g,t.n);tn[k]=g});
+SK.forEach(function(k,i){var m=M[i],g=E("g",{});
+ E("rect",{x:m.x-60,y:m.y-72,width:20,height:26,fill:"#14224A"},g);
+ for(var j=0;j!=3;j++)E("circle",{cx:m.x-50,cy:m.y-76,r:7,fill:"#C9D6F5",class:"puff",style:"animation-delay:"+(j*.8)+"s"},g);
+ var rc=E("rect",{x:m.x-85,y:m.y-50,width:170,height:100,rx:14,fill:k[1],stroke:"#0F1A3A","stroke-width":4},g);
+ E("circle",{cx:m.x+56,cy:m.y-26,r:16,fill:"none",stroke:"#14224A","stroke-width":7,"stroke-dasharray":"5.5 5.5",class:"gear"},g);E("circle",{cx:m.x+56,cy:m.y-26,r:7,fill:"#14224A"},g);
+ E("text",{x:m.x,y:m.y+14,"text-anchor":"middle",fill:"#14224A","font-size":28,"font-weight":700},g,k[2]);E("text",{x:m.x,y:m.y+38,"text-anchor":"middle",fill:"#14224A","font-size":16},g,k[0]);mn.push({g:g,r:rc})});
+O.forEach(function(o,i){var n=ON[i],g=E("g",{});E("rect",{x:n.x-115,y:n.y-15,width:230,height:30,rx:8,fill:"#16244F",stroke:o[1],"stroke-width":3},g);E("rect",{x:n.x-115,y:n.y-15,width:12,height:30,rx:4,fill:o[1]},g);
+ E("text",{x:n.x-94,y:n.y+6,fill:"#E8EEFF","font-size":19},g,o[0]);onn.push(g)});
+var chips=document.getElementById("chips"),cap=document.getElementById("cap"),sel=-2,pause=0,items=[];
+var layer=E("g",{});
+function setSel(i){sel=i;
+ Array.prototype.forEach.call(chips.children,function(c,j){c.className=j-1==i?"c on":"c"});
+ while(ov.firstChild)ov.removeChild(ov.firstChild);while(layer.firstChild)layer.removeChild(layer.firstChild);items=[];
+ var A=(i==-1),use=A?W.map(function(w,j){return j}):[i];var tu={},mu={},md={},ou={};
+ use.forEach(function(j){var w=W[j];tu[w[1]]=1;w[4].forEach(function(m){mu[m]=1});w[5].forEach(function(m){md[m]=1});w[6].forEach(function(o){ou[o]=1})});
+ use.forEach(function(j){R[j].forEach(function(r,ri){var d="M"+r.pts.map(function(p){return p[0]+" "+p[1]}).join("L");
+  var col=A?TR[r.w[1]].c:"#3A4A78";
+  E("path",{d:d,fill:"none",stroke:A?col:"#3A4A78","stroke-width":A?5:16,"stroke-opacity":A?.35:1,"stroke-linejoin":"round"},ov);
+  E("path",{d:d,fill:"none",stroke:A?col:"#8FA3D8","stroke-width":A?3:4,"stroke-dasharray":"14 18",class:"bd","stroke-linejoin":"round"},ov);
+  var n=A?1:3;for(var k=0;k!=n;k++)items.push({r:r,off:r.L*k/n+ri*40,person:(A?false:(k==0?ri==0:false)),g:null})})});
+ items.forEach(function(it){var g=E("g",{},layer);it.c=E("rect",{x:-13,y:-11,width:26,height:22,rx:3,stroke:"#14224A","stroke-width":3},g);
+  if(it.person){var p=E("g",{},layer);E("circle",{cx:0,cy:-44,r:9,fill:"#F5C9A0"},p);E("rect",{x:-8,y:-34,width:16,height:22,rx:7,fill:TR[it.r.w[1]].c},p);it.l1=E("line",{x1:-3,y1:-12,x2:-3,y2:2,stroke:"#E8EEFF","stroke-width":4,"stroke-linecap":"round"},p);it.l2=E("line",{x1:3,y1:-12,x2:3,y2:2,stroke:"#E8EEFF","stroke-width":4,"stroke-linecap":"round"},p);it.p=p}
+  it.g=g});
+ Object.keys(tn).forEach(function(k){tn[k].setAttribute("opacity",tu[k]||A?1:.35)});
+ mn.forEach(function(m,j){m.g.setAttribute("opacity",A||mu[j]||md[j]?1:.35);m.r.setAttribute("stroke",((mu[j]?!A:false))?"#fff":"#0F1A3A");m.r.setAttribute("stroke-dasharray",(md[j]?(A?false:!mu[j]):false)?"9 7":"none");m.r.setAttribute("stroke-width",(mu[j]||md[j])?(A?4:6):4)});
+ onn.forEach(function(g,j){g.setAttribute("opacity",A||ou[j]?1:.35)});
+ if(A)cap.textContent="全部 "+W.length+" 個工作流同時運轉：藍＝GitHub 排程，橘＝Claude 排程，紫＝手動";
+ else{var w=W[i];cap.textContent=w[0]+" "+w[2]+"（"+w[3]+"）　"+TR[w[1]].n+(w[4].length?" → "+w[4].map(function(m){return SK[m][0]}).join("、"):"（人工作業，不經技能）")+(w[5].length?"（另引用 "+w[5].map(function(m){return SK[m][0]}).join("、")+"）":"")+" → "+(w[6].length?w[6].map(function(o){return O[o][0]}).join("、"):"只回報提醒，沒有產出")+(w[7]||"")}}
+["全部"].concat(W.map(function(w){return w[0]})).forEach(function(t,j){var b=document.createElement("button");b.className="c";b.textContent=t;b.onclick=function(){pause=Date.now()+25000;setSel(j-1)};chips.appendChild(b)});
+function pt(r,d){var P=r.pts,a=0;for(var i=1;i!=P.length;i++){var sl=Math.abs(P[i][0]-P[i-1][0])+Math.abs(P[i][1]-P[i-1][1]);if(d-a-sl>0){a+=sl;continue}var f=sl?(d-a)/sl:0;return [P[i-1][0]+(P[i][0]-P[i-1][0])*f,P[i-1][1]+(P[i][1]-P[i-1][1])*f]}return P[P.length-1]}
+var nx=6500;function tick(ts){var d0=ts*0.13;items.forEach(function(it){var d=(d0+it.off)%it.r.L,p=pt(it.r,d);it.g.setAttribute("transform","translate("+p[0]+","+p[1]+")");it.c.setAttribute("fill",d>it.r.cut?"#1FA97A":"#FFD166");
+  if(it.p){var sw=Math.sin(ts/90)*14;it.p.setAttribute("transform","translate("+p[0]+","+(p[1]-6)+")");it.l1.setAttribute("x2",-3+sw);it.l2.setAttribute("x2",3-sw)}});
+ if(ts>nx){nx=ts+6500;if(Date.now()>pause)setSel(sel>=W.length-1?-1:sel+1)}requestAnimationFrame(tick)}
+setSel(0);requestAnimationFrame(tick);
+</script>

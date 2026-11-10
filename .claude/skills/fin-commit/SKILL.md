@@ -54,7 +54,7 @@ python3 .claude/skills/fin-commit/scripts/committer.py --no-stage --message-file
 
 - **Co-Authored-By: Claude**：已有 Claude 署名時不重複。
 - **排程健康檢查**：`scripts/schedule_health.py` 由 `ci.yml` 的 `schedule-health` 工作在每日台北 20:17 執行（也可手動觸發），確認 `swing-patrol.yml`、`market-etf.yml` 近期排程或手動執行有如期且成功；只涵蓋 GitHub Actions，雲端排程不在範圍內。CI 帶 `--dispatch`：`swing-patrol.yml` 自最近一個已過 12 小時的 cron 時點以來沒有成功執行、也沒有執行中的 run，就補送一次 `workflow_dispatch`（`force=true`，需 `actions: write`；cron 直接讀 yml）；`market-etf.yml` 只回報不補送（2026-11-09 Hachi 同意，Issue #232）。
-- **工作流對應地圖**：`scripts/workflow_map.py build <out.html>` 讀登記表、cron、規格與技能清單，合併 `references/workflow-map-data.json`（策展資料）與 `workflow-map-template.html`，產生單檔地圖頁並列出與 repo 不一致處（`drift`）；由雲端排程依 `.claude/workflows/workflow-map.md` 發布成 Artifact。只讀 repo，不連網。
+- **工作流對應地圖**：`scripts/workflow_map.py build <out.html> [--factory <factory.html>]` 讀登記表、cron、規格與技能清單，合併 `references/workflow-map-data.json`（策展資料）與 `workflow-map-template.html`，產生單檔地圖頁（加 `--factory` 另產「工作流工廠」模擬頁，模板為 `workflow-factory-template.html`）並列出與 repo 不一致處（`drift`）；由雲端排程依 `.claude/workflows/workflow-map.md` 發布成 Artifact。只讀 repo，不連網。
 - **排程規格一致性**：`tests/test_workflow_consistency.py` 在每次 PR 的 CI 比對 `.claude/workflows/schedule-registry.md`、`.github/workflows/*.yml` 的 cron 與台北時間、各規格檔的排程時間與雲端 prompt，以及規格檔引用的腳本路徑；改了排程或腳本路徑卻沒同步文件，CI 即失敗。
 
 ## 範例：交易紀錄

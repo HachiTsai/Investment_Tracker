@@ -270,9 +270,15 @@
    "id": "C5",
    "plat": "cld",
    "name": "工作流對應地圖",
-   "when": "週五 23:10",
+   "when": "每日 23:10",
    "dow": [
-    5
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    0
    ],
    "time": "23:10",
    "trigger": [
@@ -285,7 +291,7 @@
     [
      "fin-commit",
      1,
-     "workflow_map.py build"
+     "workflow_map.py build（地圖與工廠兩頁）"
     ]
    ],
    "reads": [
@@ -298,10 +304,11 @@
     "不寫任何試算表"
    ],
    "outs": [
-    "Artifact <code>ExaiqRk4EfWJoHe8CeLgY1</code>（本地圖，原地更新）"
+    "Artifact <code>ExaiqRk4EfWJoHe8CeLgY1</code>（本地圖，原地更新）",
+    "Artifact <code>CZS9eYwfwDVbdZZBbKREiy</code>（工作流工廠，原地更新）"
    ],
    "secrets": [],
-   "gate": "腳本退出碼或工作流數量不對即不發布；與 repo 不一致處列在頁尾並回報",
+   "gate": "腳本退出碼或工作流數量不對即兩頁都不發布；與 repo 不一致處列在頁尾並回報",
    "note": "策展資料落後 repo 時只回報，不自行改資料檔。"
   },
   {
@@ -520,8 +527,219 @@
   },
   {
    "id": "C5",
-   "title": "C5 工作流對應地圖（週五 23:10）",
-   "src": "sequenceDiagram\n  autonumber\n  participant CL as Claude 雲端排程\n  participant RP as repo 登記表與規格\n  participant WM as workflow_map.py\n  participant MA as 地圖 Artifact\n  CL->>RP: git pull\n  CL->>WM: build map.html\n  WM->>RP: 讀登記表、cron、規格、技能清單\n  WM-->>CL: JSON（sha、drift）\n  alt 退出碼不為 0 或工作流數量不對\n    CL-->>CL: 不發布，回報原因\n  else 成功\n    CL->>MA: read 後原地發布\n    CL-->>CL: 回報 drift 條列\n  end\n"
+   "title": "C5 工作流對應地圖與工廠（每日 23:10）",
+   "src": "sequenceDiagram\n  autonumber\n  participant CL as Claude 雲端排程\n  participant RP as repo 登記表與規格\n  participant WM as workflow_map.py\n  participant MA as 地圖與工廠 Artifact\n  CL->>RP: git pull\n  CL->>WM: build map.html 與 factory.html\n  WM->>RP: 讀登記表、cron、規格、技能清單\n  WM-->>CL: JSON（sha、drift）\n  alt 退出碼不為 0 或工作流數量不對\n    CL-->>CL: 不發布，回報原因\n  else 成功\n    CL->>MA: 各自 read 後原地發布\n    CL-->>CL: 回報 drift 條列\n  end\n"
   }
- ]
+ ],
+ "FACTORY": {
+  "SK": [
+   [
+    "price-dividend-fetcher",
+    "#5EEAD4"
+   ],
+   [
+    "fundamental-analyzer",
+    "#D8B4FE"
+   ],
+   [
+    "tw-etf-fetcher",
+    "#A5B4FC"
+   ],
+   [
+    "portfolio-patrol",
+    "#FCD34D"
+   ],
+   [
+    "hk-market-data",
+    "#FDA4AF"
+   ],
+   [
+    "ledger-snapshot",
+    "#86EFAC"
+   ],
+   [
+    "fin-commit",
+    "#7DD3FC"
+   ],
+   [
+    "markdown-linter",
+    "#F9A8D4"
+   ],
+   [
+    "tool-note-writer",
+    "#FDE68A"
+   ]
+  ],
+  "OUT": [
+   [
+    "Sheet 波段觀察",
+    "#1FA97A"
+   ],
+   [
+    "Sheet 全市場 ETF",
+    "#1FA97A"
+   ],
+   [
+    "Sheet 00882 成分股",
+    "#1FA97A"
+   ],
+   [
+    "Sheet 台股 ETF",
+    "#1FA97A"
+   ],
+   [
+    "Sheet Our_Investment",
+    "#8FA3D8"
+   ],
+   [
+    "Artifact 巡檢頁",
+    "#FF8A3D"
+   ],
+   [
+    "Artifact 股利明細",
+    "#FF8A3D"
+   ],
+   [
+    "Artifact 台股 ETF",
+    "#FF8A3D"
+   ],
+   [
+    "Artifact 交易簿快照",
+    "#FF8A3D"
+   ],
+   [
+    "Artifact 交易簿互動版",
+    "#FF8A3D"
+   ],
+   [
+    "Artifact 里程圖",
+    "#FF8A3D"
+   ],
+   [
+    "Artifact 工作流地圖",
+    "#FF8A3D"
+   ],
+   [
+    "Artifact 工作流工廠",
+    "#FF8A3D"
+   ],
+   [
+    "main 自動合併",
+    "#2F6BFF"
+   ],
+   [
+    "research 筆記",
+    "#C08A3E"
+   ]
+  ],
+  "ROWS": [
+   "S1",
+   "S2",
+   "CI",
+   "HC",
+   "C1",
+   "C2",
+   "C3",
+   "C4",
+   "C5",
+   "H0",
+   "M1",
+   "HM"
+  ],
+  "OUTS": {
+   "S1": [
+    "Sheet 波段觀察"
+   ],
+   "S2": [
+    "Sheet 全市場 ETF"
+   ],
+   "CI": [
+    "main 自動合併"
+   ],
+   "HC": [],
+   "C1": [
+    "Artifact 巡檢頁"
+   ],
+   "C2": [
+    "Artifact 股利明細",
+    "Sheet 00882 成分股"
+   ],
+   "C3": [
+    "Artifact 台股 ETF",
+    "Sheet 台股 ETF"
+   ],
+   "C4": [
+    "Artifact 交易簿快照",
+    "Sheet Our_Investment"
+   ],
+   "C5": [
+    "Artifact 工作流地圖",
+    "Artifact 工作流工廠"
+   ],
+   "H0": [],
+   "M1": [
+    "research 筆記"
+   ],
+   "HM": [
+    "Sheet Our_Investment",
+    "Artifact 交易簿互動版",
+    "Artifact 里程圖"
+   ]
+  },
+  "OVR": {
+   "CI": {
+    "name": "PR 檢查與自動合併",
+    "when": "每次 PR",
+    "skills": [
+     "markdown-linter",
+     "fin-commit"
+    ],
+    "also": []
+   },
+   "HC": {
+    "plat": "gha",
+    "name": "排程健康檢查",
+    "when_from": "CI",
+    "skills": [
+     "fin-commit"
+    ],
+    "also": []
+   },
+   "HM": {
+    "plat": "man",
+    "name": "手動記帳與看板",
+    "when": "隨時",
+    "skills": [],
+    "also": []
+   },
+   "C4": {
+    "cap": "（Our_Investment 只讀取，不寫入）",
+    "name": "交易簿快照"
+   },
+   "H0": {
+    "name": "會話啟動 hook"
+   },
+   "S1": {
+    "name": "波段觀察"
+   },
+   "S2": {
+    "name": "全市場 ETF"
+   },
+   "C1": {
+    "name": "每日巡檢"
+   },
+   "C2": {
+    "name": "00882 股利表"
+   },
+   "C3": {
+    "name": "台股 ETF 池"
+   },
+   "C5": {
+    "name": "工作流地圖與工廠"
+   },
+   "M1": {
+    "name": "成分股股利調查"
+   }
+  }
+ }
 }

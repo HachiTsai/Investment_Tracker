@@ -10,7 +10,7 @@
   這些 repo 裡沒有結構化來源，由人維護；新工作流或新技能出現時，本腳本回報「地圖尚未涵蓋」。
 
 用法：
-    python3 .claude/skills/fin-commit/scripts/workflow_map.py build OUT.html [--strict]
+    python3 .claude/skills/fin-commit/scripts/workflow_map.py build OUT.html [--factory FACTORY.html] [--strict]
 輸出（stdout）：JSON，含 out、sha、wf_count、drift（地圖與 repo 不一致的項目）。
 --strict：drift 非空時退出碼 1。
 """
@@ -195,7 +195,45 @@ def render(template, wf, skills, pending, seqs, foot):
     return out.replace("@@FOOT@@", foot)
 
 
-def build(root, out_path):
+def build_factory(data, wf, skills, template, foot_note=""):
+    """由策展資料與合併後的 wf 產生「工作流工廠」模擬頁（單檔 HTML）。"""
+    f = data["FACTORY"]
+    sk_names = [k[0] for k in f["SK"]]
+    out_names = [o[0] for o in f["OUT"]]
+    by_id = {w["id"]: w for w in wf}
+    rows = []
+    for rid in f["ROWS"]:
+        ov = f["OVR"].get(rid, {})
+        w = by_id.get(rid)
+        base = w or by_id.get(ov.get("when_from", ""), {})
+        plat = ov.get("plat") or (w or {}).get("plat", "man")
+        name = ov.get("name") or (w or {}).get("name", rid)
+        if "when" in ov:
+            when = ov["when"]
+        elif "when_from" in ov:
+            when = base.get("when", "")
+        else:
+            when = (w or {}).get("when", "")
+        if "skills" in ov:
+            main, also = ov["skills"], ov.get("also", [])
+        else:
+            main = [s[0] for s in (w or {}).get("skills", []) if s[1]]
+            also = [s[0] for s in (w or {}).get("skills", []) if not s[1]]
+        for n in main + also:
+            if n not in sk_names:
+                raise ValueError(f"工廠頁沒有技能 {n}")
+        outs = f["OUTS"].get(rid, [])
+        for n in outs:
+            if n not in out_names:
+                raise ValueError(f"工廠頁沒有產出 {n}")
+        rows.append([rid, plat, name, when, [sk_names.index(n) for n in main],
+                     [sk_names.index(n) for n in also], [out_names.index(n) for n in outs], ov.get("cap", "")])
+    sk = [[k[0], k[1], skills.get(k[0], SKILL_FALLBACK_LABEL)] for k in f["SK"]]
+    js = f"var SK={_js(sk)};\nvar O={_js(f['OUT'])};\nvar W={_js(rows)};"
+    return template.replace("/*@@FDATA@@*/", js)
+
+
+def build(root, out_path, factory_path=None):
     data = json.loads((REF / "workflow-map-data.json").read_text(encoding="utf-8"))
     template = (REF / "workflow-map-template.html").read_text(encoding="utf-8")
     wf, skills, pending, drift = merge(data, root)
@@ -210,7 +248,15 @@ def build(root, out_path):
     page = render(template, wf, skills, pending, data["SEQ"], foot)
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     Path(out_path).write_text(page, encoding="utf-8")
-    return {"out": str(out_path), "sha": sha, "wf_count": len(wf), "drift": drift}
+    res = {"out": str(out_path), "sha": sha, "wf_count": len(wf), "drift": drift}
+    if factory_path:
+        tpl = (REF / "workflow-factory-template.html").read_text(encoding="utf-8")
+        fpage = build_factory(data, wf, skills, tpl)
+        Path(factory_path).parent.mkdir(parents=True, exist_ok=True)
+        Path(factory_path).write_text(fpage, encoding="utf-8")
+        res["factory_out"] = str(factory_path)
+        res["factory_rows"] = len(data["FACTORY"]["ROWS"])
+    return res
 
 
 def main(argv=None):
@@ -218,9 +264,10 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd", required=True)
     b = sub.add_parser("build", help="產生地圖 HTML")
     b.add_argument("out")
+    b.add_argument("--factory", help="另外輸出工作流工廠模擬頁的路徑")
     b.add_argument("--strict", action="store_true", help="地圖與 repo 不一致時退出碼 1")
     a = ap.parse_args(argv)
-    res = build(ROOT, a.out)
+    res = build(ROOT, a.out, a.factory)
     print(json.dumps(res, ensure_ascii=False, indent=1))
     return 1 if (a.strict and res["drift"]) else 0
 

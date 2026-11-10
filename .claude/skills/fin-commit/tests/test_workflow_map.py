@@ -51,7 +51,7 @@ def test_build_real_repo(tmp_path):
 
 def test_page_has_no_drive_ids():
     """資料檔與模板不放 Drive／試算表 ID（只留鍵名與 Artifact 網址）。"""
-    for name in ("workflow-map-data.json", "workflow-map-template.html"):
+    for name in ("workflow-map-data.json", "workflow-map-template.html", "workflow-factory-template.html"):
         text = (wm.REF / name).read_text(encoding="utf-8")
         assert not re.search(r"\b1[A-Za-z0-9_-]{43}\b", text), f"{name} 含疑似 Drive ID"
 
@@ -70,3 +70,28 @@ def test_drift_detects_unmodeled_spec(tmp_path):
     joined = "\n".join(drift)
     assert "C9" in joined and "new.md" in joined and "new-skill" in joined
     assert "new-skill" in skills
+
+
+def test_factory_page(tmp_path):
+    """工廠頁由資料檔產生：每個列的技能、產出都對得到名稱，頁面沒有殘留標記或 Drive ID。"""
+    out, fac = tmp_path / "map.html", tmp_path / "factory.html"
+    res = wm.build(wm.ROOT, out, fac)
+    page = fac.read_text(encoding="utf-8")
+    data = json.loads((wm.REF / "workflow-map-data.json").read_text(encoding="utf-8"))
+    assert "@@" not in page
+    assert res["factory_rows"] == len(data["FACTORY"]["ROWS"])
+    for rid in data["FACTORY"]["ROWS"]:
+        assert f'["{rid}",' in page
+    assert not re.search(r"\b1[A-Za-z0-9_-]{43}\b", page)
+    # 登記表的每個工作流 ID 都要進工廠（HC、HM 為工廠專用列）
+    wf_ids = {w["id"] for w in data["WF"]}
+    assert wf_ids <= set(data["FACTORY"]["ROWS"]), wf_ids - set(data["FACTORY"]["ROWS"])
+
+
+def test_factory_unknown_output_fails(tmp_path):
+    data = json.loads((wm.REF / "workflow-map-data.json").read_text(encoding="utf-8"))
+    data["FACTORY"]["OUTS"]["S1"] = ["不存在的倉庫"]
+    wf, skills, _, _ = wm.merge(data, wm.ROOT)
+    tpl = (wm.REF / "workflow-factory-template.html").read_text(encoding="utf-8")
+    with pytest.raises(ValueError):
+        wm.build_factory(data, wf, skills, tpl)
