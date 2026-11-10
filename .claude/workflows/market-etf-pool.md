@@ -84,7 +84,9 @@ flowchart TD
 python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --export-only --gate --output-dir out
 ```
 
-*注意：雲端無 gsheets CLI，必須帶 `--export-only`。日股 ETF 會查 EDINET，冷啟動約 1 分鐘；超過 15 分鐘（workflow 的 `timeout-minutes: 15`，與程式內抓取上限 `max_seconds=900` 一致）即視為超時中斷，不寫入任何東西。*
+*注意：雲端無 gsheets CLI，必須帶 `--export-only`。日股 ETF 會查 EDINET，冷啟動約 1 分鐘；程式內抓取上限 `max_seconds=900`（15 分鐘）只管成分股抓取階段；workflow 的 `timeout-minutes: 30` 另含穿透評分階段，超時即中斷，不寫入任何東西。*
+
+*2026-11-10：`timeout-minutes` 由 15 放寬為 30。PR #229 讓 `tier: core` 標的的穿透評分改算全持股（與巡檢一致），評分階段由約 5 分鐘（11-01）增至超過 10 分鐘，11-09 手動執行在 15 分鐘處被中斷。*
 
 ### 步驟 2：健康檢查門檻判定（Gatekeeper）
 
