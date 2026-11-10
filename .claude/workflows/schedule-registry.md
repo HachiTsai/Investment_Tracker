@@ -18,6 +18,7 @@
 | C2 | 00882 成分股股利表（L7） | Claude 雲端排程 | 週五 16:30 | `hk-00882-dividend.md` | Artifact `DSbfrxfywurJVo3TVwSzia`，Sheet `00882_成分股股利資料庫` | 無，靠排程串回報 |
 | C3 | 台股 ETF 成分股池（L8） | Claude 雲端排程 | 週六 09:40 | `tw-etf-pool.md` | Artifact `RoDHVZRr588JCcgzMswsug`，Sheet `台股ETF成分股資料庫` | 無，靠排程串回報 |
 | C4 | Our_Investment 快照版 | Claude 雲端排程 | 平日 09:30 | `ledger-snapshot.md` | Artifact `SBn43iC1bBG2zf2bexgmxZ` | 無，靠排程串回報 |
+| C5 | 工作流對應地圖 | Claude 雲端排程 | 週一 09:10（建議） | `workflow-map.md` | Artifact `ExaiqRk4EfWJoHe8CeLgY1` | 無，靠排程串回報；排程尚待 Hachi 建立 |
 | CI | 排程健康檢查（F6） | GitHub Actions `ci.yml`，cron `17 12 * * *` | 每日 20:17 | 本表與 `.claude/skills/fin-commit/scripts/schedule_health.py` | CI 紀錄（成功或紅燈） | 本身即檢查 |
 
 ## 2. 雲端 prompt 原文
@@ -28,6 +29,7 @@
 - C2：`git pull origin main，讀取並執行 .claude/workflows/hk-00882-dividend.md，完成後依規格回報。`
 - C3：`git pull origin main，讀取並執行 .claude/workflows/tw-etf-pool.md，完成後依規格回報。`
 - C4：`git pull --ff-only origin main，讀取並執行 .claude/workflows/ledger-snapshot.md，完成後依規格回報。`
+- C5：`git pull origin main，讀取並執行 .claude/workflows/workflow-map.md，完成後依規格回報。`
 - S2（備用）：`git pull origin main，讀取並執行 .claude/workflows/market-etf-pool.md，完成後依規格回報。`
 
 ## 3. 待驗證（2026-11-06）
@@ -39,6 +41,7 @@
 
 ## 4. 異動紀錄
 
+- 2026-11-10：新增 C5（工作流對應地圖），規格 `workflow-map.md`，產生器 `fin-commit/scripts/workflow_map.py`；排程時間為建議值，待 Hachi 在雲端建立後確認。Hachi 要求（討論串 2026-11-10「幫我寫一個workflow」）。
 - 2026-11-10：C3 由每月 23 日 09:30 改為週六 09:40（雲端排程 `CRON_TZ=Asia/Taipei 40 9 * * 6`），名單改為與 C1 每日巡檢相同的 core 卡片（`etf_pool.py --tier core`）；C1 巡檢頁加明細頁連結（`swing.py --etf-detail`），兩頁維持分開。Hachi 同意（討論串「確認每日巡檢有跑市場修正追蹤」2026-11-10 選「分開+連結，改週更」）。
 - 2026-11-06：C1 由每日改為週二至週六 08:50（雲端排程 `CRON_TZ=Asia/Taipei 50 8 * * 2-6`，Hachi 已在雲端設定修改），週日、週一的資料日與週六相同。S1、S2、CI 的 cron 改到非整點（17:23、17:37、20:17），新增 workflow 一致性測試；修正每日巡檢回報範本、成分股股利調查注意事項、全市場 ETF 列數敘述等過時內容。Hachi 同意（討論串「檢查 PR 217 與 218 修正」2026-11-06「同意，另外讓這些workflow時常被檢視與跟上每次的變化」）。
 - 2026-11-06：S1 掃描範圍加入全市場 ETF（前 100 檔台股 ETF，與雷達矩陣同一份清單），工作逾時由 15 分鐘放寬為 30 分鐘；C1 巡檢不再寫波段觀察 Sheet（先前同日加入的步驟 5 撤回）。Hachi 同意（討論串 2026-11-06「1 同意」）。
