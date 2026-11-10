@@ -12,7 +12,7 @@
 
 | 鍵 | 試算表範圍 |
 | :--- | :--- |
-| `portfolio` | `Portfolio!A1:S50` |
+| `portfolio` | `Portfolio!A1:U50` |
 | `tx` | `Transactions!A1:R200` |
 | `journal` | `Stock_Journal!A1:E300` |
 | `cash` | `資金餘額!A1:B8` |
