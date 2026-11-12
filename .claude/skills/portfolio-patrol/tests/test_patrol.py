@@ -270,6 +270,24 @@ def test_watchdog_healthy_and_stale():
     assert "過期" in res_stale["label"]
 
 
+def test_watchdog_uses_live_quote_not_card_mtime():
+    # 卡片檔 10 天沒動，但行情是剛抓的：不應判過期
+    old = (datetime.date.today() - datetime.timedelta(days=10)).isoformat()
+    cards = {"files_mtime": {"ticker.yml": old}, "ticker": {"fail_safe": {"max_stale_days": 5}}}
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    res = patrol.check_watchdog(cards, live_data={"price_is_live": True, "quote_as_of": now})
+    assert res["status"] == "HEALTHY" and not res["is_stale"]
+
+
+def test_watchdog_live_quote_old_and_non_live():
+    cards = {"files_mtime": {}, "ticker": {"fail_safe": {"max_stale_days": 5}}}
+    old = (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=21)).isoformat()
+    res_old = patrol.check_watchdog(cards, live_data={"price_is_live": True, "quote_as_of": old})
+    assert res_old["is_stale"] and "行情過期" in res_old["label"]
+    res_fb = patrol.check_watchdog(cards, live_data={"price_is_live": False})
+    assert res_fb["is_stale"] and "非即時" in res_fb["label"]
+
+
 def test_evaluate_ticker_postures():
     mock_cards = {
         "ticker_id": "00882",

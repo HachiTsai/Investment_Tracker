@@ -143,8 +143,25 @@ def load_cards(models_root: Path, ticker: str) -> Dict[str, Any]:
     return data
 
 
-def check_watchdog(cards_data: Dict[str, Any], max_stale_days: int = 5) -> Dict[str, Any]:
-    """數據心跳檢查（Watchdog）：檢查標的卡片與成分股資料庫之更新時效性。"""
+def _weekdays_between(start: datetime.date, end: datetime.date) -> int:
+    """start（不含）到 end（含）之間的平日數，作為交易日的近似（不含各市場休市日）。"""
+    days, d = 0, start
+    while d < end:
+        d += datetime.timedelta(days=1)
+        if d.weekday() < 5:
+            days += 1
+    return days
+
+
+def check_watchdog(cards_data: Dict[str, Any], max_stale_days: int = 5,
+                   live_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """數據心跳檢查（Watchdog）。
+
+    傳入 live_data（巡檢現場抓到的行情）時，看行情新舊：
+    - 現價不是即時行情：視為過期，標示「行情非即時」。
+    - 有報價時間 quote_as_of：以平日數（交易日近似）對照 max_stale_days。
+    沒傳 live_data 時退回舊行為：看卡片檔修改時間（卡片是靜態設定，會因為沒改動而變舊，僅供相容）。
+    """
     files_mtime = cards_data.get("files_mtime", {})
     ticker_info = cards_data.get("ticker", {})
     fail_safe = ticker_info.get("fail_safe", {})
@@ -155,6 +172,22 @@ def check_watchdog(cards_data: Dict[str, Any], max_stale_days: int = 5) -> Dict[
 
     today = datetime.date.today()
     most_recent_date: Optional[datetime.date] = None
+
+    if live_data is not None:
+        if not live_data.get("price_is_live"):
+            return {"status": "STALE", "is_stale": True, "label": "⚠️ 行情非即時（使用卡片或預設基準值）", "days_ago": 0}
+        try:
+            q_date = datetime.datetime.fromisoformat(str(live_data["quote_as_of"])).date()
+        except Exception:
+            q_date = None
+        if q_date is not None:
+            days_ago = _weekdays_between(q_date, today)
+            if days_ago > stale_limit:
+                return {"status": "STALE", "is_stale": True,
+                        "label": f"⚠️ 行情過期 ({q_date.isoformat()}, {days_ago}個交易日前)", "days_ago": days_ago}
+            return {"status": "HEALTHY", "is_stale": False, "label": f"✅ 正常 (行情 {q_date.isoformat()})",
+                    "days_ago": days_ago}
+        return {"status": "HEALTHY", "is_stale": False, "label": "✅ 正常 (即時行情)", "days_ago": 0}
 
     for _, mtime_str in files_mtime.items():
         try:
