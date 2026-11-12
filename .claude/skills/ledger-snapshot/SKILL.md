@@ -16,8 +16,13 @@ description: 把互動版交易簿（Our_Investment）衍生成唯讀快照 Arti
 
 ```bash
 python3 .claude/skills/ledger-snapshot/scripts/build_snapshot.py \
-  --source <互動版頁面.html> --data <data.json> --stamp "YYYY-MM-DD HH:MM" --out <快照.html>
+  --source <互動版頁面.html> --raw-dir <raw/> --prev <上一版快照.html> \
+  --stamp "YYYY-MM-DD HH:MM" --out <快照.html>
 ```
+
+- `--raw-dir`：資料夾內放四個 `get_values` 回應原文（`portfolio.json`、`tx.json`、`journal.json`、`cash.json`），不必重排成 `data.json`；也可改用 `--data <data.json>`。
+- `--prev`：上一版快照頁。既有的交易或日誌列有變動時中止（結束碼 2），確認後加 `--accept-history-changes`。
+- 發布被拒的處理方式見排程流程第 4 節，不原樣重送、不用 `force`。
 
 互動版版面改了，不用手改快照：重跑一次，快照就跟著更新。來源頁改版導致腳本的標記找不到時，腳本會失敗並指出缺哪個標記，不輸出半成品，此時要回頭更新腳本。
 
