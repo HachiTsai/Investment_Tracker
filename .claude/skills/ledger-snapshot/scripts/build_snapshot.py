@@ -2,6 +2,8 @@
 """由互動版交易簿頁面衍生唯讀快照頁。
 
 用法：
+  python3 build_snapshot.py --source ledger.html --raw-dir raw/ --prev live.html \
+      --stamp "2026-10-30 22:45" --out snap.html
   python3 build_snapshot.py --source ledger.html --data data.json --stamp "2026-10-30 22:45" --out snap.html
 
 來源頁是互動版 Artifact 的 HTML。快照保留除「記帳」以外的分頁，拿掉連接器與所有寫入程式，
@@ -10,6 +12,10 @@
 data.json 的格式：{"portfolio": [[...]], "tx": [[...]], "journal": [[...]], "cash": [[...]]}，
 值為 Sheets get_values 回傳的二維陣列。portfolio／tx／journal 含表頭列；cash 是「資金餘額」分頁，無表頭，
 頁面依列序讀值，所以標籤位置要對得上，對不上就中止。
+--raw-dir：資料夾內放 portfolio.json、tx.json、journal.json、cash.json，內容是 get_values 的回應原文
+（{"range": ..., "values": [[...]]}），不必重新排版成 data.json；range 的分頁名稱對不上就中止。
+--prev：上一版快照頁。交易與日誌的既有列若與上一版不同或消失，列出差異並中止（結束碼 2），
+確認是試算表真的改了再加 --accept-history-changes 重跑。用來抓出抄寫資料時的錯漏字。
 """
 import argparse
 import json
@@ -40,8 +46,63 @@ FORBIDDEN_IDS = [i for i in (_drive_id('CORE_SHEET_ID'), _drive_id('OUR_INVESTME
 FORBIDDEN_TOKENS = ('SHEET_ID', 'spreadsheetId', 'Investment_Tracker_Core')
 
 
+# --raw-dir 的檔名與各自應該對應的分頁名稱。
+RAW_SHEETS = {'portfolio': 'Portfolio', 'tx': 'Transactions', 'journal': 'Stock_Journal', 'cash': '資金餘額'}
+# 既有列不該變動的資料（以第一欄為鍵比對上一版）。portfolio 的現價每天變、cash 是餘額，不比。
+HISTORY_KEYS = ('tx', 'journal')
+
+
 class BuildError(Exception):
     pass
+
+
+def load_raw_dir(path):
+    """讀 --raw-dir：每個檔案是 get_values 的回應原文，或只有二維陣列。"""
+    data = {}
+    for key, sheet in RAW_SHEETS.items():
+        with open(os.path.join(path, f'{key}.json'), encoding='utf8') as f:
+            raw = json.load(f)
+        if isinstance(raw, dict):
+            rng = str(raw.get('range', '')).strip("'")
+            if rng and not rng.replace("'", '').startswith(sheet + '!'):
+                raise BuildError(f'{key}.json 的 range 不是 {sheet} 分頁：檔案放錯了')
+            raw = raw.get('values')
+        data[key] = raw
+    return data
+
+
+def extract_snapshot(html):
+    """從上一版快照頁取出內嵌資料；找不到就丟 BuildError。"""
+    m = re.search(r'^  const SNAPSHOT = (\{.*\});$', html, re.M)
+    if not m:
+        raise BuildError('上一版快照頁找不到內嵌資料（const SNAPSHOT）')
+    try:
+        return json.loads(m.group(1))
+    except ValueError as err:
+        raise BuildError(f'上一版快照頁的內嵌資料無法解析：{err}') from err
+
+
+def history_changes(prev, data):
+    """回傳既有列的差異說明。新增的列不算；只看上一版已有的列是否被改或消失。"""
+    out = []
+    for key in HISTORY_KEYS:
+        new_rows = {str(r[0]): r for r in data.get(key, [])[1:] if r}
+        for row in prev.get(key, [])[1:]:
+            if not row:
+                continue
+            rid = str(row[0])
+            cur = new_rows.get(rid)
+            if cur is None:
+                out.append(f'{key} {rid}：上一版有、這次沒有')
+                continue
+            head = data[key][0]
+            for i in range(max(len(row), len(cur))):
+                a = row[i] if i < len(row) else ''
+                b = cur[i] if i < len(cur) else ''
+                if str(a) != str(b):
+                    col = head[i] if i < len(head) else f'第 {i + 1} 欄'
+                    out.append(f'{key} {rid}「{col}」：上一版 {a!r} → 這次 {b!r}')
+    return out
 
 
 def _cut(s, start, end, keep_end=True):
@@ -145,7 +206,11 @@ def build(source, data, stamp):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--source', required=True, help='互動版頁面 HTML')
-    ap.add_argument('--data', required=True, help='試算表資料 JSON')
+    src = ap.add_mutually_exclusive_group(required=True)
+    src.add_argument('--data', help='試算表資料 JSON')
+    src.add_argument('--raw-dir', help='資料夾：portfolio.json、tx.json、journal.json、cash.json（get_values 回應原文）')
+    ap.add_argument('--prev', help='上一版快照頁 HTML：既有的交易與日誌列有變動就中止')
+    ap.add_argument('--accept-history-changes', action='store_true', help='確認既有列的變動來自試算表，照常輸出')
     ap.add_argument('--stamp', required=True, help='快照時間（台北），例：2026-10-30 22:45')
     ap.add_argument('--out', required=True, help='輸出的快照 HTML')
     args = ap.parse_args(argv)
@@ -157,12 +222,27 @@ def main(argv=None):
     try:
         with open(args.source, encoding='utf8') as f:
             source = f.read()
-        with open(args.data, encoding='utf8') as f:
-            data = json.load(f)
+        if args.raw_dir:
+            data = load_raw_dir(args.raw_dir)
+        else:
+            with open(args.data, encoding='utf8') as f:
+                data = json.load(f)
         html = build(source, data, args.stamp)
+        changes = []
+        if args.prev:
+            with open(args.prev, encoding='utf8') as f:
+                changes = history_changes(extract_snapshot(f.read()), data)
     except (BuildError, OSError, json.JSONDecodeError) as err:
         print(f'失敗：{err}', file=sys.stderr)
         return 1
+    if changes:
+        print(f'既有的交易或日誌列與上一版不同（{len(changes)} 處）：', file=sys.stderr)
+        for line in changes:
+            print(f'  {line}', file=sys.stderr)
+        if not args.accept_history_changes:
+            print('未輸出。請對照 get_values 的回應原文：抄錯就修正原始檔；'
+                  '試算表真的改了，加 --accept-history-changes 重跑。', file=sys.stderr)
+            return 2
     with open(args.out, 'w', encoding='utf8') as f:
         f.write(html)
     print(f'已輸出 {args.out}（{len(html):,} 字元）')

@@ -220,3 +220,68 @@ def test_cli_roundtrip(tmp_path):
     assert bs.main(['--source', str(src), '--data', str(data), '--stamp', 't', '--out', str(out)]) == 0
     assert 'SNAPSHOT' in out.read_text(encoding='utf8')
     assert bs.main(['--source', str(tmp_path / 'none'), '--data', str(data), '--stamp', 't', '--out', str(out)]) == 1
+
+
+# 含既有列的資料：用來測「上一版已有的列被改或消失」。
+HIST = _with(
+    tx=DATA['tx'] + [['T1', 'TPE:00882', '2026-01-02', 'Buy', '-100', '循環', '0'],
+                     ['T2', 'TPE:00882', '2026-01-03', 'Sell', '100', '循環', '100']],
+    journal=DATA['journal'] + [['J1', 'TPE:00882', '2026-01-02', 'Trade', '賣出約獲利 80 萬']],
+)
+
+
+def _raw_dir(tmp_path, data=DATA, wrap=True):
+    d = tmp_path / 'raw'
+    d.mkdir(exist_ok=True)
+    for key, sheet in bs.RAW_SHEETS.items():
+        body = {'range': f"'{sheet}'!A1:Z9", 'values': data[key]} if wrap else data[key]
+        (d / f'{key}.json').write_text(json.dumps(body, ensure_ascii=False), encoding='utf8')
+    return d
+
+
+def test_raw_dir_accepts_get_values_responses(tmp_path):
+    assert bs.load_raw_dir(str(_raw_dir(tmp_path))) == DATA
+    assert bs.load_raw_dir(str(_raw_dir(tmp_path, wrap=False))) == DATA
+
+
+def test_raw_dir_rejects_file_from_wrong_sheet(tmp_path):
+    d = _raw_dir(tmp_path)
+    (d / 'tx.json').write_text(json.dumps({'range': 'Portfolio!A1:U50', 'values': DATA['tx']}), encoding='utf8')
+    with pytest.raises(bs.BuildError, match='Transactions'):
+        bs.load_raw_dir(str(d))
+
+
+def test_history_changes_flags_edited_and_missing_rows_only():
+    prev = bs.extract_snapshot(bs.build(MINI, HIST, 't'))
+    assert bs.history_changes(prev, HIST) == []
+    added = json.loads(json.dumps(HIST))
+    added['tx'].append(['NEW1'] + [''] * (len(DATA['tx'][0]) - 1))
+    assert bs.history_changes(prev, added) == []
+    edited = json.loads(json.dumps(HIST))
+    edited['journal'][1][-1] += '（錯字）'
+    edited['tx'] = edited['tx'][:1] + edited['tx'][2:]
+    found = bs.history_changes(prev, edited)
+    assert len(found) == 2 and any('journal' in c for c in found) and any('這次沒有' in c for c in found)
+
+
+def test_cli_prev_blocks_history_change_until_accepted(tmp_path):
+    src, prev, out = tmp_path / 's.html', tmp_path / 'p.html', tmp_path / 'o.html'
+    src.write_text(MINI, encoding='utf8')
+    prev.write_text(bs.build(MINI, HIST, 'old'), encoding='utf8')
+    edited = json.loads(json.dumps(HIST))
+    edited['journal'][1][-1] += '（錯字）'
+    args = ['--source', str(src), '--raw-dir', str(_raw_dir(tmp_path, edited)), '--prev', str(prev),
+            '--stamp', 't', '--out', str(out)]
+    assert bs.main(args) == 2 and not out.exists()
+    assert bs.main(args + ['--accept-history-changes']) == 0 and out.exists()
+    out.unlink()
+    args[3] = str(_raw_dir(tmp_path, HIST))
+    assert bs.main(args) == 0 and out.exists()
+
+
+def test_cli_prev_without_embedded_data_fails(tmp_path):
+    src, prev, out = tmp_path / 's.html', tmp_path / 'p.html', tmp_path / 'o.html'
+    src.write_text(MINI, encoding='utf8')
+    prev.write_text('<html></html>', encoding='utf8')
+    args = ['--source', str(src), '--raw-dir', str(_raw_dir(tmp_path)), '--prev', str(prev), '--stamp', 't', '--out', str(out)]
+    assert bs.main(args) == 1 and not out.exists()
