@@ -116,6 +116,7 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
     annual_div = fallback_div
     source_notes = "基準校準值"
     is_live = False  # 現價是否取自即時行情；False 時輸出會標明「非即時」
+    quote_as_of = None  # 報價時間（fetch.py 的 as_of），供 Watchdog 判斷行情新舊
 
     # 嘗試調用 price-dividend-fetcher（呼叫 both 以同時取得現價與近 12 個月 TTM 配息）
     fetch_script = repo_root / ".claude" / "skills" / "price-dividend-fetcher" / "scripts" / "fetch.py"
@@ -128,6 +129,7 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
                     price = float(p_info["price"])
                     source_notes = f"live-fetcher ({p_info.get('source', 'web')})"
                     is_live = True
+                    quote_as_of = p_info.get("as_of")
                 d_info = res.get("dividends") or {}
                 if "ttm_total" in d_info:
                     annual_div = float(d_info["ttm_total"] or 0.0)
@@ -150,6 +152,7 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
                         price = float(item_p["price"])
                         source_notes = f"live-price-fallback ({item_p.get('source', 'web')})"
                         is_live = True
+                        quote_as_of = item_p.get("as_of")
             except Exception:
                 pass
 
@@ -197,6 +200,7 @@ def fetch_ticker_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: P
         "tax_retention": tax_retention,
         "source_notes": source_notes,
         "price_is_live": is_live,
+        "quote_as_of": quote_as_of,
         "scores": scores,
         "coverage_ok": coverage_ok,
         "southbound_2d_net": southbound,
@@ -225,6 +229,7 @@ def fetch_stock_live_data(ticker: str, cards_data: Dict[str, Any], repo_root: Pa
                 live["price"] = float(price_info["price"])
                 live["source_notes"] = f"live-fetcher ({price_info.get('source', 'web')})"
                 live["price_is_live"] = True
+                live["quote_as_of"] = price_info.get("as_of")
             ttm = (res.get("dividends") or res).get("ttm_total")
             if ttm:
                 live["annual_dividend"] = float(ttm)
@@ -537,7 +542,6 @@ def run_portfolio_patrol(
 
     def gather(ticker: str):
         cards = load_cards(models_root, ticker)
-        watchdog = check_watchdog(cards)
         if cards.get("ticker", {}).get("category") == "STOCK":
             live_data = fetch_stock_live_data(ticker, cards, repo_root)
             ccy = cards["ticker"].get("currency", "TWD")
@@ -545,6 +549,8 @@ def run_portfolio_patrol(
             live_data.setdefault("fx_to_twd", fx_row.get("rate") or fx_row.get("price"))
         else:
             live_data = fetch_ticker_live_data(ticker, cards, repo_root)
+        # Watchdog 看行情新舊（報價時間），不看卡片檔修改時間
+        watchdog = check_watchdog(cards, live_data=live_data)
         return cards, watchdog, live_data
 
     with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
