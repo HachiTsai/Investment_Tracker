@@ -440,14 +440,43 @@ def test_check_gate():
 
     rows_err = [{"ticker": f"ERR_{i}", "state": "ERROR", "fresh": False} for i in range(6)]
     is_healthy, is_closed, reasons = sw.check_gate(rows_err, max_errors=5, require_fresh=False)
-    assert not is_healthy and any("ERROR 狀態標的超標" in r for r in reasons)
+    assert not is_healthy and any("ERROR／NO_DATA 狀態標的超標" in r for r in reasons)
 
-    rows_closed = [{"ticker": "2330", "state": "NEUTRAL", "fresh": False}] * 5
-    is_healthy, is_closed, reasons = sw.check_gate(rows_closed, max_errors=5, require_fresh=True)
+    rows_closed = [{"ticker": "2330", "state": "NEUTRAL", "fresh": False, "market": "台股", "last_date": "2026-11-12"}] * 5
+    is_healthy, is_closed, reasons = sw.check_gate(rows_closed, max_errors=5, require_fresh=True, now=DAILY_NOW)
     assert is_healthy and is_closed and any("今日所有市場休市" in r for r in reasons)
 
-    is_healthy, is_closed, reasons = sw.check_gate(rows_closed, max_errors=5, require_fresh=False)
+    is_healthy, is_closed, reasons = sw.check_gate(rows_closed, max_errors=5, require_fresh=False, now=DAILY_NOW)
     assert is_healthy and not is_closed and len(reasons) == 0
+
+
+def test_check_gate_empty_rows_fail_closed():
+    """掃描結果為空不得當作健康或休市（原本會通過，靜默保留舊 Sheet 資料）。"""
+    ok, closed, reasons = sw.check_gate([], max_errors=10, require_fresh=True, now=DAILY_NOW)
+    assert not ok and not closed and any("為空" in r for r in reasons)
+
+
+def test_check_gate_counts_no_data_toward_budget():
+    """NO_DATA 會保留舊值，必須計入錯誤預算，否則是靜默失效。"""
+    rows = [{"ticker": f"N{i}", "state": "NO_DATA", "fresh": False, "market": "台股", "last_date": "2026-11-12"} for i in range(11)]
+    ok, _, reasons = sw.check_gate(rows, max_errors=10, require_fresh=False, now=DAILY_NOW)
+    assert not ok and any("超標" in r for r in reasons)
+    ok, _, _ = sw.check_gate(rows[:10], max_errors=10, require_fresh=False, now=DAILY_NOW)
+    assert ok
+
+
+def test_check_gate_stale_data_is_not_treated_as_closed():
+    """來源停滯回舊資料時，所有列都不是 fresh；不得因此判為休市而略過。"""
+    rows = [{"ticker": "2330", "state": "NEUTRAL", "fresh": False, "market": "台股", "last_date": "2026-11-01"}] * 5
+    ok, closed, reasons = sw.check_gate(rows, max_errors=10, require_fresh=True, now=DAILY_NOW)
+    assert not ok and not closed and any("資料日過舊" in r for r in reasons)
+
+
+def test_check_gate_holiday_closed_still_passes():
+    """短假期間最新資料日仍在容許範圍內，照常判為休市。"""
+    rows = [{"ticker": "2330", "state": "NEUTRAL", "fresh": False, "market": "台股", "last_date": "2026-11-11"}] * 5
+    ok, closed, reasons = sw.check_gate(rows, max_errors=10, require_fresh=True, now=DAILY_NOW)
+    assert ok and closed
 
 
 DAILY_NOW = datetime(2026, 11, 13, 0, 56, tzinfo=timezone.utc)  # 台北 08:56，週五盤前
@@ -549,6 +578,15 @@ def test_load_publish_gate_fails_closed(tmp_path):
     bad.write_text(json.dumps({"zero_tolerance": [], "general_max_anomalies": 2, "max_age_days": 7}), encoding="utf-8")
     with pytest.raises(ValueError):
         sw.load_publish_gate(bad)
+
+
+def test_sheet_cli_gate_fails_on_empty_scan(tmp_path, monkeypatch):
+    """swing_sync 以 --sheet --gate 呼叫；空掃描結果必須回傳非 0，讓排程停止而不是靜默成功。"""
+    monkeypatch.setattr(sw, "watchlist", lambda *a, **k: [])
+    monkeypatch.setattr(sw, "scan", lambda items, prev, with_chart=False, now=None: [])
+    monkeypatch.setattr(sw, "refresh_lagging", lambda rows, items, prev, with_chart=False: rows)
+    rc = sw.main(["--scan", "00882:15", "--sheet", str(tmp_path / "sheet.json"), "--gate"])
+    assert rc == 1
 
 
 def test_daily_page_carries_notices_into_head_block():

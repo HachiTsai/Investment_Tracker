@@ -691,25 +691,54 @@ def render_daily_page(rows: List[Dict], patrol: Dict, date: str, notices: Option
 GATE_MAX_ERRORS = 10  # 全市場 ETF 納入後清單約 150 檔，容許的抓取失敗數由 5 放寬到 10
 
 
+SHEET_MAX_AGE_DAYS = 10  # 波段 Sheet 休市判定：最新資料日距今超過此天數視為來源停滯，不當作休市（涵蓋長假）
+
+
+def _market_age_problems(rows: List[Dict], now: Optional[datetime], max_age_days: int) -> List[str]:
+    """各市場最新資料日距今超過 max_age_days 天，或完全沒有有效資料日，回傳說明；空清單代表通過。"""
+    problems = []
+    for market in sorted({r.get("market", "") for r in rows}):
+        dates = [r["last_date"] for r in rows if r.get("market") == market and r.get("last_date")]
+        if not dates:
+            problems.append(f"{market} 沒有任何有效資料日")
+            continue
+        latest = max(dates)
+        today = datetime.strptime(market_today(market, now), "%Y-%m-%d").date()
+        age = (today - datetime.strptime(latest, "%Y-%m-%d").date()).days
+        if age > max_age_days:
+            problems.append(f"{market} 最新資料日 {latest} 距今 {age} 天，超過 {max_age_days} 天")
+    return problems
+
+
 def check_gate(
     rows: List[Dict],
     max_errors: int = 5,
     require_fresh: bool = False,
+    now: Optional[datetime] = None,
+    max_age_days: int = SHEET_MAX_AGE_DAYS,
 ) -> Tuple[bool, bool, List[str]]:
-    """排程健康門檻檢核。
-    回傳：(is_healthy, is_market_closed, reasons)
-    - is_healthy: 是否健康（ERROR 不超過 max_errors 檔）
-    - is_market_closed: 是否為休市狀態（所有市場無 fresh）
-    - reasons: 說明訊息
+    """排程健康門檻檢核（波段 Sheet 路徑）。回傳：(is_healthy, is_market_closed, reasons)
+    - 掃描結果為空：不健康，拒絕寫入（fail-closed）。
+    - is_healthy：ERROR 與 NO_DATA 合計不超過 max_errors 檔。NO_DATA 會保留舊值，不計入即為靜默失效。
+    - is_market_closed：所有標的皆非 fresh，且各市場最新資料日仍在 max_age_days 天內（休市）。
+      資料日過舊或完全沒有資料日時，不判為休市，改為不健康（來源停滯）。
     """
+    if not rows:
+        return False, False, ["掃描結果為空，拒絕寫入 Sheet"]
     reasons = []
-    errors = [r.get("ticker", "未知") for r in rows if r.get("state") == "ERROR"]
-    is_healthy = len(errors) <= max_errors
+    bad = [r.get("ticker", "未知") for r in rows if r.get("state") in _BAD_STATES]
+    is_healthy = len(bad) <= max_errors
     if not is_healthy:
-        reasons.append(f"ERROR 狀態標的超標：{len(errors)} > {max_errors} ({errors[:5]}...)")
+        reasons.append(f"ERROR／NO_DATA 狀態標的超標：{len(bad)} > {max_errors} ({bad[:5]}...)")
     is_market_closed = require_fresh and not any(r.get("fresh") for r in rows)
     if is_market_closed:
-        reasons.append("今日所有市場休市或未開盤（無任何 fresh 標的，正常略過）")
+        problems = _market_age_problems(rows, now, max_age_days)
+        if problems:
+            is_healthy = False
+            is_market_closed = False
+            reasons.append("休市判定失敗，資料日過舊（疑似來源停滯）：" + "；".join(problems))
+        else:
+            reasons.append("今日所有市場休市或未開盤（無任何 fresh 標的，正常略過）")
     return is_healthy, is_market_closed, reasons
 
 
@@ -772,16 +801,7 @@ def check_daily_gate(
     general_bad = [r["ticker"] for r in rows if r.get("ticker") not in holdings and broken(r)]
     if len(general_bad) > general_max:
         reasons.append(f"一般列異常 {len(general_bad)} 檔，超過上限 {general_max}：{'、'.join(general_bad[:5])}")
-    for market in sorted({r.get("market", "") for r in rows}):
-        dates = [r["last_date"] for r in rows if r.get("market") == market and r.get("last_date")]
-        if not dates:
-            reasons.append(f"{market} 沒有任何有效資料日")
-            continue
-        latest = max(dates)
-        today = datetime.strptime(market_today(market, now), "%Y-%m-%d").date()
-        age = (today - datetime.strptime(latest, "%Y-%m-%d").date()).days
-        if age > max_age_days:
-            reasons.append(f"{market} 最新資料日 {latest} 距今 {age} 天，超過 {max_age_days} 天")
+    reasons.extend(_market_age_problems(rows, now, max_age_days))
     return not reasons, reasons
 
 
