@@ -564,11 +564,34 @@ def test_daily_cli_writes_no_page_when_gate_fails(tmp_path, monkeypatch, capsys)
     assert "Gate Failed" in capsys.readouterr().err
 
 
-def test_publish_gate_config_drives_daily_constants():
+def test_publish_gate_config_drives_daily_settings():
     """每日頁門檻改由 portfolio-patrol/references/publish_gate.json 提供，與 patrol.json 門檻共用。"""
-    assert sw.DAILY_HOLDINGS == ("TPE:00882", "TPE:00406A")
-    assert sw.DAILY_GENERAL_MAX == 2
-    assert sw.DAILY_MAX_AGE_DAYS == 7
+    holdings, general_max, max_age = sw.daily_gate_settings()
+    assert holdings == ("TPE:00882", "TPE:00406A")
+    assert general_max == 2
+    assert max_age == 7
+
+
+def test_missing_publish_gate_does_not_affect_sheet_path(tmp_path, monkeypatch):
+    """設定檔遺失只影響每日頁；波段 Sheet 的 check_gate 不讀此檔，照常判定。"""
+    monkeypatch.setattr(sw, "PUBLISH_GATE_PATH", tmp_path / "missing.json")
+    rows = [{"ticker": "2330", "state": "UPTREND", "fresh": True, "market": "台股", "last_date": "2026-11-12"}] * 3
+    ok, closed, reasons = sw.check_gate(rows, max_errors=10, require_fresh=True, now=DAILY_NOW)
+    assert ok and not closed and reasons == []
+
+
+def test_missing_publish_gate_fails_daily_page_closed(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(sw, "PUBLISH_GATE_PATH", tmp_path / "missing.json")
+    with pytest.raises(OSError):
+        sw.check_daily_gate(_daily_rows(), now=DAILY_NOW)
+    # 離線：掃描與網路抓取全部替換，只驗證門檻設定讀取失敗的路徑
+    monkeypatch.setattr(sw, "watchlist", lambda *a, **k: [])
+    monkeypatch.setattr(sw, "scan", lambda items, prev, with_chart=False, now=None: _daily_rows())
+    monkeypatch.setattr(sw, "refresh_lagging", lambda rows, items, prev, with_chart=False: rows)
+    out = tmp_path / "daily.html"
+    rc = sw.main(["--scan", "00882:15", "--daily-html", str(out)])
+    assert rc == 1 and not out.exists()
+    assert "門檻設定讀取失敗" in capsys.readouterr().err
 
 
 def test_load_publish_gate_fails_closed(tmp_path):

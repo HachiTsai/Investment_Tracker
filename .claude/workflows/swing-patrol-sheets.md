@@ -51,13 +51,13 @@ flowchart TD
 python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --tier all --extra-tickers /tmp/extra_tickers.json --prev /tmp/prev.json --sheet /tmp/sheet.json --gate > /tmp/scan.json
 ```
 
-*若指令執行失敗即停止，不寫入任何資料，於回報中貼出錯誤原因。Gate 容許的抓取失敗數為 10 檔（`GATE_MAX_ERRORS`）。*
+*若指令執行失敗即停止，不寫入任何資料，於回報中貼出錯誤原因。Gate 容許的異常數為 10 檔（`GATE_MAX_ERRORS`）；異常指 `ERROR` 與 `NO_DATA` 合計，因為 `NO_DATA` 同樣保留舊值，不計入即為靜默失效。掃描結果為空即失敗，拒絕寫入。*
 
 ### 步驟 3：健康檢查與市場狀態判定（Gatekeeper）
 
 解析 `/tmp/scan.json` 與 `/tmp/sheet.json`：
 
-1. **全市場休市**：若所有市場的 `fresh` 均為 `false`，整個流程結束，不寫入 Sheet，直接回報「今日休市，未更新」。
+1. **全市場休市**：若所有市場的 `fresh` 均為 `false`，且各市場最新資料日距今不超過 10 天（`SHEET_MAX_AGE_DAYS`），整個流程結束，不寫入 Sheet，直接回報「今日休市，未更新」。若最新資料日距今超過 10 天，判定為來源停滯而非休市：流程失敗、不寫入 Sheet，於回報中說明資料日。
 2. **單一市場休市**：若某市場（如港股）所有標的的 `fresh` 均為 `false`，該市場在 Sheet 裡的舊資料保持不動。
 3. **抓取失敗處理**：若標的 `state` 為 `ERROR`，僅將該列第 5 欄改為「⚠️ 抓取失敗」、第 16 欄寫入原因，其餘欄位（含 R 到 X）**保留舊值**，嚴禁以舊數字冒充今日數據。
 4. **互鎖與補跑（`--force`）**：

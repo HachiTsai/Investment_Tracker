@@ -747,9 +747,10 @@ def check_gate(
 PUBLISH_GATE_PATH = Path(__file__).resolve().parents[2] / "portfolio-patrol" / "references" / "publish_gate.json"
 
 
-def load_publish_gate(path: Path = PUBLISH_GATE_PATH) -> Dict:
-    """讀取發布門檻。缺檔或格式錯誤即拋錯，不以預設值放行（fail-closed）。"""
-    gate = json.loads(path.read_text(encoding="utf-8"))
+def load_publish_gate(path: Optional[Path] = None) -> Dict:
+    """讀取發布門檻。缺檔或格式錯誤即拋錯，不以預設值放行（fail-closed）。
+    只在每日頁門檻實際執行時才呼叫；匯入模組時不讀檔，波段 Sheet 路徑不依賴此設定。"""
+    gate = json.loads((path or PUBLISH_GATE_PATH).read_text(encoding="utf-8"))
     zero = gate.get("zero_tolerance")
     if not isinstance(zero, list) or not zero or not all(isinstance(c, str) and c for c in zero):
         raise ValueError("publish_gate.json 的 zero_tolerance 必須是非空的代號清單")
@@ -762,27 +763,36 @@ def load_publish_gate(path: Path = PUBLISH_GATE_PATH) -> Dict:
     return gate
 
 
-_PUBLISH_GATE = load_publish_gate()
-# 核心持股（零容忍）：ERROR、NO_DATA、資料落後或中間缺口任一即失敗。代號加上台股前綴以對應掃描列的 ticker。
-DAILY_HOLDINGS = tuple(f"TPE:{code}" for code in _PUBLISH_GATE["zero_tolerance"])
-DAILY_GENERAL_MAX = _PUBLISH_GATE["general_max_anomalies"]  # 其餘列的異常合計上限
-DAILY_MAX_AGE_DAYS = _PUBLISH_GATE["max_age_days"]  # 市場最新資料日距今超過此天數即視為整體停滯（涵蓋一般長假）
 _BAD_STATES = ("ERROR", "NO_DATA")
+
+
+def daily_gate_settings(path: Optional[Path] = None) -> Tuple[Tuple[str, ...], int, int]:
+    """每日頁門檻參數：回傳 (核心持股, 一般列異常上限, 最大資料日齡)。缺檔或格式錯誤即拋錯。
+    核心持股為零容忍（ERROR、NO_DATA、資料落後或中間缺口任一即失敗）；代號加上台股前綴以對應掃描列的 ticker。"""
+    gate = load_publish_gate(path)
+    holdings = tuple(f"TPE:{code}" for code in gate["zero_tolerance"])
+    return holdings, gate["general_max_anomalies"], gate["max_age_days"]
 
 
 def check_daily_gate(
     rows: List[Dict],
-    holdings: Tuple[str, ...] = DAILY_HOLDINGS,
-    general_max: int = DAILY_GENERAL_MAX,
+    holdings: Optional[Tuple[str, ...]] = None,
+    general_max: Optional[int] = None,
     now: Optional[datetime] = None,
-    max_age_days: int = DAILY_MAX_AGE_DAYS,
+    max_age_days: Optional[int] = None,
 ) -> Tuple[bool, List[str]]:
     """每日巡檢頁的發布門檻。回傳 (ok, reasons)；任一項不過即不發布。
     - 掃描結果為空、持股缺列：失敗。
     - 持股（零容忍）：狀態 ERROR／NO_DATA、資料日落後同市場最新資料日、中間有日期缺口，任一即失敗。
     - 其餘列：上述異常合計超過 general_max 即失敗。
     - 任一市場的最新資料日距今超過 max_age_days 天：整體停滯，失敗。
+    未指定的參數由 publish_gate.json 讀取；讀取失敗會拋出 OSError／ValueError，由呼叫端視為不通過。
     """
+    if holdings is None or general_max is None or max_age_days is None:
+        cfg_holdings, cfg_general, cfg_age = daily_gate_settings()
+        holdings = cfg_holdings if holdings is None else holdings
+        general_max = cfg_general if general_max is None else general_max
+        max_age_days = cfg_age if max_age_days is None else max_age_days
     if not rows:
         return False, ["掃描結果為空，拒絕發布"]
     reasons: List[str] = []
@@ -856,7 +866,11 @@ def main(argv=None) -> int:
             print("資料落後（證交所補缺後仍少一天以上）：" + "、".join(lag) + "；該列資料日落後，指標以最後一根日線計算", file=sys.stderr)
         if a.daily_html:
             # 每日巡檢頁一律先過門檻（不需 --gate）；不過就不渲染、不寫檔，rows 仍印出供排查
-            ok, gate_reasons = check_daily_gate(rows)
+            try:
+                ok, gate_reasons = check_daily_gate(rows)
+            except (OSError, ValueError) as e:
+                print(f"❌ [Gate Failed] 每日門檻設定讀取失敗（fail-closed）：{e}", file=sys.stderr)
+                return 1
             if not ok:
                 print(f"❌ [Gate Failed] {'; '.join(gate_reasons)}", file=sys.stderr)
                 print(json.dumps([{k: v for k, v in r.items() if k != "chart"} for r in rows], ensure_ascii=False, indent=1))
