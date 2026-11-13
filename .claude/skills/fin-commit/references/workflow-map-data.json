@@ -163,7 +163,7 @@
     "無 Sheet"
    ],
    "secrets": [],
-   "gate": "ERROR 超過 5 檔不覆寫 Artifact；發布時省略 capabilities",
+   "gate": "持股 00882、00406A 零容忍；其餘列異常（ERROR、NO_DATA、落後或缺口）合計超過 2 檔、掃描結果為空或頁面預檢不過，即不覆寫 Artifact，也不寫回 trap_state；發布時省略 capabilities",
    "note": "高息陷阱互鎖：首日「陷阱觀察」，連兩個交易日成立升「陷阱警戒」。不 commit、不 push。"
   },
   {
@@ -503,7 +503,7 @@
   {
    "id": "C1",
    "title": "C1 每日投資組合巡檢（每日 08:50）",
-   "src": "sequenceDiagram\n  autonumber\n  participant CL as Claude 雲端排程\n  participant AD as ArtifactData trap_state\n  participant PT as patrol.py\n  participant SW as swing.py\n  participant AR as 巡檢 Artifact\n  CL->>CL: git pull --ff-only\n  CL->>AD: 讀前次陷阱狀態\n  CL->>PT: --json --prev-state\n  PT-->>CL: 全標的配置狀態與例外分診\n  CL->>AD: 寫回今日 trap_state\n  CL->>SW: --scan --patrol --daily-html --gate\n  SW-->>CL: daily.html 與 scan.json\n  alt ERROR 超過 5 檔\n    CL-->>CL: 不覆寫 Artifact，回報原因\n  else 正常\n    CL->>AR: 原地更新，省略 capabilities\n  end\n"
+   "src": "sequenceDiagram\n  autonumber\n  participant CL as Claude 雲端排程\n  participant AD as ArtifactData trap_state\n  participant PT as patrol.py\n  participant SW as swing.py\n  participant AR as 巡檢 Artifact\n  CL->>CL: git pull --ff-only\n  CL->>AD: 讀前次陷阱狀態\n  CL->>PT: --json --prev-state\n  PT-->>CL: 全標的配置狀態與例外分診\n  CL->>SW: --scan --patrol --daily-html（內建門檻）\n  SW-->>CL: daily.html 與 scan.json\n  alt 門檻未過（持股零容忍、一般列 2 檔、空結果、頁面預檢）\n    CL-->>CL: 不覆寫 Artifact、不寫回 trap_state，回報原因\n  else 門檻通過\n    CL->>AD: 寫回今日 trap_state\n    alt 寫回失敗\n      CL->>AR: 原地更新，頁面加「陷阱狀態未寫回」警示\n    else 寫回成功\n      CL->>AR: 原地更新，省略 capabilities\n    end\n  end\n"
   },
   {
    "id": "C2",
