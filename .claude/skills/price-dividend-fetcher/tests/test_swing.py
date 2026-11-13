@@ -450,6 +450,91 @@ def test_check_gate():
     assert is_healthy and not is_closed and len(reasons) == 0
 
 
+DAILY_NOW = datetime(2026, 11, 13, 0, 56, tzinfo=timezone.utc)  # 台北 08:56，週五盤前
+
+
+def _daily_row(ticker, market="台股", state="UPTREND", last_date="2026-11-12"):
+    return {"ticker": ticker, "market": market, "state": state, "last_date": last_date, "fresh": False, "missing_days": []}
+
+
+def _daily_rows():
+    """同 2026-11-13 實跑的結構：2 檔核心持股（台股）加 15 列成分股（港股）。"""
+    return [_daily_row("TPE:00882"), _daily_row("TPE:00406A")] + [_daily_row(f"HKG:{i:04d}", market="港股") for i in range(1, 16)]
+
+
+def test_gate_default_for_sheet_path_unchanged():
+    assert sw.GATE_MAX_ERRORS == 10
+
+
+def test_daily_gate_passes_on_healthy_rows():
+    ok, reasons = sw.check_daily_gate(_daily_rows(), now=DAILY_NOW)
+    assert ok and reasons == []
+
+
+def test_daily_gate_fails_closed_on_empty_rows():
+    ok, reasons = sw.check_daily_gate([], now=DAILY_NOW)
+    assert not ok and any("為空" in r for r in reasons)
+
+
+def test_daily_gate_holding_zero_tolerance_on_error():
+    rows = _daily_rows()
+    rows[1]["state"] = "ERROR"  # 00406A
+    ok, reasons = sw.check_daily_gate(rows, now=DAILY_NOW)
+    assert not ok and any("持股資料異常" in r and "TPE:00406A" in r for r in reasons)
+
+
+def test_daily_gate_holding_stale_by_one_day_fails():
+    rows = _daily_rows()
+    rows[0]["last_date"] = "2026-11-11"  # 00882 落後同市場最新資料日一天
+    ok, reasons = sw.check_daily_gate(rows, now=DAILY_NOW)
+    assert not ok and any("TPE:00882" in r for r in reasons)
+
+
+def test_daily_gate_general_budget_allows_two_rejects_three():
+    rows = _daily_rows()
+    rows[2]["state"] = "NO_DATA"
+    rows[3]["state"] = "NO_DATA"  # 兩檔一般列異常：仍通過
+    ok, _ = sw.check_daily_gate(rows, now=DAILY_NOW)
+    assert ok
+    rows[4]["state"] = "ERROR"  # 第三檔：超過上限
+    ok, reasons = sw.check_daily_gate(rows, now=DAILY_NOW)
+    assert not ok and any("一般列異常 3 檔" in r for r in reasons)
+
+
+def test_daily_gate_missing_holding_row_fails():
+    rows = [r for r in _daily_rows() if r["ticker"] != "TPE:00406A"]
+    ok, reasons = sw.check_daily_gate(rows, now=DAILY_NOW)
+    assert not ok and any("持股缺列" in r and "TPE:00406A" in r for r in reasons)
+
+
+def test_daily_gate_rejects_whole_market_stale_by_age():
+    rows = _daily_rows()
+    for r in rows:
+        if r["market"] == "台股":
+            r["last_date"] = "2026-11-01"  # 整個市場停在 12 天前
+    ok, reasons = sw.check_daily_gate(rows, now=DAILY_NOW)
+    assert not ok and any("台股" in r and "距今" in r for r in reasons)
+
+
+def test_validate_daily_html_checks_placeholder_date_and_cost():
+    html = sw.render_daily_page([], {}, "2026-11-12")
+    assert sw.validate_daily_html(html, "2026-11-12") == []
+    assert any("占位符" in p for p in sw.validate_daily_html(html + "__DAILY_LEFT__", "2026-11-12"))
+    assert any("資料日" in p for p in sw.validate_daily_html(html, "2026-11-13"))
+    leaked = html + '<script>var X={"holdings":[{"code":"00882","cost": 15.2}]}</script>'
+    assert any("成本" in p for p in sw.validate_daily_html(leaked, "2026-11-12"))
+
+
+def test_daily_cli_writes_no_page_when_gate_fails(tmp_path, monkeypatch, capsys):
+    out = tmp_path / "daily.html"
+    monkeypatch.setattr(sw, "watchlist", lambda *a, **k: [])
+    monkeypatch.setattr(sw, "scan", lambda items, prev, with_chart=False, now=None: [])
+    monkeypatch.setattr(sw, "refresh_lagging", lambda rows, items, prev, with_chart=False: rows)
+    rc = sw.main(["--scan", "00882:15", "--daily-html", str(out)])
+    assert rc == 1 and not out.exists()
+    assert "Gate Failed" in capsys.readouterr().err
+
+
 def test_daily_page_carries_notices_into_head_block():
     """陷阱狀態未寫回時，警示文字放進頁面的 HEAD 資料，由頁面頂端的警示區顯示；沒有警示時為空清單。"""
     notice = "陷阱狀態未寫回：明日陷阱判定可能低估，請人工確認"

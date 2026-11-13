@@ -713,6 +713,69 @@ def check_gate(
     return is_healthy, is_market_closed, reasons
 
 
+# 每日投資組合巡檢頁的發布門檻（fail-closed）。與 check_gate（波段 Sheet 用）分開，互不影響。
+DAILY_HOLDINGS = ("TPE:00882", "TPE:00406A")  # 核心持股：ERROR、NO_DATA、資料落後或中間缺口任一即失敗（零容忍）
+DAILY_GENERAL_MAX = 2  # 其餘列的異常（ERROR、NO_DATA、落後或缺口）合計上限
+DAILY_MAX_AGE_DAYS = 7  # 市場最新資料日距今超過此天數即視為整體停滯（涵蓋一般長假）
+_BAD_STATES = ("ERROR", "NO_DATA")
+
+
+def check_daily_gate(
+    rows: List[Dict],
+    holdings: Tuple[str, ...] = DAILY_HOLDINGS,
+    general_max: int = DAILY_GENERAL_MAX,
+    now: Optional[datetime] = None,
+    max_age_days: int = DAILY_MAX_AGE_DAYS,
+) -> Tuple[bool, List[str]]:
+    """每日巡檢頁的發布門檻。回傳 (ok, reasons)；任一項不過即不發布。
+    - 掃描結果為空、持股缺列：失敗。
+    - 持股（零容忍）：狀態 ERROR／NO_DATA、資料日落後同市場最新資料日、中間有日期缺口，任一即失敗。
+    - 其餘列：上述異常合計超過 general_max 即失敗。
+    - 任一市場的最新資料日距今超過 max_age_days 天：整體停滯，失敗。
+    """
+    if not rows:
+        return False, ["掃描結果為空，拒絕發布"]
+    reasons: List[str] = []
+    stale = set(stale_tickers(rows))
+    tickers = {r.get("ticker") for r in rows}
+    missing = [h for h in holdings if h not in tickers]
+    if missing:
+        reasons.append(f"持股缺列：{'、'.join(missing)}")
+
+    def broken(r: Dict) -> bool:
+        return r.get("state") in _BAD_STATES or not r.get("last_date") or r.get("ticker") in stale
+
+    held_bad = [r["ticker"] for r in rows if r.get("ticker") in holdings and broken(r)]
+    if held_bad:
+        reasons.append(f"持股資料異常（零容忍）：{'、'.join(held_bad)}")
+    general_bad = [r["ticker"] for r in rows if r.get("ticker") not in holdings and broken(r)]
+    if len(general_bad) > general_max:
+        reasons.append(f"一般列異常 {len(general_bad)} 檔，超過上限 {general_max}：{'、'.join(general_bad[:5])}")
+    for market in sorted({r.get("market", "") for r in rows}):
+        dates = [r["last_date"] for r in rows if r.get("market") == market and r.get("last_date")]
+        if not dates:
+            reasons.append(f"{market} 沒有任何有效資料日")
+            continue
+        latest = max(dates)
+        today = datetime.strptime(market_today(market, now), "%Y-%m-%d").date()
+        age = (today - datetime.strptime(latest, "%Y-%m-%d").date()).days
+        if age > max_age_days:
+            reasons.append(f"{market} 最新資料日 {latest} 距今 {age} 天，超過 {max_age_days} 天")
+    return not reasons, reasons
+
+
+def validate_daily_html(html: str, date: str) -> List[str]:
+    """發布前預檢：占位符已替換、資料日與預期一致、頁面不含成本數值（公開頁）。回傳問題清單，空清單代表通過。"""
+    problems = []
+    if "__DAILY_" in html:
+        problems.append("頁面仍有未替換的占位符")
+    if f'var DATE="{date}"' not in html:
+        problems.append(f"頁面資料日與預期 {date} 不符")
+    if re.search(r'"cost"\s*:\s*[0-9]', html):
+        problems.append("頁面含成本數值，公開頁不得出現")
+    return problems
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="個股波段指標與訊號（只讀）")
     p.add_argument("ticker", nargs="?", help="例如 TPE:2356、HKG:1919、NASDAQ:AAPL")
@@ -730,7 +793,7 @@ def main(argv=None) -> int:
     p.add_argument("--batch", metavar="卡片:前N大", help="多檔彙總回測，例如 00882:15（讀 models/<卡片>/cards/constituents.jsonl）")
     p.add_argument("--fib-backtest", action="store_true", help="回測各費波那契回檔位置之後 5/10/20 日含息報酬（觀察清單全部標的，抓 5 年日線）")
     p.add_argument("--backtest", action="store_true", help="加跑超跌反彈規則回測（抓 5 年日線）")
-    p.add_argument("--gate", action="store_true", help="啟用排程健康檢查門檻判定（--scan 模式下 ERROR <= 10 檔）")
+    p.add_argument("--gate", action="store_true", help="啟用波段 Sheet 的健康門檻判定（--scan 模式下 ERROR <= 10 檔）；--daily-html 一律套用每日門檻，不需此參數")
     p.add_argument("--extra-tickers", metavar="JSON", help="搭配 --scan：額外的全市場 ETF 清單檔 [{\"ticker\":\"TPE:0050\",\"name\":\"...\"}]，卡片已有的不重複")
     p.add_argument("--tier", choices=["core", "pool", "all"], default="core", help="波段掃描標的分級（預設 core: 核心團隊）")
     a = p.parse_args(argv)
@@ -751,6 +814,12 @@ def main(argv=None) -> int:
         if lag:
             print("資料落後（證交所補缺後仍少一天以上）：" + "、".join(lag) + "；該列資料日落後，指標以最後一根日線計算", file=sys.stderr)
         if a.daily_html:
+            # 每日巡檢頁一律先過門檻（不需 --gate）；不過就不渲染、不寫檔，rows 仍印出供排查
+            ok, gate_reasons = check_daily_gate(rows)
+            if not ok:
+                print(f"❌ [Gate Failed] {'; '.join(gate_reasons)}", file=sys.stderr)
+                print(json.dumps([{k: v for k, v in r.items() if k != "chart"} for r in rows], ensure_ascii=False, indent=1))
+                return 1
             date = max((r["last_date"] for r in rows if r.get("last_date")), default="")
             if a.alerts_from_sheet:
                 sid = _swing_sheet_id()
@@ -772,7 +841,12 @@ def main(argv=None) -> int:
                     stress = market_stress.build(market_stress.parse_track(a.stress_track))
                 except (RuntimeError, ValueError, KeyError, IndexError, TypeError, OSError, ZeroDivisionError) as e:
                     print(f"市場修正追蹤失敗，頁面略過該區塊：{str(e)[:120]}", file=sys.stderr)
-            Path(a.daily_html).write_text(render_daily_page(rows, patrol, date, notices=a.notice, stress=stress, etf_detail_url=a.etf_detail), encoding="utf-8")
+            html = render_daily_page(rows, patrol, date, notices=a.notice, stress=stress, etf_detail_url=a.etf_detail)
+            problems = validate_daily_html(html, date)
+            if problems:
+                print(f"❌ [Page Check Failed] {'; '.join(problems)}", file=sys.stderr)
+                return 1
+            Path(a.daily_html).write_text(html, encoding="utf-8")
         if a.html:
             date = max((r["last_date"] for r in rows if r.get("last_date")), default="")
             Path(a.html).write_text(render_page(rows, date), encoding="utf-8")
@@ -780,7 +854,7 @@ def main(argv=None) -> int:
             Path(a.sheet).write_text(json.dumps(sheet_table(rows), ensure_ascii=False), encoding="utf-8")
         rows_out = [{k: v for k, v in r.items() if k != "chart"} for r in rows]
         print(json.dumps(rows_out, ensure_ascii=False, indent=1))
-        if getattr(a, "gate", False):
+        if getattr(a, "gate", False) and not a.daily_html:
             require_fresh = bool(a.sheet and not a.daily_html)
             is_healthy, is_market_closed, reasons = check_gate(rows, max_errors=GATE_MAX_ERRORS, require_fresh=require_fresh)
             if not is_healthy:

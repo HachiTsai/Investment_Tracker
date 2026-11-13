@@ -34,11 +34,11 @@
 flowchart TD
     A["前置：git pull --ff-only origin main"] --> S0["步驟 0：讀取陷阱狀態 prev_state.json"]
     S0 --> B["步驟 1：patrol.py --json --prev-state > /tmp/patrol.json"]
-    B --> B1["步驟 1a：寫回陷阱狀態（失敗不中止，加 --notice）"]
-    B1 --> C["步驟 2：swing.py --scan ... --daily-html /tmp/daily.html"]
-    C --> D{"步驟 3：檢查 ERROR 檔數 (Gate)"}
-    D -->|異常 (>5檔)| E["終止！不覆寫 Artifact，回報失敗原因"]
-    D -->|正常| F["步驟 4：原地更新發布至 Artifact (WLXXvrX7...)"]
+    B --> C["步驟 2：swing.py --scan ... --daily-html /tmp/daily.html（內建門檻）"]
+    C --> D{"步驟 3：門檻通過？"}
+    D -->|否| E["終止！不寫回 trap_state、不覆寫 Artifact，回報失敗原因"]
+    D -->|是| B1["步驟 1a：寫回陷阱狀態（失敗不中止，改在步驟 4 加警示）"]
+    B1 --> F["步驟 4：原地更新發布至 Artifact (WLXXvrX7...)"]
     F --> G["簡短一句話回報"]
 ```
 
@@ -62,18 +62,19 @@ python3 .claude/skills/portfolio-patrol/scripts/patrol.py --json --prev-state "<
 
 *自動遍歷 models/*/cards/ 計算配置狀態、SP/PV/Error 與例外管理分診（MBE）。*
 
-### 步驟 1a：寫回陷阱狀態
+### 步驟 1a：寫回陷阱狀態（僅在步驟 3 門檻通過後執行）
 
 從 `/tmp/patrol.json` 取出 `trap_state`（每檔的 `run_date` 與 `trap`），以 `ArtifactData` 的 `batch` 寫入 `trap_state` 集合：每檔一筆，`op` 為 `set`，`doc_id` 為代號，`data` 為 `{"run_date": ..., "trap": ...}`。已存在的文件須帶上步驟 0 讀到的 `version`（`if_version`），新增的文件不帶。
 
-- 寫回失敗：不中止發布，改在步驟 2 加上 `--notice`（見步驟 2），頁面頂端會顯示警示；執行回報也要寫明。紀錄只容許一個交易日的缺口。連續兩個交易日寫回失敗時，陷阱會降為「陷阱觀察」、不暫停額外單筆加碼，需人工確認。
+- 門檻未過（步驟 3 退出碼 1）：不寫回，視同一次寫回失敗，紀錄停在前一交易日，沿用容許一個交易日缺口的規則。
+- 寫回失敗：不中止發布，改在步驟 4 以 `edits` 在頁面加上警示；執行回報也要寫明。紀錄只容許一個交易日的缺口。連續兩個交易日寫回失敗（含門檻未過）時，陷阱會降為「陷阱觀察」、不暫停額外單筆加碼，需人工確認。
 
 ### 步驟 2：執行波段掃描與報告頁面渲染
 
 在 REPO 根目錄執行：
 
 ```bash
-python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --patrol /tmp/patrol.json --daily-html /tmp/daily.html --alerts-from-sheet --stress --stress-track 00406A --etf-detail https://claude.ai/artifact/RoDHVZRr588JCcgzMswsug --gate > /tmp/scan.json
+python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --patrol /tmp/patrol.json --daily-html /tmp/daily.html --alerts-from-sheet --stress --stress-track 00406A --etf-detail https://claude.ai/artifact/RoDHVZRr588JCcgzMswsug > /tmp/scan.json
 ```
 
 *現場結合技術面指標、動能斜率與巡檢狀態，渲染出完整互動式單檔 HTML。*
@@ -85,20 +86,27 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 -
 - 期交所、證交所或 Yahoo 任一來源抓不到時，該欄顯示 `-`，不以舊值代替，也不中止發布；區塊整體失敗時頁面不顯示該區塊，其餘照常。
 - 追蹤標的改變時，改這行的 `--stress-track`（可重複）；不再追蹤時拿掉 `--stress-track`，修正期結束後也可拿掉 `--stress`。
 
-若步驟 1a 寫回失敗，指令末尾加上 `--notice "陷阱狀態未寫回：明日陷阱判定可能低估，請人工確認"`（可重複使用）。
+步驟 2 不加 `--gate`：`--daily-html` 一律套用內建門檻。寫回失敗的警示不再於步驟 2 加入（寫回已移到門檻之後），改在步驟 4 以 `edits` 補上。
 
 ### 步驟 3：健康檢查門檻判定（Gatekeeper）
 
-解析 `/tmp/scan.json` 內容：
+步驟 2 的 `swing.py` 內建每日門檻（`check_daily_gate`），以退出碼判定：
 
-- 若任何前置指令執行失敗，立即終止。
-- 若 `scan.json` 內之 `ERROR` 狀態列超過 **5 檔**，**不要覆寫 Artifact**，結束時簡短說明失敗原因與發生錯誤的檔案。
+- **退出碼 0**：門檻通過，頁面已寫出，進入步驟 1a 與步驟 4。
+- **退出碼 1**：門檻未過。stderr 的 `❌ [Gate Failed]` 或 `❌ [Page Check Failed]` 會列出原因。**不要覆寫 Artifact，也不寫回 `trap_state`**，結束時簡短說明失敗原因與發生錯誤的檔案。
+- 門檻內容：
+  - 掃描結果為空、持股缺列：失敗。
+  - 核心持股 **00882、00406A 零容忍**：狀態 `ERROR`／`NO_DATA`、資料日落後同市場最新資料日、中間有日期缺口，任一即失敗。
+  - 其餘 15 列：上述異常合計超過 **2 檔** 即失敗。
+  - 任一市場最新資料日距今超過 **7 天**（涵蓋長假）即失敗。
+- 頁面渲染後另有預檢（`validate_daily_html`）：占位符已替換、資料日與預期一致、頁面不含成本數值；不過即退出碼 1，不寫檔。
 - 資料日為前一交易日（週六早上為週五資料）；若全表最新資料日與上次相同（休市），仍照常更新，不另外警報。
 
 ### 步驟 4：Artifact 原地更新發布（Claude 雲端專屬）
 
 - **固定目標 URL**：`https://claude.ai/artifact/WLXXvrX7BzLemm9TxqZ6di`
 - **發布模式**：先 read 該 artifact 再以 `/tmp/daily.html` 原地更新，**嚴禁建立新的 Artifact**。
+- **寫回失敗時的警示**：步驟 1a 寫回失敗，發布時以 `edits` 把 `/tmp/daily.html` 內的 `"notices": []` 換成 `"notices": ["陷阱狀態未寫回：明日陷阱判定可能低估，請人工確認"]`。該字串在頁面中只出現一次，替換前先確認。
 - **Capabilities 鐵律**：發布時**必須省略 capabilities**（沿用既有 capabilities：Firecrawl、db、user；若覆蓋或帶入 capabilities 會導致即時報價與我的最愛等互動功能損壞）。
 
 ---

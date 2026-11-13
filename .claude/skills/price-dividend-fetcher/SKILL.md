@@ -86,6 +86,8 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 -
 python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --patrol patrol.json --daily-html out.html --etf-detail https://claude.ai/artifact/RoDHVZRr588JCcgzMswsug   # 頁首與台股 ETF 視窗放台股 ETF 成分股明細頁連結（只列成分股有 5 檔以上台股個股的 ETF，規則同 etf_pool.discover）
 python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --patrol patrol.json --daily-html out.html --alerts-from-sheet   # 讀波段觀察 Sheet「告警紀錄」分頁（公開連結 gviz CSV，唯讀，DRIVE_IDS 的 SWING_SHEET_ID），點亮最近一個偵測日的關鍵組合轉換；目前組合已變回或距今超過 4 天不點亮，讀不到不中止
 
+`--daily-html`（每日巡檢頁）一律套用內建發布門檻（`check_daily_gate`，不需 `--gate`）：掃描結果為空失敗；核心持股 00882、00406A 零容忍（ERROR、NO_DATA、資料落後或缺口任一即失敗）；其餘列異常合計超過 2 檔失敗；任一市場最新資料日距今超過 7 天失敗。通過後頁面另經預檢（占位符、資料日、無成本數值）。未過時退出碼 1、不寫檔，rows 仍印在 stdout 供排查。`--gate` 只用於波段 Sheet（ERROR 上限 10 檔）。
+
 `--scan` 掃描後若有標的最後一根日線早於同市場最新資料日（尾端落後），或同市場超過半數標的有、該檔缺少的交易日（中間日缺口，交易日以同市場多數為準，不需假日表），會先等待 30、60 秒，只重抓這些標的，且只採用資料日較新或缺口較少的結果；證交所補缺失敗會在 stderr 印出「證交所補缺失敗（代號 月份）」。重抓後仍有問題時，stderr 會列出代號與缺的日期，頁面也會標示「資料落後至 YYYY-MM-DD」與「缺 MM-DD」。不用 Firecrawl 或 FinMind 補查：每檔一點的成本太高，且 FinMind 免費版沒有還原價。
 # 頁面含「表格｜矩陣｜象限｜動態」四種檢視（動態可播放近 60 日趨勢×動能氣泡圖與近 20／60／120 日報酬賽跑折線，純 SVG，不需外部元件；按「選擇標的」可用快速組合（我的最愛、綜合分前 10、ETF、個股、台股、港股）或逐檔勾選要播放的標的，記在瀏覽器）；點標的的視窗另有 K 線、指標矩陣、近 60 日軌跡動畫（2D，可播放） 三個分頁；頁首「更新最新報價」鈕經 Firecrawl 連線器向證交所取台股即時價（Artifact 需宣告 mcp 能力，排程重發時省略 capabilities 即沿用）；標的左側星號可加「我的最愛」，「只看我的最愛」與地區、類型篩選疊加，存在 db 能力的 data/users/<id>/favs（Artifact 需宣告 db、user；無法同步時退回 localStorage）；表格檢視可按「選擇指標欄位」依群組（波段判定、評分、配置與估值）或逐欄勾選要顯示的欄，設定記在瀏覽器；表格與矩陣最多顯示 20 檔，其餘縱向捲動、表頭固定；象限預設座標貼合資料範圍、圓點一律小而一致、游標移到圓點才顯示股號，象限可滾輪縮放與拖曳平移；標的視窗 K 線可在游標處滾輪縮放、拖曳平移，價格與 RSI、MACD 範圍貼合可見區間
 ```
