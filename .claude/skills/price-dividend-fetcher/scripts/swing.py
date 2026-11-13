@@ -742,10 +742,31 @@ def check_gate(
     return is_healthy, is_market_closed, reasons
 
 
-# 每日投資組合巡檢頁的發布門檻（fail-closed）。與 check_gate（波段 Sheet 用）分開，互不影響。
-DAILY_HOLDINGS = ("TPE:00882", "TPE:00406A")  # 核心持股：ERROR、NO_DATA、資料落後或中間缺口任一即失敗（零容忍）
-DAILY_GENERAL_MAX = 2  # 其餘列的異常（ERROR、NO_DATA、落後或缺口）合計上限
-DAILY_MAX_AGE_DAYS = 7  # 市場最新資料日距今超過此天數即視為整體停滯（涵蓋一般長假）
+# 每日投資組合巡檢頁的發布門檻：單一來源為 portfolio-patrol/references/publish_gate.json（與 patrol.json 門檻共用）。
+# 與 check_gate（波段 Sheet 用）分開，互不影響。
+PUBLISH_GATE_PATH = Path(__file__).resolve().parents[2] / "portfolio-patrol" / "references" / "publish_gate.json"
+
+
+def load_publish_gate(path: Path = PUBLISH_GATE_PATH) -> Dict:
+    """讀取發布門檻。缺檔或格式錯誤即拋錯，不以預設值放行（fail-closed）。"""
+    gate = json.loads(path.read_text(encoding="utf-8"))
+    zero = gate.get("zero_tolerance")
+    if not isinstance(zero, list) or not zero or not all(isinstance(c, str) and c for c in zero):
+        raise ValueError("publish_gate.json 的 zero_tolerance 必須是非空的代號清單")
+    general = gate.get("general_max_anomalies")
+    if not isinstance(general, int) or isinstance(general, bool) or general < 0:
+        raise ValueError("publish_gate.json 的 general_max_anomalies 必須是非負整數")
+    max_age = gate.get("max_age_days")
+    if not isinstance(max_age, int) or isinstance(max_age, bool) or max_age <= 0:
+        raise ValueError("publish_gate.json 的 max_age_days 必須是正整數")
+    return gate
+
+
+_PUBLISH_GATE = load_publish_gate()
+# 核心持股（零容忍）：ERROR、NO_DATA、資料落後或中間缺口任一即失敗。代號加上台股前綴以對應掃描列的 ticker。
+DAILY_HOLDINGS = tuple(f"TPE:{code}" for code in _PUBLISH_GATE["zero_tolerance"])
+DAILY_GENERAL_MAX = _PUBLISH_GATE["general_max_anomalies"]  # 其餘列的異常合計上限
+DAILY_MAX_AGE_DAYS = _PUBLISH_GATE["max_age_days"]  # 市場最新資料日距今超過此天數即視為整體停滯（涵蓋一般長假）
 _BAD_STATES = ("ERROR", "NO_DATA")
 
 

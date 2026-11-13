@@ -564,6 +564,22 @@ def test_daily_cli_writes_no_page_when_gate_fails(tmp_path, monkeypatch, capsys)
     assert "Gate Failed" in capsys.readouterr().err
 
 
+def test_publish_gate_config_drives_daily_constants():
+    """每日頁門檻改由 portfolio-patrol/references/publish_gate.json 提供，與 patrol.json 門檻共用。"""
+    assert sw.DAILY_HOLDINGS == ("TPE:00882", "TPE:00406A")
+    assert sw.DAILY_GENERAL_MAX == 2
+    assert sw.DAILY_MAX_AGE_DAYS == 7
+
+
+def test_load_publish_gate_fails_closed(tmp_path):
+    with pytest.raises(OSError):
+        sw.load_publish_gate(tmp_path / "none.json")
+    bad = tmp_path / "gate.json"
+    bad.write_text(json.dumps({"zero_tolerance": [], "general_max_anomalies": 2, "max_age_days": 7}), encoding="utf-8")
+    with pytest.raises(ValueError):
+        sw.load_publish_gate(bad)
+
+
 def test_sheet_cli_gate_fails_on_empty_scan(tmp_path, monkeypatch):
     """swing_sync 以 --sheet --gate 呼叫；空掃描結果必須回傳非 0，讓排程停止而不是靜默成功。"""
     monkeypatch.setattr(sw, "watchlist", lambda *a, **k: [])
