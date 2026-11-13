@@ -6,6 +6,7 @@ description: 投資組合全標的自動巡檢與每日簡報。遍歷 models/*/
 # portfolio-patrol：投資組合全標的巡檢與每日簡報
 
 - **核心腳本**：`scripts/patrol.py`（Python 標準函式庫 + PyYAML），輸出 ASCII 儀表板、JSON 或 Google Doc 格式。
+- **發布前門檻**：`scripts/patrol_gate.py <patrol.json>`（fail-closed），門檻設定 `references/publish_gate.json`，與每日巡檢頁共用。排程於寫回 `trap_state` 前執行，退出碼 1 即停止。
 - **模板與規範**：`references/briefing-template.md`。
 - **唯讀保護**：嚴禁碰觸 `Investment_Tracker_Core`；公開簡報零個人張數與本金隱私。
 

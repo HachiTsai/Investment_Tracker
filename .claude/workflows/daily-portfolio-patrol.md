@@ -34,7 +34,9 @@
 flowchart TD
     A["前置：git pull --ff-only origin main"] --> S0["步驟 0：讀取陷阱狀態 prev_state.json"]
     S0 --> B["步驟 1：patrol.py --json --prev-state > /tmp/patrol.json"]
-    B --> C["步驟 2：swing.py --scan ... --daily-html /tmp/daily.html（內建門檻）"]
+    B --> P{"步驟 1b：patrol_gate 通過？"}
+    P -->|否| E
+    P -->|是| C["步驟 2：swing.py --scan ... --daily-html /tmp/daily.html（內建門檻）"]
     C --> D{"步驟 3：門檻通過？"}
     D -->|否| E["終止！不寫回 trap_state、不覆寫 Artifact，回報失敗原因"]
     D -->|是| B1["步驟 1a：寫回陷阱狀態（失敗不中止，改在步驟 4 加警示）"]
@@ -62,11 +64,25 @@ python3 .claude/skills/portfolio-patrol/scripts/patrol.py --json --prev-state "<
 
 *自動遍歷 models/*/cards/ 計算配置狀態、SP/PV/Error 與例外管理分診（MBE）。*
 
-### 步驟 1a：寫回陷阱狀態（僅在步驟 3 門檻通過後執行）
+### 步驟 1b：patrol.json 門檻（fail-closed）
+
+```bash
+python3 .claude/skills/portfolio-patrol/scripts/patrol_gate.py /tmp/patrol.json
+```
+
+- **退出碼 0**：通過，進入步驟 2。
+- **退出碼 1**：未通過，stderr 會列出原因。**停止**，不執行步驟 2、不寫回 `trap_state`、不覆寫 Artifact。
+- 門檻內容（名單與容許數量來自 `portfolio-patrol/references/publish_gate.json`；核心清單取自 `models/*/cards` 的 `tier: core`，與 patrol 的探索範圍相同但獨立計算）：
+  - 核心清單完整：fleet、targets、trap_state 的代號與核心清單一致，且 trap_state 的資料日等於巡檢日期。
+  - 核心持股 **00882、00406A 零容忍**：行情過舊、無現價、無配置狀態、無評分，或收息標的缺殖利率，任一即失敗。
+  - 其餘標的：上述異常合計超過 **2 檔** 即失敗。
+  - 總經資料缺漏只警示，不阻擋。
+
+### 步驟 1a：寫回陷阱狀態（僅在步驟 1b 與步驟 3 都通過後執行）
 
 從 `/tmp/patrol.json` 取出 `trap_state`（每檔的 `run_date` 與 `trap`），以 `ArtifactData` 的 `batch` 寫入 `trap_state` 集合：每檔一筆，`op` 為 `set`，`doc_id` 為代號，`data` 為 `{"run_date": ..., "trap": ...}`。已存在的文件須帶上步驟 0 讀到的 `version`（`if_version`），新增的文件不帶。
 
-- 門檻未過（步驟 3 退出碼 1）：不寫回，視同一次寫回失敗，紀錄停在前一交易日，沿用容許一個交易日缺口的規則。
+- 門檻未過（步驟 1b 或步驟 3 退出碼 1）：不寫回，視同一次寫回失敗，紀錄停在前一交易日，沿用容許一個交易日缺口的規則。
 - 寫回失敗：不中止發布，改在步驟 4 以 `edits` 在頁面加上警示；執行回報也要寫明。紀錄只容許一個交易日的缺口。連續兩個交易日寫回失敗（含門檻未過）時，陷阱會降為「陷阱觀察」、不暫停額外單筆加碼，需人工確認。
 
 ### 步驟 2：執行波段掃描與報告頁面渲染
@@ -94,7 +110,7 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 -
 
 - **退出碼 0**：門檻通過，頁面已寫出，進入步驟 1a 與步驟 4。
 - **退出碼 1**：門檻未過。stderr 的 `❌ [Gate Failed]` 或 `❌ [Page Check Failed]` 會列出原因。**不要覆寫 Artifact，也不寫回 `trap_state`**，結束時簡短說明失敗原因與發生錯誤的檔案。
-- 門檻內容：
+- 門檻內容（名單與容許數量來自 `portfolio-patrol/references/publish_gate.json`）：
   - 掃描結果為空、持股缺列：失敗。
   - 核心持股 **00882、00406A 零容忍**：狀態 `ERROR`／`NO_DATA`、資料日落後同市場最新資料日、中間有日期缺口，任一即失敗。
   - 其餘 15 列：上述異常合計超過 **2 檔** 即失敗。

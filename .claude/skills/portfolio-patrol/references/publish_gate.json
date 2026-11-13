@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "description": "發布與寫回門檻的單一來源（SSOT）。每日巡檢頁（price-dividend-fetcher/scripts/swing.py --daily-html）與 patrol.json 門檻（scripts/patrol_gate.py）共用。核心清單來自 models/*/cards 的 tier: core，這裡只宣告零容忍子集與容許數量。",
+  "zero_tolerance": ["00882", "00406A"],
+  "general_max_anomalies": 2,
+  "max_age_days": 7
+}
