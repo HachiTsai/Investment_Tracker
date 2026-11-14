@@ -149,3 +149,16 @@ def test_http_error_includes_google_detail():
     resp.json.return_value = {"error": {"status": "PERMISSION_DENIED", "message": "The caller does not have permission"}}
     with pytest.raises(requests.HTTPError, match="PERMISSION_DENIED The caller does not have permission"):
         _raise_for_status(resp)
+
+
+def test_report_new_listings_always_prints(capsys):
+    import swing_sync as ss
+    rows = [
+        {"ticker": "TPE:00413A", "state": "NO_DATA", "short_history": True, "bars": 3, "last_date": "2026-11-13"},
+        {"ticker": "TPE:00882", "state": "UPTREND", "short_history": False, "bars": 243, "last_date": "2026-11-13"},
+        {"ticker": "TPE:X", "state": "NO_DATA", "short_history": True, "bars": 5, "last_date": None},
+    ]
+    assert ss.report_new_listings(rows) == ["TPE:00413A"]
+    assert "1 檔：TPE:00413A（3 根）" in capsys.readouterr().out
+    assert ss.report_new_listings(rows[1:2]) == []
+    assert "0 檔" in capsys.readouterr().out

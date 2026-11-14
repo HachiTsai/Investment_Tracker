@@ -211,6 +211,17 @@ def append_alert_rows(client: GoogleSheetsClient, sheet_id: str, alerts: List[Di
     client.update_values(sheet_id, _alert_range(f"A{start}:H{start + len(rows) - 1}"), rows)
 
 
+def report_new_listings(scan_results: List[Dict[str, Any]]) -> List[str]:
+    """每次執行都列出新掛牌（日線不足、門檻不計入）的標的與日線根數，方便辨識是否有老標的被誤判。回傳代號清單。"""
+    rows = [r for r in scan_results if r.get("state") == "NO_DATA" and r.get("short_history") and r.get("last_date")]
+    if not rows:
+        print("   🆕 新掛牌（日線不足，門檻不計入）：0 檔")
+        return []
+    detail = "、".join(f"{r.get('ticker')}（{r.get('bars')} 根）" for r in rows)
+    print(f"   🆕 新掛牌（日線不足，門檻不計入）：{len(rows)} 檔：{detail}")
+    return [r.get("ticker") for r in rows]
+
+
 def report_alerts(alerts: List[Dict[str, Any]]) -> None:
     """告警列在 GitHub Actions 執行頁：warning 註解與執行摘要表格；不在 GitHub 環境時只印到終端機。"""
     for r in alerts:
@@ -311,6 +322,8 @@ def run_swing_pipeline(
             scan_results = json.loads(scan_out_path.read_text(encoding="utf-8"))
         except Exception:
             pass
+
+    report_new_listings(scan_results)
 
     is_all_closed = len(scan_results) > 0 and all(not r.get("fresh", False) for r in scan_results)
     if is_all_closed and not force:

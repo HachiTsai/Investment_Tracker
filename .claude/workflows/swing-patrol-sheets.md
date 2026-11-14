@@ -51,7 +51,7 @@ flowchart TD
 python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 --tier all --extra-tickers /tmp/extra_tickers.json --prev /tmp/prev.json --sheet /tmp/sheet.json --gate > /tmp/scan.json
 ```
 
-*若指令執行失敗即停止，不寫入任何資料，於回報中貼出錯誤原因。Gate 容許的異常數為 10 檔（`GATE_MAX_ERRORS`）；異常指 `ERROR` 與 `NO_DATA` 合計，因為 `NO_DATA` 同樣保留舊值，不計入即為靜默失效。例外：新掛牌標的（有資料日，但日線不足 60 根，指標算不出來屬預期）不計入，執行時會在日誌列出檔數與代號。掃描結果為空即失敗，拒絕寫入。*
+*若指令執行失敗即停止，不寫入任何資料，於回報中貼出錯誤原因。Gate 容許的異常數為 10 檔（`GATE_MAX_ERRORS`）；異常指 `ERROR` 與 `NO_DATA` 合計，因為 `NO_DATA` 同樣保留舊值，不計入即為靜默失效。例外：新掛牌標的（有資料日，但日線不足 60 根，指標算不出來屬預期）不計入，每次執行（含成功）都在日誌列出檔數、代號與日線根數。掃描結果為空即失敗，拒絕寫入。*
 
 ### 步驟 3：健康檢查與市場狀態判定（Gatekeeper）
 
