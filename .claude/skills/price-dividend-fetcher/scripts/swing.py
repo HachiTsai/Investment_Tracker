@@ -514,6 +514,9 @@ def scan(items: List[Dict], prev: Optional[Dict[str, Dict]] = None, now: Optiona
         row["last_date"] = last.strftime("%Y-%m-%d")
         row["bar_dates"] = [(datetime.fromtimestamp(b["ts"], timezone.utc) + timedelta(hours=MARKET_TZ_HOURS.get(market, 8))).strftime("%Y-%m-%d") for b in bars[-GAP_BARS:]]
         row["fresh"] = row["last_date"] == market_today(market, now)
+        # 新掛牌：有抓到日線但不足 MIN_BARS 根，指標算不出來屬預期，不是抓取異常（波段 Sheet 門檻不計入）
+        row["bars"] = len(bars)
+        row["short_history"] = row["state"] == "NO_DATA" and len(bars) < MIN_BARS
         if prev is not None:
             old = prev.get(it["ticker"]) or {}
             row["prev_label"] = LEGACY_LABELS.get(old.get("label"), old.get("label"))
@@ -688,6 +691,7 @@ def render_daily_page(rows: List[Dict], patrol: Dict, date: str, notices: Option
             .replace("__DAILY_HEAD__", json.dumps(head, ensure_ascii=False)).replace("__DAILY_DATE__", date))
 
 
+MIN_BARS = 60  # classify 需要 60 日均線；少於此數必為 NO_DATA
 GATE_MAX_ERRORS = 10  # 全市場 ETF 納入後清單約 150 檔，容許的抓取失敗數由 5 放寬到 10
 
 
@@ -710,6 +714,12 @@ def _market_age_problems(rows: List[Dict], now: Optional[datetime], max_age_days
     return problems
 
 
+def short_history_tickers(rows: List[Dict]) -> List[str]:
+    """新掛牌標的：狀態 NO_DATA、有資料日，且日線不足 MIN_BARS 根。抓取失敗（ERROR）與沒有資料日的列不算。"""
+    return [r.get("ticker", "未知") for r in rows
+            if r.get("state") == "NO_DATA" and r.get("short_history") and r.get("last_date")]
+
+
 def check_gate(
     rows: List[Dict],
     max_errors: int = 5,
@@ -720,13 +730,15 @@ def check_gate(
     """排程健康門檻檢核（波段 Sheet 路徑）。回傳：(is_healthy, is_market_closed, reasons)
     - 掃描結果為空：不健康，拒絕寫入（fail-closed）。
     - is_healthy：ERROR 與 NO_DATA 合計不超過 max_errors 檔。NO_DATA 會保留舊值，不計入即為靜默失效。
+      例外：新掛牌（short_history，有資料日但日線不足 MIN_BARS 根）不計入，否則新 ETF 一多就每天擋下整張表。
     - is_market_closed：所有標的皆非 fresh，且各市場最新資料日仍在 max_age_days 天內（休市）。
       資料日過舊或完全沒有資料日時，不判為休市，改為不健康（來源停滯）。
     """
     if not rows:
         return False, False, ["掃描結果為空，拒絕寫入 Sheet"]
     reasons = []
-    bad = [r.get("ticker", "未知") for r in rows if r.get("state") in _BAD_STATES]
+    new_listed = set(short_history_tickers(rows))
+    bad = [r.get("ticker", "未知") for r in rows if r.get("state") in _BAD_STATES and r.get("ticker") not in new_listed]
     is_healthy = len(bad) <= max_errors
     if not is_healthy:
         reasons.append(f"ERROR／NO_DATA 狀態標的超標：{len(bad)} > {max_errors} ({bad[:5]}...)")
@@ -912,6 +924,9 @@ def main(argv=None) -> int:
         if getattr(a, "gate", False) and not a.daily_html:
             require_fresh = bool(a.sheet and not a.daily_html)
             is_healthy, is_market_closed, reasons = check_gate(rows, max_errors=GATE_MAX_ERRORS, require_fresh=require_fresh)
+            new_listed = short_history_tickers(rows)
+            if new_listed:
+                print(f"ℹ️ [Gate] 新掛牌日線不足 {MIN_BARS} 根，不計入異常：{len(new_listed)} 檔（{'、'.join(new_listed)}）", file=sys.stderr)
             if not is_healthy:
                 print(f"❌ [Gate Failed] {'; '.join(reasons)}", file=sys.stderr)
                 return 1
