@@ -3,9 +3,10 @@
 ## 1. 執行環境選擇
 
 - **本機環境（macOS / Antigravity）**：
-  - 統一使用 Conda 環境 `ai-it-go`（Python 3.14.8，路徑：`/opt/homebrew/Caskroom/miniforge/base/envs/ai-it-go/bin/python`）。
+  - 統一使用 Conda 環境 `ai-it-go`（路徑：`/opt/homebrew/Caskroom/miniforge/base/envs/ai-it-go/bin/python`）。
   - 本地 IDE（VS Code / Cursor / Antigravity）透過 `.vscode/settings.json` 指向此直譯器。
   - `.vscode/` 已加入 `.gitignore`，確保本機設定不外溢至雲端或 Git 歷史。
+  - 文件中的 `python3 …` 是雲端沙盒與 GitHub Actions 通用的寫法；本機執行同一份指令時，改用此環境的直譯器。
   - 執行測試或腳本時，一律使用該環境的直譯器：
 
     ```bash
@@ -13,7 +14,7 @@
     ```
 
 - **雲端環境（Claude Web）**：
-  - 使用 Linux 標準 Python 3.12+ 環境。
+  - 使用 Linux 標準 Python 3.12+ 環境；GitHub Actions 與 CI 固定使用 Python 3.12（見 `.github/workflows/*.yml`）。
   - 統一以 `pyproject.toml` 作為唯一的套件依賴與工具設定來源。
 
 ## 2. 單一依賴來源與同步鐵律

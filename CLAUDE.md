@@ -146,10 +146,9 @@ scripts/                     共用計算或抓價工具
 ## Git 與 Commit
 
 - **雙 Agent 協作分工**：Claude 雲端（Linux 環境）負責前端 HTML Artifact 渲染與定時排程，Antigravity（macOS 本機環境）負責重度後端演算與歷史回測；雙方透過 Session-Sync 與交接雷達（`committer.py --check-env` / `--sync` / `--patrol` 之 `check_handoff`）無縫接力，避免雲端額度浪費。
-- **先開 PR 再合併 `main`**：Claude 作業一律使用 `claude/<task-name>` 分支，Antigravity 作業一律使用 `agy/<task-name>` 分支。所有變更（含文件）都在工作階段指定的分支上 commit 並推送，開 PR 到 `main`（PR 描述固定附「規則掃描」段落）；PR 的 CI 全綠後由 `ci.yml` 的 `auto-merge` job 自動合併（涵蓋同 repo 之 `claude/` 或 `agy/` 開頭分支，不限定 PR 範圍；草稿會先自動轉正式；用 Secrets `AUTO_MERGE_PAT`，Hachi 已授權，不另等人工審查），Agent 於合併後確認 `main` 的 CI 也通過，失敗就立刻修正。不直接推 `main`。
+- **先開 PR 再合併 `main`**：Claude 作業一律使用 `claude/<task-name>` 分支，Antigravity 作業一律使用 `agy/<task-name>` 分支。所有變更（含文件）都在工作階段指定的分支上 commit 並推送，開 PR 到 `main`（PR 描述固定附「規則掃描」段落）；PR 的 CI 全綠後由 `ci.yml` 的 `auto-merge` job 自動合併（涵蓋同 repo 之 `claude/` 或 `agy/` 開頭分支，不限定 PR 範圍；草稿會先自動轉正式；用 Secrets `AUTO_MERGE_PAT`，Hachi 已授權，不另等人工審查），Agent 於合併後確認 `main` 的 CI 也通過，失敗就立刻修正。不直接推 `main`，讓變更先過 CI 再進 `main`。
   - **合併方式一律用 merge commit**（不用 squash、不用 rebase），保留分支上每個 commit 的完整訊息，方便用 `git log --grep` 回溯。
   - **草稿 PR 全自動**：雲端工作階段的系統指令要求 PR 先開為草稿。`auto-merge` job 不分草稿與否，CI 全綠後先 `gh pr ready` 轉為正式 PR，再以 merge commit 合併，全程免人工。
-  - 舊規則（2026-10-15 前）：Hachi 授權不另開分支與 PR，commit 後直接 push 到 `main`。改用 PR 是為了讓變更先過 CI 再進 `main`。
 
 - 所有 commit 走 `fin-commit` skill：`python3 .claude/skills/fin-commit/scripts/committer.py`。規格書為 `.claude/skills/fin-commit/references/spec-git-commit-protocol.md`。
 - 所有 commit 共用同一份詳細模板，交易紀錄只是其中一種（多了必填的「交易明細」）。
