@@ -6,7 +6,7 @@ description: 財商工程 REPO 的標準 commit 流程（committer.py）。自�
 # fin-commit：財商工程 Commit Workflow
 
 - **規格書（SSOT）**：`references/spec-git-commit-protocol.md`，包含類別、type、唯一模板與檢查規則。
-- **執行器**：`scripts/committer.py`，參考 delivery-commit-workflow 的 committer.py 改寫。
+- **執行器**：`scripts/committer.py`。
 - **測試**：`tests/test_committer.py`，用 `python3 -m pytest -q .claude/skills/fin-commit/tests` 執行。
 
 所有 commit 共用同一份詳細模板。**交易紀錄只是其中一種 commit**，差別是多了必填的「交易明細」區塊；`div` 則多了「股利明細」。
