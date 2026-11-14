@@ -90,13 +90,14 @@ def evaluate(latest: dict, created: dict, now: datetime, windows: dict = WINDOWS
         if not run:
             waited = (now - created[wf]).total_seconds() / 3600
             if waited > max_hours:
-                problems.append(f"{wf}：建立 {waited:.0f} 小時後仍沒有任何執行紀錄（容許 {max_hours} 小時）")
+                problems.append(f"{wf}：漏跑——建立 {waited:.0f} 小時後仍沒有任何執行紀錄（容許 {max_hours} 小時）")
             continue
         age = (now - parse_time(run["created_at"])).total_seconds() / 3600
         if age > max_hours:
-            problems.append(f"{wf}：最近一次執行在 {age:.0f} 小時前（容許 {max_hours} 小時）")
+            problems.append(f"{wf}：漏跑——最近一次執行在 {age:.0f} 小時前（容許 {max_hours} 小時）")
         if run.get("status") == "completed" and run.get("conclusion") != "success":
-            problems.append(f"{wf}：最近一次執行結論為 {run.get('conclusion')}")
+            # 已經跑了、但失敗：不是漏跑。附上執行連結，直接點進去看失敗原因
+            problems.append(f"{wf}：最近一次執行結論為 {run.get('conclusion')}（已執行但失敗，不是漏跑；{run.get('html_url', '無連結')}）")
     return problems
 
 

@@ -16,6 +16,9 @@ jobs:
     name: Sync Swing Patrol to Google Sheets
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write   # 失敗即時開 Issue、恢復後關閉（schedule_notify.py）
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -30,5 +33,26 @@ jobs:
           DRIVE_IDS: ${{ secrets.DRIVE_IDS }}
           # 手動執行且勾選 force 才帶 --force；自動排程沒有 inputs，不帶
           FORCE_FLAG: ${{ inputs.force && '--force' || '' }}
+        shell: bash   # 預設 bash 帶 -eo pipefail，tee 不會吞掉 swing_sync 的退出碼
         run: |
-          python3 .claude/skills/price-dividend-fetcher/scripts/swing_sync.py ${FORCE_FLAG}
+          python3 .claude/skills/price-dividend-fetcher/scripts/swing_sync.py ${FORCE_FLAG} 2>&1 | tee /tmp/run.log
+      - name: 留存掃描結果與門檻判定（PR 改門檻時，CI 用它重播真實資料；gate_replay.py）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swing-scan
+          path: |
+            /tmp/scan.json
+            /tmp/scan_gate.json
+          retention-days: 30
+          if-no-files-found: ignore
+      - name: 失敗即時通報（開 Issue，附失敗原因與執行連結）
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .claude/skills/fin-commit/scripts/schedule_notify.py fail --workflow swing-patrol.yml --log /tmp/run.log
+      - name: 恢復後關閉失敗 Issue
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .claude/skills/fin-commit/scripts/schedule_notify.py resolve --workflow swing-patrol.yml

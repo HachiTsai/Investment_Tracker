@@ -159,6 +159,36 @@ def test_report_new_listings_always_prints(capsys):
         {"ticker": "TPE:X", "state": "NO_DATA", "short_history": True, "bars": 5, "last_date": None},
     ]
     assert ss.report_new_listings(rows) == ["TPE:00413A"]
-    assert "1 檔：TPE:00413A（3 根）" in capsys.readouterr().out
+    assert "1 檔：TPE:00413A（3 根，未驗證）" in capsys.readouterr().out
+    assert ss.report_new_listings([{**rows[0], "listed": "2026-11-11"}]) == ["TPE:00413A"]
+    assert "上市 2026-11-11" in capsys.readouterr().out
     assert ss.report_new_listings(rows[1:2]) == []
     assert "0 檔" in capsys.readouterr().out
+
+
+def test_report_anomalies_and_core_problems(capsys, tmp_path, monkeypatch):
+    import swing_sync as ss
+    from conftest import REAL_CORE_TICKERS
+    monkeypatch.setattr(ss, "core_tickers", REAL_CORE_TICKERS)
+    rows = [
+        {"ticker": "TPE:00882", "state": "UPTREND"},
+        {"ticker": "TPE:00406A", "state": "ERROR", "reason": "HTTP 500"},
+        {"ticker": "TPE:00413A", "state": "NO_DATA", "short_history": True, "last_date": "2026-11-13"},
+        {"ticker": "TPE:0050", "state": "NO_DATA", "short_history": False, "last_date": "2026-11-13", "reason": "日線不足"},
+    ]
+    assert ss.report_anomalies(rows) == ["TPE:00406A", "TPE:0050"]
+    assert "2/4 檔（50%）" in capsys.readouterr().out
+    assert ss.report_anomalies(rows[:1]) == []
+    core = ss.core_tickers()
+    assert "TPE:00882" in core and "TPE:00406A" in core
+    assert ss.core_problems(rows, core) == ["TPE:00406A ERROR（HTTP 500）"]
+    assert ss.core_problems(rows[:1], core) == ["TPE:00406A 缺列"]
+    assert ss._exit_code(rows) == 1
+    assert ss._exit_code([{"ticker": t, "state": "UPTREND"} for t in core]) == 0
+    bad = tmp_path / "g.json"
+    bad.write_text("{}", encoding="utf-8")
+    try:
+        ss.core_tickers(bad)
+        assert False
+    except ValueError:
+        pass

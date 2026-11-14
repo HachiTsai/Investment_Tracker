@@ -81,14 +81,14 @@ def _quality(row: Dict, gaps: Dict[str, List[str]]) -> Tuple[str, int]:
 
 
 def refresh_lagging(rows: List[Dict], items: List[Dict], prev: Optional[Dict[str, Dict]], with_chart: bool = False,
-                    delays: Tuple[int, ...] = RESCAN_DELAYS, sleep=time.sleep) -> List[Dict]:
+                    delays: Tuple[int, ...] = RESCAN_DELAYS, sleep=time.sleep, listings: Optional[Dict[str, str]] = None) -> List[Dict]:
     """落後或有中間缺口的標的等待後重抓；只採用品質較好的新列（資料日較新，或缺口較少），其餘維持原列。重抓仍有問題就保留原列，由 --scan 的 stderr 提示。"""
     for delay in delays:
         lag = set(stale_tickers(rows))
         if not lag:
             break
         sleep(delay)
-        fresh = {r["ticker"]: r for r in scan([it for it in items if it["ticker"] in lag], prev, with_chart=with_chart)}
+        fresh = {r["ticker"]: r for r in scan([it for it in items if it["ticker"] in lag], prev, with_chart=with_chart, listings=listings)}
         candidate = [fresh.get(r["ticker"], r) if r["ticker"] in lag else r for r in rows]
         before, after = missing_days(rows), missing_days(candidate)
         rows = [c if r["ticker"] in lag and _quality(c, after) > _quality(r, before) else r for r, c in zip(rows, candidate)]
@@ -480,8 +480,56 @@ def chart_series(bars: List[Dict], n: int = CHART_BARS) -> Dict:
     }
 
 
-def scan(items: List[Dict], prev: Optional[Dict[str, Dict]] = None, now: Optional[datetime] = None, with_chart: bool = False) -> List[Dict]:
-    """逐檔取日線算快照；失敗的檔記錄原因，不中斷。
+TWSE_ETF_LIST_URL = "https://www.twse.com.tw/rwd/zh/ETF/list?response=json"
+NEW_LISTING_MAX_DAYS = 100  # 60 個交易日約 84～90 個日曆天，加上連假餘裕；上市超過此天數仍日線不足，視為抓取異常
+
+
+def load_listing_dates(fetch=None) -> Dict[str, str]:
+    """證交所上市 ETF 的上市日期：{代號: YYYY-MM-DD}。只涵蓋上市 ETF（上櫃與海外查不到）；失敗回傳空表並在 stderr 說明，不中斷掃描。"""
+    try:
+        js = json.loads((fetch or twse_get)(TWSE_ETF_LIST_URL))
+        fields = js.get("fields") or []
+        i_date, i_code = fields.index("上市日期"), fields.index("證券代號")
+        out = {}
+        for row in js.get("data") or []:
+            m = re.fullmatch(r"(\d{4})\.(\d{2})\.(\d{2})", str(row[i_date]).strip())
+            if m:
+                out[str(row[i_code]).strip()] = "-".join(m.groups())
+        if not out:
+            raise ValueError("清單為空")
+        return out
+    except (ValueError, RuntimeError, OSError, KeyError, IndexError, TypeError) as e:
+        print(f"上市日期清單讀取失敗，新掛牌改用日線根數推測（未驗證）：{str(e)[:120]}", file=sys.stderr)
+        return {}
+
+
+def listing_date_of(ticker: str, listings: Optional[Dict[str, str]]) -> Optional[str]:
+    exch, code = parse_ticker(ticker)
+    return (listings or {}).get(code) if exch == "TPE" else None
+
+
+def drop_prelisting_bars(bars: List[Dict], listed: Optional[str], tz_hours: int = 8) -> List[Dict]:
+    """剔除上市日之前的日線。Yahoo 會在募集期間回傳價格固定、成交量 0 的佔位日線（實測 00412A 上市前 9 根皆為 10.0），會拉偏均線與 RSI。"""
+    if not listed:
+        return bars
+    return [b for b in bars if (datetime.fromtimestamp(b["ts"], timezone.utc) + timedelta(hours=tz_hours)).strftime("%Y-%m-%d") >= listed]
+
+
+def is_new_listing(state: str, n_bars: int, listed: Optional[str], today: str) -> Tuple[bool, bool]:
+    """回傳 (是否新掛牌, 是否以上市日驗證)。
+    - 有上市日：上市距今不超過 NEW_LISTING_MAX_DAYS 天才算新掛牌；更久仍日線不足，是抓取異常（來源只回部分資料）。
+    - 沒有上市日（上櫃、海外、清單讀取失敗）：退回以日線根數推測，標為未驗證。"""
+    if state != "NO_DATA" or n_bars >= MIN_BARS:
+        return False, False
+    if listed:
+        age = (datetime.strptime(today, "%Y-%m-%d") - datetime.strptime(listed, "%Y-%m-%d")).days
+        return age <= NEW_LISTING_MAX_DAYS, True
+    return True, False
+
+
+def scan(items: List[Dict], prev: Optional[Dict[str, Dict]] = None, now: Optional[datetime] = None, with_chart: bool = False,
+         listings: Optional[Dict[str, str]] = None) -> List[Dict]:
+    """逐檔取日線算快照；失敗的檔記錄原因，不中斷。listings：{代號: 上市日}，給了就剔除上市前的佔位日線並用上市日判斷新掛牌。
 
     last_date：最後一根日線的日期。fresh：last_date 是否為該市場的今天（收盤後執行時，False 代表休市或尚未收盤，
     排程應保留該市場舊資料不覆寫）。prev：{代號: {"label":..,"combo":..}}，給了就多出 changed（狀態標籤變化）、combo_changed、alert（三週期組合變成關鍵組合才提醒）。
@@ -490,7 +538,10 @@ def scan(items: List[Dict], prev: Optional[Dict[str, Dict]] = None, now: Optiona
     for it in items:
         market = market_of(it["ticker"])
         try:
-            bars = load_ohlcv(it["ticker"], "1y")
+            listed = listing_date_of(it["ticker"], listings)
+            bars = drop_prelisting_bars(load_ohlcv(it["ticker"], "1y"), listed, MARKET_TZ_HOURS.get(market, 8))
+            if not bars:
+                raise ValueError("沒有上市日之後的日線")
             s = snapshot(bars)
         except (ValueError, RuntimeError, KeyError, IndexError) as e:
             out.append({**it, "market": market, "state": "ERROR", "label": "⚠️ 抓取失敗", "reason": str(e)[:80], "last_date": None, "fresh": False})
@@ -516,7 +567,8 @@ def scan(items: List[Dict], prev: Optional[Dict[str, Dict]] = None, now: Optiona
         row["fresh"] = row["last_date"] == market_today(market, now)
         # 新掛牌：有抓到日線但不足 MIN_BARS 根，指標算不出來屬預期，不是抓取異常（波段 Sheet 門檻不計入）
         row["bars"] = len(bars)
-        row["short_history"] = row["state"] == "NO_DATA" and len(bars) < MIN_BARS
+        row["listed"] = listed
+        row["short_history"], row["listing_verified"] = is_new_listing(row["state"], len(bars), listed, market_today(market, now))
         if prev is not None:
             old = prev.get(it["ticker"]) or {}
             row["prev_label"] = LEGACY_LABELS.get(old.get("label"), old.get("label"))
@@ -692,7 +744,10 @@ def render_daily_page(rows: List[Dict], patrol: Dict, date: str, notices: Option
 
 
 MIN_BARS = 60  # classify 需要 60 日均線；少於此數必為 NO_DATA
-GATE_MAX_ERRORS = 10  # 全市場 ETF 納入後清單約 150 檔，容許的抓取失敗數由 5 放寬到 10
+# 波段 Sheet 門檻（2026-11-14 Hachi 同意改為比例加分級）：異常列比例超過 GATE_BLOCK_RATIO 視為大面積異常，整張表不寫；
+# 超過 GATE_WARN_RATIO 照寫正常列並警告。固定檔數會隨清單變長而失準。核心持股零容忍由 swing_sync 在寫入後判定。
+GATE_BLOCK_RATIO = 0.20
+GATE_WARN_RATIO = 0.05
 
 
 SHEET_MAX_AGE_DAYS = 10  # 波段 Sheet 休市判定：最新資料日距今超過此天數視為來源停滯，不當作休市（涵蓋長假）
@@ -720,28 +775,42 @@ def short_history_tickers(rows: List[Dict]) -> List[str]:
             if r.get("state") == "NO_DATA" and r.get("short_history") and r.get("last_date")]
 
 
+def gate_bad_tickers(rows: List[Dict]) -> List[str]:
+    """計入異常的列：ERROR，或不是新掛牌的 NO_DATA。"""
+    new_listed = set(short_history_tickers(rows))
+    return [r.get("ticker", "未知") for r in rows if r.get("state") in _BAD_STATES and r.get("ticker") not in new_listed]
+
+
 def check_gate(
     rows: List[Dict],
-    max_errors: int = 5,
+    max_errors: Optional[int] = None,
     require_fresh: bool = False,
     now: Optional[datetime] = None,
     max_age_days: int = SHEET_MAX_AGE_DAYS,
+    block_ratio: Optional[float] = None,
 ) -> Tuple[bool, bool, List[str]]:
     """排程健康門檻檢核（波段 Sheet 路徑）。回傳：(is_healthy, is_market_closed, reasons)
     - 掃描結果為空：不健康，拒絕寫入（fail-closed）。
-    - is_healthy：ERROR 與 NO_DATA 合計不超過 max_errors 檔。NO_DATA 會保留舊值，不計入即為靜默失效。
-      例外：新掛牌（short_history，有資料日但日線不足 MIN_BARS 根）不計入，否則新 ETF 一多就每天擋下整張表。
+    - is_healthy：異常列（ERROR 與 NO_DATA 合計）占比不超過 block_ratio；另給 max_errors 時檔數也不得超過。
+      兩者都沒給時用 GATE_BLOCK_RATIO。NO_DATA 會保留舊值，不計入即為靜默失效。
+      例外：新掛牌（short_history）不計入，否則新 ETF 一多就每天擋下整張表。
+      未超過門檻的異常列不擋整張表：swing_sync 逐列處理，正常列照寫、異常列保留舊值並標記。
     - is_market_closed：所有標的皆非 fresh，且各市場最新資料日仍在 max_age_days 天內（休市）。
       資料日過舊或完全沒有資料日時，不判為休市，改為不健康（來源停滯）。
     """
     if not rows:
         return False, False, ["掃描結果為空，拒絕寫入 Sheet"]
     reasons = []
-    new_listed = set(short_history_tickers(rows))
-    bad = [r.get("ticker", "未知") for r in rows if r.get("state") in _BAD_STATES and r.get("ticker") not in new_listed]
-    is_healthy = len(bad) <= max_errors
-    if not is_healthy:
+    if max_errors is None and block_ratio is None:
+        block_ratio = GATE_BLOCK_RATIO
+    bad = gate_bad_tickers(rows)
+    is_healthy = True
+    if max_errors is not None and len(bad) > max_errors:
+        is_healthy = False
         reasons.append(f"ERROR／NO_DATA 狀態標的超標：{len(bad)} > {max_errors} ({bad[:5]}...)")
+    if block_ratio is not None and len(bad) / len(rows) > block_ratio:
+        is_healthy = False
+        reasons.append(f"ERROR／NO_DATA 狀態標的大面積異常：{len(bad)}/{len(rows)} 檔（{len(bad) / len(rows):.0%}），超過 {block_ratio:.0%} ({bad[:5]}...)")
     is_market_closed = require_fresh and not any(r.get("fresh") for r in rows)
     if is_market_closed:
         problems = _market_age_problems(rows, now, max_age_days)
@@ -856,7 +925,7 @@ def main(argv=None) -> int:
     p.add_argument("--batch", metavar="卡片:前N大", help="多檔彙總回測，例如 00882:15（讀 models/<卡片>/cards/constituents.jsonl）")
     p.add_argument("--fib-backtest", action="store_true", help="回測各費波那契回檔位置之後 5/10/20 日含息報酬（觀察清單全部標的，抓 5 年日線）")
     p.add_argument("--backtest", action="store_true", help="加跑超跌反彈規則回測（抓 5 年日線）")
-    p.add_argument("--gate", action="store_true", help="啟用波段 Sheet 的健康門檻判定（--scan 模式下 ERROR <= 10 檔）；--daily-html 一律套用每日門檻，不需此參數")
+    p.add_argument("--gate", action="store_true", help="啟用波段 Sheet 的健康門檻判定（--scan 模式下異常列占比不超過 20%）；--daily-html 一律套用每日門檻，不需此參數")
     p.add_argument("--extra-tickers", metavar="JSON", help="搭配 --scan：額外的全市場 ETF 清單檔 [{\"ticker\":\"TPE:0050\",\"name\":\"...\"}]，卡片已有的不重複")
     p.add_argument("--tier", choices=["core", "pool", "all"], default="core", help="波段掃描標的分級（預設 core: 核心團隊）")
     a = p.parse_args(argv)
@@ -864,8 +933,9 @@ def main(argv=None) -> int:
         prev = {r["ticker"]: {"label": r.get("label"), "combo": r.get("combo")} for r in json.loads(Path(a.prev).read_text(encoding="utf-8"))} if a.prev else None
         extra = json.loads(Path(a.extra_tickers).read_text(encoding="utf-8")) if a.extra_tickers else None
         items = watchlist(a.scan or None, filter_tier=a.tier, extra=extra)
-        rows = scan(items, prev, with_chart=bool(a.daily_html))
-        rows = refresh_lagging(rows, items, prev, with_chart=bool(a.daily_html))
+        listings = load_listing_dates()
+        rows = scan(items, prev, with_chart=bool(a.daily_html), listings=listings)
+        rows = refresh_lagging(rows, items, prev, with_chart=bool(a.daily_html), listings=listings)
         gaps = missing_days(rows)
         for r in rows:
             r["missing_days"] = gaps.get(r["ticker"], [])
@@ -923,10 +993,13 @@ def main(argv=None) -> int:
         print(json.dumps(rows_out, ensure_ascii=False, indent=1))
         if getattr(a, "gate", False) and not a.daily_html:
             require_fresh = bool(a.sheet and not a.daily_html)
-            is_healthy, is_market_closed, reasons = check_gate(rows, max_errors=GATE_MAX_ERRORS, require_fresh=require_fresh)
+            is_healthy, is_market_closed, reasons = check_gate(rows, block_ratio=GATE_BLOCK_RATIO, require_fresh=require_fresh)
             new_listed = short_history_tickers(rows)
             if new_listed:
                 print(f"ℹ️ [Gate] 新掛牌日線不足 {MIN_BARS} 根，不計入異常：{len(new_listed)} 檔（{'、'.join(new_listed)}）", file=sys.stderr)
+            bad = gate_bad_tickers(rows)
+            if is_healthy and rows and len(bad) / len(rows) > GATE_WARN_RATIO:
+                print(f"⚠️ [Gate] 異常列 {len(bad)}/{len(rows)} 檔，超過警告線 {GATE_WARN_RATIO:.0%}（未達 {GATE_BLOCK_RATIO:.0%}，正常列照寫）：{'、'.join(bad)}", file=sys.stderr)
             if not is_healthy:
                 print(f"❌ [Gate Failed] {'; '.join(reasons)}", file=sys.stderr)
                 return 1

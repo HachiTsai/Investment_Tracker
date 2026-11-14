@@ -12,7 +12,7 @@
 
 | ID | 流程 | 平台 | 觸發（台北） | 規格（SSOT） | 產出 | 健康檢查 |
 | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
-| S1 | 波段觀察 Sheet 同步（L1） | GitHub Actions `swing-patrol.yml`，cron `23 9 * * 1-5` | 平日 17:23 | `swing-patrol-sheets.md` | 波段觀察 Sheet A:X（口袋名單加全市場 ETF 前 100 檔），心跳 Z1:AA2 | 每日，容許 96 小時 |
+| S1 | 波段觀察 Sheet 同步（L1） | GitHub Actions `swing-patrol.yml`，cron `23 9 * * 1-5` | 平日 17:23 | `swing-patrol-sheets.md` | 波段觀察 Sheet A:X（口袋名單加全市場 ETF 前 100 檔），心跳 Z1:AA2 | 每日，容許 96 小時；失敗當下自動開 Issue；另有 Google Apps Script 平日 17:30 外部觸發（備援 GitHub cron） |
 | S2 | 全市場 ETF 池（台股）Sheet 同步（L2） | GitHub Actions `market-etf.yml`，cron `37 9 * * 5` | 週五 17:37 | `market-etf-pool.md` | 全市場_ETF成分股資料庫 Sheet | 每日，容許 192 小時 |
 | C1 | 每日投資組合巡檢（L6） | Claude 雲端排程 | 週二至週六 08:50 | `daily-portfolio-patrol.md` | Artifact `WLXXvrX7BzLemm9TxqZ6di`，ArtifactData `trap_state` | 無，靠排程串回報 |
 | C2 | 00882 成分股股利表（L7） | Claude 雲端排程 | 週五 16:30 | `hk-00882-dividend.md` | Artifact `DSbfrxfywurJVo3TVwSzia`，Sheet `00882_成分股股利資料庫` | 無，靠排程串回報 |
@@ -41,6 +41,7 @@
 
 ## 4. 異動紀錄
 
+- 2026-11-14：S1 與 S2 失敗即時通報（`schedule_notify.py` 開 Issue、恢復後自動關閉）、S1 門檻改比例與上市日判定、PR 的 CI 加門檻重播、S1 加 Google Apps Script 外部觸發（GitHub cron 保留當備援）；健康檢查訊息分「漏跑」與「已執行但失敗」。細節見 `swing-patrol-sheets.md`。Hachi 同意（討論串 2026-11-14「6點全做」；規則檔更新「同意」）。
 - 2026-11-10：C5 改為每日 23:10，並同時重產與發布工作流工廠頁（`workflow_map.py build --factory`），讓新增或改時間的工作流自動進工廠。Hachi 要求（討論串 2026-11-10「那我們的C5 能不能改成每天晚上23:10 更新」）。
 - 2026-11-12：C4 流程補三項：發布前先讀線上快照（否則每次排程的第一次發布都被拒）、資料改存 `get_values` 回應原文並用 `--raw-dir` 建置、以 `--prev` 對照上一版擋下既有列的錯漏字；另寫明發布被拒的處理順序（不原樣重送、不用 `force`）。排程時間與 prompt 不變。Hachi 同意（討論串 2026-11-12「同意，讓這個排程之後都可以順利發佈」）。
 - 2026-11-10：新增 C5（工作流對應地圖），規格 `workflow-map.md`，產生器 `fin-commit/scripts/workflow_map.py`；排程時間週五 23:10 由 Hachi 指定，雲端排程 Hachi 已於同日建立（名稱 C5_工作流工廠每週更新）。Hachi 要求（討論串 2026-11-10「幫我寫一個workflow」）。

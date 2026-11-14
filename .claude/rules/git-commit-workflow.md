@@ -7,7 +7,7 @@
 1. **先開 PR 再合併 `main`**：
    - 分支命名：Claude 作業一律使用 `claude/<task-name>`，Antigravity 作業一律使用 `agy/<task-name>`。
    - 所有變更（包含文件與筆記）都在工作階段指定的分支上 commit 並推送，向 `main` 發起 Pull Request。
-   - PR 的 CI（`markdown-lint`、PR 規則掃描檢查與 `pytest`）全綠後才可合併，失敗需立刻修正。
+   - PR 的 CI（`markdown-lint`、PR 規則掃描檢查與 `pytest`）全綠後才可合併，失敗需立刻修正。`skill-tests` 另含**波段門檻重播**（`price-dividend-fetcher/scripts/gate_replay.py`）：用排程留存的真實掃描結果，以 PR 的門檻重判；過去放行、現在被擋即失敗。刻意收緊門檻時，PR 描述寫「重播例外」並說明原因（2026-11-14 Hachi 同意）。
    - **禁止直接 push 到 `main` 分支**。
 2. **合併方式一律採用 Merge Commit**：
    - 不使用 squash、不使用 rebase，保留分支上每個 commit 的完整訊息與歷程，便於以 `git log --grep` 追溯歷史決策。

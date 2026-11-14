@@ -322,7 +322,7 @@ def test_refresh_lagging_adopts_newer_row_and_rescans_only_laggards(monkeypatch)
     items = [{"ticker": "TPE:A"}, {"ticker": "TPE:B"}]
     calls = []
 
-    def fake_scan(sub, prev, with_chart=False, now=None):
+    def fake_scan(sub, prev, with_chart=False, now=None, listings=None):
         calls.append([it["ticker"] for it in sub])
         return [{"ticker": "TPE:B", "market": "台股", "last_date": "2026-10-28", "label": "new"}]
 
@@ -340,7 +340,7 @@ def test_refresh_lagging_keeps_row_when_retry_still_behind(monkeypatch):
         {"ticker": "TPE:B", "market": "台股", "last_date": "2026-10-27", "label": "old"},
     ]
     items = [{"ticker": "TPE:A"}, {"ticker": "TPE:B"}]
-    monkeypatch.setattr(sw, "scan", lambda sub, prev, with_chart=False, now=None: [
+    monkeypatch.setattr(sw, "scan", lambda sub, prev, with_chart=False, now=None, listings=None: [
         {"ticker": "TPE:B", "market": "台股", "last_date": "2026-10-27", "label": "still-old"},
     ])
     slept = []
@@ -405,7 +405,7 @@ def test_refresh_lagging_adopts_row_that_fills_middle_gap(monkeypatch):
     items = [{"ticker": r["ticker"]} for r in rows]
     calls = []
 
-    def fake_scan(sub, prev, with_chart=False, now=None):
+    def fake_scan(sub, prev, with_chart=False, now=None, listings=None):
         calls.append([it["ticker"] for it in sub])
         return [_gap_row("TPE:B", GAP_DAYS, label="filled")]
 
@@ -426,7 +426,7 @@ def test_refresh_lagging_keeps_gap_row_when_retry_still_missing(monkeypatch):
         _gap_row("TPE:D", GAP_DAYS),
     ]
     items = [{"ticker": r["ticker"]} for r in rows]
-    monkeypatch.setattr(sw, "scan", lambda sub, prev, with_chart=False, now=None: [_gap_row("TPE:B", gap, label="still")])
+    monkeypatch.setattr(sw, "scan", lambda sub, prev, with_chart=False, now=None, listings=None: [_gap_row("TPE:B", gap, label="still")])
     slept = []
     out = sw.refresh_lagging(rows, items, None, delays=(30, 60), sleep=slept.append)
     assert slept == [30, 60]
@@ -513,8 +513,62 @@ def _daily_rows():
     return [_daily_row("TPE:00882"), _daily_row("TPE:00406A")] + [_daily_row(f"HKG:{i:04d}", market="港股") for i in range(1, 16)]
 
 
-def test_gate_default_for_sheet_path_unchanged():
-    assert sw.GATE_MAX_ERRORS == 10
+def test_gate_ratio_defaults_for_sheet_path():
+    assert sw.GATE_BLOCK_RATIO == 0.20 and sw.GATE_WARN_RATIO == 0.05
+
+
+def _gate_rows(n_ok, n_err):
+    ok = [{"ticker": f"O{i}", "state": "UPTREND", "fresh": True, "market": "台股", "last_date": "2026-11-12"} for i in range(n_ok)]
+    err = [{"ticker": f"E{i}", "state": "ERROR", "fresh": False, "market": "台股", "last_date": None} for i in range(n_err)]
+    return ok + err
+
+
+def test_check_gate_blocks_only_on_large_scale_anomaly():
+    """預設用比例：150 檔中 30 檔異常（20%）不擋，31 檔才擋。原本固定 10 檔上限在清單變長後會失準。"""
+    ok, _, reasons = sw.check_gate(_gate_rows(120, 30), now=DAILY_NOW)
+    assert ok and not reasons
+    ok, _, reasons = sw.check_gate(_gate_rows(119, 31), now=DAILY_NOW)
+    assert not ok and any("大面積異常" in r for r in reasons)
+    assert sw.gate_bad_tickers(_gate_rows(2, 1)) == ["E0"]
+
+
+def test_load_listing_dates_and_fallback(capsys, monkeypatch):
+    from conftest import REAL_LOAD_LISTING_DATES
+    monkeypatch.setattr(sw, "load_listing_dates", REAL_LOAD_LISTING_DATES)
+    js = json.dumps({"stat": "OK", "fields": ["上市日期", "證券代號", "證券簡稱"], "data": [["2026.10.13", "00412A", "x"], ["壞", "0000", "y"]]})
+    assert sw.load_listing_dates(fetch=lambda url: js) == {"00412A": "2026-10-13"}
+
+    def boom(url):
+        raise RuntimeError("HTTP 307")
+    assert sw.load_listing_dates(fetch=boom) == {}
+    assert "未驗證" in capsys.readouterr().err
+    assert sw.listing_date_of("TPE:00412A", {"00412A": "2026-10-13"}) == "2026-10-13"
+    assert sw.listing_date_of("NYSE:KO", {"KO": "2026-10-13"}) is None
+
+
+def test_is_new_listing_uses_listing_date():
+    assert sw.is_new_listing("NO_DATA", 24, "2026-10-13", "2026-11-13") == (True, True)
+    # 上市超過 100 天仍日線不足：來源只回部分資料，不算新掛牌
+    assert sw.is_new_listing("NO_DATA", 24, "2021-02-04", "2026-11-13") == (False, True)
+    # 查不到上市日：退回根數推測，未驗證
+    assert sw.is_new_listing("NO_DATA", 24, None, "2026-11-13") == (True, False)
+    assert sw.is_new_listing("UPTREND", 24, "2026-10-13", "2026-11-13") == (False, False)
+    assert sw.is_new_listing("NO_DATA", 60, None, "2026-11-13") == (False, False)
+
+
+def test_scan_drops_prelisting_bars_and_flags_truncated_old_etf(monkeypatch):
+    base = 1790000000  # 任意起點，逐日遞增
+    bars = [{"ts": base + i * 86400, "open": 10, "high": 10.2, "low": 9.8, "close": 10 + i * 0.01, "volume": 0 if i < 9 else 1000} for i in range(30)]
+    monkeypatch.setattr(sw, "load_ohlcv", lambda t, rng: bars)
+    day = lambda i: (datetime.fromtimestamp(base + i * 86400, timezone.utc) + timedelta(hours=8)).strftime("%Y-%m-%d")
+    now = datetime.fromtimestamp(base + 29 * 86400, timezone.utc)
+    new = sw.scan([{"ticker": "TPE:00412A", "name": "新"}], now=now, listings={"00412A": day(9)})[0]
+    assert new["bars"] == 21 and new["listed"] == day(9) and new["short_history"] and new["listing_verified"]
+    old = sw.scan([{"ticker": "TPE:0050", "name": "老"}], now=now, listings={"0050": "2003-06-30"})[0]
+    assert old["state"] == "NO_DATA" and not old["short_history"]
+    assert sw.gate_bad_tickers([new, old]) == ["TPE:0050"]
+    gone = sw.scan([{"ticker": "TPE:9999", "name": "空"}], now=now, listings={"9999": "2099-01-01"})[0]
+    assert gone["state"] == "ERROR"
 
 
 def test_daily_gate_passes_on_healthy_rows():
@@ -579,8 +633,8 @@ def test_validate_daily_html_checks_placeholder_date_and_cost():
 def test_daily_cli_writes_no_page_when_gate_fails(tmp_path, monkeypatch, capsys):
     out = tmp_path / "daily.html"
     monkeypatch.setattr(sw, "watchlist", lambda *a, **k: [])
-    monkeypatch.setattr(sw, "scan", lambda items, prev, with_chart=False, now=None: [])
-    monkeypatch.setattr(sw, "refresh_lagging", lambda rows, items, prev, with_chart=False: rows)
+    monkeypatch.setattr(sw, "scan", lambda items, prev, with_chart=False, now=None, listings=None: [])
+    monkeypatch.setattr(sw, "refresh_lagging", lambda rows, items, prev, with_chart=False, listings=None: rows)
     rc = sw.main(["--scan", "00882:15", "--daily-html", str(out)])
     assert rc == 1 and not out.exists()
     assert "Gate Failed" in capsys.readouterr().err
@@ -608,8 +662,8 @@ def test_missing_publish_gate_fails_daily_page_closed(tmp_path, monkeypatch, cap
         sw.check_daily_gate(_daily_rows(), now=DAILY_NOW)
     # 離線：掃描與網路抓取全部替換，只驗證門檻設定讀取失敗的路徑
     monkeypatch.setattr(sw, "watchlist", lambda *a, **k: [])
-    monkeypatch.setattr(sw, "scan", lambda items, prev, with_chart=False, now=None: _daily_rows())
-    monkeypatch.setattr(sw, "refresh_lagging", lambda rows, items, prev, with_chart=False: rows)
+    monkeypatch.setattr(sw, "scan", lambda items, prev, with_chart=False, now=None, listings=None: _daily_rows())
+    monkeypatch.setattr(sw, "refresh_lagging", lambda rows, items, prev, with_chart=False, listings=None: rows)
     out = tmp_path / "daily.html"
     rc = sw.main(["--scan", "00882:15", "--daily-html", str(out)])
     assert rc == 1 and not out.exists()
@@ -628,8 +682,8 @@ def test_load_publish_gate_fails_closed(tmp_path):
 def test_sheet_cli_gate_fails_on_empty_scan(tmp_path, monkeypatch):
     """swing_sync 以 --sheet --gate 呼叫；空掃描結果必須回傳非 0，讓排程停止而不是靜默成功。"""
     monkeypatch.setattr(sw, "watchlist", lambda *a, **k: [])
-    monkeypatch.setattr(sw, "scan", lambda items, prev, with_chart=False, now=None: [])
-    monkeypatch.setattr(sw, "refresh_lagging", lambda rows, items, prev, with_chart=False: rows)
+    monkeypatch.setattr(sw, "scan", lambda items, prev, with_chart=False, now=None, listings=None: [])
+    monkeypatch.setattr(sw, "refresh_lagging", lambda rows, items, prev, with_chart=False, listings=None: rows)
     rc = sw.main(["--scan", "00882:15", "--sheet", str(tmp_path / "sheet.json"), "--gate"])
     assert rc == 1
 
