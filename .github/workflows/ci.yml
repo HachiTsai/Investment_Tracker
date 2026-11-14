@@ -54,6 +54,9 @@ jobs:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read   # 下載排程留存的掃描結果做門檻重播
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -65,6 +68,12 @@ jobs:
       - run: python -m pip install pytest beautifulsoup4 requests pyyaml yfinance google-auth
       - name: pytest（.claude/skills/*/tests）
         run: python -m pytest -q --durations=15 .claude/skills
+      - name: 波段門檻重播（用排程留存的真實掃描結果，擋下會讓過去放行的資料被擋的門檻變更）
+        if: github.event_name == 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: python .claude/skills/price-dividend-fetcher/scripts/gate_replay.py
 
   schedule-health:
     name: schedule-health

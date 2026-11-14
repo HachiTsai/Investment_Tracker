@@ -27,6 +27,9 @@ jobs:
     runs-on: ubuntu-latest
     # 2026-11-10 由 15 放寬為 30：PR #229 核心標的改算全持股後，評分階段由約 5 分鐘增至超過 10 分鐘（11-09 手動執行逾時）
     timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write   # 排程與 tw 手動執行失敗即時開 Issue、恢復後關閉（schedule_notify.py）
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -41,8 +44,19 @@ jobs:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
           DRIVE_IDS: ${{ secrets.DRIVE_IDS }}
           EDINET_API_KEY: ${{ secrets.EDINET_API_KEY }}
+        shell: bash   # 預設 bash 帶 -eo pipefail，tee 不會吞掉退出碼
         run: |
-          python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --gate
+          python3 .claude/skills/tw-etf-fetcher/scripts/etf_fetcher.py sync-sheets --gate 2>&1 | tee /tmp/run.log
+      - name: 失敗即時通報（開 Issue，附失敗原因與執行連結）
+        if: failure() && (github.event_name == 'schedule' || inputs.market == 'tw')
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .claude/skills/fin-commit/scripts/schedule_notify.py fail --workflow market-etf.yml --log /tmp/run.log
+      - name: 恢復後關閉失敗 Issue
+        if: success() && (github.event_name == 'schedule' || inputs.market == 'tw')
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 .claude/skills/fin-commit/scripts/schedule_notify.py resolve --workflow market-etf.yml
       - name: Build foreign-market pool
         if: inputs.market == 'hk' || inputs.market == 'us' || inputs.market == 'jp'
         env:

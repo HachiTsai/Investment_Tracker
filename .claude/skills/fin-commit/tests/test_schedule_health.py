@@ -49,7 +49,8 @@ def test_stale_run_is_reported():
 
 def test_failed_conclusion_is_reported():
     latest = {"swing-patrol.yml": _run("2026-10-27T09:00:00Z", conclusion="failure"), "market-etf.yml": _run("2026-10-24T09:10:00Z")}
-    assert sh.evaluate(latest, CREATED, NOW) == ["swing-patrol.yml：最近一次執行結論為 failure"]
+    out = sh.evaluate(latest, CREATED, NOW)
+    assert len(out) == 1 and out[0].startswith("swing-patrol.yml：最近一次執行結論為 failure（已執行但失敗，不是漏跑")
 
 
 def test_running_job_has_no_conclusion_problem():

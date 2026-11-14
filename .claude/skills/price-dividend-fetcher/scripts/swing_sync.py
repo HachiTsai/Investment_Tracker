@@ -26,6 +26,7 @@ MARKET_UNIVERSE_MAX = 100  # 全市場 ETF 納入波段觀察的檔數上限，�
 # 報價來源查不到資料的代號（疑似已下市或槓桿／期貨型），與 Stock_AIStudio scripts/fetch-etf-data.ts 的 EXCLUDED_IDS 同步
 MARKET_EXCLUDED = {"0054", "0058", "0059", "0060", "00649", "00658L", "00659R", "00667"}
 _TW_CODE = re.compile(r"^\d{4,6}[A-Z]?$")
+GATE_VERDICT_PATH = Path("/tmp/scan_gate.json")
 ALERT_TAB = "告警紀錄"
 ALERT_HEADER = ["偵測時間", "代號", "名稱", "上次組合", "這次組合", "狀態", "收盤", "2xATR停損價"]
 
@@ -212,14 +213,71 @@ def append_alert_rows(client: GoogleSheetsClient, sheet_id: str, alerts: List[Di
 
 
 def report_new_listings(scan_results: List[Dict[str, Any]]) -> List[str]:
-    """每次執行都列出新掛牌（日線不足、門檻不計入）的標的與日線根數，方便辨識是否有老標的被誤判。回傳代號清單。"""
+    """每次執行都列出新掛牌（日線不足、門檻不計入）的標的、日線根數與上市日。回傳代號清單。
+    有上市日的以證交所清單驗證；沒有的（上櫃、海外、清單讀取失敗）只憑日線根數推測，標「未驗證」，需人工留意是否為來源只回部分資料。"""
     rows = [r for r in scan_results if r.get("state") == "NO_DATA" and r.get("short_history") and r.get("last_date")]
     if not rows:
         print("   🆕 新掛牌（日線不足，門檻不計入）：0 檔")
         return []
-    detail = "、".join(f"{r.get('ticker')}（{r.get('bars')} 根）" for r in rows)
-    print(f"   🆕 新掛牌（日線不足，門檻不計入）：{len(rows)} 檔：{detail}")
+
+    def one(r: Dict[str, Any]) -> str:
+        note = f"上市 {r['listed']}" if r.get("listed") else "未驗證"
+        return f"{r.get('ticker')}（{r.get('bars')} 根，{note}）"
+
+    print(f"   🆕 新掛牌（日線不足，門檻不計入）：{len(rows)} 檔：{'、'.join(one(r) for r in rows)}")
     return [r.get("ticker") for r in rows]
+
+
+BAD_STATES = ("ERROR", "NO_DATA")
+PUBLISH_GATE_PATH = REPO_ROOT / ".claude/skills/portfolio-patrol/references/publish_gate.json"
+
+
+def report_anomalies(scan_results: List[Dict[str, Any]]) -> List[str]:
+    """每次執行都列出計入異常的列（ERROR，或不是新掛牌的 NO_DATA）與原因。這些列不擋整張表：保留舊值並標記。回傳代號清單。"""
+    new_listed = {r.get("ticker") for r in scan_results if r.get("state") == "NO_DATA" and r.get("short_history") and r.get("last_date")}
+    rows = [r for r in scan_results if r.get("state") in BAD_STATES and r.get("ticker") not in new_listed]
+    total = len(scan_results) or 1
+    if not rows:
+        print("   🩺 異常列：0 檔")
+        return []
+    detail = "、".join(f"{r.get('ticker')}（{r.get('state')}：{str(r.get('reason') or '')[:40]}）" for r in rows)
+    print(f"   🩺 異常列：{len(rows)}/{len(scan_results)} 檔（{len(rows) / total:.0%}），保留舊值不覆寫：{detail}")
+    return [r.get("ticker") for r in rows]
+
+
+def core_tickers(path: Optional[Path] = None) -> List[str]:
+    """核心持股（零容忍）代號，來源同每日巡檢頁的 publish_gate.json。缺檔或格式錯誤即拋錯（fail-closed）。"""
+    gate = json.loads((path or PUBLISH_GATE_PATH).read_text(encoding="utf-8"))
+    codes = gate.get("zero_tolerance")
+    if not isinstance(codes, list) or not codes or not all(isinstance(c, str) and c for c in codes):
+        raise ValueError("publish_gate.json 的 zero_tolerance 必須是非空的代號清單")
+    return [f"TPE:{c}" for c in codes]
+
+
+def core_problems(scan_results: List[Dict[str, Any]], core: List[str]) -> List[str]:
+    """核心持股零容忍：缺列、ERROR、NO_DATA（含新掛牌）任一即回報。其餘列照常寫入，但這次執行要標為失敗，讓通報機制送出。"""
+    by_ticker = {r.get("ticker"): r for r in scan_results}
+    problems = []
+    for t in core:
+        r = by_ticker.get(t)
+        if r is None:
+            problems.append(f"{t} 缺列")
+        elif r.get("state") in BAD_STATES:
+            problems.append(f"{t} {r.get('state')}（{str(r.get('reason') or '')[:60]}）")
+    return problems
+
+
+def _exit_code(scan_results: List[Dict[str, Any]]) -> int:
+    """收尾：核心持股有異常就回傳 1（其餘列已照常處理），否則 0。"""
+    try:
+        problems = core_problems(scan_results, core_tickers())
+    except (OSError, ValueError) as e:
+        print(f"❌ [Core Check Failed] 核心持股清單讀取失敗（fail-closed）：{e}", file=sys.stderr)
+        return 1
+    if problems:
+        print(f"❌ [Core Check Failed] 核心持股資料異常（零容忍），其餘列已照常處理：{'；'.join(problems)}", file=sys.stderr)
+        return 1
+    return 0
 
 
 def report_alerts(alerts: List[Dict[str, Any]]) -> None:
@@ -267,7 +325,7 @@ def run_swing_pipeline(
     """執行波段觀察排程與雲端 Sheet 回寫完整管線。"""
     if not sheet_id:
         sheet_id = etf_market.drive_id("SWING_SHEET_ID")
-    print(f"🚀 [Swing Sync] 啟動波段觀察同步管線（目標 Sheet ID: {sheet_id}）...")
+    print("🚀 [Swing Sync] 啟動波段觀察同步管線（目標：DRIVE_IDS 的 SWING_SHEET_ID 或 --sheet-id 指定）...")
     client = client or GoogleSheetsClient()
 
     # 1. 讀取現有 Sheet 資料
@@ -311,6 +369,12 @@ def run_swing_pipeline(
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.stdout:
         scan_out_path.write_text(res.stdout, encoding="utf-8")
+    # 門檻判定結果另存一份，連同掃描結果供 CI 重播（gate_replay.py）：之後改門檻時，拿真實掃描結果比對新舊判定
+    GATE_VERDICT_PATH.write_text(json.dumps({
+        "returncode": res.returncode,
+        "scanned_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "force": force,
+    }), encoding="utf-8")
     if res.returncode != 0:
         print(f"❌ [Gate Failed] 核心掃描退出碼非 0：\n{res.stderr or res.stdout}", file=sys.stderr)
         return res.returncode
@@ -324,12 +388,13 @@ def run_swing_pipeline(
             pass
 
     report_new_listings(scan_results)
+    report_anomalies(scan_results)
 
     is_all_closed = len(scan_results) > 0 and all(not r.get("fresh", False) for r in scan_results)
     if is_all_closed and not force:
         now_tpe = _stamp_patrol(client, sheet_id, "休市略過（維持最新交易日數據）")
         print(f"ℹ️ [Market Closed] 今日所有市場均為休市，已更新巡檢時間戳記至 Z1:AA2（{now_tpe}），略過覆寫標的數據。")
-        return 0
+        return _exit_code(scan_results)
 
     # 互鎖：開市標的的資料日已入庫即略過（--force 穿透）。仍有抓取失敗列時照常寫入，讓失敗標記落到 Sheet
     skipped = [] if force else apply_interlock(scan_results, existing_values)
@@ -339,7 +404,7 @@ def run_swing_pipeline(
     if skipped and not has_error and not any(r.get("fresh") for r in scan_results):
         now_tpe = _stamp_patrol(client, sheet_id, "互鎖略過（資料日已入庫，維持既有數據）")
         print(f"ℹ️ [Interlock] 開市標的資料日已入庫（{len(skipped)} 檔），略過覆寫與告警，已更新巡檢時間戳記至 Z1:AA2（{now_tpe}）。")
-        return 0
+        return _exit_code(scan_results)
 
     if not sheet_out_path.exists():
         print("❌ 未產出 /tmp/sheet.json，無法進行同步。", file=sys.stderr)
@@ -383,8 +448,10 @@ def run_swing_pipeline(
     except Exception as e:
         print(f"   ℹ️ 寫入元資料欄位提示：{e}")
 
-    print(f"✅ [Swing Sync] 成功同步波段觀察資料庫至 Google Sheet（{now_tpe}）！")
-    return 0
+    code = _exit_code(scan_results)
+    if code == 0:
+        print(f"✅ [Swing Sync] 成功同步波段觀察資料庫至 Google Sheet（{now_tpe}）！")
+    return code
 
 
 def main(argv=None) -> int:

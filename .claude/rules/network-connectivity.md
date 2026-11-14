@@ -6,7 +6,7 @@
 
 | 網域 | 服務說明 | 連線狀態 | 實務用途與讀取方式 |
 | :--- | :--- | :---: | :--- |
-| `www.twse.com.tw` | 台灣證券交易所官網 | ✅ HTTP 200（連續請求會回 307） | 台股公告、收盤行情備援；三大法人買賣金額（`BFI82U`）、信用交易統計融資餘額（`MI_MARGN`）、市場成交資訊加權指數（`FMTQIK`）供巡檢頁市場修正追蹤（`market_stress.py`）。短時間連續請求會被防護擋下，回 HTTP 307 與「因為安全性考量」頁，跟隨轉址也拿不到資料（2026-11-05 實測：連發約六成被擋、間隔 3 秒約一成）；`fetch_common.twse_get` 全程序節流每 3 秒一次、被擋後等 10／20／30 秒重試，不偽裝瀏覽器 |
+| `www.twse.com.tw` | 台灣證券交易所官網 | ✅ HTTP 200（連續請求會回 307） | 台股公告、收盤行情備援；ETF 上市日期清單（`/rwd/zh/ETF/list`，波段 Sheet 判定新掛牌，2026-11-14 實測 242 檔，經 `fetch_common.twse_get` 節流）；三大法人買賣金額（`BFI82U`）、信用交易統計融資餘額（`MI_MARGN`）、市場成交資訊加權指數（`FMTQIK`）供巡檢頁市場修正追蹤（`market_stress.py`）。短時間連續請求會被防護擋下，回 HTTP 307 與「因為安全性考量」頁，跟隨轉址也拿不到資料（2026-11-05 實測：連發約六成被擋、間隔 3 秒約一成）；`fetch_common.twse_get` 全程序節流每 3 秒一次、被擋後等 10／20／30 秒重試，不偽裝瀏覽器 |
 | `openapi.twse.com.tw` | 證交所 OpenAPI | ✅ HTTP 200 | 自動化撈取每日收盤價與除權息資訊；上市公司季度損益與資產負債（`fundamental-analyzer` 財報資料層） |
 | `openapi.taifex.com.tw` | 期交所 OpenAPI | ✅ HTTP 200 | 三大法人臺股期貨未平倉淨額（`MarketDataOfMajorInstitutionalTradersDetailsOfFuturesContractsBytheDate`，只有最新一日），供巡檢頁市場修正追蹤（`market_stress.py`；2026-11-05 實測） |
 | `mops.twse.com.tw` | 公開資訊觀測站 | ✅ HTTP 200 | 台股重大訊息、除權息公告 |
@@ -68,4 +68,4 @@
 | `sheets.googleapis.com` | Google Sheets API v4 | ✅ HTTPS 443 | 供 GitHub Actions 與本機排程透過 `GCP_SA_KEY` 服務帳號直寫外圍公開／協作試算表（嚴禁對 Core 授權） |
 | `docs.google.com` | Google 試算表公開連結（gviz CSV） | ✅ HTTP 200 | 每日巡檢頁讀波段觀察 Sheet「告警紀錄」分頁（`swing.py --alerts-from-sheet`），只讀公開連結、不帶憑證，ID 取自 `DRIVE_IDS` 的 `SWING_SHEET_ID`；讀不到不中止發布（2026-11-09 實測，Hachi 同意） |
 | `oauth2.googleapis.com` | Google OAuth 2.0 憑證端點 | ✅ HTTPS 443 | 供 `google-auth` 以服務帳號私鑰簽發並刷新存取權杖（Access Token） |
-| `api.github.com` | GitHub REST API | ✅ HTTP 200 | 排程健康檢查（`fin-commit/scripts/schedule_health.py`）讀取工作流的排程執行紀錄與建立時間，`swing-patrol.yml` 漏跑時補送 `workflow_dispatch`（2026-11-09 Hachi 同意，Issue #232）；CI 內以 `GITHUB_TOKEN`（`actions: write`）呼叫，沙盒經代理注入（2026-10-28 實測） |
+| `api.github.com` | GitHub REST API | ✅ HTTP 200 | 排程健康檢查（`fin-commit/scripts/schedule_health.py`）讀取工作流的排程執行紀錄與建立時間，`swing-patrol.yml` 漏跑時補送 `workflow_dispatch`；排程失敗時 `schedule_notify.py` 開 Issue、恢復後關閉；PR 的 CI 下載排程留存的掃描結果做門檻重播（`gate_replay.py`）；Google Apps Script 以 `workflow_dispatch` 外部觸發 `swing-patrol.yml`（2026-11-14 Hachi 同意）（2026-11-09 Hachi 同意，Issue #232）；CI 內以 `GITHUB_TOKEN`（`actions: write`）呼叫，沙盒經代理注入（2026-10-28 實測） |
