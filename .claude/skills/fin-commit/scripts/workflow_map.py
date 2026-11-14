@@ -165,6 +165,10 @@ def merge(data, root):
             if s in text and s not in listed:
                 drift.append(f"{w['id']} 規格提到技能 {s}，地圖沒列")
 
+        # 規格寫了外部觸發（Apps Script），觸發欄也要列，否則工廠與地圖看不到這條路徑
+        if "Apps Script" in text and not any("Apps Script" in x for x in w["trigger"]):
+            drift.append(f"{w['id']} 規格提到 Apps Script 外部觸發，地圖的觸發欄沒列")
+
     pending = []
     for line in pending_raw:
         title = re.split(r"[，；。,;]", line, maxsplit=1)[0][:28]

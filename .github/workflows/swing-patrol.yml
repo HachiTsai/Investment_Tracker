@@ -11,6 +11,11 @@ on:
         type: boolean
         default: false
 
+# 同一工作流同時只跑一個：Apps Script 17:30 與 GitHub cron 重疊時排隊，後到者再由資料日期互鎖略過（互鎖要等前一個寫完才看得到）
+concurrency:
+  group: swing-patrol
+  cancel-in-progress: false
+
 jobs:
   sync-swing-sheets:
     name: Sync Swing Patrol to Google Sheets

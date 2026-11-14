@@ -47,7 +47,7 @@ flowchart TD
 - **排程頻率**：每週五 17:37（台北時間；GitHub 實際觸發可能延遲數小時，見 `schedule-registry.md` 第 3 節）。
 - **觸發平台**：GitHub Actions 自動排程（亦支援 Claude 雲端排程或 Antigravity 本機手動執行）。
 - **自動排程工作流**：`.github/workflows/market-etf.yml`
-- **外部觸發（2026-11-14 Hachi 同意）**：每週五台北 17:30 左右由 Google Apps Script（`triggerMarketEtf`）以 `workflow_dispatch` 觸發，GitHub cron 保留當備援；腳本與設定見 `swing-patrol-sheets.md`「失敗通報、門檻重播與外部觸發」。本流程沒有同日互鎖，兩條路徑同一天都跑會各寫一次（資料相同，只多耗約 10 分鐘 Actions 時間）。
+- **外部觸發（2026-11-14 Hachi 同意）**：每週五台北 17:30 左右由 Google Apps Script（`triggerMarketEtf`）以 `workflow_dispatch` 觸發，GitHub cron 保留當備援；腳本與設定見 `swing-patrol-sheets.md`「失敗通報、門檻重播與外部觸發」。本流程沒有同日互鎖，工作流設了 `concurrency`（群組 `market-etf`）讓兩個執行排隊而不同時寫 Sheet，但兩條路徑同一天都跑仍會各寫一次（資料相同，只多耗約 10 分鐘 Actions 時間）。
 - **雲端排程 Prompt（單行呼叫，備用）**：
 
   ```text
