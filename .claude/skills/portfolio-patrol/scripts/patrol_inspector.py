@@ -177,7 +177,7 @@ def format_inspect_ascii(report: Dict[str, Any]) -> str:
     lines.append(f"  • 情報庫評分  : netScore {_score_text(scores.get('netScore'))} ｜ divScore {_score_text(scores.get('divScore'))} ｜ valScore {_score_text(scores.get('valScore'))}")
     lines.append("-" * 72)
 
-    lines.append("🛡️ [風控互鎖狀態與策略狀態]")
+    lines.append("🛡️ [風控條件與策略狀態]")
     lines.append(f"  • 當前策略狀態: {interlock['posture_label']} ({interlock['posture_name']})")
     lines.append(f"  • 執行動作指引: {interlock['valve_action']}")
     lines.append("-" * 72)

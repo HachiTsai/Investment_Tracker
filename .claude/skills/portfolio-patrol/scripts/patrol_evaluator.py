@@ -583,7 +583,7 @@ def run_portfolio_patrol(
             alerts.append({
                 "ticker": ticker,
                 "type": evaluation["posture_key"],
-                "message": f"{ticker} 觸發互鎖警報：{evaluation['posture_label']} ({evaluation['posture_name']})",
+                "message": f"{ticker} 觸發風控警示：{evaluation['posture_label']} ({evaluation['posture_name']})",
                 "action": evaluation["valve_action"],
             })
         elif evaluation["priority"] in (3, 4):
@@ -602,14 +602,14 @@ def run_portfolio_patrol(
     weekday_cn = ["週一", "週二", "週三", "週四", "週五", "週六", "週日"][datetime.date.today().weekday()]
 
     if has_abnormal_posture:
-        overall_posture = "🚨 發現異常跳脫 / 閥門警報觸發"
+        overall_posture = "🚨 發現異常 / 風控警示觸發"
         decision_item = "；".join(f"【{a['ticker']}】{a['action']}" for a in alerts if a["type"] in ("TRAP_ALERT", "VELOCITY_PAUSE"))
     elif alerts:
         overall_posture = "🟡 投資組合配置微調"
         decision_item = "；".join(f"【{a['ticker']}】{a['action']}" for a in alerts)
     else:
         overall_posture = "🔵 全投資組合處於【穩健複利】狀態，例行性累積雪球"
-        decision_item = "全投資組合無異常跳脫，維持例行性再投入與資產配置。"
+        decision_item = "全投資組合無異常，維持例行性再投入與資產配置。"
 
     macro_feed_str = _format_macro_feed(macro_data)
     agent = os.environ.get("AGENT_ID") or ("Claude" if os.environ.get("CLAUDECODE") else "Antigravity")
