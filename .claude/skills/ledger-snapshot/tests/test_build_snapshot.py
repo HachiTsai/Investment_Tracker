@@ -32,6 +32,13 @@ MINI = '''<title>Our_Investment 交易簿</title>
     <button class="btn" id="refresh" type="button">重新整理</button>
   </header>
   <div id="kpis"><p class="empty">連接 Google Sheets 後，這裡會顯示總市值、未實現損益與殖利率。</p></div>
+    <div class="recon">
+      <div id="recon-out"><p class="meta">連接 Google Sheets 後，這裡會比對帳本餘額與銀行交割帳戶餘額。</p></div>
+      <form id="recon-form" novalidate>
+        <input id="bank-bal">
+        <button id="recon-save" type="submit">儲存並對帳</button>
+      </form>
+    </div>
   <details><p>這些數字由試算表計算。</p>
       <p>記帳時手續費自動計算：股數 × 價格 × 0.1425%。</p>
   </details>
@@ -52,7 +59,8 @@ MINI = '''<title>Our_Investment 交易簿</title>
     portfolio: 'Portfolio!A1:S50',
     portfolioCodes: 'Portfolio!A1:A50',
     tx: 'Transactions!A1:R200',
-    cash: '資金餘額!A1:B8',
+    cash: '資金餘額!A1:B9',
+    cashBank: '資金餘額!B8:B9',
     journal: 'Stock_Journal!A1:E300',
   };
   // The connector is optional.
@@ -68,14 +76,20 @@ MINI = '''<title>Our_Investment 交易簿</title>
     setStamp(`資料時間 ${timeOf(state.loadedAt)}・直接讀取試算表`);
     renderTickers();
     renderRemovable();
+    renderPending();
     renderPreview();
   }
   async function load() {
       state.nextPortfolioRow = nextRow(pv);
       state.usedTickers = await readUsedTickers();
   }
+  function renderRecon() {
+    let verdict = '填入銀行交割帳戶的餘額與日期，就能看出帳本有沒有漏記。';
+    if (!$('bank-bal')) return;
+  }
   // Entry form
   function formValues() {}
+  async function onReconSubmit() { await writeRange(RANGES.cashBank, []); }
   // Milestone map.
   function renderMap() {}
   document.querySelectorAll('#type-seg button').forEach((b) => b.addEventListener('click', () => setType(b.dataset.type)));
@@ -86,6 +100,11 @@ MINI = '''<title>Our_Investment 交易簿</title>
   const onFormEdit = () => { clearConfirm(); renderPreview(); };
   $('entry').addEventListener('input', onFormEdit);
   $('refresh').addEventListener('click', () => { load(); });
+  $('recon-form').addEventListener('submit', onReconSubmit);
+  $('pend-list').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-pend]');
+    if (b) fillPending(Number(b.dataset.pend));
+  });
   $('chips').addEventListener('click', () => {});
   document.querySelectorAll('#xfer-seg button').forEach((b) => b.addEventListener('click', () => {
     state.xfer = b.dataset.xfer;
@@ -142,6 +161,14 @@ def test_transfer_direction_listener_removed():
     out = bs.build(MINI, DATA, 'x')
     assert '#xfer-seg' not in out and 'state.xfer' not in out
     assert "$('chips').addEventListener" in out  # 其他監聽器不受影響
+
+
+def test_bank_recon_keeps_result_drops_write_form():
+    out = bs.build(MINI, DATA, 'x')
+    assert 'id="recon-out"' in out and 'function renderRecon' in out
+    for gone in ('recon-form', 'recon-save', 'onReconSubmit', 'cashBank', 'pend-list', 'renderPending', 'fillPending'):
+        assert gone not in out
+    assert '尚未在交易簿填入銀行餘額' in out
 
 
 def test_missing_marker_fails_instead_of_partial_output():

@@ -29,7 +29,7 @@
 
 1. **取最新互動版**：用 Artifact `read` 讀 `https://claude.ai/artifact/TU6Yi51nEe9s783qoDukSs`，記下結果給的完整頁面檔案路徑（不要依賴上次的檔案）。
 2. **讀線上快照**：用 Artifact `read` 讀 `https://claude.ai/artifact/SBn43iC1bBG2zf2bexgmxZ`，記下存檔路徑，再用 Read 把該檔從頭讀到最後一行。每次排程都是新的對話，沒看過線上版本就發布會被拒；這個檔案同時是步驟 4 的 `--prev`。
-3. **讀資料**：用 `get_values` 讀 Our_Investment（`OUR_INVESTMENT_SHEET_ID`）的 `Portfolio!A1:U50`、`Transactions!A1:R200`、`Stock_Journal!A1:E300`、`資金餘額!A1:B8`。每個回應原文（含 `range` 與 `values` 的整段 JSON）原樣存成暫存目錄 `raw/` 下的 `portfolio.json`、`tx.json`、`journal.json`、`cash.json`，不重新排版、不合併成一個檔（不進 git）。任一範圍讀不到，整次中止並回報。
+3. **讀資料**：用 `get_values` 讀 Our_Investment（`OUR_INVESTMENT_SHEET_ID`）的 `Portfolio!A1:U50`、`Transactions!A1:R200`、`Stock_Journal!A1:E300`、`資金餘額!A1:B9`。每個回應原文（含 `range` 與 `values` 的整段 JSON）原樣存成暫存目錄 `raw/` 下的 `portfolio.json`、`tx.json`、`journal.json`、`cash.json`，不重新排版、不合併成一個檔（不進 git）。任一範圍讀不到，整次中止並回報。
 4. **產生快照**：
 
    ```bash
