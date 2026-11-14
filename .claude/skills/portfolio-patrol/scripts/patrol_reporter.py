@@ -40,12 +40,12 @@ def format_ascii_dashboard(report: Dict[str, Any]) -> str:
 
     alerts = report.get("alerts", [])
     if alerts:
-        lines.append("🚨 異常告警與互鎖紀錄：")
+        lines.append("🚨 異常告警與風控觸發紀錄：")
         for idx, a in enumerate(alerts, 1):
             lines.append(f"  {idx}. [{a['ticker']}] {a['message']}")
-            lines.append(f"     ➔ 處置閥門: {a['action']}")
+            lines.append(f"     ➔ 處置指引: {a['action']}")
     else:
-        lines.append("🛡️ 異常告警與互鎖紀錄：所有安全閥門正常閉合，無異常跳脫。")
+        lines.append("🛡️ 異常告警與風控觸發紀錄：所有風控條件均未觸發，無異常。")
 
     lines.append("=" * 86)
     return "\n".join(lines)
@@ -59,7 +59,7 @@ def format_markdown_briefing(report: Dict[str, Any]) -> str:
     agent_name = report.get("agent", "Antigravity")
     lines.append(f"> ⏱️ 巡檢時間：{report['timestamp']} CST ｜ 巡檢代理：{agent_name}")
     lines.append("")
-    lines.append("## 🚨 今日焦點與指引（例外管理 MBE）")
+    lines.append("## 🚨 今日焦點與指引（例外管理）")
     lines.append("")
     lines.append(f"- 【總體狀態】：{report['overall_posture']}")
     lines.append(f"- 【需決策事項】：{report['decision_item']}")
@@ -85,7 +85,7 @@ def format_markdown_briefing(report: Dict[str, Any]) -> str:
     lines.append("")
     lines.append("---")
     lines.append("")
-    lines.append("## 🛡️ 異常告警與互鎖紀錄（若有）")
+    lines.append("## 🛡️ 異常告警與風控觸發紀錄（若有）")
     lines.append("")
     alerts = report.get("alerts", [])
     if alerts:
@@ -93,7 +93,7 @@ def format_markdown_briefing(report: Dict[str, Any]) -> str:
             lines.append(f"- **[{a['ticker']}] {a['message']}**")
             lines.append(f"  - 處置指引：{a['action']}")
     else:
-        lines.append("- （無異常跳脫，所有安全閥門正常閉合）")
+        lines.append("- （無異常，所有風控條件均未觸發）")
     lines.append("")
 
     return "\n".join(lines)
