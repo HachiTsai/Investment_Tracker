@@ -465,6 +465,28 @@ def test_check_gate_counts_no_data_toward_budget():
     assert ok
 
 
+def test_check_gate_exempts_new_listings():
+    """新掛牌（有資料日、日線不足）不計入異常；沒有 short_history 標記或沒有資料日的 NO_DATA 照算。"""
+    new = [{"ticker": f"N{i}", "state": "NO_DATA", "short_history": True, "fresh": True, "market": "台股", "last_date": "2026-11-12"} for i in range(12)]
+    ok, _, reasons = sw.check_gate(new, max_errors=10, require_fresh=False, now=DAILY_NOW)
+    assert ok and not reasons
+    assert len(sw.short_history_tickers(new)) == 12
+    no_date = [{**r, "last_date": None} for r in new]
+    ok, _, _ = sw.check_gate(no_date, max_errors=10, require_fresh=False, now=DAILY_NOW)
+    assert not ok
+    errors = [{"ticker": f"E{i}", "state": "ERROR", "short_history": True, "fresh": False, "market": "台股", "last_date": None} for i in range(11)]
+    ok, _, _ = sw.check_gate(new + errors, max_errors=10, require_fresh=False, now=DAILY_NOW)
+    assert not ok
+
+
+def test_scan_marks_short_history(monkeypatch):
+    bars = [{"ts": 1762992000 + i * 86400, "open": 10, "high": 10.2, "low": 9.8, "close": 10 + i * 0.01, "volume": 1000} for i in range(30)]
+    monkeypatch.setattr(sw, "load_ohlcv", lambda t, rng: bars)
+    row = sw.scan([{"ticker": "TPE:00413A", "name": "新掛牌"}])[0]
+    assert row["state"] == "NO_DATA" and row["short_history"] and row["bars"] == 30
+    assert sw.short_history_tickers([row]) == ["TPE:00413A"]
+
+
 def test_check_gate_stale_data_is_not_treated_as_closed():
     """來源停滯回舊資料時，所有列都不是 fresh；不得因此判為休市而略過。"""
     rows = [{"ticker": "2330", "state": "NEUTRAL", "fresh": False, "market": "台股", "last_date": "2026-11-01"}] * 5
