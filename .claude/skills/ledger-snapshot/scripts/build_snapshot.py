@@ -30,7 +30,7 @@ REQUIRED_HEADERS = {
     'tx': ('交易編號', '代號', '日期', '類型', '現金流', '資金來源', '餘額（累計）'),
     'journal': ('紀錄編號', '代號', '日期', '類別', '內容'),
 }
-# 資金餘額分頁：頁面讀 B2 錨點日、B3 錨點餘額、B5 循環、B6 新資金、B7 合計；這些列的 A 欄標籤要含下列字樣。
+# 資金餘額分頁：頁面讀 B2 錨點日、B3 錨點餘額、B5 循環、B6 新資金、B7 合計（B8 銀行實際餘額、B9 餘額日期選填）；這些列的 A 欄標籤要含下列字樣。
 CASH_LABELS = {1: '錨點日期', 2: '錨點餘額', 4: '循環餘額', 5: '新資金餘額', 6: '合計'}
 # 快照頁不該出現任何試算表 ID：Core（禁止寫入的後台）與 Our_Investment（快照的來源，快照本身不需要它）。
 # ID 取自環境變數 DRIVE_IDS（不放進 git），只在記憶體中比對，不印出。
@@ -159,6 +159,10 @@ def build(source, data, stamp):
     s = _sub(s, '連接 Google Sheets 後，這裡會顯示總市值、未實現損益與殖利率。', '這裡會顯示總市值、未實現損益與殖利率。')
     # 只拿掉段落本身、保留縮排，與既有快照頁的空白行一致，讓版本比對只剩資料差異。
     s = _sub_re(s, r'<p>記帳時手續費自動計算.*?</p>', '')
+    # 銀行對帳：保留唯讀的對帳結果，拿掉填寫銀行餘額的表單（會寫入試算表）。
+    s = _cut(s, '      <form id="recon-form"', '      </form>\n', keep_end=False)
+    s = _sub(s, '連接 Google Sheets 後，這裡會比對帳本餘額與銀行交割帳戶餘額。', '這裡會比對帳本餘額與銀行交割帳戶餘額。')
+    s = _sub(s, '填入銀行交割帳戶的餘額與日期，就能看出帳本有沒有漏記。', '尚未在交易簿填入銀行餘額，無法對帳。')
     # JS 資料層：連接器換成內嵌資料
     embedded = (
         f'  const SNAPSHOT = {json.dumps(data, ensure_ascii=False)};\n'
@@ -172,13 +176,13 @@ def build(source, data, stamp):
     s = _cut(s, '  const COPY = {', '  const state = {')
     # JS 常數：連接器的試算表 ID 與服務名稱拿掉；RANGES 保留，頁面靠它的鍵決定讀哪一份內嵌資料。
     s = _cut(s, '  // Only the Our_Investment spreadsheet.', '  const RANGES = {')
-    s = _sub_re(s, r"    (portfolioCodes|txIds|journalIds|txTickers|journalTickers): '[^']*',\n", '')
+    s = _sub_re(s, r"    (portfolioCodes|cashBank|txIds|journalIds|txTickers|journalTickers): '[^']*',\n", '')
     # JS：拿掉記帳、新增與移除標的的程式
     s = _cut(s, '  function renderTickers() {', '  function renderAll')
     s = _cut(s, '  // Entry form', '  // Milestone map.')
     s = _sub(s, '      state.nextPortfolioRow = nextRow(pv);\n', '')
     s = _sub(s, '      state.usedTickers = await readUsedTickers();\n', '')
-    s = _sub(s, '    renderTickers();\n    renderRemovable();\n    renderPreview();\n', '')
+    s = _sub(s, '    renderTickers();\n    renderRemovable();\n    renderPending();\n    renderPreview();\n', '')
     s = _sub(s, 'setStamp(`資料時間 ${timeOf(state.loadedAt)}・直接讀取試算表`);',
              'setStamp(`快照時間 ${SNAPSHOT_AT}・唯讀，由 Claude 定時更新`);')
     for pattern in (
@@ -187,11 +191,13 @@ def build(source, data, stamp):
         r"  \$\('ticker'\)\.addEventListener[^\n]*\n",
         r"  const onFormEdit[^\n]*\n",
         r"  \$\('(entry|confirm-yes|confirm-no|new-ticker|ticker-confirm-yes|ticker-confirm-no|remove-ticker|"
-        r"remove-select|remove-confirm-yes|remove-confirm-no|refresh)'\)\.addEventListener[^\n]*\n",
+        r"remove-select|remove-confirm-yes|remove-confirm-no|refresh|recon-form)'\)\.addEventListener[^\n]*\n",
         r"  \$\('date'\)\.value = todayISO\(\);\n  setType\('Buy'\);\n",
         r"  document\.querySelectorAll\('#source-seg button'\)\.forEach\(.*?\n  \}\)\);\n",
         # 調撥方向按鈕（記帳表單的一部分）：快照沒有這個元件，監聽器也要拿掉。
         r"  document\.querySelectorAll\('#xfer-seg button'\)\.forEach\(.*?\n  \}\)\);\n",
+        # 待入帳配息的按鈕（記帳表單的一部分）。
+        r"  \$\('pend-list'\)\.addEventListener\(.*?\n  \}\);\n",
     ):
         s = _sub_re(s, pattern, '', re.S)
     # 事後檢查：不可殘留寫入、連接器或 Core
