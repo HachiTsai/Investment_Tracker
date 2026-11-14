@@ -13,7 +13,7 @@
    - 新增或修改任何 Rule、Skill（`SKILL.md`）或設定時，一律遵循 **Claude 官方原生語法與目錄結構**編寫於 `.claude/` 下。
    - 新增 `.claude/rules/<name>.md` 時，同步將引用加入根目錄 `CLAUDE.md` 與本檔案（`.agent/rules/AGENT.md`）第 2 節清單中。
 3. **本機環境、分支與測試鐵律**：
-   - 本機環境（macOS / Antigravity）一律綁定 Conda 環境（`ai-it-go`，Python 3.14.8）。
+   - 本機環境（macOS / Antigravity）一律綁定 Conda 環境（`ai-it-go`，Python 主版本與 CI 一致，見 `.claude/rules/python-environment.md`）。
    - 分支命名：Antigravity 作業一律使用 `agy/<task-name>` 分支，Claude 作業一律使用 `claude/<task-name>` 分支；不得直接 push 至 `main`。`ci.yml` 的 `auto-merge` 對 `claude/` 與 `agy/` 開頭分支皆自動合併（不限定 PR 範圍）。
    - 提交前必須先執行測試與語法檢查（`pytest` 與 `markdown-linter`）。
 

@@ -925,7 +925,7 @@ def main(argv=None) -> int:
     p.add_argument("--batch", metavar="卡片:前N大", help="多檔彙總回測，例如 00882:15（讀 models/<卡片>/cards/constituents.jsonl）")
     p.add_argument("--fib-backtest", action="store_true", help="回測各費波那契回檔位置之後 5/10/20 日含息報酬（觀察清單全部標的，抓 5 年日線）")
     p.add_argument("--backtest", action="store_true", help="加跑超跌反彈規則回測（抓 5 年日線）")
-    p.add_argument("--gate", action="store_true", help="啟用波段 Sheet 的健康門檻判定（--scan 模式下異常列占比不超過 20%）；--daily-html 一律套用每日門檻，不需此參數")
+    p.add_argument("--gate", action="store_true", help="啟用波段 Sheet 的健康門檻判定（--scan 模式下異常列占比不超過 20%%）；--daily-html 一律套用每日門檻，不需此參數")
     p.add_argument("--extra-tickers", metavar="JSON", help="搭配 --scan：額外的全市場 ETF 清單檔 [{\"ticker\":\"TPE:0050\",\"name\":\"...\"}]，卡片已有的不重複")
     p.add_argument("--tier", choices=["core", "pool", "all"], default="core", help="波段掃描標的分級（預設 core: 核心團隊）")
     a = p.parse_args(argv)
