@@ -215,6 +215,7 @@ def main(argv=None):
     src = ap.add_mutually_exclusive_group(required=True)
     src.add_argument('--data', help='試算表資料 JSON')
     src.add_argument('--raw-dir', help='資料夾：portfolio.json、tx.json、journal.json、cash.json（get_values 回應原文）')
+    src.add_argument('--use-prev-data', action='store_true', help='改版預檢：資料沿用 --prev 快照內嵌的值，不需連線，只驗證新互動版的標記與輸出安全檢查')
     ap.add_argument('--prev', help='上一版快照頁 HTML：既有的交易與日誌列有變動就中止')
     ap.add_argument('--accept-history-changes', action='store_true', help='確認既有列的變動來自試算表，照常輸出')
     ap.add_argument('--stamp', required=True, help='快照時間（台北），例：2026-10-30 22:45')
@@ -228,7 +229,12 @@ def main(argv=None):
     try:
         with open(args.source, encoding='utf8') as f:
             source = f.read()
-        if args.raw_dir:
+        if args.use_prev_data:
+            if not args.prev:
+                raise BuildError('--use-prev-data 需要同時給 --prev')
+            with open(args.prev, encoding='utf8') as f:
+                data = extract_snapshot(f.read())
+        elif args.raw_dir:
             data = load_raw_dir(args.raw_dir)
         else:
             with open(args.data, encoding='utf8') as f:

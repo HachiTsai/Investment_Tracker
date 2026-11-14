@@ -312,3 +312,15 @@ def test_cli_prev_without_embedded_data_fails(tmp_path):
     prev.write_text('<html></html>', encoding='utf8')
     args = ['--source', str(src), '--raw-dir', str(_raw_dir(tmp_path)), '--prev', str(prev), '--stamp', 't', '--out', str(out)]
     assert bs.main(args) == 1 and not out.exists()
+
+
+def test_cli_use_prev_data_precheck(tmp_path):
+    src, prev, out = tmp_path / 's.html', tmp_path / 'p.html', tmp_path / 'o.html'
+    src.write_text(MINI, encoding='utf8')
+    prev.write_text(bs.build(MINI, HIST, 'old'), encoding='utf8')
+    args = ['--source', str(src), '--use-prev-data', '--prev', str(prev), '--stamp', 't', '--out', str(out)]
+    assert bs.main(args) == 0 and out.exists()
+    # 沒給 --prev 就失敗；來源標記失效也失敗
+    assert bs.main(['--source', str(src), '--use-prev-data', '--stamp', 't', '--out', str(tmp_path / 'x.html')]) == 1
+    src.write_text(MINI.replace('const RANGES', 'const RNG'), encoding='utf8')
+    assert bs.main(args) == 1
