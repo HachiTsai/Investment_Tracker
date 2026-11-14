@@ -106,5 +106,5 @@ python3 .claude/skills/tw-etf-fetcher/scripts/etf_pool.py outdir --market jp --e
 ## 4. 架構與防護規則
 
 1. **唯讀資料庫鐵律**：本技能僅作為資料擷取與運算工廠，嚴禁對 `Investment_Tracker_Core` 進行任何寫入。
-2. **客觀專業用語**：所有終端報告與註解維持客觀金融分析用語，嚴禁使用浮誇詞彙。
+2. **客觀專業用語**：終端報告與註解維持客觀金融分析用語，詞彙規範見 `.claude/rules/portfolio-control-system.md` 第 6 節。
 3. **離線單元測試保證**：全套單元測試內建 Mock 機制，確保在無外網環境下維持 100% 綠燈。

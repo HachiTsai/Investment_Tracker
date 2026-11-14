@@ -1,6 +1,6 @@
 # 外部網路連線與資料來源清單
 
-本專案於本機（Antigravity / macOS）與雲端沙盒環境（Claude Code Web）經實測可通聯之 38 個外部網域及 API 服務清單。
+本專案於本機（Antigravity / macOS）與雲端沙盒環境（Claude Code Web）經實測可通聯之外部網域及 API 服務清單。
 
 ## 1. 核心證券交易所與主管機關
 
