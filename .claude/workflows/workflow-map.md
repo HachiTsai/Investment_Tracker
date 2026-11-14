@@ -66,6 +66,7 @@ python3 .claude/skills/fin-commit/scripts/workflow_map.py build map.html --facto
 ## 4. 維護規則
 
 - **地圖資料檔**：`.claude/skills/fin-commit/references/workflow-map-data.json` 是各工作流「讀什麼、寫什麼、產出什麼」的策展資料，地圖版面在同目錄的 `workflow-map-template.html`，工廠頁版面在 `workflow-factory-template.html`（資料檔的 `FACTORY` 區塊決定機台、倉庫與每條工作流的路線）。新增或改動工作流時，同一個 PR 更新資料檔與登記表。
+- **外部觸發**：規格提到外部定時器（如 Google 的指令碼服務）時，資料檔的對應工作流觸發欄也要列（`workflow_map.py` 有 drift 檢查）；工廠頁以 `AS` 列呈現（進料口 `ext`），通報以「GitHub Issue 通報」倉庫呈現。
 - **自動對齊的部分**：觸發時間（登記表）、GitHub 排程 cron、待驗證清單（登記表第 3 節）、技能與規格檔清單，每次產生時由 repo 現況取得。
 - **公開邊界**：頁面不放金鑰、Drive 或試算表 ID、個人持股與成本；資料檔只寫鍵名與 Artifact 網址。
 - 嚴格模式：`workflow_map.py build map.html --strict` 在 `drift` 非空時退出碼 1，供本機或日後 CI 使用。

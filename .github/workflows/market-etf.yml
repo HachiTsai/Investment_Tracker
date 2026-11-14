@@ -21,6 +21,11 @@ on:
         default: '00882'
         required: false
 
+# 同一工作流同時只跑一個：Apps Script 17:30 與 GitHub cron 重疊時排隊，避免兩個執行同時寫 Sheet
+concurrency:
+  group: market-etf
+  cancel-in-progress: false
+
 jobs:
   sync-market-etf-sheets:
     name: Sync Market ETF to Google Sheets

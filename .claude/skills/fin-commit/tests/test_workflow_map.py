@@ -95,3 +95,16 @@ def test_factory_unknown_output_fails(tmp_path):
     tpl = (wm.REF / "workflow-factory-template.html").read_text(encoding="utf-8")
     with pytest.raises(ValueError):
         wm.build_factory(data, wf, skills, tpl)
+
+
+def test_apps_script_trigger_drift(tmp_path):
+    """規格提到 Apps Script 外部觸發，但資料檔觸發欄沒列時要報 drift；目前資料檔應已列齊。"""
+    data = json.loads((wm.REF / "workflow-map-data.json").read_text(encoding="utf-8"))
+    _, _, _, drift = wm.merge(data, wm.ROOT)
+    assert not [d for d in drift if "Apps Script" in d], drift
+    for w in data["WF"]:
+        if w["id"] in ("S1", "S2"):
+            w["trigger"] = [x for x in w["trigger"] if "Apps Script" not in x]
+    _, _, _, drift = wm.merge(data, wm.ROOT)
+    assert any("S1" in d and "Apps Script" in d for d in drift)
+    assert any("S2" in d and "Apps Script" in d for d in drift)

@@ -39,8 +39,11 @@
 - C1 至 C4 的執行紀錄不在 GitHub，無法從 repo 驗證；2026-11-01 用雲端排程清單核對過觸發時間與開關（見異動紀錄）。「成功」只代表排程跑完，不代表產出內容已核對。
 - 一致性檢查：`fin-commit/tests/test_workflow_consistency.py` 在每次 PR 的 CI 比對本表與 `.github/workflows/*.yml` 的 cron、台北時間、規格檔是否存在、規格檔的排程時間與 prompt，以及各規格檔引用的腳本路徑是否存在；不一致即 CI 失敗。
 
+- Google Apps Script 外部觸發（S1、S2）本身沒有健康檢查：只有 GitHub 回非 204 時寄信，觸發器被停用或授權失效沒有訊號，此時由 GitHub cron 備援；`workflow_dispatch` 的成功會被 `schedule_health.py` 採計，所以外部觸發成功不會被誤判漏跑。權杖沒有到期日（2026-11-14 Hachi 確認）。
+
 ## 4. 異動紀錄
 
+- 2026-11-14：工作流工廠與地圖補 Apps Script 外部觸發（新增「Apps Script」進料口、Issue 通報倉庫、S1／S2 觸發與權杖）、校正過時時間與 C3、C5 狀態；`workflow_map.py` 新增 drift 規則（規格提到 Apps Script 而地圖觸發欄沒列即報）；`swing-patrol.yml`、`market-etf.yml` 加 `concurrency`，避免外部觸發與 cron 重疊時同時寫 Sheet。權杖確認沒有到期日。Hachi 同意（討論串 2026-11-14「我同意你的建議」）。
 - 2026-11-14：S2 加 Google Apps Script 週五外部觸發（`triggerMarketEtf`，與 S1 共用同一份腳本與權杖；GitHub cron 保留當備援，S2 無同日互鎖，兩路徑同日都跑會寫兩次）。Hachi 同意（討論串 2026-11-14「要」「同意」）。
 - 2026-11-14：S1 與 S2 失敗即時通報（`schedule_notify.py` 開 Issue、恢復後自動關閉）、S1 門檻改比例與上市日判定、PR 的 CI 加門檻重播、S1 加 Google Apps Script 外部觸發（GitHub cron 保留當備援）；健康檢查訊息分「漏跑」與「已執行但失敗」。細節見 `swing-patrol-sheets.md`。Hachi 同意（討論串 2026-11-14「6點全做」；規則檔更新「同意」）。
 - 2026-11-10：C5 改為每日 23:10，並同時重產與發布工作流工廠頁（`workflow_map.py build --factory`），讓新增或改時間的工作流自動進工廠。Hachi 要求（討論串 2026-11-10「那我們的C5 能不能改成每天晚上23:10 更新」）。

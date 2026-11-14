@@ -24,9 +24,9 @@ var NS="http://www.w3.org/2000/svg",s=document.getElementById("s");
 function E(t,a,p,tx){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);if(tx!=null)e.textContent=tx;(p||s).appendChild(e);return e}
 /*@@FDATA@@*/
 var CX=[480,740,1000],CY=[90,270,450];
-var TR={gha:{x:110,y:90,w:170,h:100,c:"#2F6BFF",n:"GitHub 排程"},cld:{x:110,y:270,w:170,h:100,c:"#FF8A3D",n:"Claude 排程"},man:{x:110,y:450,w:170,h:100,c:"#7B5CFA",n:"手動與會話"}};
+var TR={gha:{x:110,y:70,w:170,h:100,c:"#2F6BFF",n:"GitHub 排程"},cld:{x:110,y:205,w:170,h:100,c:"#FF8A3D",n:"Claude 排程"},ext:{x:110,y:340,w:170,h:100,c:"#1FA97A",n:"Apps Script"},man:{x:110,y:475,w:170,h:100,c:"#7B5CFA",n:"手動與會話"}};
 var M=SK.map(function(k,i){return {x:CX[i%3],y:CY[Math.floor(i/3)],w:170,h:100}});
-var ON=O.map(function(o,i){return {x:1545,y:26+i*38,w:230,h:30}});
+var ON=O.map(function(o,i){return {x:1545,y:26+i*36,w:230,h:30}});
 for(var gx=0;gx!=27;gx++)E("line",{x1:gx*64,y1:0,x2:gx*64,y2:600,stroke:"#16244F","stroke-width":2});
 for(var gy=0;gy!=10;gy++)E("line",{x1:0,y1:gy*64,x2:1664,y2:gy*64,stroke:"#16244F","stroke-width":2});
 [["進料口",110],["機台（技能）",740],["倉庫（產出）",1545]].forEach(function(z){E("text",{x:z[1],y:596,"text-anchor":"middle",fill:"#8FA3D8","font-size":22},null,z[0])});
@@ -46,6 +46,7 @@ var ov=E("g",{});
 var tn={},mn=[],onn=[];
 Object.keys(TR).forEach(function(k){var t=TR[k],g=E("g",{},null);E("rect",{x:t.x-85,y:t.y-50,width:170,height:100,rx:14,fill:t.c,stroke:"#0F1A3A","stroke-width":4},g);
  if(k=="gha"){E("circle",{cx:t.x,cy:t.y-14,r:17,fill:"none",stroke:"#fff","stroke-width":4},g);E("path",{d:"M"+t.x+" "+(t.y-14)+"V"+(t.y-26)+"M"+t.x+" "+(t.y-14)+"L"+(t.x+9)+" "+(t.y-8),stroke:"#fff","stroke-width":4,fill:"none"},g)}
+ else if(k=="ext")E("path",{d:"M"+(t.x-16)+" "+(t.y-30)+"H"+(t.x+16)+"V"+(t.y+2)+"H"+(t.x-16)+"Z M"+(t.x-8)+" "+(t.y-22)+"H"+(t.x+8)+" M"+(t.x-8)+" "+(t.y-14)+"H"+(t.x+8)+" M"+(t.x-8)+" "+(t.y-6)+"H"+(t.x+2),stroke:"#fff","stroke-width":4,fill:"none"},g);
  else if(k=="cld")E("polygon",{points:(t.x+4)+","+(t.y-34)+" "+(t.x-14)+","+(t.y-12)+" "+t.x+","+(t.y-12)+" "+(t.x-6)+","+(t.y+6)+" "+(t.x+14)+","+(t.y-18)+" "+(t.x+2)+","+(t.y-18),fill:"#fff"},g);
  else E("polygon",{points:(t.x-10)+","+(t.y-32)+" "+(t.x-10)+","+(t.y+4)+" "+(t.x-2)+","+(t.y-4)+" "+(t.x+6)+","+(t.y+8)+" "+(t.x+11)+","+(t.y+5)+" "+(t.x+3)+","+(t.y-7)+" "+(t.x+14)+","+(t.y-7),fill:"#fff"},g);
  E("text",{x:t.x,y:t.y+34,"text-anchor":"middle",fill:"#fff","font-size":24,"font-weight":700},g,t.n);tn[k]=g});
@@ -75,7 +76,7 @@ function setSel(i){sel=i;
  Object.keys(tn).forEach(function(k){tn[k].setAttribute("opacity",tu[k]||A?1:.35)});
  mn.forEach(function(m,j){m.g.setAttribute("opacity",A||mu[j]||md[j]?1:.35);m.r.setAttribute("stroke",((mu[j]?!A:false))?"#fff":"#0F1A3A");m.r.setAttribute("stroke-dasharray",(md[j]?(A?false:!mu[j]):false)?"9 7":"none");m.r.setAttribute("stroke-width",(mu[j]||md[j])?(A?4:6):4)});
  onn.forEach(function(g,j){g.setAttribute("opacity",A||ou[j]?1:.35)});
- if(A)cap.textContent="全部 "+W.length+" 個工作流同時運轉：藍＝GitHub 排程，橘＝Claude 排程，紫＝手動";
+ if(A)cap.textContent="全部 "+W.length+" 個工作流同時運轉：藍＝GitHub 排程，橘＝Claude 排程，綠＝Apps Script 外部觸發，紫＝手動";
  else{var w=W[i];cap.textContent=w[0]+" "+w[2]+"（"+w[3]+"）　"+TR[w[1]].n+(w[4].length?" → "+w[4].map(function(m){return SK[m][0]}).join("、"):"（人工作業，不經技能）")+(w[5].length?"（另引用 "+w[5].map(function(m){return SK[m][0]}).join("、")+"）":"")+" → "+(w[6].length?w[6].map(function(o){return O[o][0]}).join("、"):"只回報提醒，沒有產出")+(w[7]||"")}}
 ["全部"].concat(W.map(function(w){return w[0]})).forEach(function(t,j){var b=document.createElement("button");b.className="c";b.textContent=t;b.onclick=function(){pause=Date.now()+25000;setSel(j-1)};chips.appendChild(b)});
 function pt(r,d){var P=r.pts,a=0;for(var i=1;i!=P.length;i++){var sl=Math.abs(P[i][0]-P[i-1][0])+Math.abs(P[i][1]-P[i-1][1]);if(d-a-sl>0){a+=sl;continue}var f=sl?(d-a)/sl:0;return [P[i-1][0]+(P[i][0]-P[i-1][0])*f,P[i-1][1]+(P[i][1]-P[i-1][1])*f]}return P[P.length-1]}

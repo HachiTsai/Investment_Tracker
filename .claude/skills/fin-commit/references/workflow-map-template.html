@@ -238,8 +238,8 @@ function week(){
     const ev=WF.filter(w=>w.dow.includes(d)).sort((a,b)=>a.time.localeCompare(b.time)).map(w=>`<div class="ev p-${w.plat}"><i>${w.time}</i>${w.id} ${w.name}</div>`).join("");
     return `<div class="day"><h4>週${WEEK[d]}</h4>${ev||'<span style="color:var(--muted);font-size:12px">無</span>'}</div>`}).join("");
   $("#view").innerHTML=`<div class="cal">${cols}</div>
-  <p class="sub" style="margin-top:12px">每月：C3 台股 ETF 成分股池（每月 23 日 09:30）。GitHub 排程的 UTC 時間加 8 小時就是台北時間。</p>
-  <p class="sub" style="margin-top:6px">每日順序：08:50 巡檢 → 09:30 快照（平日）→ 16:30 股利表（週五）→ 17:00 波段觀察 → 17:10 全市場 ETF（週五）→ 20:00 健康檢查。</p>`;
+  <p class="sub" style="margin-top:12px">每週六：C3 台股 ETF 成分股池（09:40）。GitHub 排程的 UTC 時間加 8 小時就是台北時間。</p>
+  <p class="sub" style="margin-top:6px">每日順序：08:50 巡檢 → 09:30 快照（平日）→ 16:30 股利表（週五）→ 17:23 波段觀察（外部觸發 17:30 為備援）→ 17:37 全市場 ETF（週五）→ 20:17 健康檢查。</p>`;
 }
 function todo(){
   $("#view").innerHTML=`<div class="list">${PENDING.map(p=>`<div class="item"><b>${p[0]}</b>${p[1]}</div>`).join("")}</div>`;

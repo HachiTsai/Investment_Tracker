@@ -64,15 +64,15 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 -
 - **失敗即時通報**：`swing-patrol.yml` 失敗當下由 `fin-commit/scripts/schedule_notify.py fail` 開 GitHub Issue（標籤 `schedule-failure`，標題「排程失敗：swing-patrol.yml」），附日誌擷取的失敗原因與執行連結；同一工作流只維持一個未關閉的 Issue，再失敗只追加留言；恢復成功後自動留言並關閉。`market-etf.yml` 的排程與 `tw` 手動執行同樣處理。通報本身失敗只警告，不改變排程結果。
 - **健康檢查訊息分流**：`schedule_health.py` 的訊息分兩種，「漏跑——…」是沒有如期執行，「已執行但失敗，不是漏跑（含執行連結）」是跑了但結論不是 success。
 - **門檻重播**：每次排程把 `/tmp/scan.json` 與門檻判定 `/tmp/scan_gate.json` 存成 artifact `swing-scan`（保存 30 天）。PR 的 CI（`skill-tests`）執行 `price-dividend-fetcher/scripts/gate_replay.py`，用最近 5 份真實掃描結果以目前的門檻重判；當時放行、現在被擋即 CI 失敗。確屬刻意收緊時，PR 描述寫「重播例外」並說明原因即可放行。尚無 artifact 或下載失敗只印提示，不擋 PR。
-- **外部觸發（Google Apps Script，備援 GitHub cron）**：同一份腳本也觸發 `market-etf.yml`（週五，見 `market-etf-pool.md` 第 1 節）。GitHub 排程常晚 6 到 10 小時才建立（見 `schedule-registry.md` 待驗證段），所以每個平日台北 17:30 左右由 Google Apps Script 以 `workflow_dispatch` 觸發本工作流；GitHub 自己的 cron 保留當備援，兩者撞到同一天時，互鎖會讓後到的那次略過（不帶 `force`）。設定在 Hachi 的 Google 帳號下，腳本與權杖都不進 git。
+- **外部觸發（Google Apps Script，備援 GitHub cron）**：同一份腳本也觸發 `market-etf.yml`（週五，見 `market-etf-pool.md` 第 1 節）。GitHub 排程常晚 6 到 10 小時才建立（見 `schedule-registry.md` 待驗證段），所以每個平日台北 17:30 左右由 Google Apps Script 以 `workflow_dispatch` 觸發本工作流；GitHub 自己的 cron 保留當備援，兩者撞到同一天時，工作流設了 `concurrency`（群組 `swing-patrol`，不取消進行中的執行），後到的那次排隊等前一次寫完，再由互鎖略過（不帶 `force`）；沒有 `concurrency` 時互鎖要等前一次寫入才看得到，兩個執行可能同時寫 Sheet。設定在 Hachi 的 Google 帳號下，腳本與權杖都不進 git。
 
   步驟：
 
-  1. GitHub 建立 fine-grained personal access token：只選 `Investment_Tracker` 這個 repository，權限只開 Actions 的 Read and write，到期日一年。
+  1. GitHub 建立 fine-grained personal access token：只選 `Investment_Tracker` 這個 repository，權限只開 Actions 的 Read and write；Hachi 建立時沒有設到期日（2026-11-14 確認），所以沒有到期更換的問題，但外洩時要立刻到 GitHub 撤銷並重建，更新「指令碼屬性」。
   2. 到 script.google.com 建新專案，專案設定把時區設為 `Asia/Taipei`，「指令碼屬性」新增 `GITHUB_TOKEN`，值貼上第 1 步的權杖。
   3. 貼上下方腳本，儲存後手動執行一次 `triggerSwingPatrol`（會要求授權外部請求與寄信；週末會因平日檢查直接結束，驗證時可暫時註解該行，驗完還原），到 GitHub Actions 確認出現一筆 `workflow_dispatch` 的執行。
   4. 左側「觸發條件」新增兩個：`triggerSwingPatrol`（時間驅動、日計時器、下午 5 點到 6 點）；`triggerMarketEtf`（時間驅動、週計時器、每週五、下午 5 點到 6 點）。
-  5. 權杖到期前更換，更換只要改「指令碼屬性」。
+  5. 權杖若外洩或要更換，只要改「指令碼屬性」；沒有到期日，所以 Apps Script 失效的唯一訊號是非 204 的失敗寄信，觸發器被停用或授權失效不會有任何通知。
 
   ```javascript
   const REPO = 'HachiTsai/Investment_Tracker';

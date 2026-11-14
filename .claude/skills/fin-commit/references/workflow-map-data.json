@@ -15,7 +15,7 @@
    "id": "S1",
    "plat": "gha",
    "name": "波段觀察 Sheet 同步",
-   "when": "平日 17:00",
+   "when": "平日 17:23",
    "dow": [
     1,
     2,
@@ -23,9 +23,10 @@
     4,
     5
    ],
-   "time": "17:00",
+   "time": "17:23",
    "trigger": [
-    "cron <code>0 9 * * 1-5</code>（UTC）",
+    "cron <code>23 9 * * 1-5</code>（UTC）",
+    "Google Apps Script <code>triggerSwingPatrol</code> 平日 17:30 以 workflow_dispatch 外部觸發（備援 GitHub cron）",
     "手動 workflow_dispatch，可勾 force 補跑"
    ],
    "yml": ".github/workflows/swing-patrol.yml",
@@ -35,6 +36,11 @@
      "price-dividend-fetcher",
      1,
      "swing_sync.py、swing.py、swing_levels.py、swing_scores.py、google_sheets.py"
+    ],
+    [
+     "fin-commit",
+     0,
+     "schedule_notify.py（失敗開 Issue、恢復關閉）"
     ]
    ],
    "reads": [
@@ -53,22 +59,24 @@
     "消費者：Stock_AIStudio <code>swingFeedService.ts</code>"
    ],
    "secrets": [
-    "GCP_SA_KEY"
+    "GCP_SA_KEY",
+    "Apps Script 指令碼屬性 GITHUB_TOKEN（fine-grained PAT，只限本 repo 的 Actions 讀寫，無到期日）"
    ],
    "gate": "全休市或資料日已入庫則略過（互鎖）；ERROR 列保留舊值",
-   "note": "A:X 欄序是 APP 契約，不可增刪調換。告警先寫入，成功後才覆寫 A:X。"
+   "note": "A:X 欄序是 APP 契約，不可增刪調換。告警先寫入，成功後才覆寫 A:X。 失敗當下開 Issue（schedule-failure）；留存 swing-scan artifact 供 PR 門檻重播。"
   },
   {
    "id": "S2",
    "plat": "gha",
    "name": "全市場 ETF 成分股資料庫",
-   "when": "週五 17:10",
+   "when": "週五 17:37",
    "dow": [
     5
    ],
-   "time": "17:10",
+   "time": "17:37",
    "trigger": [
-    "cron <code>10 9 * * 5</code>（UTC）",
+    "cron <code>37 9 * * 5</code>（UTC）",
+    "Google Apps Script <code>triggerMarketEtf</code> 週五 17:30 以 workflow_dispatch 外部觸發（備援 GitHub cron）",
     "手動：market 選 tw／hk／us／jp，etfs 填代號"
    ],
    "yml": ".github/workflows/market-etf.yml",
@@ -107,10 +115,11 @@
    ],
    "secrets": [
     "GCP_SA_KEY",
-    "EDINET_API_KEY（日股）"
+    "EDINET_API_KEY（日股）",
+    "Apps Script 指令碼屬性 GITHUB_TOKEN（同 S1，無到期日）"
    ],
    "gate": "列數不足即停止；寫入前過 guard_sheet_id 拒絕 Core",
-   "note": "沒有同日互鎖，重跑即覆寫。日股 EDINET 抓不到會退回 Yahoo，表上不標示（待 Hachi 決定）。"
+   "note": "沒有同日互鎖，重跑即覆寫；失敗開 Issue。外部觸發與 cron 同日都跑時以 concurrency 排隊，仍會寫兩次。日股 EDINET 抓不到會退回 Yahoo，表上不標示（待 Hachi 決定）。"
   },
   {
    "id": "C1",
@@ -223,11 +232,13 @@
    "id": "C3",
    "plat": "cld",
    "name": "台股 ETF 成分股池",
-   "when": "每月 23 日 09:30",
-   "dow": [],
-   "time": "月",
+   "when": "週六 09:40",
+   "dow": [
+    6
+   ],
+   "time": "09:40",
    "trigger": [
-    "Claude 雲端排程，單行 prompt（排程是否已建立待確認）"
+    "Claude 雲端排程，單行 prompt"
    ],
    "yml": "（無 yml，雲端設定）",
    "spec": ".claude/workflows/tw-etf-pool.md",
@@ -282,7 +293,7 @@
    ],
    "time": "23:10",
    "trigger": [
-    "Claude 雲端排程，單行 prompt（待 Hachi 建立）",
+    "Claude 雲端排程，單行 prompt（已建立 2026-11-10）",
     "Hachi 說「更新工作流地圖」手動觸發"
    ],
    "yml": "（無 yml，雲端設定）",
@@ -356,7 +367,7 @@
    "id": "CI",
    "plat": "gha",
    "name": "CI 與排程健康檢查",
-   "when": "PR／push main；每日 20:00",
+   "when": "PR／push main；每日 20:17",
    "dow": [
     1,
     2,
@@ -366,10 +377,10 @@
     6,
     0
    ],
-   "time": "20:00",
+   "time": "20:17",
    "trigger": [
     "pull_request、push main",
-    "cron <code>0 12 * * *</code>（只跑 schedule-health）",
+    "cron <code>17 12 * * *</code>（只跑 schedule-health）",
     "手動 workflow_dispatch"
    ],
    "yml": ".github/workflows/ci.yml",
@@ -393,7 +404,8 @@
    ],
    "reads": [
     "PR diff（改到 .claude/、CLAUDE.md 要有「規則掃描」段落）",
-    "Actions 執行紀錄（api.github.com）"
+    "Actions 執行紀錄（api.github.com）",
+    "Issue 通報（schedule_notify.py）"
    ],
    "writes": [
     "以 merge commit 合併 claude/、agy/ 分支 PR（auto-merge job）"
@@ -407,7 +419,7 @@
     "GITHUB_TOKEN"
    ],
    "gate": "markdown-lint、skill-tests 全綠才合併；草稿先轉正式",
-   "note": "健康檢查只涵蓋 GitHub 排程（S1 容許 96 小時、S2 容許 192 小時），雲端排程 C1 至 C4 不在 GitHub 上，無法自動檢查。"
+   "note": "健康檢查只涵蓋 GitHub 排程（S1 容許 96 小時、S2 容許 192 小時；workflow_dispatch 也計入，Apps Script 觸發的成功會被採計），雲端排程 C1 至 C5 不在 GitHub 上，無法自動檢查。Apps Script 本身沒有健康檢查，失效時退回 GitHub cron。"
   },
   {
    "id": "H0",
@@ -492,12 +504,12 @@
  "SEQ": [
   {
    "id": "S1",
-   "title": "S1 波段觀察 Sheet 同步（平日 17:00）",
-   "src": "sequenceDiagram\n  autonumber\n  participant GH as GitHub cron\n  participant SY as swing_sync.py\n  participant SW as swing.py\n  participant SH as 波段觀察 Sheet\n  GH->>SY: 觸發，帶 GCP_SA_KEY\n  SY->>SH: 讀 A:X 組成上次狀態\n  SY->>SW: 掃描全標的日線與指標\n  SW-->>SY: 狀態、位階、三週期組合\n  alt 全休市或資料日已入庫\n    SY->>SH: 只寫 Z1:AA2 心跳\n  else 有新資料\n    SY->>SH: 組合轉關鍵者先追加告警紀錄\n    SY->>SH: 整列覆寫 A:X，ERROR 列保留舊值\n    SY->>SH: 寫 Z1:AA2 心跳\n  end\n"
+   "title": "S1 波段觀察 Sheet 同步（平日 17:23）",
+   "src": "sequenceDiagram\n  autonumber\n  participant AS as Apps Script 17:30\n  participant GH as GitHub cron\n  participant SY as swing_sync.py\n  participant SW as swing.py\n  participant SH as 波段觀察 Sheet\n  AS->>GH: workflow_dispatch（備援 cron）\n  GH->>SY: 觸發，帶 GCP_SA_KEY\n  SY->>SH: 讀 A:X 組成上次狀態\n  SY->>SW: 掃描全標的日線與指標\n  SW-->>SY: 狀態、位階、三週期組合\n  alt 全休市或資料日已入庫\n    SY->>SH: 只寫 Z1:AA2 心跳\n  else 有新資料\n    SY->>SH: 組合轉關鍵者先追加告警紀錄\n    SY->>SH: 整列覆寫 A:X，ERROR 列保留舊值\n    SY->>SH: 寫 Z1:AA2 心跳\n  end\n  alt 失敗\n    SY-->>GH: 退出碼 1\n    GH->>GH: schedule_notify.py 開 Issue\n  end\n"
   },
   {
    "id": "S2",
-   "title": "S2 全市場 ETF 成分股資料庫（週五 17:10）",
+   "title": "S2 全市場 ETF 成分股資料庫（週五 17:37）",
    "src": "sequenceDiagram\n  autonumber\n  participant GH as GitHub cron\n  participant EF as etf_fetcher.py\n  participant SRC as 證交所與 MoneyDJ\n  participant SH as 全市場 ETF Sheet\n  GH->>EF: sync-sheets --gate\n  EF->>SRC: 抓 ETF 清單與持股\n  SRC-->>EF: 約 281 檔與 15,000 筆以上持股\n  EF->>EF: Gate：Summary 至少 200 列，Constituents 至少 10,000 列\n  alt 未達門檻\n    EF-->>GH: 失敗，不寫 Sheet\n  else 通過\n    EF->>SH: guard_sheet_id 確認不是 Core\n    EF->>SH: 分批寫 ETF_Summary 與 ETF_Constituents\n    EF->>SH: 寫同步時間 R1:S2、I1:J2\n  end\n"
   },
   {
@@ -523,7 +535,7 @@
   {
    "id": "CI",
    "title": "CI 與自動合併",
-   "src": "sequenceDiagram\n  autonumber\n  participant PR as claude 或 agy 分支 PR\n  participant ML as markdown-lint\n  participant ST as skill-tests\n  participant AM as auto-merge\n  participant MN as main\n  participant HC as schedule-health 每日 20:00\n  PR->>ML: 規則掃描段落檢查與 mdlint\n  PR->>ST: pytest .claude/skills\n  ML-->>AM: 通過\n  ST-->>AM: 通過\n  AM->>PR: gh pr ready\n  AM->>MN: merge commit 並刪分支\n  MN->>ML: main 再跑一次 CI\n  HC->>HC: 檢查 S1 與 S2 近期有如期成功\n"
+   "src": "sequenceDiagram\n  autonumber\n  participant PR as claude 或 agy 分支 PR\n  participant ML as markdown-lint\n  participant ST as skill-tests\n  participant AM as auto-merge\n  participant MN as main\n  participant HC as schedule-health 每日 20:17\n  PR->>ML: 規則掃描段落檢查與 mdlint\n  PR->>ST: pytest .claude/skills\n  ML-->>AM: 通過\n  ST-->>AM: 通過\n  AM->>PR: gh pr ready\n  AM->>MN: merge commit 並刪分支\n  MN->>ML: main 再跑一次 CI\n  HC->>HC: 檢查 S1 與 S2 近期有如期成功\n"
   },
   {
    "id": "C5",
@@ -630,11 +642,16 @@
    [
     "research 筆記",
     "#C08A3E"
+   ],
+   [
+    "GitHub Issue 通報",
+    "#E5484D"
    ]
   ],
   "ROWS": [
    "S1",
    "S2",
+   "AS",
    "CI",
    "HC",
    "C1",
@@ -648,15 +665,19 @@
   ],
   "OUTS": {
    "S1": [
-    "Sheet 波段觀察"
+    "Sheet 波段觀察",
+    "GitHub Issue 通報"
    ],
    "S2": [
-    "Sheet 全市場 ETF"
+    "Sheet 全市場 ETF",
+    "GitHub Issue 通報"
    ],
    "CI": [
     "main 自動合併"
    ],
-   "HC": [],
+   "HC": [
+    "GitHub Issue 通報"
+   ],
    "C1": [
     "Artifact 巡檢頁"
    ],
@@ -684,6 +705,10 @@
     "Sheet Our_Investment",
     "Artifact 交易簿互動版",
     "Artifact 里程圖"
+   ],
+   "AS": [
+    "Sheet 波段觀察",
+    "Sheet 全市場 ETF"
    ]
   },
   "OVR": {
@@ -739,6 +764,16 @@
    },
    "M1": {
     "name": "成分股股利調查"
+   },
+   "AS": {
+    "plat": "ext",
+    "name": "Apps Script 外部觸發",
+    "when": "平日 17:30；週五 17:30",
+    "skills": [
+     "price-dividend-fetcher",
+     "tw-etf-fetcher"
+    ],
+    "also": []
    }
   }
  }
