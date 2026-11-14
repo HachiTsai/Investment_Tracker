@@ -64,28 +64,40 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 -
 - **失敗即時通報**：`swing-patrol.yml` 失敗當下由 `fin-commit/scripts/schedule_notify.py fail` 開 GitHub Issue（標籤 `schedule-failure`，標題「排程失敗：swing-patrol.yml」），附日誌擷取的失敗原因與執行連結；同一工作流只維持一個未關閉的 Issue，再失敗只追加留言；恢復成功後自動留言並關閉。`market-etf.yml` 的排程與 `tw` 手動執行同樣處理。通報本身失敗只警告，不改變排程結果。
 - **健康檢查訊息分流**：`schedule_health.py` 的訊息分兩種，「漏跑——…」是沒有如期執行，「已執行但失敗，不是漏跑（含執行連結）」是跑了但結論不是 success。
 - **門檻重播**：每次排程把 `/tmp/scan.json` 與門檻判定 `/tmp/scan_gate.json` 存成 artifact `swing-scan`（保存 30 天）。PR 的 CI（`skill-tests`）執行 `price-dividend-fetcher/scripts/gate_replay.py`，用最近 5 份真實掃描結果以目前的門檻重判；當時放行、現在被擋即 CI 失敗。確屬刻意收緊時，PR 描述寫「重播例外」並說明原因即可放行。尚無 artifact 或下載失敗只印提示，不擋 PR。
-- **外部觸發（Google Apps Script，備援 GitHub cron）**：GitHub 排程常晚 6 到 10 小時才建立（見 `schedule-registry.md` 待驗證段），所以每個平日台北 17:30 左右由 Google Apps Script 以 `workflow_dispatch` 觸發本工作流；GitHub 自己的 cron 保留當備援，兩者撞到同一天時，互鎖會讓後到的那次略過（不帶 `force`）。設定在 Hachi 的 Google 帳號下，腳本與權杖都不進 git。
+- **外部觸發（Google Apps Script，備援 GitHub cron）**：同一份腳本也觸發 `market-etf.yml`（週五，見 `market-etf-pool.md` 第 1 節）。GitHub 排程常晚 6 到 10 小時才建立（見 `schedule-registry.md` 待驗證段），所以每個平日台北 17:30 左右由 Google Apps Script 以 `workflow_dispatch` 觸發本工作流；GitHub 自己的 cron 保留當備援，兩者撞到同一天時，互鎖會讓後到的那次略過（不帶 `force`）。設定在 Hachi 的 Google 帳號下，腳本與權杖都不進 git。
 
   步驟：
 
   1. GitHub 建立 fine-grained personal access token：只選 `Investment_Tracker` 這個 repository，權限只開 Actions 的 Read and write，到期日一年。
   2. 到 script.google.com 建新專案，專案設定把時區設為 `Asia/Taipei`，「指令碼屬性」新增 `GITHUB_TOKEN`，值貼上第 1 步的權杖。
-  3. 貼上下方腳本，儲存後手動執行一次 `triggerSwingPatrol`（會要求授權外部請求與寄信），到 GitHub Actions 確認出現一筆 `workflow_dispatch` 的執行。
-  4. 左側「觸發條件」新增：函式 `triggerSwingPatrol`、時間驅動、日計時器、下午 5 點到 6 點。
+  3. 貼上下方腳本，儲存後手動執行一次 `triggerSwingPatrol`（會要求授權外部請求與寄信；週末會因平日檢查直接結束，驗證時可暫時註解該行，驗完還原），到 GitHub Actions 確認出現一筆 `workflow_dispatch` 的執行。
+  4. 左側「觸發條件」新增兩個：`triggerSwingPatrol`（時間驅動、日計時器、下午 5 點到 6 點）；`triggerMarketEtf`（時間驅動、週計時器、每週五、下午 5 點到 6 點）。
   5. 權杖到期前更換，更換只要改「指令碼屬性」。
 
   ```javascript
   const REPO = 'HachiTsai/Investment_Tracker';
-  const WORKFLOW = 'swing-patrol.yml';
 
+  // 波段巡檢：台北平日（u：1 到 7 對應週一到週日）
   function triggerSwingPatrol() {
-    // 只在台北平日觸發（u：1 到 7 對應週一到週日）
-    const weekday = Number(Utilities.formatDate(new Date(), 'Asia/Taipei', 'u'));
-    if (weekday > 5) return;
+    if (taipeiWeekday_() > 5) return;
+    dispatch_('swing-patrol.yml');
+  }
+
+  // 全市場 ETF 資料庫：只在台北週五
+  function triggerMarketEtf() {
+    if (taipeiWeekday_() !== 5) return;
+    dispatch_('market-etf.yml');
+  }
+
+  function taipeiWeekday_() {
+    return Number(Utilities.formatDate(new Date(), 'Asia/Taipei', 'u'));
+  }
+
+  function dispatch_(workflow) {
     const token = PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN');
-    if (!token) { notify_('找不到指令碼屬性 GITHUB_TOKEN'); return; }
+    if (!token) { notify_(workflow, '找不到指令碼屬性 GITHUB_TOKEN'); return; }
     const res = UrlFetchApp.fetch(
-      'https://api.github.com/repos/' + REPO + '/actions/workflows/' + WORKFLOW + '/dispatches',
+      'https://api.github.com/repos/' + REPO + '/actions/workflows/' + workflow + '/dispatches',
       {
         method: 'post',
         contentType: 'application/json',
@@ -100,14 +112,14 @@ python3 .claude/skills/price-dividend-fetcher/scripts/swing.py --scan 00882:15 -
     );
     // 成功固定回 204；其他代碼（權杖過期 401、權限不足 403、工作流不存在 404）寄信通知
     if (res.getResponseCode() !== 204) {
-      notify_('HTTP ' + res.getResponseCode() + '：' + res.getContentText().slice(0, 200));
+      notify_(workflow, 'HTTP ' + res.getResponseCode() + '：' + res.getContentText().slice(0, 200));
     }
   }
 
-  function notify_(reason) {
+  function notify_(workflow, reason) {
     MailApp.sendEmail(
       Session.getEffectiveUser().getEmail(),
-      '[排程觸發失敗] ' + WORKFLOW,
+      '[排程觸發失敗] ' + workflow,
       '外部觸發沒有送達 GitHub：' + reason + '\nGitHub 自己的 cron 仍會在稍晚執行；權杖過期請重新建立並更新指令碼屬性。'
     );
   }
